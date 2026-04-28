@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+.venv/
+venv/
+env/
+.env
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Keep .pkl caches and .log files — they're computed evidence, not transient.
