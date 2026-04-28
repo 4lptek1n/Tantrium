@@ -85,6 +85,16 @@ Therefore
 
 for all admissible `d` and real `lambda`.
 
+## Sharpness
+
+This theorem is **sharp**: H_{d,6}(t) is NOT universally positive.
+
+- d=7: H_{7,6}(t) has a real root at t ≈ 0.041
+- d=8: H_{8,6}(t) < 0 for all t > 0
+
+See `docs/k7_sharpness.md` for details. The first five pivots are the maximum
+achievable via Bezoutian-minor positivity.
+
 ## Remaining Seal
 
 To remove the conditional word, commit and verify:
