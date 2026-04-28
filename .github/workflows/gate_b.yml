@@ -1,0 +1,78 @@
+name: Gate B Quotient Extraction
+
+on:
+  workflow_dispatch:
+    inputs:
+      j:
+        description: Hidden-factor index j
+        required: true
+        default: "5"
+      d_start:
+        description: Start d
+        required: true
+        default: "6"
+      d_end:
+        description: End d
+        required: true
+        default: "22"
+      r_values:
+        description: Space-separated r values for collection
+        required: true
+        default: "4"
+
+jobs:
+  compute:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        d: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Compute cache for one d
+        run: |
+          python scripts/gate_b_compute_one.py --j 5 --d ${{ matrix.d }} --out .cache/gate_b
+      - name: Upload cache artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-b-cache-d${{ matrix.d }}
+          path: .cache/gate_b/*.json
+
+  collect:
+    needs: compute
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Download cache artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Flatten cache files
+        run: |
+          mkdir -p .cache/gate_b
+          find artifacts -name '*.json' -exec cp {} .cache/gate_b/ \;
+          ls -la .cache/gate_b
+      - name: Collect quotient report
+        run: |
+          python scripts/gate_b_collect.py --j 5 --r 4 --cache .cache/gate_b | tee gate_b_report.txt
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-b-report
+          path: |
+            gate_b_report.txt
+            .cache/gate_b/*.json
