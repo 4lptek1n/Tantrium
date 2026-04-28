@@ -45,37 +45,17 @@ Expected result:
 \text{The first five normalized Sturm pivots are positive for all admissible }d,\lambda.
 ```
 
-## 3. K7 Preparation: H_{d,6}
+## 3. ~~K7 Preparation: H_{d,6}~~ SHARPNESS RESULT
 
-Target:
+**STATUS: RESOLVED — NEGATIVE**
 
-```math
-K_7 \Rightarrow H_{d,6}(t).
-```
+K_7 was computed for d=7 and d=8. H_{d,6}(t) is NOT universally positive:
 
-Required compute range:
+- d=7: H_{7,6}(t) has a real root at t ≈ 0.041
+- d=8: H_{8,6}(t) < 0 for all t > 0
 
-```math
-d=7,8,\dots,28
-```
-
-because
-
-```math
-T_6=21.
-```
-
-Required output:
-
-- `scripts/k7_bezout_compute_one.py`
-- matrix workflow for `d=7..28`
-- collector/interpolator for `H_{d,6}`
-
-Expected result:
-
-```math
-[t^{21}]\widetilde H_{d,6}(t)=2^{21}\prod_{m=1}^6(n+m)^m.
-```
+The First Five Pivot Theorem is sharp. Bezoutian-minor positivity has a ceiling
+at j = 5. See `docs/k7_sharpness.md`.
 
 ## 4. General Leading-Ramp Proof
 
@@ -99,47 +79,27 @@ Expected result:
 
 ## 5. General Bezoutian-Minor Positivity Program
 
-Target:
+**STATUS: PARTIALLY RESOLVED — CEILING AT j=5**
+
+General positivity H_{d,j}(t) > 0 for ALL j does NOT hold. K_7 (j=6) gives
+negative H_{d,6} for d ≥ 8. The correct statement is:
 
 ```math
-\operatorname{Norm}_t\det K_{j+1}(d,\lambda)\in\mathbb R_{>0}[t].
+H_{d,j}(t) > 0 \quad \text{for } j = 1, 2, 3, 4, 5 \text{ and all admissible } d.
 ```
 
-Required proof route:
-
-- express `K_{j+1}` entries in top coefficients `a_1,...,a_{2j}`
-- substitute transition-family top coefficient formulas
-- find positive determinant/path model or sign-reversing involution
-
-Expected result:
-
-```math
-H_{d,j}(t)>0 \quad \forall d,j.
-```
-
-This is the main gate for the full transition model.
+For j ≥ 6, alternative methods (direct Sturm analysis, asymptotic bounds) are
+needed to establish pivot positivity.
 
 ## 6. Hyperbolicity Theorem for the Transition Model
 
-Target:
+**REVISED**: Since H_{d,j} > 0 only for j ≤ 5, hyperbolicity cannot be proven
+via pivot positivity alone for all pivots. New approaches needed:
 
-```math
-P_{\lambda,d}(z)=e^{-\frac14D^2+\lambda(zD^2-\frac1{24}D^3)}z^d
-```
-
-is hyperbolic for all real `lambda` and all `d`.
-
-Required chain:
-
-```math
-H_{d,j}>0 \Rightarrow \rho_{d,j}>0 \Rightarrow \text{Sturm sign structure} \Rightarrow P_{\lambda,d}\text{ hyperbolic}.
-```
-
-Expected result:
-
-```math
-P_{\lambda,d}\text{ has only real zeros.}
-```
+- Direct analysis of the Sturm chain for j ≥ 6
+- Asymptotic methods (large d or large λ)
+- Different factorization beyond the Bezoutian trailing block
+- Possible connection to the Toda lattice / integrable systems
 
 ## 7. RH/Jensen Transition Bridge
 
@@ -185,11 +145,8 @@ This becomes the first demonstration that Tantrium can discover hidden algebraic
 
 ## Current Immediate Order
 
-1. Add or recover `docs/k6_results.json`.
-2. Verify `d=22` for K6.
-3. Write `docs/k6_j5_result.md`.
-4. Write the first-five-pivots theorem note.
-5. Start K7 compute infrastructure.
-6. Attack the general leading-ramp proof.
-7. Attack full Bezoutian-minor positivity.
-8. Connect back to Jensen/RH and package as Tantrium Case Study 001.
+1. ✅ K_6 seal: computationally verified d=6..22
+2. ✅ K_7 sharpness: H_{d,6} NOT positive (j=5 is ceiling)
+3. Write the first-five-pivots theorem note (seal K_6)
+4. Explore alternative methods for j ≥ 6
+5. Connect back to Jensen/RH and package as Tantrium Case Study 001
