@@ -136,20 +136,20 @@ This replaces the previous ad-hoc determinant ansatz. The correct Gate B object 
 
 ## Concrete Next Step: Positivity of Trailing Bezoutian Minors
 
-The next target is not more random testing. The target is a determinant/path model for
+**UPDATE (2026-04-29)**: General positivity fails at j=6. K_7 computation shows:
 
-```math
-\det B_d^{[j+1]}(\lambda).
-```
+- H_{7,6}(t) has a real root at t ≈ 0.041
+- H_{8,6}(t) < 0 for all t > 0
 
-The proof target is:
+Therefore, H_{d,j}(t) > 0 holds only for j ≤ 5. The proof target is now:
 
 ```math
 \operatorname{Norm}_{t}\det B_d^{[j+1]}(\lambda)
-\in\mathbb R_{>0}[t].
+\in\mathbb R_{>0}[t] \quad \text{for } j = 1, 2, 3, 4, 5.
 ```
 
-The expected combinatorial interpretation is an LGV/nonintersecting-path model for the trailing Bezoutian minor, with the staircase ramp law emerging from the lower-right block structure.
+For j ≥ 6, alternative methods are needed (direct Sturm analysis, asymptotic
+bounds, or different factorization strategies).
 
 ## Product Direction
 
