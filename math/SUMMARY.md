@@ -88,18 +88,60 @@ Yani ramp formülü, **leading-λ üstündeki λ⁻² düzeltmelerinin**
 toplam etkisini kodluyor. Her λ⁻² seviyesi tepe katsayıya
 yeni bir (n+m)^m katmanı ekliyor.
 
-## 5. Hâlâ açık
+## 5. Kapı A — λ⁻² Perturbasyon Yapısı (DOĞRULANDI)
 
-- **Sembolik kanıt:** ramp formülü için EGF'den ramp çıkarımı (her λ⁻²
-  düzeyinin nasıl katkıda bulunduğunun analitik gösterimi).
-- **Schur-pozitiflik kanıtı:** her a_k(n)'in n-katsayılarının pozitif
-  olduğunun sembolik kanıtı (combinatorial model gerekebilir).
-- **Tam genelleme:** j ≥ 6 için ramp ve schur-pozitifliğin doğrulanması
-  (hesap maliyeti hızlı büyüyor).
-- **Hiperboliklik bağlantısı:** ρ_{d,j} > 0 koşulunun H_{d,j} pozitifliğinden
-  nasıl çıktığı (genel j için sembolik tamamlama).
+### Skaling
 
-## 6. Dosya Düzeni
+z = λw, u = v/λ, ε = λ⁻². Sonuç:
+
+$$S(\lambda w, v/\lambda, \lambda) \;=\; R_0(v,w) + \varepsilon\, R_1(v)$$
+
+burada **EXACT** iki terim, daha yüksek ε terimi YOK:
+- $R_0(v,w) = vw/(1-v)$
+- $R_1(v) = v^2(v^2 + 10v - 12)/(48(1-v)^2)$
+
+### Q-açılımı
+
+$$\lambda^{-d}\,P_d(\lambda w, \lambda) = \sum_{r=0}^{\lfloor d/2\rfloor} \varepsilon^r \, Q_{d,r}(w)$$
+
+$$Q_{d,r}(w) = \frac{d!}{r!}\,[v^d]\bigl(R_1(v)^r \cdot e^{vw/(1-v)}\bigr)$$
+
+- $Q_{d,0}(w) = L_d(w)$ (Lah polinomu)
+- $\deg_w Q_{d,r} = d - 2r$
+- İşaret: $\text{sgn}(Q_{d,r}) = (-1)^r$ (alternasyonlu)
+- Ramp formülü Lah-pozitif değil, **kontrollü cancellation** ile çıkıyor
+
+### Ana yapısal teorem (DOĞRULANDI: d=2..22, j=1..5)
+
+$$\boxed{\;\rho_{d,j}(t) = C_{d,j}\cdot t^{k_{d,j}}\cdot \frac{H_{d,j-2}(t)\,H_{d,j}(t)}{H_{d,j-1}(t)^2}\;}$$
+
+burada $H_{d,0} := 1$, $H_{d,-1} := 1$, $C_{d,j} \in \mathbb{Q}_{>0}$.
+
+Bu Sturm zincirinin klasik **subresultant cross-ratio** yapısı. Pivot
+numerator'ı **iki adet H polinomunu** eş-zamanlı içeriyor.
+
+### ε-Sturm derece deseni
+
+$N_j(\varepsilon)$ = pivot $\tilde\rho_j(\varepsilon)$'nın ε-numeratoru:
+$$\deg_\varepsilon N_j = j^2 - j + 1 = T_j + T_{j-2}$$
+
+Bu da yukarıdaki çift-H faktörleştirmesini açıklıyor.
+
+### t-cinsinden köprü
+
+$$H_{d,j}(t) \cdot H_{d,j-2}(t) \;\propto\; t^{j^2-j+1}\,N_j(1/t)$$
+
+## 6. Hâlâ açık
+
+- **Recursion'ı analitik kapat:** subresultant identity'den H_{d,j+1} için
+  H_{d,j}, H_{d,j-1} cinsinden kapalı recursion. Bu varsa ramp formülü
+  ve schur-pozitiflik **indüksiyonla** kanıtlanır.
+- **Schur-pozitiflik:** her a_k(n)'in n-katsayılarının pozitifliği. Recursion
+  + indüksiyon + (muhtemel) combinatorial model ile.
+- **Genel j:** j → ∞ için tüm yapının tutması (j=5'e kadar var).
+- **Combinatorial model:** Lah ailesinin bir refinement'ı olarak H_{d,j}.
+
+## 7. Dosya Düzeni
 
 | Dosya | İşlev |
 |-------|-------|
@@ -114,5 +156,8 @@ yeni bir (n+m)^m katmanı ekliyor.
 | `positivity.py` | Çok-noktalı pozitiflik taraması |
 | `asymptotic.py` | Lah-sayıları leading-λ doğrulaması |
 | `lah_sturm.py` | Lah polinomu üzerinde Sturm pivotları |
+| `gate_a.py` | Kapı A: ε-perturbasyon expansion R_0, R_1, Q_{d,r} |
+| `gate_a_sturm.py` | ε-Sturm zinciri (küçük d için, gözlem amaçlı) |
+| `gate_a_verify.py` | Yapısal teorem doğrulaması (d=2..22, j=1..5) |
 | `H_d{j}_cache.pkl` | j ∈ {1,2,3,4,5} için hesaplanmış H̃_{d,j}'ler |
 | `*.log` | Tüm koşum çıktıları |
