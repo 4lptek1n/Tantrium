@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, Tuple
+from typing import Any, List
 
 import sympy as sp
 
@@ -24,6 +24,12 @@ def monic(poly: Any, var: Any) -> Any:
     return sp.expand(p.as_expr() / p.LC())
 
 
+def _div_rem(prev: Any, cur: Any, var: Any) -> Any:
+    """Return Euclidean remainder in `var` over the expression domain."""
+    _, rem = sp.div(prev, cur, var, domain="EX")
+    return sp.expand(rem)
+
+
 def normalized_sturm_chain(poly: Any, var: Any) -> List[Any]:
     """Compute a monic normalized Sturm chain.
 
@@ -39,14 +45,12 @@ def normalized_sturm_chain(poly: Any, var: Any) -> List[Any]:
     chain = [p, q]
 
     while True:
-        prev = sp.Poly(chain[-2], var)
-        cur = sp.Poly(chain[-1], var)
-        if cur.degree() <= 0:
+        if sp.Poly(chain[-1], var).degree() <= 0:
             break
-        _, rem = sp.div(prev, cur, domain="EX")
-        if rem.is_zero:
+        rem = _div_rem(chain[-2], chain[-1], var)
+        if sp.simplify(rem) == 0:
             break
-        nxt = monic(-rem.as_expr(), var)
+        nxt = monic(-rem, var)
         chain.append(nxt)
         if sp.Poly(nxt, var).degree() == 0:
             break
@@ -68,10 +72,8 @@ def normalized_sturm_pivots(poly: Any, var: Any) -> List[Any]:
     pivots: List[Any] = []
 
     for j in range(1, len(chain) - 1):
-        prev = sp.Poly(chain[j - 1], var)
-        cur = sp.Poly(chain[j], var)
-        _, rem = sp.div(prev, cur, domain="EX")
-        rho = -sp.Poly(rem.as_expr(), var).LC()
+        rem = _div_rem(chain[j - 1], chain[j], var)
+        rho = -sp.Poly(rem, var).LC()
         pivots.append(sp.factor(rho))
 
     return pivots
