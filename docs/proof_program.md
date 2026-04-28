@@ -102,31 +102,54 @@ Q_{j,r}(n)\in\mathbb R_{>0}[n].
 
 This has been verified through the available upper layers for `j<=5`.
 
-## Concrete Next Step: Determinant Model
+## Determinant Identity: Bezoutian Principal Minors
 
-The next target is not more random testing. The target is a determinant/path model:
+The hidden factors are not arbitrary Sturm artifacts. They are normalized trailing principal minors of the Bezoutian.
 
-```math
-H_{d,j}(t)=\det M_j(n,t),
-```
-
-where `M_j` is a positive single-path matrix, so that the determinant has an LGV nonintersecting-path interpretation.
-
-### First milestone
-
-Derive explicit `M_2` and `M_3`.
-
-For `j=2`, one valid determinant is
+Let
 
 ```math
-\widetilde H_{d,2}(t)=
-\det\begin{pmatrix}
-1+2(n+1)t & t \\
-\frac{16nt+n+32t+9}{8} & (1+2(n+2)t)^2
-\end{pmatrix}.
+B_d(\lambda)=\operatorname{Bez}(P_{\lambda,d},P'_{\lambda,d})
 ```
 
-The concrete task is to find a natural extension to `j=3`.
+in the monomial basis `1,z,...,z^{d-1}`. Let `B_d^{[j+1]}` denote the lower-right `(j+1) x (j+1)` principal submatrix.
+
+Then the hidden factor is
+
+```math
+H_{d,j}(t)=\operatorname{Norm}_{t}
+\det B_d^{[j+1]}(\lambda),
+\qquad t=\lambda^2.
+```
+
+Equivalently, `H_{d,j}` is the normalized leading coefficient of the principal subresultant
+
+```math
+\operatorname{LC}_z \operatorname{Sres}_{d-j-1}(P_{\lambda,d},P'_{\lambda,d}).
+```
+
+### Verified
+
+This Bezoutian-principal-minor identity has been checked directly for `d=5,6` and all admissible `j`. For `d=5`, the lower-right minors of sizes `2,3,4,5` give exactly `H_{5,1},H_{5,2},H_{5,3},H_{5,4}` after normalization.
+
+This replaces the previous ad-hoc determinant ansatz. The correct Gate B object is the trailing Bezoutian minor.
+
+## Concrete Next Step: Positivity of Trailing Bezoutian Minors
+
+The next target is not more random testing. The target is a determinant/path model for
+
+```math
+\det B_d^{[j+1]}(\lambda).
+```
+
+The proof target is:
+
+```math
+\operatorname{Norm}_{t}\det B_d^{[j+1]}(\lambda)
+\in\mathbb R_{>0}[t].
+```
+
+The expected combinatorial interpretation is an LGV/nonintersecting-path model for the trailing Bezoutian minor, with the staircase ramp law emerging from the lower-right block structure.
 
 ## Product Direction
 
@@ -135,7 +158,7 @@ Tantrium's reusable method is:
 1. Generate a symbolic family.
 2. Extract Sturm/subresultant pivots.
 3. Factor the pivot cross-ratio.
-4. Detect hidden positive factors.
+4. Identify hidden factors as canonical determinant minors.
 5. Search for determinant/path models that certify positivity.
 
 This is the first concrete structure-first discovery pipeline.
