@@ -1,6 +1,13 @@
 name: Gate B Quotient Extraction
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gate_b.yml'
+      - 'scripts/gate_b_*.py'
+      - 'tantrium/**'
+      - 'pyproject.toml'
   workflow_dispatch:
     inputs:
       j:
