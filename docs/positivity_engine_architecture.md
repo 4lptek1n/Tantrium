@@ -1,6 +1,21 @@
-# Tantrium Positivity Engine v0
+# Tantrium Positivity Engine v0/v1 Checkpoint
 
-Tantrium Positivity Engine v0 turns the repository from a collection of exploratory scripts into a unified positivity-discovery pipeline.
+## Target theorem
+
+The main target is the Global Coefficient Positivity Theorem:
+
+```math
+H_{d,j}(t) = \sum_{k=0}^{T_j} a_k^{(j)} t^k,
+\qquad a_k^{(j)} > 0.
+```
+
+Equivalently:
+
+```math
+H_{d,j}(t) \in \mathbb{R}_{>0}[t].
+```
+
+The engine is built to attack this theorem through atlas generation, log-det cumulants, failure-frontier search, moment/path models, and Sturm positivity certificates.
 
 ## Core pipeline
 
@@ -15,22 +30,13 @@ Newton sums
   -> Sturm positivity certificates
 ```
 
-## Engine modules
-
-- `tantrium/positivity/catalog.py` records coefficient-atlas status.
-- `tantrium/positivity/cumulants.py` records the log-det cumulant program.
-- `tantrium/positivity/failure_hunter.py` records and searches the failure frontier.
-- `tools/run_positivity_engine_v0.py` orchestrates the v0 report.
-
-## Current radar
-
-The strongest v0 status is:
+## v0 radar
 
 ```text
 a0..a6 clean through j=7, failures=0.
 ```
 
-That means the current coefficient-positivity frontier is clean through the computed window:
+Expanded:
 
 ```text
 a0: clean through j=7
@@ -42,30 +48,43 @@ a5: clean through j=7
 a6: clean through j=7
 ```
 
-## Why this architecture matters
+## What is missing
 
-The engine is designed to answer four questions in one machine:
+The finite atlas is a base/frontier, not a global proof. The missing step is an induction or domination mechanism, for example:
 
-1. What do we know? -> coefficient catalog
-2. Where does positivity break? -> failure frontier
-3. Where does positivity come from? -> cumulant program
-4. What is the proof architecture? -> moment/path and Sturm certificates
-
-## v1 target
-
-The next major target is:
-
-1. Open the `K=8, J=8, N=8` atlas.
-2. Generate the `L2, L4, L6, L8` cumulant atlas directly.
-3. Upgrade the failure hunter into an automatic frontier searcher.
-4. Start the Newton sums -> moment/path model proof search.
-
-## Target theorem
-
-The long-range theorem is the Global Coefficient Positivity Theorem:
-
-```math
-H_{d,j}(t) \in \mathbb{R}_{>0}[t].
+```text
+a_k positive => a_{k+1} positive
+positivity at j => positivity at j+1
+positive cumulant blocks dominate signed remainders
+coefficients are positive weighted moment/path sums
 ```
 
-The purpose of the engine is to attack this theorem through atlas generation, cumulant structure, moment/path models, and Sturm positivity certificates rather than isolated coefficient computations.
+## Repo checkpoint note
+
+The live GitHub snapshot was checked through the connector. These v1 dependency paths were not found on `main`:
+
+```text
+core/pipeline.py
+tantrium/positivity/cumulants.py
+```
+
+So the GitHub snapshot appears behind the earlier local sandbox state. This document records the recovery map.
+
+## v1 directive
+
+Create `tools/run_positivity_engine_v1.py`.
+
+The runner should:
+
+1. Use `core/pipeline.py` to generate a `K=8, J=8, N=8` atlas. If heavy, start with `K=6, J=7, N=7`.
+2. Use `tantrium/positivity/cumulants.py` to compute `L2`, `L4`, `L6`, and `L8` cumulants.
+3. Use `tantrium/positivity/failure_hunter.py` to find the first negative coefficient.
+4. Save:
+
+```text
+results/engine/v1_atlas.csv
+results/engine/v1_cumulants.csv
+results/engine/v1_failure_report.md
+```
+
+5. If all checked coefficients are positive, propose an induction template. If a break occurs, report the exact coordinates.
