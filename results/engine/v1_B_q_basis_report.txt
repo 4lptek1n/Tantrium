@@ -1,0 +1,17 @@
+V1 B q-basis analysis
+
+B(j,k,r): r-th forward difference in n at n=0 for a_k(j,n).
+q = j - 1.
+Missing coefficients below the natural degree frontier are treated as zero.
+
+B laws checked: 45
+q-binomial nonnegative: 45/45
+q-monomial nonnegative: 6/45
+
+Conclusion: ordinary q-powers are not the right positive basis. The clean structure is binomial in q.
+
+Candidate lemma:
+B(j,k,r) = sum_s C(k,r,s) binom(j-1,s), with C(k,r,s) >= 0.
+Then a_k(j,n) = sum_r B(j,k,r) binom(n,r) is positive in the checked window.
+
+Status: proof target, not completed global proof.
