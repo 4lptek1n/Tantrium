@@ -1,0 +1,9 @@
+V1 basis analysis
+
+laws_analyzed: 58
+observed_positive: 58/58
+monomial_basis_nonnegative: 58/58
+binomial_basis_nonnegative: 58/58
+degree_rule_deg_n_le_k: true
+
+Next target: prove the fixed j,k coefficient law has a positive expansion in n or in binomial basis.
