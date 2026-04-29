@@ -96,10 +96,10 @@ for admissible `d` and `t=lambda^2>=0`, within the verified Bezoutian/subresulta
 
 This theorem is sharp. The next hidden factor is not universally positive:
 
-- `d=7`: `H_{7,6}(t)` has a positive real root near `t ~= 0.041`.
-- `d=8`: `H_{8,6}(t)<0` for `t>0` in the K7/Bezoutian normalization.
+- `d=7`: `H_{7,6}(t)` has a positive real root near `t ~= 0.0409273227229469`.
+- `d=8`: the K7 block is already negative at small positive `t` (for example `t=0.001`); the full global sign profile is left to exact artifact audit.
 
-See `docs/k7_sharpness.md`.
+See `docs/k7_sharpness.md` and `results/k7_sharpness_reproduction.md`.
 
 ## Consequence
 
