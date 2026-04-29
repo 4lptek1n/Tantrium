@@ -1,35 +1,38 @@
-# K_7 Sharpness: H_{d,6} is NOT universally positive
+# K7 Sharpness: H_{d,6} is not universally positive
 
 ## Finding
 
-The seventh hidden factor H_{d,6}(t), obtained from the trailing 7×7 Bezoutian
-block K_7, is **not** positive for all d ≥ 7 and t ≥ 0.
+The seventh trailing Bezoutian block `K_7`, corresponding to the sixth hidden factor `H_{d,6}(t)`, is not universally positive.
 
-### Evidence
+The decisive reproduced counterexample is:
 
-- **d=7**: H_{7,6}(t) has a real root at t ≈ 0.041. Positive for t < 0.041,
-  negative for t > 0.041.
-- **d=8**: H_{8,6}(t) < 0 for all t > 0 (already negative at t = 0.001).
+```math
+H_{7,6}(t)>0 \text{ near } t=0.04,\qquad H_{7,6}(t)<0 \text{ near } t=0.041.
+```
 
-### Interpretation
+The locally reproduced root is approximately
 
-This confirms that the **First Five Pivot Theorem is sharp**. The positivity
-H_{d,j}(t) > 0 holds for j = 1, 2, 3, 4, 5 but genuinely fails at j = 6.
+```math
+t \approx 0.0409273227229469296775564603234.
+```
 
-The transition family P_{λ,d}(z) has exactly 5 "universal" hidden factors.
-Beyond that, the Bezoutian trailing block structure does not guarantee positivity.
+This single sign change proves that the first-five positivity theorem is sharp.
 
-### Implications for the proof program
+## Local reproduction
 
-1. The First Five Pivot Theorem (j ≤ 5) is the correct ceiling.
-2. Hyperbolicity of P_{λ,d} for all d does NOT follow from pivot positivity alone
-   beyond the first 5 pivots.
-3. Alternative methods are needed for the remaining pivots (j ≥ 6):
-   - Direct Sturm chain analysis
-   - Asymptotic methods (large d, large λ)
-   - Different factorization strategy
+The reproducible numeric certificate is stored in:
 
-### Files
+```text
+results/k7_sharpness_reproduction.md
+scripts/k7_numeric_reproduce.py
+```
 
-- K_7 cache: `.cache/k7/H_j6_d{7,8}.json`
-- K_6 (still positive): `.cache/k6/H_j5_d{6..22}.json`
+The script evaluates the same trailing `7 x 7` Bezoutian recurrence used by the K7 matrix workflow, but numerically at high precision instead of forming the full symbolic determinant.
+
+## d=8 note
+
+The K7 block for `d=8` is already negative at small positive `t`; for example the local reproduction gives a negative value at `t=0.001`. A stronger global statement such as `H_{8,6}(t)<0` for every `t>0` should be treated as requiring an exact artifact audit before being used as a proof claim.
+
+## Implication
+
+The first-five hidden-factor positivity theorem is the correct ceiling for this method. For pivots beyond the first five, the project must use alternative certificates: direct Sturm-chain analysis, asymptotics, or a different invariant/factorization strategy.
