@@ -1,16 +1,20 @@
 # Tantrium Project State
 
-This document is the current source-of-truth map for the Sturm-Toda case study.
+This document is the current source-of-truth map for the local Sturm--Toda / Hermite--Hankel research branch.
 
 ## Object under study
 
 The transition family is
 
 ```math
-P_{\lambda,d}(z)=\exp\left(-\frac14D^2+\lambda\left(zD^2-\frac1{24}D^3\right)\right)z^d.
+P_{lambda,d}(z)=exp(-D^2/4 + lambda*(z*D^2 - D^3/24)) z^d.
 ```
 
-Equivalently it is generated from the exponential generating function engine in `tantrium.algebra.sheffer` / `tantrium.sturm_toda`.
+The working parameter is
+
+```math
+t=lambda^2.
+```
 
 ## Main discovery loop
 
@@ -20,85 +24,106 @@ Tantrium uses the following loop:
 Generate -> Factor -> Certify
 ```
 
-For the first case study this means:
+For the current case study this means:
 
-1. Generate `P_{lambda,d}`.
+1. Generate the monic polynomial `P_{lambda,d}`.
 2. Extract the normalized Sturm pivots `rho_{d,j}`.
-3. Factor the hidden terms `H_{d,j}(t)`, with `t=lambda^2`.
-4. Certify positivity/hyperbolicity through pivot positivity where available.
+3. Factor the hidden terms `H_{d,j}(t)`.
+4. Relate the hidden terms to Hermite--Hankel tau determinants.
+5. Certify pivot positivity on `t>=0` through coefficient positivity where possible.
 
-## Settled theorem-level checkpoint
+## Main cross-ratio program
 
-The current theorem-level result is the **First Five Pivot Theorem**:
-
-```math
-H_{d,j}(t)\in\mathbb R_{>0}[t]\qquad j=1,2,3,4,5
-```
-
-for admissible `d` and `t>=0`, supported by the normalized Sturm/subresultant identity and the Bezoutian trailing-block program.
-
-The pivot cross-ratio is
+The central identity under development is
 
 ```math
-\rho_{d,j}(t)=C_{d,j}t^{k_{d,j}}
-\frac{H_{d,j-2}(t)H_{d,j}(t)}{H_{d,j-1}(t)^2},
-\qquad H_{d,-1}=H_{d,0}=1.
+rho_{d,j}(t)=((d-j)/2)*H_{d,j-2}(t)*H_{d,j}(t)/H_{d,j-1}(t)^2.
 ```
 
-In the verified normalization the observed scalar is
+The determinant model is
 
 ```math
-C_{d,j}=\frac{d-j}{2},\qquad k_{d,j}=0.
+H_{d,j}(t)=tau_{d,j}(t)/tau_{d,j}(0),
 ```
 
-## Sharpness
-
-The first-five result is sharp. The universal positivity program fails at `j=6`.
-
-Local reproduction now confirms the decisive K7 counterexample:
-
-- `H_{7,6}(t)` has a positive real root near `t ~= 0.0409273227229469`.
-- The K7 block for `d=8` is already negative at small positive `t`, for example `t=0.001`; the full global sign profile is left to exact artifact audit.
-
-Therefore the project is no longer trying to prove universal positivity for `j>=6`. The correct next problem is to explain the sharp ceiling and find alternative methods for the remaining Sturm pivots.
-
-## Gate A
-
-Gate A identifies the large-parameter model. Under `z=lambda w`, `u=v/lambda`, and `eps=lambda^-2`, the exponent becomes exactly
+with
 
 ```math
-S(\lambda w,v/\lambda,\lambda)=\frac{vw}{1-v}
-+\varepsilon\frac{v^2(v^2+10v-12)}{48(1-v)^2}.
+tau_{d,j}(t)=det([s_{a+b}]_{a,b=0..j}),
 ```
 
-Thus the leading object is the unsigned Lah polynomial
+where `s_m` are the Newton sums of the monic polynomial.
+
+The zero-lambda scalar is
 
 ```math
-L_d(w)=\sum_{k=1}^d L(d,k)w^k.
+tau_{d,j}(0)=2^(-j*(j+1)/2)*product_{m=0..j}(d-m)^(j+1-m).
 ```
 
-This is the Lah total-positivity shadow of the transition family.
-
-## Gate B
-
-Gate B studies why the positive hidden factors exist for the first five pivots. The current evidence is a staircase/refined-divisor structure in the top layers of
+Therefore
 
 ```math
-H_{d,j}(t)=\sum_k a_k^{(j)}(n)t^k,
-\qquad n=d-(j+1),\quad T_j=j(j+1)/2.
+tau_{d,j}(0)*tau_{d,j-2}(0)/tau_{d,j-1}(0)^2=(d-j)/2.
 ```
 
-The top coefficient follows the staircase ramp law
+## Current computational range
+
+Local cached checks include:
+
+- `j<=5` through `d<=22` for cross-ratio and coefficient-law reports.
+- `j=6` through `d=11` for preliminary cross-ratio and edge-law probes.
+- Hermite--Hankel tau candidate checks on tested small blocks.
+- Newton-sum binomial-positivity probes up to the tested moment range.
+
+The authoritative local ledger is `docs/theorem_status.md`.
+
+## Important correction
+
+The hidden factors `H_{d,j}(t)` are not generally real-rooted.  The first obstruction found locally is `H_{3,2}`.  The correct target for the Sturm pivot mechanism is positivity on `t>=0`, and coefficientwise positivity is the current route.
+
+Thus the active target is
 
 ```math
-[t^{T_j}]H_{d,j}(t)=2^{T_j}\prod_{m=1}^j(n+m)^m.
+H_{d,j}(t) in R_{>0}[t]
 ```
 
-The subleading layers are tracked in `docs/gate_b_findings.md`.
+for all admissible `d,j`, or enough positive certificates to force every required Sturm pivot positive on `t>=0`.
 
-## Active next steps
+## Current edge laws
 
-1. Attach exact K7 symbolic artifacts when available; the numeric K7 reproduction is already in `results/k7_sharpness_reproduction.md`.
-2. Continue Gate B as a combinatorial model problem, not as a `j=6` positivity extension.
-3. Align the local unified engine (`tantrium/sturm_toda.py`) with the GitHub package modules (`tantrium/algebra/sheffer.py`, `tantrium/algebra/sturm.py`).
-4. For `j>=6`, search for alternative hyperbolicity mechanisms beyond universal hidden-factor positivity.
+Writing
+
+```math
+H_{d,j}(t)=sum_k a_{d,j,k}(n)t^k,
+qquad n=d-j-1,
+```
+
+the known low and high edge laws include
+
+```math
+a_0=1,
+```
+
+```math
+a_1^{(j)}(n)=j*(15*j+17)*n/16 + j*(j+1)*(23*j+25)/48,
+```
+
+and the ramp law
+
+```math
+a_{T_j}(n)=2^T_j * product_{m=1..j}(n+m)^m,
+qquad T_j=j*(j+1)/2.
+```
+
+For `a_2`, exact/cached laws show positive quadratic polynomials in `n` for `j=1..6`.  A candidate general-`j` fit is recorded in the local notes and must still be proved from the lambda^4 log-det trace formula.
+
+## Current open work
+
+1. Simplify the lambda^4 log-det trace formula uniformly in `j` to prove the general `a_2` law.
+2. Continue the coefficient-positivity program beyond the first two low-edge coefficients.
+3. Build a path, moment, or direct tau-minor proof for full coefficient positivity.
+4. Keep reports and proof ledgers synchronized with the exact symbolic engine.
+
+## Caution
+
+This repository records an active exact-symbolic research program.  It does not claim that all global consequences are proved.  The current focus is the cross-ratio theorem program and the coefficient-positivity program.
