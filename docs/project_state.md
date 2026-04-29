@@ -1,86 +1,104 @@
 # Tantrium Project State
 
-This document is the current source-of-truth checkpoint for the Sturm-Toda case study.
+This document is the current source-of-truth map for the Sturm-Toda case study.
 
-## Current theorem-level result
+## Object under study
 
-The active theorem is the **First Five Pivot Theorem**.
-
-For the transition family
+The transition family is
 
 ```math
-P_{\lambda,d}(z)=\exp\left(-\frac14D^2+\lambda\left(zD^2-\frac1{24}D^3\right)\right)z^d,
+P_{\lambda,d}(z)=\exp\left(-\frac14D^2+\lambda\left(zD^2-\frac1{24}D^3\right)\right)z^d.
 ```
 
-the normalized Sturm pivots admit hidden factors `H_{d,j}(t)`, `t=lambda^2`, with cross-ratio form
+Equivalently it is generated from the exponential generating function engine in `tantrium.algebra.sheffer` / `tantrium.sturm_toda`.
+
+## Main discovery loop
+
+Tantrium uses the following loop:
+
+```text
+Generate -> Factor -> Certify
+```
+
+For the first case study this means:
+
+1. Generate `P_{lambda,d}`.
+2. Extract the normalized Sturm pivots `rho_{d,j}`.
+3. Factor the hidden terms `H_{d,j}(t)`, with `t=lambda^2`.
+4. Certify positivity/hyperbolicity through pivot positivity where available.
+
+## Settled theorem-level checkpoint
+
+The current theorem-level result is the **First Five Pivot Theorem**:
+
+```math
+H_{d,j}(t)\in\mathbb R_{>0}[t]\qquad j=1,2,3,4,5
+```
+
+for admissible `d` and `t>=0`, supported by the normalized Sturm/subresultant identity and the Bezoutian trailing-block program.
+
+The pivot cross-ratio is
 
 ```math
 \rho_{d,j}(t)=C_{d,j}t^{k_{d,j}}
-\frac{H_{d,j-2}(t)H_{d,j}(t)}{H_{d,j-1}(t)^2}.
+\frac{H_{d,j-2}(t)H_{d,j}(t)}{H_{d,j-1}(t)^2},
+\qquad H_{d,-1}=H_{d,0}=1.
 ```
 
-The verified normalization gives
+In the verified normalization the observed scalar is
 
 ```math
 C_{d,j}=\frac{d-j}{2},\qquad k_{d,j}=0.
 ```
 
-The first five hidden factors are positive:
-
-```math
-H_{d,j}(t)\in\mathbb R_{>0}[t]\qquad j=1,2,3,4,5.
-```
-
-Therefore the first five normalized Sturm pivots are positive in the verified framework.
-
 ## Sharpness
 
-The theorem is sharp. Universal hidden-factor positivity fails at `j=6`.
+The first-five result is sharp. The universal positivity program fails at `j=6`.
 
-Known evidence:
+Local reproduction now confirms the decisive K7 counterexample:
 
-- `d=7`: `H_{7,6}(t)` has a positive real root near `t ~= 0.041`.
-- `d=8`: `H_{8,6}(t)<0` for `t>0` in the K7/Bezoutian normalization.
+- `H_{7,6}(t)` has a positive real root near `t ~= 0.0409273227229469`.
+- The K7 block for `d=8` is already negative at small positive `t`, for example `t=0.001`; the full global sign profile is left to exact artifact audit.
 
-This means the project should not try to prove universal `H_{d,6}` positivity. The correct next stage is to explain why the first-five window exists and develop alternative certificates for later pivots.
+Therefore the project is no longer trying to prove universal positivity for `j>=6`. The correct next problem is to explain the sharp ceiling and find alternative methods for the remaining Sturm pivots.
 
 ## Gate A
 
-Gate A identifies the Lah shadow. Under the scaling
+Gate A identifies the large-parameter model. Under `z=lambda w`, `u=v/lambda`, and `eps=lambda^-2`, the exponent becomes exactly
 
 ```math
-z=\lambda w,\qquad u=v/\lambda,\qquad \varepsilon=\lambda^{-2},
+S(\lambda w,v/\lambda,\lambda)=\frac{vw}{1-v}
++\varepsilon\frac{v^2(v^2+10v-12)}{48(1-v)^2}.
 ```
 
-the exponent is exactly
-
-```math
-S(\lambda w,v/\lambda,\lambda)
-=\frac{vw}{1-v}+\varepsilon\frac{v^2(v^2+10v-12)}{48(1-v)^2}.
-```
-
-The leading object is the unsigned Lah polynomial
+Thus the leading object is the unsigned Lah polynomial
 
 ```math
 L_d(w)=\sum_{k=1}^d L(d,k)w^k.
 ```
 
+This is the Lah total-positivity shadow of the transition family.
+
 ## Gate B
 
-Gate B studies the combinatorial/staircase explanation of coefficient positivity.
+Gate B studies why the positive hidden factors exist for the first five pivots. The current evidence is a staircase/refined-divisor structure in the top layers of
+
+```math
+H_{d,j}(t)=\sum_k a_k^{(j)}(n)t^k,
+\qquad n=d-(j+1),\quad T_j=j(j+1)/2.
+```
 
 The top coefficient follows the staircase ramp law
 
 ```math
-[t^{T_j}]H_{d,j}(t)=2^{T_j}\prod_{m=1}^j(n+m)^m,
-\qquad T_j=\frac{j(j+1)}2,\quad n=d-(j+1).
+[t^{T_j}]H_{d,j}(t)=2^{T_j}\prod_{m=1}^j(n+m)^m.
 ```
 
-Subleading coefficients are organized by quotient polynomials `Q_{j,r}(n)` and refined staircase divisors. See `docs/gate_b_findings.md`.
+The subleading layers are tracked in `docs/gate_b_findings.md`.
 
-## Repository tasks remaining
+## Active next steps
 
-1. Reproduce the K7 sharpness computation locally and store the exact report.
-2. Tighten the proof skeleton into a theorem/proof/checklist form.
+1. Attach exact K7 symbolic artifacts when available; the numeric K7 reproduction is already in `results/k7_sharpness_reproduction.md`.
+2. Continue Gate B as a combinatorial model problem, not as a `j=6` positivity extension.
 3. Align the local unified engine (`tantrium/sturm_toda.py`) with the GitHub package modules (`tantrium/algebra/sheffer.py`, `tantrium/algebra/sturm.py`).
-4. Keep `j>=6` work explicitly separated from the first-five positivity theorem.
+4. For `j>=6`, search for alternative hyperbolicity mechanisms beyond universal hidden-factor positivity.
