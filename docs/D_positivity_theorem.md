@@ -58,21 +58,45 @@ D-positivity
 -> C(k,r,s) positivity
 -> coefficient positivity of H_d,j(t)
 
-## First proof approach
+## Exact Sheffer/log source
 
-The target is to obtain a positive formula for D(m,ell,a). The desired forms are:
+Let C_d(w) = w^d P_lambda,d(1/w). Then
 
-1. a positive weighted path count;
-2. a positive binomial convolution;
-3. a positive coefficient extraction formula;
-4. a recurrence with positive transition coefficients and positive initial data.
+s_m = -m [w^m] log C_d(w),
+Q_m = (-1)^m s_m = -m [y^m] log C_d(-y).
 
-## Immediate algebraic task
+The Sheffer EGF gives
 
-Derive a recurrence for Q_m,ell(x) from Newton identities and the top coefficients of the deformed polynomial P_lambda,d.
+sum_d C_d(w) u^d/d! = exp(S(wu)/w + R(wu)).
 
-Then convert the recurrence to binomial coordinates. If the recurrence has nonnegative transition coefficients in the binomial basis, D-positivity follows by induction.
+Therefore D(m,ell,a) is sourced by the coefficient extraction
+
+Q_m,ell(x) = coeff lambda^(2 ell) in -m [y^m] log C_(x+2)(-y).
+
+The detailed source formula is recorded in:
+
+results/engine/D_sheffer_log_derivative_report.txt
+
+## Recurrence and operator audits
+
+The raw Newton recurrence is exact but does not give nonnegative transition coefficients after conversion to the binomial x-basis.
+
+The raw operator coefficients p_k(d,lambda) of P_lambda,d(z) are also not binomial-positive.
+
+Reports:
+
+results/engine/D_recurrence_audit.txt
+results/engine/operator_expansion_audit.txt
+
+## Current proof approach
+
+The active route is no longer raw coefficient positivity. It is the connected layer:
+
+Sheffer reversed polynomial
+-> log derivative
+-> positive cluster/path expansion for -log C_d(-y)
+-> D-positivity
 
 ## Status
 
-This is the main proof target. The theorem is not yet proved globally. The verified data and the reduction make D-positivity the current primitive seed of the Tantrium program.
+This is the main proof target. The theorem is not yet proved globally. The verified data and reductions make D-positivity the primitive seed of the Tantrium program.
