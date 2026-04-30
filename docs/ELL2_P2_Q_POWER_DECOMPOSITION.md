@@ -1,81 +1,152 @@
-# ell=2 P2 q-power decomposition
+# ell=2 P2 q-power and mixed-depth decomposition
 
-This note records the first concrete ell=2 decomposition after reducing the log-cumulant kernel to
+This note records the concrete ell=2 checkpoint after reducing the log-cumulant kernel to P2(x,Y,q_d(Y)).
 
-P2(x,Y,q_d(Y)).
+The coefficient is
 
-The ell=2 coefficient is
-
+```text
 D(2r,2,a) = (r/124416) [binom(x,a)] [Y^(r+5)] P2(x,Y,q_(x+2)(Y)).
+```
 
-## q-power split
+## 1. q-power split
 
-Write
+```text
+P2 = P4*q^4 + P3*q^3 + P2c*q^2 + P1*q + P0
+```
 
-P2 = P4 q^4 + P3 q^3 + P2c q^2 + P1 q + P0.
+Full leading layers:
 
-The signs are alternating at the q-layer level:
+```text
+P4 = 3*Y^3*(7*Y*x + 7*Y + 10)^4
 
-- P4 is positive.
-- P3 is negative.
-- P2c is positive.
-- P1 is negative.
-- P0 is mixed in ordinary and binomial x coordinates.
+P3 = -12*Y^2*(7*Y*x + 7*Y + 10)^2*(49*Y^2*x^2 + 135*Y^2*x + 53*Y^2 + 140*Y*x + 324*Y + 100)
+```
 
-So the naive plan 'q0 is already positive' is not correct. The full ell=2 proof must use a whole-kernel dominance, not only separate q-layer positivity.
+Sign map:
 
-## Explicit high layers
+```text
+P4  positive
+P3  negative
+P2c positive
+P1  negative
+P0  mixed
+```
 
-Let A = 7*Y*(x+1) + 10.
+Important correction: q0 is not automatically positive. ell=2 cannot be closed by independent q-layer positivity.
+
+## 2. S-fraction mixed-depth rewrite
+
+Use
+
+```text
+q_d - d = (Y/2) q_d q_(d-1),   d=x+2.
+```
+
+Set
+
+```text
+M = q_d q_(d-1).
+```
 
 Then
 
-P4 = 3*Y^3*A^4.
+```text
+q_d = d + (Y/2) M.
+```
 
-P3 = -12*Y^2*A^2*(49*Y^2*x^2 + 135*Y^2*x + 53*Y^2 + 140*Y*x + 324*Y + 100).
+After substitution:
 
-The q^2 layer is positive in monomial x,Y coordinates and begins with
+```text
+P2 = K4*M^4 + K3*M^3 + K2*M^2 + K1*M + K0.
+```
 
-P2c = 2*Y*(9604*Y^5*x^5 + 62426*Y^5*x^4 + 148722*Y^5*x^3 + ... + 236000*Y*x + 627200*Y + 70000).
+The high and decisive layers are
 
-The q layer is negative:
+```text
+K4 = 3*Y^7*(7*Y*x + 7*Y + 10)^4/16
 
-P1 = -2*(19208*Y^5*x^5 + 144207*Y^5*x^4 + 388094*Y^5*x^3 + ... + 136000*Y*x + 466800*Y + 20000).
+K3 = 3*Y^5*(7*Y*x + 7*Y + 10)^2*(49*Y^3*x^3 + 196*Y^3*x^2 + 245*Y^3*x + 98*Y^3 + 91*Y^2*x^2 + 285*Y^2*x + 227*Y^2 - 40*Y*x - 124*Y - 100)/2
+```
 
-The q0 layer has mixed signs before full-kernel recombination:
+The full K0..K4 coefficients were generated in the local checkpoint file:
 
-P0 = 4*(x+2)*(2401*Y^5*x^5 + 16807*Y^5*x^4 + 38276*Y^5*x^3 + 32084*Y^5*x^2 - 1344*Y^5*x + ...).
+```text
+/mnt/data/tantrium_ell2_dominance/ell2_mixed_depth_K_coefficients.txt
+```
 
-## Corrected ell=2 target
+## 3. Delta families
 
-The right target is not independent positivity of P4, P2c, P0. The right target is a full higher split-family dominance statement:
+The natural higher depth-increment families are
 
-positive q^4 and q^2 split-family layers plus the positive part of q0 dominate negative q^3, q^1 and the negative part of q0 after substituting the S-fraction
+```text
+Delta4_n  = [Y^n](q_d^4 - q_d^3*q_(d-1))
+Delta3_n  = [Y^n](q_d^3 - q_d^2*q_(d-1))
+Delta21_n = [Y^n](q_d^2*q_(d-1) - q_d*q_(d-1)^2)
+```
 
-q_d = d/(1 - Y*q_(d-1)/2).
+A naive termwise Delta rewrite is insufficient because it leaves a negative Delta3 coefficient coming from P3. The right target is weighted dominance, as in the ell=1 split-pair proof.
 
-## Delta families
+## 4. Weighted dominance target
 
-The natural depth-increment families are
+After mixed-depth rewrite, the observed structure is:
 
-Delta^(4)_n = [Y^n]*(q_d^4 - q_d^3*q_(d-1)),
-Delta^(3)_n = [Y^n]*(q_d^3 - q_d^2*q_(d-1)),
-Delta^(2,1)_n = [Y^n]*(q_d^2*q_(d-1) - q_d*q_(d-1)^2).
+```text
+M^4 layer: positive capacity
+M^2 layer: positive capacity
+M^3 layer: negative residual appears
+M^1 layer: negative residual appears
+M^0 layer: edge-only / mixed but total clean in verified window
+```
 
-They are the ell=2 analogues of
+Current target lemma:
 
-Delta_n = [Y^n]*(q_d^2 - q_d*q_(d-1))
+```text
+Mixed-Depth Power Dominance Lemma:
+For every r>=2, the binomial-x coordinates of
+[Y^(r+5)](K4*M^4 + K2*M^2 + K3*M^3 + K1*M + K0)
+are nonnegative.
+```
 
-from the ell=1 proof.
+Equivalently, the positive capacity
 
-## Next exact task
+```text
+[Y^(r+5)](K4*M^4 + K2*M^2)
+```
 
-Rewrite the negative q^3 and q^1 layers using the S-fraction identity
+dominates the negative part of
 
-q_d - d = Y*q_d*q_(d-1)/2
+```text
+[Y^(r+5)](K3*M^3 + K1*M + K0).
+```
 
-and collect the whole kernel into Delta^(4), Delta^(3), Delta^(2,1), and lower-depth mixed terms. Only after this rewrite can the weighted injections be applied.
+## 5. Verified window
 
-## Status
+The exact checked window is clean:
 
-ell=2 is not closed yet. This file records the precise q-power decomposition and the corrected dominance target.
+```text
+r = 2..10
+negative binomial coordinates = 0
+```
+
+First rows:
+
+```text
+r=2: [16, 488, 2752, 5784, 5184, 1680]
+r=3: [48, 4596, 53364, 209472, 363126, 288600, 86130]
+r=4: [80, 23452, 532697, 3635098, 10796063, 15761380, 11151630, 3060540]
+```
+
+## 6. Status
+
+Completed:
+
+1. Full P4, P3, P2c, P1, P0 extraction.
+2. q_d - d conversion into mixed-depth M powers.
+3. Delta-family target identified.
+4. Verified-window binomial positivity checked for r=2..10.
+
+Open:
+
+A global weighted-injection proof for the Mixed-Depth Power Dominance Lemma.
+
+This is a checkpoint, not a completed global ell=2 proof.
