@@ -1,0 +1,36 @@
+Operator expansion audit
+
+Goal:
+Test whether P_lambda,d(z)=exp(A) z^d gives coefficient positivity directly at the p_k level.
+
+Operator:
+A = -1/4 D^2 + lambda*(z D^2 - 1/24 D^3).
+
+Let
+P_lambda,d(z)=sum_k p_k(d,lambda) z^(d-k).
+
+Audit:
+Each p_k was expanded in x=d-2 and converted to the binomial basis binom(x,a).
+
+Result:
+The raw p_k coefficients are not binomial-positive.
+
+First obstructions:
+p_2 at lambda^0 has binomial coordinates [-1/2, -1, -1/2].
+p_3 at lambda^1 has negative binomial coordinates.
+p_4 at lambda^2 has negative binomial coordinates.
+
+Also the signed variants (-1)^k p_k and the Newton-transition signed blocks fail positivity.
+
+Conclusion:
+The direct route
+P coefficients -> positive binomial p_k -> Newton identities -> D positivity
+fails in raw form.
+
+Meaning:
+D-positivity is not termwise visible in the polynomial coefficients p_k. It appears only after Newton/logarithmic recombination.
+
+Active route:
+Sheffer reversed polynomial -> log derivative -> positive cluster/path expansion -> D positivity.
+
+This strengthens the conclusion that the log-derivative layer, not the raw coefficient layer, is the correct primitive object.
