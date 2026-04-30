@@ -64,7 +64,7 @@ Naive Cayley tree and raw forest interpretations are not the correct model.
 
 Simple one-product formulas for all D(m,ell,a) were not found.
 
-## Active route
+## Connected log route
 
 Use the connected log layer.
 
@@ -74,9 +74,33 @@ Q_m = (-1)^m s_m = -m [y^m] log C_d(-y).
 
 D-positivity should come from a positive normal form for the connected expansion of -log C_d(-y).
 
+## Solved D layers
+
+ell=0:
+connected matching cluster layer from exp(u - y^2 u^2/4).
+
+ell=1:
+split-pair dominance via S-fraction coefficients q_d, p_n, Q_n, M_n, Delta_n.
+
+Detailed proof note:
+docs/ELL1_SPLIT_PAIR_DOMINANCE_PROOF.md
+
+## Next open layer
+
+ell=2.
+
+Expected cumulant components:
+E4, E1E3, E2^2, E1^2E2, E1^4.
+
+Expected method:
+higher split-family dominance generalizing the ell=1 Delta/M argument.
+
 ## Key files
 
 - docs/D_positivity_theorem.md
+- docs/ELL1_SPLIT_PAIR_DOMINANCE_PROOF.md
+- docs/D_CLUSTER_CANCELLATION_PROGRAM.md
+- docs/NEXT_STEPS_D_POSITIVITY.md
 - docs/theorem_status.md
 - tools/run_positivity_engine_v1.py
 - tools/analyze_newton_moment_vandermonde.py
@@ -92,4 +116,4 @@ D-positivity should come from a positive normal form for the connected expansion
 
 ## Status
 
-The repository contains a strong exact-symbolic research program and multiple verified finite windows. It does not yet contain a completed global proof.
+The repository contains a strong exact-symbolic research program and multiple verified finite windows. It contains structural D-positivity proofs for ell=0 and ell=1. It does not yet contain a completed global D-positivity theorem or a completed global RH proof.
