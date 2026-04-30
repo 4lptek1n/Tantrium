@@ -1,0 +1,29 @@
+D cluster interpretation audit
+
+Question:
+Can -log C_d(-y) be interpreted directly as a positive tree/forest EGF?
+
+Result:
+Not in the naive Cayley-tree sense.
+
+Reason 1:
+u/(1+lambda*y*u) is a geometric series after the w=-y substitution:
+
+u/(1+lambda*y*u) = sum_{r>=0} (-lambda*y)^r u^(r+1).
+
+This is not the Cayley rooted-tree EGF. Cayley rooted trees satisfy T = u*exp(T), with EGF T(u)=sum_{n>=1} n^(n-1) u^n/n!.
+
+Reason 2:
+The Sheffer exponent for C_d(-y) contains alternating signs when expanded in lambda*y*u. Therefore exp(...) is a signed weighted assembly in the raw variables, not a manifestly positive forest model.
+
+Reason 3:
+The log step does select connected structures, but connected does not automatically mean positive. A sign-reversing cancellation or a renormalized positive species is still needed.
+
+Corrected target:
+Find a positive cluster/path model for -log C_d(-y) after the right change of variables or normalization. The likely object is not ordinary Cayley trees but signed/weighted chains or clusters whose cancellations produce the observed positive D-coordinates.
+
+Current exact source:
+C_d(w)=w^d P_lambda,d(1/w)
+Q_m = (-1)^m s_m = -m [y^m] log C_d(-y)
+
+D-positivity remains supported by exact data, but the naive forest interpretation is not yet a proof.
