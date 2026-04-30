@@ -1,0 +1,28 @@
+D recurrence audit
+
+Goal: prove positivity of D(m,L,a) where Q_m,L(x) = sum_a D(m,L,a) binom(x,a), x=d-2.
+
+Sheffer generating function:
+S(u)=u/(1-lambda*u)
+R(u)=-u^2/(4*(1-lambda*u))-u^2/48*((1-lambda*u)^(-2)-1)
+
+sum_d P_lambda,d(z) u^d/d! = exp(z*S(u)+R(u)).
+
+Newton recurrence:
+For P=z^d+c1 z^(d-1)+c2 z^(d-2)+..., Newton identities give
+s_m+c1*s_(m-1)+...+c_(m-1)*s_1+m*c_m=0.
+
+For Q_m=(-1)^m s_m:
+Q_m,L = sum_{h=1}^{m-1} sum_{nu=0}^L (-1)^(h+1)c_h,nu Q_(m-h),(L-nu) + (-1)^(m+1)m c_m,L.
+
+Audit result:
+The raw Newton recurrence is exact, but its transition coefficients are not all nonnegative after converting c_h,nu to the binomial basis in x=d-2. Example: c_2,0 already has negative binomial coordinates.
+
+Conclusion:
+The naive positive-transition induction is not enough. D-positivity still holds in the checked window, but the proof must use a renormalized recurrence or the Sheffer/log-derivative coefficient extraction directly.
+
+Next route:
+1. Use the Sheffer generating function.
+2. Extract P'_d/P_d at infinity.
+3. Express Q_m,L as a coefficient extraction from S(u),R(u).
+4. Prove the resulting binomial coefficients D(m,L,a) are nonnegative.
