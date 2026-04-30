@@ -45,39 +45,117 @@ The edge row is
 S4 + S2 + S1 + S0 >= D3 + D1 + D0,  r=2.
 ```
 
-## Sign-region target
+## Sign-region split
 
-The next branchwise proof should use the observed stable sign regions:
-
-```text
-M1 positive: a=0,1,2
-M1 negative: a>=3
-```
-
-and
+For `r>=3`, the checked data has three active sign regions:
 
 ```text
-M3 negative region starts at:
-r=2: a=0
-r=3: a=0
-r=4,5: a=1
-r>=6: a=2
+Region A: M1 positive, M3 positive
+Region B: M1 positive, M3 negative
+Region C: M1 negative, M3 negative
 ```
 
-In these regions, the direct symbolic proof should show the binomial-coordinate inequality
+There is no checked region with `M1 negative, M3 positive`.
+
+Finite-window region stats:
 
 ```text
-S4(r,a)+S2(r,a)-D3(r,a)-D1(r,a) >= 0.
+Region A = (M1 pos, M3 pos): count=12, min joint surplus=1294045/41472 at (r,a)=(10,0)
+Region B = (M1 pos, M3 neg): count=12, min joint surplus=6317/216 at (r,a)=(3,0)
+Region C = (M1 neg, M3 neg): count=84, min joint surplus=0 at boundary (r,a)=(3,7)
 ```
+
+In Region C, the joint surplus equals the full ell=2 coefficient in every checked coordinate:
+
+```text
+Region C: joint_surplus = total_D.
+```
+
+In Regions A and B, `D1=0`, so the inequality is easier:
+
+```text
+S4 + S2 >= D3.
+```
+
+This isolates the true active proof core:
+
+```text
+Region C: a>=3 and M3 negative.
+Need S4 + S2 >= D3 + D1.
+```
+
+## Region proof strategy
+
+### Region A: M1 >= 0, M3 >= 0
+
+Here `D1=D3=0`, so the pooled inequality is immediate.
+
+### Region B: M1 >= 0, M3 < 0
+
+Here `D1=0`, so one only needs
+
+```text
+S4 + S2 >= D3.
+```
+
+The finite window shows strict positive surplus. This region should be handled by a one-deficit wrapping/root-top injection from the joint pool into the `M3` deficit.
+
+### Region C: M1 < 0, M3 < 0
+
+This is the real ell=2 core:
+
+```text
+S4 + S2 >= D3 + D1.
+```
+
+Because the joint surplus equals `D(2r,2,a)` in this region, proving Region C is equivalent to proving the active ell=2 positivity statement.
+
+Expected proof type:
+
+```text
+cross-coupled injection:
+  S2 mainly pays D3,
+  S4 mainly pays D1,
+  remaining S2/S4 surplus handles boundary leakage.
+```
+
+This matches the stable assignment analysis.
+
+## Edge row r=2
+
+For `r=2`, the main pool is insufficient:
+
+```text
+min(S4+S2-D3-D1) = -465080/9.
+```
+
+The repaired inequality is clean in the checked row:
+
+```text
+S4 + S2 + S1 + S0 >= D3 + D1 + D0.
+```
+
+This row should be treated as a finite base layer for the ell=2 induction/certificate, not as part of the generic `r>=3` mechanism.
 
 ## Current obstacle
 
-This still uses sign splitting through positive and negative parts. A global proof needs one of:
+The sign-region split is now sharp, but a global proof still needs one of:
 
 1. explicit sign-region inequalities for `M1` and `M3`, followed by a branchwise binomial-positive proof;
 2. a branch-free polynomial identity replacing the pooled positive/negative parts by a positive Delta-family sum;
-3. a direct injection model for the pooled inequality.
+3. a direct injection model for the Region C pooled inequality.
 
 ## Status
 
-This is a finite-window direct attack checkpoint, not a global ell=2 proof.
+This is a strengthened finite-window direct-attack checkpoint.
+
+It does **not** close ell=2 globally.
+
+It proves that the only nontrivial generic target is Region C:
+
+```text
+M1<0, M3<0, r>=3:
+S4+S2-D3-D1 >= 0.
+```
+
+All other checked regions are either immediate or one-deficit edge cases.
