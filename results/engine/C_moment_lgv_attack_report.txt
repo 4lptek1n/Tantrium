@@ -1,0 +1,59 @@
+C moment LGV attack report
+
+Input:
+- results/engine/v1_C_full_table.csv
+- local Newton-sum engine from tools/run_positivity_engine_v1.py
+
+1. C_total(k)
+
+C_total(k) means sum over all visible r,s of C(k,r,s) in the V1 table.
+
+k=0: 1
+k=1: 109/4
+k=2: 257359/96
+k=3: 1503370459/2304
+k=4: 1026507395851/6144
+k=5: 215692386957377/6912
+k=6: 166512439022025803/36864
+k=7: 11728126751917687444103/21233664
+k=8: 30609814597431936055017299/509607936
+
+Conclusion: C_total(k) is not a small Catalan/factorial/binomial sequence in this raw normalization. The raw totals are weighted rational counts.
+
+2. Denominator pattern
+
+Only primes 2 and 3 occur in denominators. LCM denominators by k:
+
+k=0: 1
+k=1: 8
+k=2: 192
+k=3: 4608
+k=4: 36864
+k=5: 221184
+k=6: 1769472
+k=7: 42467328
+k=8: 1019215872
+
+Interpretation: the C numbers are not raw path counts. They are normalized weighted path counts. The weights are consistent with the heat/Laguerre/tau normalization.
+
+3. Product formula test
+
+The separated form C(k,r,s)=A(k,s)*binom(k,r) fails. The C matrices have high rank in the active window, so the right object is not a single product but a determinant/path-family sum.
+
+4. Newton-sum moment test
+
+Tested signed Newton coefficients Q_m = (-1)^m s_m. For m <= 12 and lambda degrees ell <= 4, the coefficients of Q_m in the double-binomial basis binom(n,r) binom(j-1,s) were nonnegative in every tested case.
+
+This is the strongest new signal. It says the positivity starts before the Hankel determinant, at the Newton moment level.
+
+5. Current route
+
+The proof should be built in this order:
+
+Newton sums -> double-binomial positive moment blocks -> Hankel moment matrix -> LGV/nonintersecting path determinant -> C(k,r,s) weighted path counts.
+
+6. Status
+
+The naive direct LGV matrix did not match. The correct LGV network must be built from the Newton-sum moment blocks before determinant expansion.
+
+This is not yet a completed global proof. It is a narrowed proof target with positive moment evidence.
