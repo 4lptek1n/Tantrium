@@ -1,0 +1,76 @@
+C formula search report
+
+Input files:
+- results/engine/v1_C_full_table.csv
+- results/engine/C_coefficient_catalog.md
+
+1. Support map
+
+Checked rows: 45.
+Nonzero C entries in V1: 244.
+
+Observed first active s-layer:
+- k=0: s_min=0
+- k=1: s_min=0
+- k=2,3: s_min=1
+- k=4,5,6: s_min=2
+- k=7,8: s_min=3
+
+Rule matched:
+s_min(k) = min(m : m(m+1)/2 >= k) - 1.
+
+Observed r support:
+For almost every active s-layer, r fills 0..k. The only V1 high-tail exceptions are low k:
+- k=1, s=3: r=0 only.
+- k=2, s=5: r=0..1.
+- k=2, s=6: r=0 only.
+For k=3..8, every active layer visible in V1 has r=0..k.
+
+2. Closed-form tests
+
+Simple separated form failed.
+Tested whether C(k,r,s) behaves like A(k,s)*binom(k,r). It does not: C(k,r,s)/binom(k,r) is not constant in r.
+
+Rank test for each fixed k matrix M_k = [C(k,r,s)] over active r,s:
+- k=0: shape 1x1, rank 1
+- k=1: shape 2x4, rank 2
+- k=2: shape 3x6, rank 3
+- k=3: shape 4x7, rank 4
+- k=4: shape 5x6, rank 5
+- k=5: shape 6x6, rank 6
+- k=6: shape 7x6, rank 6
+- k=7: shape 8x5, rank 5
+- k=8: shape 9x5, rank 5
+
+This rules out a rank-one product formula in r and s. The data is more consistent with a determinant or path-family sum.
+
+Denominator pattern:
+All denominators use only primes 2 and 3. LCM denominators by k:
+- k=0: 1
+- k=1: 8
+- k=2: 192
+- k=3: 4608
+- k=4: 36864
+- k=5: 221184
+- k=6: 1769472
+- k=7: 42467328
+- k=8: 1019215872
+
+This suggests rational weighted counts, not raw integer counts. The weights likely come from the heat/Laguerre normalization in the tau engine.
+
+3. LGV route test
+
+A naive path matrix with entries separable as binom(n,a)*binom(j-1,b) would force much lower rank or a simple product law in r and s. The observed C matrices have full rank relative to the visible active dimensions, so the naive one-path separable model does not match.
+
+However, full rank is exactly what one expects from an LGV or Plucker expansion over many nonintersecting path families. Thus the LGV route is still the strongest route, but the correct network must be built from the Newton-sum moment blocks before taking the Hankel determinant.
+
+4. Current proof target
+
+Find a positive weighted network or moment model such that:
+- Newton sums expand into positive double-binomial moment blocks.
+- Hankel tau is the path-family determinant of that moment matrix.
+- The resulting path-family weights are exactly C(k,r,s).
+
+If that network is found, C(k,r,s) >= 0 follows structurally and the double-binomial positivity theorem follows.
+
+Status: strong structural evidence and narrowed proof target. No completed global proof yet.
