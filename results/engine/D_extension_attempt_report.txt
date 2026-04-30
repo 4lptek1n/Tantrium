@@ -1,0 +1,46 @@
+D extension attempt report
+
+Goal:
+Extend the closed positive edge formula for D(2r,ell,0) to all a.
+
+Known edge:
+D(2r,0,0)=2^(1-r).
+For ell>=1:
+D(2r,ell,0)=2^(1-r) * 2^(2ell)/(ell!*(2ell-1)!!) * r^2 * product_{i=1}^{ell-1}(r^2-i^2).
+
+Tests performed:
+1. shift r -> r-a in the edge formula;
+2. multiply the edge by binom(r,a) or binom(r+ell,a);
+3. finite differences in r of the edge formula;
+4. separated product D=A(r,ell)*B(a);
+5. single binomial product D=A(r,ell)*binom(N(r,ell),a).
+
+Result:
+All simple one-term extensions fail for interior coordinates a>=1.
+The interior D layer is not a shifted edge, not a finite difference of the edge, and not a single binomial product.
+
+New structural clue:
+The ell=0 layer has an exact matching-polynomial source.
+At lambda=0,
+
+sum_d C_d(-y) u^d/d! = exp(u - y^2 u^2/4).
+
+Thus
+C_d(-y) = d! [u^d] exp(u - y^2 u^2/4)
+         = sum_k (-1)^k d!/(k!(d-2k)! 4^k) y^(2k).
+
+This is the signed matching polynomial of the complete graph K_d, up to the fixed 1/4 normalization.
+Therefore
+Q_(2r),0(x) = -2r [y^(2r)] log C_(x+2)(-y)
+
+is a connected matching cluster coefficient.
+
+Interpretation:
+For ell=0, D-positivity should follow from the connected cluster expansion of the complete-graph matching polynomial after conversion to x=d-2 binomial coordinates.
+
+Current status:
+The a=0 edge is solved by a positive product formula.
+The full interior a>=1 formula is not a one-term extension of the edge.
+The best next target is a positive finite-sum formula from connected matching clusters for ell=0, then a lambda-deformed matching/hypergraph cluster model for ell>0.
+
+No completed global D-positivity proof is claimed yet.
