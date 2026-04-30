@@ -97,6 +97,71 @@ elapsed ~= 0.84 seconds
 
 This is strong finite evidence and a frontier map, not a theorem.
 
+## v1 positivity checkpoint
+
+```text
+K = 8
+J = 8
+N = 8
+atlas rows = 522
+cumulant rows = 288
+non-positive atlas rows = 0
+```
+
+The V1 atlas supports the double-binomial coordinate system
+
+```text
+a_k(j,n) = sum_{r,s} C(k,r,s) binom(n,r) binom(j-1,s).
+```
+
+In the V1 window, all checked C-coordinates are nonnegative in the binomial basis.
+
+## Newton moment reduction
+
+The current deepest reduction is at the Newton-sum level.
+
+Let
+
+```text
+x = d - 2 = n + (j - 1).
+```
+
+Let `Q_m_ell(x)` be the coefficient of `lambda^(2 ell)` in `(-1)^m s_m`. The observed form is
+
+```text
+Q_m_ell(x) = sum_a D(m,ell,a) binom(x,a).
+```
+
+Vandermonde gives
+
+```text
+binom(n + q,a) = sum_{p+s=a} binom(n,p) binom(q,s), q = j - 1,
+```
+
+therefore
+
+```text
+A(m,ell,p,s) = D(m,ell,p+s).
+```
+
+Checked window:
+
+```text
+m <= 12
+ell <= 4
+D rows = 185
+A rows determined by D = 860
+negative D rows = 0
+```
+
+So the immediate proof target is no longer raw C. It is
+
+```text
+D(m,ell,a) >= 0
+```
+
+for all admissible indices. If this is proved, double-binomial positivity of Newton moments follows by Vandermonde convolution.
+
 ## Known edge laws
 
 ```math
@@ -133,27 +198,26 @@ a4 = L8 + L2*L6 + L4^2/2 + L2^2*L4/2 + L2^4/24
 
 The proof search must explain why the recombined coefficients are positive, even when some cumulant pieces are signed.
 
-## Current proof gap
-
-The missing global mechanism is one of:
+## Current proof chain target
 
 ```text
-coefficient induction: a_k positive => a_{k+1} positive
-band induction: positivity at j => positivity at j+1
-cumulant domination: L2/L4/L6/L8 blocks dominate signed remainders
-moment/path model: coefficients are positive weighted sums
+D-positivity
+-> A-positivity by Vandermonde
+-> Newton moment double-binomial positivity
+-> Hankel/LGV weighted path positivity
+-> C(k,r,s) positivity
+-> coefficient positivity
 ```
 
-Without one of these, there is no global theorem.
+Without a proof of this chain, there is no global theorem.
 
 ## v1 tasks
 
-1. Generate K=8, J=8, N=8 if possible; otherwise use K=6, J=7, N=7 as fallback.
-2. Build L2, L4, L6, L8 cumulant atlas.
-3. Run failure hunter to find the first negative coefficient, if one exists.
-4. Save v1_atlas.csv, v1_cumulants.csv, and v1_failure_report.md.
-5. Convert clean output into an induction-template search, not a proof claim.
+1. Keep `tools/run_positivity_engine_v1.py` as the exact atlas engine.
+2. Keep `tools/analyze_newton_moment_vandermonde.py` as the Newton-moment reduction analyzer.
+3. Prove or structurally explain D(m,ell,a) >= 0.
+4. Build the Hankel/LGV bridge from Newton moment blocks to coefficient positivity.
 
 ## Not claimed
 
-The repository does not claim a proof of RH or a complete global positivity theorem. The current work is an exact-symbolic research program focused on cross-ratio structure, coefficient-positivity evidence, cumulant structure, and possible positivity certificates.
+The repository does not claim a proof of RH or a complete global positivity theorem. The current work is an exact-symbolic research program focused on cross-ratio structure, coefficient-positivity evidence, cumulant structure, double-binomial positivity, and possible positivity certificates.
