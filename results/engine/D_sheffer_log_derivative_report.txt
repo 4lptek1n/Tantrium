@@ -1,0 +1,56 @@
+D Sheffer log-derivative report
+
+Goal: prove D(m,L,a) >= 0 for
+Q_m,L(x) = coeff lambda^L in (-1)^m s_m,
+Q_m,L(x) = sum_a D(m,L,a) binom(x,a), x=d-2.
+
+1. Reversed polynomial
+
+Let
+C_d(w) = w^d P_{lambda,d}(1/w).
+
+Then P'/P at infinity gives
+s_m = -m [w^m] log C_d(w).
+
+Therefore
+Q_m = (-1)^m s_m = -m [y^m] log C_d(-y).
+
+2. Sheffer coefficient extraction
+
+The Sheffer EGF is
+sum_d P_{lambda,d}(z) u^d/d! = exp(z*S(u)+R(u)),
+with
+S(u)=u/(1-lambda*u),
+R(u)=-u^2/(4*(1-lambda*u))-u^2/48*((1-lambda*u)^(-2)-1).
+
+Substitute z=1/w and u -> w*u:
+
+sum_d C_d(w) u^d/d! = exp(S(w*u)/w + R(w*u)).
+
+For w=-y this becomes
+
+C_d(-y) = d! [u^d] exp(
+  u/(1+lambda*y*u)
+  - y^2*u^2/(4*(1+lambda*y*u))
+  - y^2*u^2/48*((1+lambda*y*u)^(-2)-1)
+).
+
+Thus the exact Sheffer/log formula is
+
+Q_m,L(x) = coeff lambda^L in -m [y^m] log C_(x+2)(-y).
+
+3. What this proves now
+
+This gives a direct source formula for every D(m,L,a). It bypasses the raw Newton recurrence.
+
+4. What remains
+
+The formula is exact but not yet a complete positivity proof. The exponent contains mixed signs after expansion in lambda*y*u, so positivity is not termwise obvious.
+
+The next proof target is a positive cluster/path interpretation of
+-log C_d(-y), or a renormalized coefficient extraction that makes the D-coordinates manifestly nonnegative.
+
+5. Current status
+
+D-positivity is reduced to the Sheffer/log-derivative formula above. The raw Newton-transition induction failed, so the active route is now:
+Sheffer reversed polynomial -> log derivative -> positive cluster/path expansion -> D positivity.
