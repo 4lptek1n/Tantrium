@@ -1,0 +1,25 @@
+Newton moment Vandermonde checkpoint
+
+x = d - 2 = n + (j - 1)
+Q_m_ell(x) = coeff lambda^(2 ell) in (-1)^m s_m
+
+Q_m_ell(x) = sum_a D(m,ell,a) binom(x,a)
+
+Vandermonde:
+binom(n + q,a) = sum_{p+s=a} binom(n,p) binom(q,s), q = j - 1
+
+Therefore:
+A(m,ell,p,s) = D(m,ell,p+s)
+
+Checked window:
+m <= 12
+ell <= 4
+D rows: 185
+A rows determined by D: 860
+negative D rows: 0
+
+Main result:
+Newton moment double-binomial positivity is explained by one-variable binomial positivity in x=d-2 plus Vandermonde convolution.
+
+New proof target:
+prove D(m,ell,a) >= 0 for all admissible m,ell,a.
