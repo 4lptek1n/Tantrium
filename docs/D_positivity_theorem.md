@@ -88,14 +88,65 @@ Reports:
 results/engine/D_recurrence_audit.txt
 results/engine/operator_expansion_audit.txt
 
+## Solved base layers
+
+### ell=0
+
+The ell=0 layer is the connected matching-cluster layer from
+
+exp(u - y^2 u^2/4).
+
+This gives structural positivity for D(2r,0,a).
+
+### ell=1
+
+The ell=1 layer is reduced to the S-fraction ratio
+
+q_d(Y)=F'_d/F_d=d F_(d-1)/F_d,
+
+with recurrence
+
+q_d(Y)=d/(1 - Y q_(d-1)(Y)/2).
+
+Define
+
+p_n(d)=[Y^n]q_d(Y),
+Q_n(d)=[Y^n]q_d(Y)^2,
+M_n(d)=[Y^n]q_d(Y)q_(d-1)(Y),
+Delta_n(d)=Q_n(d)-M_n(d).
+
+The ell=1 kernel is
+
+H_r = 100 Delta_(r+1) + 140(x+1) Delta_r + 49(x+1)^2 Delta_(r-1) - 184 M_r - (37x+4) M_(r-1).
+
+Two weighted injections give
+
+Delta_(n+1) >= M_n/2
+
+and
+
+(x+1) Delta_n >= M_n.
+
+Therefore
+
+H_r >= 6 M_r + (12x+45) M_(r-1),
+
+which proves D(2r,1,a)>=0 in the binomial x-basis, subject to the formal path-class interpretation of these injections.
+
+The detailed note is stored at:
+
+docs/ELL1_SPLIT_PAIR_DOMINANCE_PROOF.md
+
 ## Current proof approach
 
-The active route is no longer raw coefficient positivity. It is the connected layer:
+The active route is the connected log layer:
 
 Sheffer reversed polynomial
 -> log derivative
 -> positive cluster/path expansion for -log C_d(-y)
--> D-positivity
+-> D-positivity.
+
+The solved layers are ell=0 and ell=1. The next open layer is ell=2.
 
 ## Status
 
