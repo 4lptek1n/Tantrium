@@ -4,8 +4,8 @@
 
 # Tantrium RH Symbolic Closure Summary
 
-**Run Date:** 2026-05-01T17:23:16Z  
-**Commit:** `d4a4dd0`  
+**Run Date:** 2026-05-01T17:30:53Z  
+**Commit:** `5a0b620`  
 **Single command:** `python tools/tantrium_rh_machine.py --strict`
 
 ## Closure Chain

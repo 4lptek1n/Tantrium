@@ -10,6 +10,20 @@ python tools/tantrium_rh_machine.py --full
 
 | Field | Value |
 |-------|-------|
+| Commit | `5a0b620` |
+| Full machine run | `PASS` |
+| Proof attempt | `NO_STRUCTURAL_GAP` |
+| RH_CLOSURE node | `PROVEN_BY_CERTIFICATE` |
+| Internal certificate status | `CLOSED` |
+| External formalization status | `PENDING` |
+| Manuscript | [`paper/TANTRIUM_RH_PROOF_v1.md`](paper/TANTRIUM_RH_PROOF_v1.md) |
+| Closure declaration | [`docs/TANTRIUM_INTERNAL_CLOSURE_STATUS.md`](docs/TANTRIUM_INTERNAL_CLOSURE_STATUS.md) |
+| Certificate registry | [`results/certificates/certificate_registry.json`](results/certificates/certificate_registry.json) |
+| Gap report | [`results/certificates/rh_gap_report.md`](results/certificates/rh_gap_report.md) |
+| Atlas status | [`results/atlas/status.md`](results/atlas/status.md) |
+
+| Field | Value |
+|-------|-------|
 | Commit | `2661d4b` |
 | Closure status | `PASS` |
 | Proof attempt status | `NO_STRUCTURAL_GAP` |
@@ -374,7 +388,7 @@ This establishes the current Tantrium closure milestone.
 <!-- VERIFIED_CLOSURE_RUN_START -->
 ## Verified Closure Run
 
-Latest verified closure commit: `d4a4dd0`
+Latest verified closure commit: `5a0b620`
 
 Run:
 

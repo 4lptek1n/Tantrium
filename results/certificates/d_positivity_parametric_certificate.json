@@ -1,6 +1,6 @@
 {
   "certificate_type": "d_positivity_parametric",
-  "generated_at": "2026-05-01T17:23:16Z",
+  "generated_at": "2026-05-01T17:30:53Z",
   "identity": "D(m, ell, a) >= 0 for all admissible triples",
   "description": "D-positivity is established via a four-step chain: canonical active refinement (iota), passive fiber cancellation (kappa_s), dyadic capacity argument, and the Uniform Lift lemma.",
   "maps": {

@@ -132,7 +132,16 @@ def main() -> str:
 
     print("RH GAP FINDER")
     if result == "NO_STRUCTURAL_GAP":
+        # Check if all nodes are PROVEN_BY_CERTIFICATE
+        all_proven = all(
+            data["status"] == "PROVEN_BY_CERTIFICATE"
+            for data in dag["nodes"].values()
+        )
         print("PASS  NO STRUCTURAL GAP FOUND IN TANTRIUM PROOF STACK")
+        if all_proven:
+            print("      RH_CLOSURE STATUS: PROVEN_BY_CERTIFICATE")
+            print("      INTERNAL TANTRIUM CLOSURE: CLOSED")
+        print("      external_formalization: PENDING")
     else:
         print(f"GAP   FIRST GAP: {gaps[0][0]} ({gaps[0][1]})")
         for g in gaps:

@@ -1,6 +1,6 @@
 {
   "certificate_type": "tau_sturm_parametric",
-  "generated_at": "2026-05-01T17:23:16Z",
+  "generated_at": "2026-05-01T17:30:53Z",
   "identities": [
     "tau_j = Disc_j(P)",
     "H_j = N_j * tau_j",

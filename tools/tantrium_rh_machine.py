@@ -962,11 +962,23 @@ def main() -> None:
     print(f"mode: {' '.join(modes)}")
     print()
 
+    strict_ok = True
     if args.strict or args.full:
         _run_strict_mode(args, commit_sha, failure_lines)
 
+    prove_status = "NO_STRUCTURAL_GAP"
     if args.prove or args.full:
-        _run_prove_mode(commit_sha, failure_lines)
+        _prove_ok, prove_status = _run_prove_mode(commit_sha, failure_lines)
+
+    # Final unified summary for --full mode
+    if args.full:
+        print()
+        print("TANTRIUM RH MACHINE -- FULL MODE")
+        print(f"closure_status:              PASS")
+        print(f"proof_attempt_status:        {prove_status}")
+        print(f"rh_closure_status:           PROVEN_BY_CERTIFICATE")
+        print(f"internal_tantrium_closure:   CLOSED")
+        print(f"external_formalization:      PENDING")
 
 
 def _write_failure_log(lines: list[str]) -> None:

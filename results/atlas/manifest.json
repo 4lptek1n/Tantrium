@@ -1,10 +1,10 @@
 {
-  "latest_rh_closure_run": "2026-05-01T17:23:16Z",
+  "latest_rh_closure_run": "2026-05-01T17:30:53Z",
   "latest_rh_closure_certificate": "results/certificates/rh_symbolic_closure_certificate.json",
   "latest_parametric_certificate": "results/certificates/parametric_closure_certificate.json",
   "closure_status": "PASS",
-  "commit_sha": "d4a4dd0a4c3f2cb004f2679b813ec6748ff8d0b6",
-  "latest_rh_proof_attempt": "2026-05-01T17:23:16Z",
+  "commit_sha": "5a0b620170977603a631405290beb36934621265",
+  "latest_rh_proof_attempt": "2026-05-01T17:30:53Z",
   "latest_gap_report": "results/certificates/rh_gap_report.md",
   "proof_attempt_status": "NO_STRUCTURAL_GAP",
   "latest_certificate_registry": "results/certificates/certificate_registry.json"
