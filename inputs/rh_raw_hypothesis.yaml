@@ -1,0 +1,36 @@
+name: rh_raw_hypothesis
+version: 1
+kind: raw_global_target
+
+objective:
+  statement: "All nontrivial zeros of zeta(s) lie on Re(s)=1/2."
+  real_form: "Xi(z)=xi(1/2+i z) has only real zeros."
+  proof_route: "Polya-Jensen -> Jensen hyperbolicity -> Sturm pivots -> Hankel/tau -> AG/LGV -> D-positivity"
+
+function:
+  xi: "xi(s)=1/2*s*(s-1)*pi^(-s/2)*Gamma(s/2)*zeta(s)"
+  Xi: "Xi(z)=xi(1/2+i z)"
+
+jensen_target:
+  coefficients: "Xi(z)=sum gamma_n z^n/n!"
+  polynomial: "J_Xi^{d,n}(X)=sum_{k=0}^d binom(d,k) gamma_{n+k} X^k"
+  required: "J_Xi^{d,n} hyperbolic for all d>=1,n>=0"
+
+reduction_targets:
+  - theorem: "Polya-Jensen"
+    target: "Xi in Laguerre-Polya"
+  - theorem: "Sturm-Jensen"
+    target: "positive normalized Sturm pivots"
+  - theorem: "Tau-Sturm"
+    target: "tau_j=Disc_j(P), H_j=N_j tau_j"
+  - theorem: "AG/LGV"
+    target: "M_{a,b}=s_{a+b}, tau=sum nonintersecting path weights"
+  - theorem: "D-positivity"
+    target: "D(m,ell,a)>=0 for all admissible triples"
+
+probe:
+  small_degree_jensen: true
+  max_degree_default: 8
+  max_shift_default: 8
+  precision_default: 80
+  output: "results/rh_raw_hypothesis_probe.md"
