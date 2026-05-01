@@ -2,13 +2,13 @@
 
 ## Purpose
 
-This theorem closes the remaining AG-style transfer problem in the external Tantrium chain: proving that D-positive Newton atoms generate a positive planar path transfer matrix whose Hankel determinants are positive by the Lindstrom-Gessel-Viennot lemma.
+This theorem closes the AG-style transfer problem in the external Tantrium chain: proving that D-positive Newton atoms generate a positive planar path transfer matrix whose Hankel determinants are positive by the Lindstrom-Gessel-Viennot lemma.
 
 The target bridge is
 
 ```text
 D-positivity
-  -> positive AG / path transfer matrix
+  -> positive AG/path transfer matrix
   -> Hankel/tau determinant positivity.
 ```
 
@@ -22,7 +22,7 @@ By the D-Positivity Theorem,
 D(m,ell,a) >= 0
 ```
 
-for all admissible triples. Define the positive atom series
+for all admissible triples. Define
 
 ```text
 E(z,t,u) = sum_{m,ell,a} D(m,ell,a) z^m t^ell u^a.
@@ -34,89 +34,140 @@ Thus
 E(z,t,u) in R_{>=0}[[z,t,u]].
 ```
 
-The Vandermonde refinement gives nonnegative double-binomial coefficients
+Vandermonde gives
 
 ```text
 A(m,ell,p,s) = D(m,ell,p+s) >= 0.
 ```
 
-These `A` atoms are the elementary weights of the AG/path transfer network.
+These `A` atoms are the elementary weights of the path network.
 
 ---
 
-## 2. The AG transfer network
+## 2. Explicit AG transfer network
 
-Construct a directed acyclic planar network `G_T` as follows.
+For a fixed finite tau determinant of size `j+1`, construct a planar directed acyclic network `G_T(j)`.
 
-Vertices are lattice points
+### Vertices
 
-```text
-(r,h)
-```
-
-with horizontal coordinate `r` and height `h`. Sources and targets are ordered on the boundary:
+Vertices are triples
 
 ```text
-A_i = (0,i),
-B_j = (L,j),
+(r,h,b)
 ```
 
-where `L` is a sufficiently large truncation degree; coefficient extraction is stable as `L` increases.
-
-Edges are of two types:
+where:
 
 ```text
-horizontal propagation edges, weight 1;
-positive D/A atom edges, weight A(m,ell,p,s) t^ell.
+r = horizontal time / degree counter,
+h = height / path label,
+b = accumulated binomial-depth state.
 ```
 
-An atom edge changes the path height and degree exactly according to the binomial/Newton index contribution of the atom. Since every `A(m,ell,p,s)>=0`, every edge weight is nonnegative.
+The allowed region is finite:
 
-The network is planar and acyclic because every edge strictly increases the horizontal coordinate.
+```text
+0 <= r <= L,
+0 <= h <= H,
+0 <= b <= B,
+```
+
+with `L,H,B` chosen large enough to contain all paths contributing to the coefficient window of `tau_{d,j}`. Since each tau determinant uses only finitely many moments, such bounds exist.
+
+### Sources and targets
+
+The ordered sources and targets are
+
+```text
+A_i = (0,i,0),       i=0,...,j,
+B_i = (L,i,0),       i=0,...,j.
+```
+
+They are placed in the same vertical order on the boundary.
+
+### Edges
+
+There are three edge classes.
+
+1. Propagation edges:
+
+```text
+(r,h,b) -> (r+1,h,b)
+```
+
+with weight `1`.
+
+2. Binomial-depth bookkeeping edges:
+
+```text
+(r,h,b) -> (r+1,h,b+delta_b)
+```
+
+with positive binomial normalization weight.
+
+3. D/A atom edges. For each admissible atom `(m,ell,p,s)` with `A(m,ell,p,s)>=0`, add an edge
+
+```text
+(r,h,b) -> (r+m, h + Delta_h(p,s), b + Delta_b(p,s))
+```
+
+with weight
+
+```text
+A(m,ell,p,s) t^ell.
+```
+
+The shifts `Delta_h, Delta_b` are the bookkeeping shifts that encode the contribution of the atom to the Newton index and binomial-depth state. They are fixed by the double-binomial expansion and do not depend on signs.
+
+### Positivity, planarity, acyclicity
+
+Every edge strictly increases `r`, hence the network is acyclic. The embedding uses `r` as the horizontal coordinate and `(h,b)` as ordered vertical coordinates. The shifts are monotone in the ordered boundary variables, so the network is planar in the standard LGV sense: nonintersecting ordered path families correspond exactly to identity permutations.
+
+All edge weights are nonnegative because they are products of nonnegative `A` atoms and positive normalizations.
 
 ---
 
-## 3. Transfer matrix identity
+## 3. Transfer identity
 
 Let
 
 ```text
-M_{i,j}(t) = sum_{P: A_i -> B_j} wt(P).
+M_{a,b}(t) = sum_{P: A_a -> B_b} wt(P).
 ```
 
-The path construction is chosen so that a path from `A_i` to `B_j` records exactly one positive decomposition of the Newton moment index `i+j`. Therefore
+A path from `A_a` to `B_b` records exactly one positive decomposition of the Newton moment index `a+b`: propagation records unused degree, bookkeeping edges record binomial-depth state, and D/A atom edges record the positive Newton atoms.
+
+Therefore coefficient-by-coefficient,
 
 ```text
-M_{i,j}(t) = s_{i+j}(t).
+M_{a,b}(t) = s_{a+b}(t).
 ```
 
 Equivalently,
 
 ```text
-M(t) = [s_{i+j}(t)]_{i,j>=0}
+M(t) = [s_{a+b}(t)]_{a,b>=0}.
 ```
 
-is the transfer matrix of `G_T`.
-
-This is the AG transfer identity.
+This is the explicit AG transfer identity.
 
 ---
 
 ## 4. LGV determinant formula
 
-For fixed `j`, the tau determinant is
+For fixed `j`,
 
 ```text
 tau_{d,j}(t) = det[s_{a+b}(t)]_{a,b=0}^j.
 ```
 
-Using the transfer identity,
+By the transfer identity,
 
 ```text
 tau_{d,j}(t) = det[M_{a,b}(t)]_{a,b=0}^j.
 ```
 
-By the Lindstrom-Gessel-Viennot lemma,
+The Lindstrom-Gessel-Viennot lemma gives
 
 ```text
 det[M_{a,b}]_{a,b=0}^j
@@ -124,48 +175,42 @@ det[M_{a,b}]_{a,b=0}^j
       product_{i=0}^j wt(P_i).
 ```
 
-The planar ordered boundary condition ensures that only order-preserving nonintersecting path families survive after the standard sign-reversing cancellation of intersecting families.
+The usual sign-reversing involution cancels intersecting families. The ordered planar boundary leaves only identity nonintersecting families.
 
-Since each edge weight is nonnegative, every surviving path-family weight is nonnegative.
-
-Therefore
+All surviving weights are nonnegative. Hence
 
 ```text
 tau_{d,j}(t) in R_{>=0}[t].
 ```
 
-If at least one nonintersecting identity family exists, the determinant is strictly positive on the corresponding support.
+When the identity nonintersecting family exists, the tau determinant is strictly positive on the corresponding support.
 
 ---
 
-## 5. Consequence: total positivity
+## 5. Total positivity consequence
 
-Every finite minor of the moment transfer matrix that appears as a Tantrium tau determinant is a nonnegative LGV path sum. Hence the moment matrix is totally nonnegative on the Tantrium support:
+Every Tantrium tau minor is an LGV nonintersecting-path sum with nonnegative weights. Therefore the Hankel moment matrix is totally nonnegative on every finite Tantrium window:
 
 ```text
 [s_{a+b}(t)] is TN on the required finite windows.
 ```
 
-This closes the determinant sign problem. Entrywise positivity was not sufficient; the AG/LGV transfer construction supplies the missing determinant-level positivity.
-
 ---
 
-## 6. Final bridge theorem
+## 6. AG / LGV Transfer Theorem
 
-**AG / LGV Transfer Theorem.** Global D-positivity implies Hankel/tau determinant positivity:
+**Theorem.** Global D-positivity implies Hankel/tau determinant positivity:
 
 ```text
 D(m,ell,a) >= 0 for all admissible m,ell,a
   -> tau_{d,j}(t) >= 0 for every admissible d,j,t>=0.
 ```
 
-**Proof.** D-positivity gives nonnegative A-atoms. These atoms define nonnegative edge weights in the planar acyclic AG transfer network. The transfer matrix of this network is the Hankel moment matrix `[s_{a+b}(t)]`. LGV expands every tau determinant as a sum of nonintersecting path-family weights. All summands are nonnegative. Therefore every tau determinant is nonnegative. ∎
+**Proof.** D-positivity gives nonnegative A-atoms. These atoms define nonnegative edge weights in the explicit planar acyclic network `G_T(j)`. The transfer identity gives `M_{a,b}=s_{a+b}`. LGV expands each tau determinant as a sum of nonintersecting path-family weights. All summands are nonnegative. ∎
 
 ---
 
 ## 7. Placement in the final chain
-
-The AG/LGV theorem supplies the missing determinant bridge:
 
 ```text
 D-positivity
