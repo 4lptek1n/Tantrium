@@ -1,6 +1,6 @@
 # Tantrium Goldbach Gap Report
 
-Generated: 2026-05-01T17:33:13Z
+Generated: 2026-05-01T19:47:44Z
 Problem: Goldbach's Conjecture
 DAG overall status: **CONDITIONAL_GAP**
 
@@ -22,7 +22,7 @@ DAG overall status: **CONDITIONAL_GAP**
 ## What This Means
 
 - `CONDITIONAL_GAP`: The step is certified conditionally (e.g., assuming GRH or a known bound).
-  This is NOT an `OPEN_GAP` â€” the mathematical route is clear, but the
+  This is NOT an `OPEN_GAP` — the mathematical route is clear, but the
   unconditional bound for binary Goldbach remains an open problem.
 
 ## Key Difference from RH Machine
@@ -31,7 +31,7 @@ The RH machine returned `NO_STRUCTURAL_GAP` because all steps had
 parametric certificates within the Tantrium system.
 
 The Goldbach machine returns `CONDITIONAL_GAP` because the minor arc bound
-for binary Goldbach is the **actual mathematical gap** â€” it is not yet proved
+for binary Goldbach is the **actual mathematical gap** — it is not yet proved
 unconditionally. This accurately reflects the state of mathematics.
 
 ## Full Node Status

@@ -1,6 +1,6 @@
 {
   "certificate_type": "goldbach_circle_method",
-  "generated_at": "2026-05-01T17:33:13Z",
+  "generated_at": "2026-05-01T19:47:44Z",
   "theorem_file": "theorems/GOLDBACH_CIRCLE_METHOD_THEOREM.md",
   "description": "Major arc: I_major(N) = G(N)*N/log^2(N)*(1+o(1)) > 0.",
   "proof_method": [

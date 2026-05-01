@@ -356,24 +356,24 @@ def write_all_parametric_certificates() -> dict[str, str]:
     ag = generate_ag_lgv_parametric()
     ag_json = CERT_DIR / "ag_lgv_parametric_certificate.json"
     ag_md = CERT_DIR / "ag_lgv_parametric_certificate.md"
-    ag_json.write_text(json.dumps(ag, indent=2))
-    ag_md.write_text(write_ag_lgv_parametric_md(ag))
+    ag_json.write_text(json.dumps(ag, indent=2), encoding="utf-8")
+    ag_md.write_text(write_ag_lgv_parametric_md(ag), encoding="utf-8")
     results["ag_lgv"] = str(ag_json)
 
     # Tau/Sturm
     ts = generate_tau_sturm_parametric()
     ts_json = CERT_DIR / "tau_sturm_parametric_certificate.json"
     ts_md = CERT_DIR / "tau_sturm_parametric_certificate.md"
-    ts_json.write_text(json.dumps(ts, indent=2))
-    ts_md.write_text(write_tau_sturm_parametric_md(ts))
+    ts_json.write_text(json.dumps(ts, indent=2), encoding="utf-8")
+    ts_md.write_text(write_tau_sturm_parametric_md(ts), encoding="utf-8")
     results["tau_sturm"] = str(ts_json)
 
     # D-positivity
     dp = generate_d_positivity_parametric()
     dp_json = CERT_DIR / "d_positivity_parametric_certificate.json"
     dp_md = CERT_DIR / "d_positivity_parametric_certificate.md"
-    dp_json.write_text(json.dumps(dp, indent=2))
-    dp_md.write_text(write_d_positivity_parametric_md(dp))
+    dp_json.write_text(json.dumps(dp, indent=2), encoding="utf-8")
+    dp_md.write_text(write_d_positivity_parametric_md(dp), encoding="utf-8")
     results["d_positivity"] = str(dp_json)
 
     return results

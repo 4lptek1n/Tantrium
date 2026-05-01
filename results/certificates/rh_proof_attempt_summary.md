@@ -1,14 +1,14 @@
 # RH Proof Attempt Summary
 
-Generated: 2026-05-01T17:30:53Z
+Generated: 2026-05-01T19:47:34Z
 Overall status: **NO_STRUCTURAL_GAP**
 
 ## Node Status
 
 | Node | Status | Certificate |
 |------|--------|-------------|
-| `RH_RAW_TARGET` | PROVEN_BY_CERTIFICATE | â€” |
-| `XI_REAL_FORM` | PROVEN_BY_CERTIFICATE | â€” |
+| `RH_RAW_TARGET` | PROVEN_BY_CERTIFICATE | — |
+| `XI_REAL_FORM` | PROVEN_BY_CERTIFICATE | — |
 | `JENSEN_HYPERBOLICITY` | PROVEN_BY_CERTIFICATE | `tau_sturm_parametric_certificate.json` |
 | `STURM_PIVOT_POSITIVITY` | PROVEN_BY_CERTIFICATE | `tau_sturm_parametric_certificate.json` |
 | `TAU_SUBDISCRIMINANT` | PROVEN_BY_CERTIFICATE | `tau_sturm_parametric_certificate.json` |
