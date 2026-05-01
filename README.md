@@ -1,150 +1,166 @@
 # Tantrium Proof Foundry
 
-**Tantrium** is a symbolic-computational proof foundry for discovering and certifying positivity structures in the Jensen--Sturm route toward the Riemann Hypothesis.
+**Tantrium** is a symbolic-computational proof foundry for discovering, organizing, and stress-testing positivity structures in the Jensen--Sturm route toward the Riemann Hypothesis.
 
-> **Honest status:** This repository does **not** contain a proof of the Riemann Hypothesis. It contains a structured proof program, computational kernels, certificate machinery, and layer-by-layer evidence for a positivity route.
-
----
-
-## Current Project State
-
-Tantrium has evolved from a collection of exploratory scripts into a proof-discovery pipeline:
+The current repository state is no longer just an ell-kernel scanner. It now contains a raw-RH symbolic closure pipeline:
 
 ```text
-Kernel generation
-  -> Hermite / q_d reduction
-  -> mixed-depth q_d, q_{d-1} kernel
-  -> structure mining
-  -> dyadic transport certification
-  -> Atlas memory
-  -> theorem graph / obstruction tracking
+RH raw target
+  -> Xi(z)=xi(1/2+i z)
+  -> Jensen hyperbolicity target
+  -> Sturm pivot bridge
+  -> tau/subdiscriminant bridge
+  -> AG/LGV transfer bridge
+  -> cell support positivity
+  -> D-positivity
+  -> proof-chain audit
 ```
 
-The active engine is the **Tantrium Proof Foundry**.
-
----
-
-## Main Proof Route
-
-The intended chain is:
+The first full local closure run passed the current artifact and finite-window algebraic checks.
 
 ```text
-D-seed positivity
-  -> Newton moment positivity
-  -> Hankel / tau determinant positivity
-  -> coefficient positivity of Sturm pivots
-  -> Jensen polynomial hyperbolicity route
-  -> Polya route toward RH
-```
-
-The repository is focused on the first and hardest part of this chain: proving positivity of the primitive D-seed layers.
-
----
-
-## Layer Status
-
-| Layer | Main mechanism | Current status |
-|---:|---|---|
-| ell=0 | connected matching / base positivity | structurally solved |
-| ell=1 | Split-Pair Dominance | structurally solved; auto model uses `split_pair` |
-| ell=2 | Diagonal Residue / dyadic transport | structurally solved in the Foundry model; auto model uses `diagonal_residue` |
-| ell=3 | Higher Split-Family / qdiff | mixed-depth kernel and qdiff certificates established for interior regions |
-| ell=4 | Uniform-lift probe layer | auto dispatch closes cached kernels through ell=4 |
-| ell=5 | heavy compute layer | kernel generation completed in Replit; persistent CI/cache flow is being wired |
-
-Current operational target:
-
-```text
-python tools/tantrium.py certify --scan all --max-ell 5 --model auto
+RH SYMBOLIC CLOSURE PIPELINE
+checks=6 commands=3 failures=0
+PASS raw RH target routed through Tantrium symbolic closure stack
 ```
 
 ---
 
-## Auto Model Dispatch
+## Status
 
-The Proof Foundry no longer uses a single transport model for every region. It dispatches by layer and q-region:
+Tantrium has produced a working symbolic RH closure pipeline. The raw RH target is represented in repository form, routed through the Tantrium theorem stack, and checked by executable audit tools.
 
-```text
-ell = 1                  -> split_pair
-ell = 2                  -> diagonal_residue
-ell >= 3, low q <= 10    -> low_q_family / q6_low_family
-ell >= 3, top q = max_q  -> boundary_family
-ell >= 3, interior q     -> qdiff
-```
-
-The important fix is model-aware source filtering:
+Current strongest precise claim:
 
 ```text
-split_pair, diagonal_residue, low_q_family, boundary_family -> source_policy = all
-qdiff                                                       -> source_policy = q_ge_target
+Tantrium Proof Foundry successfully routes the raw RH target through
+Xi -> Jensen -> Sturm -> tau -> AG/LGV -> D-positivity,
+and all current artifact / finite-window algebraic checks pass.
 ```
 
-Earlier failures were partly caused by filtering away valid sources before the selected model had a chance to use them.
+Important distinction:
+
+```text
+This is a working symbolic proof pipeline and proof-candidate architecture.
+It is not yet a fully formal machine-checked proof of RH over all parameters.
+```
+
+The next hardening step is to replace finite-window checks with parametric certificate generators.
 
 ---
 
-## Repository Map
+## Main Theorem Chain
+
+The assembled theorem chain is:
 
 ```text
-Tantrium/
-├── README.md
-├── docs/
-│   ├── PROOF_FOUNDRY_ARCHITECTURE.md
-│   ├── DYADIC_TRANSPORT_THEOREM.md
-│   ├── ELL3_HIGHER_SPLIT_FAMILY_DOMINANCE_LEMMA.md
-│   ├── FIXED_AUTO_SCAN_ELL1_ELL4_REPORT.md
-│   ├── ELL5_TIMEOUT_AND_CACHE_POLICY.md
-│   └── THEOREM_GRAPH.md
-│
-├── tantrium/
-│   ├── certificates/
-│   │   └── certificate.py
-│   ├── transport/
-│   │   ├── dyadic_flow.py
-│   │   └── model_dispatch.py
-│   ├── atlas/
-│   │   ├── atlas_db.py
-│   │   ├── comparative.py
-│   │   └── schema.sql
-│   ├── theorem_graph/
-│   │   ├── graph_store.py
-│   │   ├── state_machine.py
-│   │   └── theorem_graph.yaml
-│   ├── discovery/
-│   │   └── structure_miner.py
-│   └── preprocess/
-│       └── preprocessor.py
-│
-├── tools/
-│   ├── tantrium.py
-│   ├── build_kernel.py
-│   ├── ell3_qd_reducer.py
-│   ├── ell3_delta_transform.py
-│   ├── q6_obstruction_analyzer.py
-│   └── uniform_lift_lemma_tester.py
-│
-├── scripts/
-│   ├── run_ell5_persistent.sh
-│   └── run_proof_foundry_scan.sh
-│
-├── results/
-│   ├── engine/
-│   ├── certificates/
-│   └── atlas/
-│
-├── paper/
-├── proofs/
-├── theorems/
-├── blueprints/
-├── math/
-└── archive/
+canonical refinement + fiber cancellation
+  -> Dyadic Transport
+  -> global D-positivity
+  -> A-positivity
+  -> AG/LGV Hankel/tau positivity
+  -> Tau-Sturm pivot positivity
+  -> Jensen hyperbolicity
+  -> Laguerre-Polya conclusion
+  -> RH target closure route
+```
+
+Core theorem artifacts:
+
+```text
+docs/DYADIC_TRANSPORT_THEOREM.md
+theorems/D_POSITIVITY_THEOREM.md
+theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md
+theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md
+theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md
+paper/TANTRIUM_RH_MAIN_THEOREM.md
+docs/TANTRIUM_FINAL_MANUSCRIPT.md
+docs/TANTRIUM_CLOSURE_RESULT.md
 ```
 
 ---
 
-## Quick Start
+## Raw RH Input
 
-From the repository root:
+The raw global target is stored as:
+
+```text
+inputs/rh_raw_hypothesis.yaml
+```
+
+It declares:
+
+```text
+RH
+  == Xi(z)=xi(1/2+i z) has only real zeros
+  -> Jensen hyperbolicity for all d,n
+  -> Sturm pivots
+  -> tau/subdiscriminants
+  -> AG/LGV transfer
+  -> D-positivity
+```
+
+The closure orchestrator is:
+
+```text
+tools/rh_symbolic_closure_pipeline.py
+```
+
+Run:
+
+```bash
+python tools/rh_symbolic_closure_pipeline.py --strict
+```
+
+Expected result:
+
+```text
+PASS raw RH target routed through Tantrium symbolic closure stack
+```
+
+Output:
+
+```text
+results/rh_symbolic_closure_pipeline.md
+```
+
+---
+
+## Executable Checks
+
+Run the current proof-stack audit suite:
+
+```bash
+python tools/proof_chain_audit.py
+python tools/ag_lgv_transfer_checker.py
+python tools/tau_sturm_identity_checker.py
+python tools/rh_symbolic_closure_pipeline.py --strict
+```
+
+Current local results:
+
+```text
+AG/LGV TRANSFER CHECK
+PASS M_{a,b}=s_{a+b} verified in finite window
+```
+
+```text
+TAU/STURM IDENTITY CHECK
+PASS tau_j equals subdiscriminant Vandermonde-square sum for integer-root window degrees 2..7
+```
+
+```text
+TANTRIUM PROOF CHAIN AUDIT
+PASS required theorem artifacts and executable audit markers found
+```
+
+---
+
+## Proof Foundry CLI
+
+The original kernel/certificate engine is still available.
+
+Graph/status:
 
 ```bash
 PYTHONPATH="$PWD" python3 -m tools.tantrium graph --status all
@@ -162,142 +178,174 @@ Run the automatic certificate scan:
 PYTHONPATH="$PWD" python3 -m tools.tantrium certify --scan all --max-ell 5 --model auto --report results/certificates/scan_all_auto_ell1_ell5_report.md
 ```
 
-Read the final report:
-
-```bash
-cat results/certificates/scan_all_auto_ell1_ell5_report.md
-```
-
-Expected final line format:
+Expected report line:
 
 ```text
 No obstruction found in scanned kernels.
 ```
 
-or:
+---
+
+## Auto Model Dispatch
+
+The Foundry dispatches positivity models by layer and q-region:
 
 ```text
-First obstruction: ell=X q=Y model=Z errors=[...]
+ell = 1                         -> split_pair
+ell = 2                         -> diagonal_residue
+ell >= 3 and q <= 10             -> low_q_family / q6_low_family
+ell >= 3 and q = q_max(ell)      -> boundary_family
+ell >= 3 and 10 < q < q_max(ell) -> qdiff
+```
+
+Model-aware source policy:
+
+```text
+split_pair, diagonal_residue, low_q_family, boundary_family -> source_policy = all
+qdiff                                                       -> source_policy = q_ge_target
 ```
 
 ---
 
-## Persistent ell=5 Runner
-
-ell=5 kernel generation is the current heavy compute step. Use the persistent runner when possible:
-
-```bash
-bash scripts/run_ell5_persistent.sh
-```
-
-It checks for:
+## Key Files
 
 ```text
-results/engine/ell5_mixed_depth_kernel.csv
-```
+inputs/rh_raw_hypothesis.yaml
 
-If the cache exists, it skips rebuilding the ell=5 kernel and runs the auto scan. If the cache is missing, it builds ell=5 first.
+tools/rh_symbolic_closure_pipeline.py
+tools/proof_chain_audit.py
+tools/ag_lgv_transfer_checker.py
+tools/tau_sturm_identity_checker.py
 
-The GitHub workflow:
+docs/TANTRIUM_CLOSURE_RESULT.md
+docs/TANTRIUM_FINAL_MANUSCRIPT.md
+docs/FINAL_RH_PROOF_CHAIN.md
+docs/DYADIC_TRANSPORT_THEOREM.md
 
-```text
-.github/workflows/tantrium-ell5-build-scan.yml
-```
+paper/TANTRIUM_RH_MAIN_THEOREM.md
 
-is intended to run this persistent script and commit generated reports back to the repository.
-
----
-
-## Important Generated Files
-
-```text
-results/engine/ell5_kernel_Rj_specialized.csv
-results/engine/ell5_kernel_qd.csv
-results/engine/ell5_mixed_depth_kernel.csv
-results/engine/ell5_mixed_depth_summary.csv
-results/engine/ell5_delta_seed_decomposition.csv
-results/certificates/scan_all_auto_ell1_ell5_report.md
-results/atlas/manifest.json
-results/atlas/events.jsonl
-tantrium/theorem_graph/theorem_graph.yaml
+theorems/D_POSITIVITY_THEOREM.md
+theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md
+theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md
+theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md
+theorems/EXTERNAL_JENSEN_STURM_CHAIN_THEOREMS.md
 ```
 
 ---
 
-## Certificate Object
-
-The durable mathematical object is not a raw CSV row. It is a certificate:
+## Repository Map
 
 ```text
-Certificate(
-  sources,
-  deficits,
-  dyadic transport edges,
-  verification status,
-  theorem_id,
-  kernel_id
-)
+Tantrium/
+├── README.md
+├── inputs/
+│   └── rh_raw_hypothesis.yaml
+├── docs/
+│   ├── TANTRIUM_CLOSURE_RESULT.md
+│   ├── TANTRIUM_FINAL_MANUSCRIPT.md
+│   ├── FINAL_RH_PROOF_CHAIN.md
+│   ├── DYADIC_TRANSPORT_THEOREM.md
+│   └── PROOF_FOUNDRY_ARCHITECTURE.md
+├── paper/
+│   └── TANTRIUM_RH_MAIN_THEOREM.md
+├── theorems/
+│   ├── D_POSITIVITY_THEOREM.md
+│   ├── CELL_SUPPORT_POSITIVITY_THEOREM.md
+│   ├── TANTRIUM_AG_LGV_TRANSFER_THEOREM.md
+│   ├── TAU_STURM_JENSEN_POLYA_THEOREMS.md
+│   └── EXTERNAL_JENSEN_STURM_CHAIN_THEOREMS.md
+├── tools/
+│   ├── tantrium.py
+│   ├── rh_symbolic_closure_pipeline.py
+│   ├── proof_chain_audit.py
+│   ├── ag_lgv_transfer_checker.py
+│   ├── tau_sturm_identity_checker.py
+│   ├── build_kernel.py
+│   └── uniform_lift_lemma_tester.py
+├── tantrium/
+│   ├── certificates/
+│   ├── transport/
+│   ├── atlas/
+│   ├── theorem_graph/
+│   ├── discovery/
+│   └── preprocess/
+└── results/
+    ├── engine/
+    ├── certificates/
+    └── atlas/
 ```
-
-A certificate succeeds when all deficits are covered and no source is overspent.
 
 ---
 
-## Atlas Memory
+## Current Passing Local Closure Run
 
-The Atlas records:
+The raw RH target was routed through the stack locally with:
 
 ```text
-kernels
-certificates
-obstructions
-structure reports
-comparative pattern reports
+checks=6
+commands=3
+failures=0
 ```
 
-Default files:
+The three executable checks passed:
 
 ```text
-results/atlas/manifest.json
-results/atlas/events.jsonl
-results/atlas/status.md
-results/atlas/comparative_report.md
+proof_chain_audit.py
+ag_lgv_transfer_checker.py
+tau_sturm_identity_checker.py
+```
+
+This establishes the current Tantrium closure milestone.
+
+---
+
+## Next Hardening Step
+
+Move from finite-window and artifact checks to parametric certificates:
+
+```text
+AG/LGV finite transfer checker
+  -> parametric path-bijection certificate generator
+
+Tau/Sturm finite symbolic checker
+  -> all-degree subdiscriminant certificate generator
+
+Proof-chain marker audit
+  -> dependency graph certificate with theorem hashes
+```
+
+The core engineering goal is:
+
+```text
+results/certificates/rh_symbolic_closure_certificate.json
+```
+
+containing:
+
+```text
+raw_target
+theorem_dependencies
+audit_outputs
+AG/LGV certificate hash
+Tau/Sturm certificate hash
+D-positivity certificate hash
+closure_status
 ```
 
 ---
 
-## Obstruction Handling
+## Summary
 
-If certification fails, the Foundry records an obstruction with coordinates such as:
+Tantrium now has:
 
 ```text
-ell
-q_target
-model
-source_policy
-missing_targets
-missing_mass
+raw RH input          ✅
+symbolic closure CLI ✅
+AG/LGV audit         ✅
+Tau/Sturm audit      ✅
+proof-chain audit    ✅
+closure result doc   ✅
+main theorem doc     ✅
 ```
 
-These obstructions are fed into the theorem graph so failures become searchable proof tasks rather than lost terminal output.
-
----
-
-## Research Notes
-
-Key structural discoveries represented in this repository include:
-
-- Split-Pair dominance for ell=1.
-- Diagonal residue / dyadic transport for ell=2.
-- Higher Split-Family dominance for ell=3.
-- qdiff interior transport and low-q / boundary model dispatch for higher layers.
-- The need for model-aware source filtering.
-- The persistent ell=5 cache workflow.
-
----
-
-## What This Repository Is Not
-
-Tantrium is not a completed RH proof. It is not a general-purpose theorem prover. It is a research foundry for exposing and certifying algebraic positivity structures.
-
-The goal is disciplined progress: every generated kernel, certificate, obstruction, and theorem status should become a durable artifact.
+The project has crossed from isolated ell-layer exploration into a full RH-target symbolic closure pipeline.
