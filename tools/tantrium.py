@@ -16,6 +16,7 @@ from tantrium.discovery.structure_miner import mine, write_report
 from tantrium.preprocess.preprocessor import preprocess_csv
 from tantrium.theorem_graph.graph_store import GraphStore
 from tantrium.transport.dyadic_flow import FlowPolicy, solve_greedy
+from tantrium.transport.model_dispatch import solve_auto_greedy, auto_select_model
 
 
 def q_value(qd: int, p: int, mode: str) -> int:
@@ -81,10 +82,21 @@ def cmd_build_kernel(args):
     if args.atom_map: cmd += ['--atom-map',args.atom_map]
     run_cmd(cmd); register_kernel_artifacts(ell,atlas); run_structure_miner(ell,Path(f'results/engine/ell{ell}_mixed_depth_kernel.csv'),atlas,args.q_mode)
 
-def certify_one(input_path:Path,q_target:int,q_mode:str,source_policy:str,model:str,theorem_id:str,kernel_id:str,output:Path,atlas_root:str,graph_store:str,allow_q_down=False,allow_diff_down=False):
+def _extract_ell_from_path(path: Path) -> int:
+    """Extract ell number from a kernel filename like 'ell3_mixed_depth_kernel.csv'."""
+    import re
+    m = re.search(r'ell(\d+)', path.name)
+    return int(m.group(1)) if m else 0
+
+def certify_one(input_path:Path,q_target:int,q_mode:str,source_policy:str,model:str,theorem_id:str,kernel_id:str,output:Path,atlas_root:str,graph_store:str,allow_q_down=False,allow_diff_down=False,ell:int=0):
     sources,deficits=load_mixed_depth(input_path,q_target,q_mode,source_policy)
-    policy=FlowPolicy(theorem_id=theorem_id,kernel_id=kernel_id,map_name=model,require_q_ge=not allow_q_down,require_diff_ge=not allow_diff_down)
-    cert=solve_greedy(sources,deficits,policy); output.parent.mkdir(parents=True,exist_ok=True); output.write_text(cert.markdown())
+    if model == 'auto':
+        _ell = ell or _extract_ell_from_path(input_path)
+        cert = solve_auto_greedy(sources,deficits,ell=_ell,q_target=q_target,theorem_id=theorem_id,kernel_id=kernel_id,model='auto')
+    else:
+        policy=FlowPolicy(theorem_id=theorem_id,kernel_id=kernel_id,map_name=model,require_q_ge=not allow_q_down,require_diff_ge=not allow_diff_down)
+        cert=solve_greedy(sources,deficits,policy)
+    output.parent.mkdir(parents=True,exist_ok=True); output.write_text(cert.markdown())
     atlas=AtlasDB(atlas_root); atlas.register_certificate(theorem_id,cert.summary(),str(output),q_target=q_target,model=model)
     ok,_=cert.verify()
     if not ok:
@@ -115,7 +127,7 @@ def cmd_scan(args):
         atlas.register_kernel(f'ell{ell}_mixed_depth',str(mixed),ell=ell,kind='mixed_depth',rows=count_rows(mixed)); run_structure_miner(ell,mixed,atlas,args.q_mode)
         for q in mixed_q_values(mixed,args.q_mode):
             out=Path(f'results/certificates/ell{ell}_q{q}_{args.model}.md'); theorem_id=f'ell{ell}_q{q}_{args.model}'
-            cert=certify_one(mixed,q,args.q_mode,args.source_policy,args.model,theorem_id,f'ell{ell}_mixed_depth',out,args.atlas_root,args.graph_store,args.allow_q_down,args.allow_diff_down)
+            cert=certify_one(mixed,q,args.q_mode,args.source_policy,args.model,theorem_id,f'ell{ell}_mixed_depth',out,args.atlas_root,args.graph_store,args.allow_q_down,args.allow_diff_down,ell=ell)
             ok,errs=cert.verify(); rows.append({'ell':ell,'q':q,'status':'pass' if ok else 'fail','details':'; '.join(errs[:3])})
             if not ok and first_fail is None: first_fail=(ell,q,errs)
     report=Path(args.report); report.parent.mkdir(parents=True,exist_ok=True)
@@ -134,7 +146,7 @@ def main():
     p=sub.add_parser('graph'); p.add_argument('--status',default='write',choices=['write','all']); p.add_argument('--output',default='docs/THEOREM_GRAPH.md'); p.add_argument('--graph-store',default='tantrium/theorem_graph/theorem_graph.yaml'); p.set_defaults(func=cmd_graph)
     p=sub.add_parser('status'); p.add_argument('--update',action='store_true'); p.add_argument('--atlas-root',default='results/atlas'); p.add_argument('--graph-store',default='tantrium/theorem_graph/theorem_graph.yaml'); p.add_argument('--graph-output',default='docs/THEOREM_GRAPH.md'); p.add_argument('--output',default='results/atlas/status.md'); p.set_defaults(func=cmd_status)
     p=sub.add_parser('build-kernel'); p.add_argument('--ell',type=int,required=True); p.add_argument('--atlas-root',default='results/atlas'); p.add_argument('--q-mode',default='two_qd'); p.add_argument('--atom-map',default=''); p.add_argument('--skip-auto-atom-map',action='store_true'); p.set_defaults(func=cmd_build_kernel)
-    p=sub.add_parser('certify'); p.add_argument('--input'); p.add_argument('--scan',default='one',choices=['one','all']); p.add_argument('--max-ell',type=int,default=4); p.add_argument('--build-missing',action='store_true',default=True); p.add_argument('--q-target',type=int,default=20); p.add_argument('--q-mode',default='two_qd',choices=['two_qd','qd','qd_plus_p','two_qd_plus_p']); p.add_argument('--source-policy',default='q_ge_target',choices=['all','target_only','q_ge_target','q_gt_target']); p.add_argument('--model',default='qdiff',choices=['unit','qgap','diffgap','qdiff','qdiffp','ell2_depth','conservative']); p.add_argument('--allow-q-down',action='store_true'); p.add_argument('--allow-diff-down',action='store_true'); p.add_argument('--theorem-id',default='manual_certificate'); p.add_argument('--kernel-id',default='mixed_depth_kernel'); p.add_argument('--output',default='results/certificates/manual_certificate.md'); p.add_argument('--atlas-root',default='results/atlas'); p.add_argument('--graph-store',default='tantrium/theorem_graph/theorem_graph.yaml'); p.add_argument('--report',default='results/certificates/scan_all_report.md'); p.set_defaults(func=cmd_certify)
+    p=sub.add_parser('certify'); p.add_argument('--input'); p.add_argument('--scan',default='one',choices=['one','all']); p.add_argument('--max-ell',type=int,default=4); p.add_argument('--build-missing',action='store_true',default=True); p.add_argument('--q-target',type=int,default=20); p.add_argument('--q-mode',default='two_qd',choices=['two_qd','qd','qd_plus_p','two_qd_plus_p']); p.add_argument('--source-policy',default='q_ge_target',choices=['all','target_only','q_ge_target','q_gt_target']); p.add_argument('--model',default='qdiff',choices=['unit','qgap','diffgap','qdiff','qdiffp','ell2_depth','conservative','split_pair','diagonal_residue','q6_low_family','auto']); p.add_argument('--allow-q-down',action='store_true'); p.add_argument('--allow-diff-down',action='store_true'); p.add_argument('--theorem-id',default='manual_certificate'); p.add_argument('--kernel-id',default='mixed_depth_kernel'); p.add_argument('--output',default='results/certificates/manual_certificate.md'); p.add_argument('--atlas-root',default='results/atlas'); p.add_argument('--graph-store',default='tantrium/theorem_graph/theorem_graph.yaml'); p.add_argument('--report',default='results/certificates/scan_all_report.md'); p.set_defaults(func=cmd_certify)
     p=sub.add_parser('preprocess'); p.add_argument('--input',required=True); p.add_argument('--output',required=True); p.add_argument('--kernel-id',default='external_kernel'); p.add_argument('--ell',type=int); p.add_argument('--atlas-root',default='results/atlas'); p.set_defaults(func=cmd_preprocess)
     p=sub.add_parser('compare-atlas'); p.add_argument('--atlas-root',default='results/atlas'); p.add_argument('--output',default='results/atlas/comparative_report.md'); p.set_defaults(func=cmd_compare_atlas)
     args=parser.parse_args(); args.func(args)
