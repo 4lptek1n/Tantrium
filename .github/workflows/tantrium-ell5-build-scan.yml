@@ -27,16 +27,27 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Mark run as started
+        shell: bash
+        run: |
+          mkdir -p results/engine
+          echo "# ELL5 CI Build and Auto Scan" > results/engine/ell5_ci_status.md
+          echo "" >> results/engine/ell5_ci_status.md
+          echo "Status: RUNNING" >> results/engine/ell5_ci_status.md
+          echo "Started: $(date -u)" >> results/engine/ell5_ci_status.md
+          echo "Commit: $GITHUB_SHA" >> results/engine/ell5_ci_status.md
+          git config user.name "tantrium-proof-foundry-bot"
+          git config user.email "tantrium-proof-foundry-bot@users.noreply.github.com"
+          git add results/engine/ell5_ci_status.md
+          git commit -m "Mark ell5 auto scan running" || true
+          git push || true
+
       - name: Build ell5 kernel and run auto scan
         shell: bash
         run: |
           set +e
           mkdir -p results/engine results/certificates results/atlas docs
-          echo "# ELL5 CI Build and Auto Scan" > results/engine/ell5_ci_status.md
           echo "" >> results/engine/ell5_ci_status.md
-          echo "Started: $(date -u)" >> results/engine/ell5_ci_status.md
-          echo "" >> results/engine/ell5_ci_status.md
-
           echo "## Build ell5" >> results/engine/ell5_ci_status.md
           python -u tools/build_kernel.py --ell 5 > results/engine/ell5_build.log 2>&1
           BUILD_STATUS=$?
@@ -64,6 +75,7 @@ jobs:
         run: |
           git config user.name "tantrium-proof-foundry-bot"
           git config user.email "tantrium-proof-foundry-bot@users.noreply.github.com"
+          git pull --rebase || true
           git add results/engine/ell5_ci_status.md \
                   results/engine/ell5_build.log \
                   results/engine/ell5_cumulant_kernel_terms.csv \
