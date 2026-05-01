@@ -1,7 +1,7 @@
 {
   "registry_version": 2,
-  "generated_at": "2026-05-01T17:21:07Z",
-  "latest_commit": "2661d4b630da64779be57b8839100909b6901b80",
+  "generated_at": "2026-05-01T17:23:16Z",
+  "latest_commit": "d4a4dd0a4c3f2cb004f2679b813ec6748ff8d0b6",
   "certificates": [
     {
       "id": "rh_symbolic_closure",
@@ -12,7 +12,7 @@
       "theorem_file": "inputs/rh_raw_hypothesis.yaml",
       "generated_by": "tools/rh_symbolic_closure_pipeline.py",
       "proof_method": "symbolic_closure_pipeline",
-      "content_digest": "aaa6d0682f4f279e",
+      "content_digest": "953780f284654de3",
       "description": "Symbolic closure of the RH chain."
     },
     {
@@ -26,7 +26,7 @@
       "theorem_file": "inputs/rh_raw_hypothesis.yaml",
       "generated_by": "tools/parametric_certificate_generator.py",
       "proof_method": "parametric_certificate_generator",
-      "content_digest": "c643611793ac7ea1",
+      "content_digest": "8e7f1fbfdcb04d83",
       "description": "Parametric closure; all free variables bound."
     },
     {
@@ -40,7 +40,7 @@
       "theorem_file": "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
       "generated_by": "tantrium/positivity_machine.py",
       "proof_method": "path_atom_bijection + LGV",
-      "content_digest": "7ed0c23b1b769a25",
+      "content_digest": "69e49a92b83e4eee",
       "description": "M_{a,b}(t) = s_{a+b}(t)."
     },
     {
@@ -54,7 +54,7 @@
       "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
       "generated_by": "tantrium/positivity_machine.py",
       "proof_method": "Cauchy-Binet + Vandermonde-square",
-      "content_digest": "cfe0d9f22fe1071b",
+      "content_digest": "7c3204fd01c3aef0",
       "description": "tau_j = Disc_j(P); H_j = N_j*tau_j."
     },
     {
@@ -66,7 +66,7 @@
       "theorem_file": "theorems/D_POSITIVITY_THEOREM.md",
       "generated_by": "tantrium/positivity_machine.py",
       "proof_method": "dyadic_transport + uniform_lift + induction",
-      "content_digest": "ec62c6debcf0195a",
+      "content_digest": "e1ac0c3bc832c816",
       "description": "D(m,ell,a) >= 0 for all admissible triples."
     },
     {
@@ -83,7 +83,7 @@
       "theorem_file": null,
       "generated_by": "tools/rh_proof_attempt.py",
       "proof_method": "dag_traversal",
-      "content_digest": "fd9f897a30f5fa9c",
+      "content_digest": "9a766c24d3b4a58f",
       "description": "10-node proof attempt DAG."
     }
   ],

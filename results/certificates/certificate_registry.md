@@ -1,6 +1,6 @@
 # Certificate Registry
-**Generated:** 2026-05-01T17:21:07Z  
-**Commit:** `2661d4b630da64779be57b8839100909b6901b80`  
+**Generated:** 2026-05-01T17:23:16Z  
+**Commit:** `d4a4dd0a4c3f2cb004f2679b813ec6748ff8d0b6`  
 **Gap status:** `NO_STRUCTURAL_GAP`  
 **Machine entrypoint:** `python tools/tantrium_rh_machine.py --full`
 

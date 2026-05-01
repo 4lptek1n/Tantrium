@@ -1,6 +1,6 @@
 # AG/LGV Parametric Certificate
 
-Generated: 2026-05-01T17:21:07Z
+Generated: 2026-05-01T17:23:16Z
 
 ## Identity
 

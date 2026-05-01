@@ -1,6 +1,6 @@
 {
   "certificate_type": "ag_lgv_parametric",
-  "generated_at": "2026-05-01T17:21:07Z",
+  "generated_at": "2026-05-01T17:23:16Z",
   "identity": "M_{a,b}(t) = s_{a+b}(t)",
   "description": "The transfer matrix entry M_{a,b} equals the complete homogeneous symmetric polynomial s_{a+b}, verified via LGV path-atom bijection on the Tantrium transfer network.",
   "variables": [
