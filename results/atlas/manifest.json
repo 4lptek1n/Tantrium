@@ -1,0 +1,7 @@
+{
+  "latest_rh_closure_run": "2026-05-01T16:55:22Z",
+  "latest_rh_closure_certificate": "results/certificates/rh_symbolic_closure_certificate.json",
+  "latest_parametric_certificate": "results/certificates/parametric_closure_certificate.json",
+  "closure_status": "PASS",
+  "commit_sha": "328a3d86e00fa8d460c23ce89aeebd3130faedf5"
+}

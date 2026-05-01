@@ -299,11 +299,18 @@ This establishes the current Tantrium closure milestone.
 
 ---
 
+<!-- VERIFIED_CLOSURE_RUN_START -->
 ## Verified Closure Run
 
-Latest verified closure commit: `c0322a2`
+Latest verified closure commit: `328a3d8`
 
 Run:
+
+```bash
+python tools/tantrium_rh_machine.py --strict
+```
+
+Or individually:
 
 ```bash
 python tools/rh_symbolic_closure_pipeline.py --strict
@@ -320,12 +327,12 @@ results/certificates/
   parametric_closure_certificate.json    <- parametric identity certificates
   rh_symbolic_closure_summary.md
   rh_symbolic_closure_run.log
-results/
-  rh_symbolic_closure_pipeline.md
-
+results/atlas/
+  events.jsonl
+  manifest.json
+  status.md
 ```
-
----
+<!-- VERIFIED_CLOSURE_RUN_END -->
 
 ## Next Hardening Step
 

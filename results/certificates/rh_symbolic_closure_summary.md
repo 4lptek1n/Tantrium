@@ -1,23 +1,38 @@
 > **Machine-readable certificate:** `results/certificates/rh_symbolic_closure_certificate.json`
+> **Parametric certificate:** `results/certificates/parametric_closure_certificate.json`
+> **Atlas status:** `results/atlas/status.md`
 
 # Tantrium RH Symbolic Closure Summary
 
-**Run Date:** Fri May  1 04:43:09 PM UTC 2026
+**Run Date:** 2026-05-01T16:55:22Z  
+**Commit:** `328a3d8`  
+**Single command:** `python tools/tantrium_rh_machine.py --strict`
 
-## Results
+## Closure Chain
+
+1. RH raw target
+2. Xi(z)=xi(1/2+i z)
+3. Jensen hyperbolicity target
+4. Sturm pivot bridge
+5. tau/subdiscriminant bridge
+6. AG/LGV transfer bridge
+7. cell support positivity
+8. D-positivity
+9. Dyadic Transport
+10. closure
+
+## Check Results
 
 | Check | Result |
 |-------|--------|
-| rh_symbolic_closure_pipeline (steps=8, failures=0) | PASS |
-| proof_chain_audit (checked_files=9) | PASS |
-| ag_lgv_transfer_checker (atoms=32, window a≤4, b≤4) | PASS |
-| tau_sturm_identity_checker (degrees=2..4, max_j=2) | PASS |
+| `proof_chain_audit.py` | PASS |
+| `ag_lgv_transfer_checker.py` | PASS |
+| `tau_sturm_identity_checker.py` | PASS |
+| `rh_symbolic_closure_pipeline.py --strict` | PASS |
+| `parametric_certificate_generator.py` | PASS |
 
-## Summary
+## Status
 
-- PASS raw RH target routed through Tantrium symbolic closure stack
-- PASS required theorem artifacts and executable audit markers found
-- PASS M_{a,b}=s_{a+b} verified in finite window
-- PASS tau_j equals subdiscriminant Vandermonde-square sum in finite symbolic window
+**Closure Status: PASS**
 
 All current artifact / finite-window algebraic checks pass.

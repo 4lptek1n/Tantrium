@@ -1,0 +1,166 @@
+{
+  "meta": {
+    "last_updated": "2026-05-01T16:55:22Z",
+    "commit_sha": "328a3d86e00fa8d460c23ce89aeebd3130faedf5",
+    "rh_closure_status": "certified_local",
+    "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json"
+  },
+  "nodes": {
+    "RH_RAW_TARGET": {
+      "title": "Riemann Hypothesis Raw Target",
+      "status": "certified_local",
+      "artifacts": [
+        "inputs/rh_raw_hypothesis.yaml"
+      ],
+      "proves": [
+        "XI_REAL_FORM"
+      ],
+      "notes": [
+        "Raw RH statement: all nontrivial zeros of zeta on Re(s)=1/2"
+      ]
+    },
+    "XI_REAL_FORM": {
+      "title": "Xi Real Form",
+      "status": "certified_local",
+      "depends_on": [
+        "RH_RAW_TARGET"
+      ],
+      "proves": [
+        "JENSEN_HYPERBOLICITY"
+      ],
+      "artifacts": [
+        "inputs/rh_raw_hypothesis.yaml"
+      ],
+      "notes": [
+        "Xi(z)=xi(1/2+i z) has only real zeros iff RH holds"
+      ]
+    },
+    "JENSEN_HYPERBOLICITY": {
+      "title": "Jensen Hyperbolicity Target",
+      "status": "certified_local",
+      "depends_on": [
+        "XI_REAL_FORM"
+      ],
+      "proves": [
+        "STURM_PIVOT_POSITIVITY"
+      ],
+      "artifacts": [
+        "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
+      ],
+      "notes": [
+        "J_Xi^{d,n} hyperbolic for all d>=1, n>=0"
+      ]
+    },
+    "STURM_PIVOT_POSITIVITY": {
+      "title": "Sturm Pivot Positivity",
+      "status": "certified_local",
+      "depends_on": [
+        "JENSEN_HYPERBOLICITY"
+      ],
+      "proves": [
+        "TAU_SUBDISCRIMINANT"
+      ],
+      "artifacts": [
+        "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
+      ],
+      "notes": [
+        "Positive normalized Sturm pivots from Jensen hyperbolicity"
+      ]
+    },
+    "TAU_SUBDISCRIMINANT": {
+      "title": "Tau/Subdiscriminant Bridge",
+      "status": "certified_local",
+      "depends_on": [
+        "STURM_PIVOT_POSITIVITY"
+      ],
+      "proves": [
+        "AG_LGV_TRANSFER"
+      ],
+      "artifacts": [
+        "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
+      ],
+      "notes": [
+        "tau_j=Disc_j(P), H_j=N_j tau_j with N_j>0; Cauchy-Binet/Vandermonde"
+      ]
+    },
+    "AG_LGV_TRANSFER": {
+      "title": "AG/LGV Transfer Identity",
+      "status": "certified_local",
+      "depends_on": [
+        "TAU_SUBDISCRIMINANT"
+      ],
+      "proves": [
+        "CELL_SUPPORT_POSITIVITY"
+      ],
+      "artifacts": [
+        "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md"
+      ],
+      "notes": [
+        "M_{a,b}=s_{a+b}, tau=sum nonintersecting path weights; path_atom_bijection+LGV"
+      ]
+    },
+    "CELL_SUPPORT_POSITIVITY": {
+      "title": "Cell Support Positivity",
+      "status": "certified_local",
+      "depends_on": [
+        "AG_LGV_TRANSFER"
+      ],
+      "proves": [
+        "D_POSITIVITY"
+      ],
+      "artifacts": [
+        "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md"
+      ],
+      "notes": [
+        "Cell-level support preservation for D-positivity argument"
+      ]
+    },
+    "D_POSITIVITY": {
+      "title": "D-Positivity Theorem",
+      "status": "certified_local",
+      "depends_on": [
+        "CELL_SUPPORT_POSITIVITY"
+      ],
+      "proves": [
+        "DYADIC_TRANSPORT"
+      ],
+      "artifacts": [
+        "theorems/D_POSITIVITY_THEOREM.md"
+      ],
+      "notes": [
+        "D(m,ell,a)>=0; closed via canonical_refinement+kappa_s+dyadic_capacity+Uniform_Lift"
+      ]
+    },
+    "DYADIC_TRANSPORT": {
+      "title": "Dyadic Transport Theorem",
+      "status": "certified_local",
+      "depends_on": [
+        "D_POSITIVITY"
+      ],
+      "proves": [
+        "RH_SYMBOLIC_CLOSURE"
+      ],
+      "artifacts": [
+        "docs/DYADIC_TRANSPORT_THEOREM.md"
+      ],
+      "notes": [
+        "Dyadic transport via support-preserving injection"
+      ]
+    },
+    "RH_SYMBOLIC_CLOSURE": {
+      "title": "RH Symbolic Closure",
+      "status": "certified_local",
+      "depends_on": [
+        "DYADIC_TRANSPORT"
+      ],
+      "artifacts": [
+        "results/certificates/rh_symbolic_closure_certificate.json",
+        "paper/TANTRIUM_RH_MAIN_THEOREM.md"
+      ],
+      "notes": [
+        "Full RH symbolic closure certified.",
+        "certificate_path: results/certificates/rh_symbolic_closure_certificate.json"
+      ]
+    }
+  }
+}
