@@ -1,0 +1,93 @@
+name: Tantrium ELL5 Build and Auto Scan
+
+on:
+  push:
+    paths:
+      - "tantrium/RUN_ELL5_BUILD_SCAN.md"
+      - ".github/workflows/tantrium-ell5-build-scan.yml"
+      - "tools/**"
+      - "tantrium/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+timeout-minutes: 360
+
+jobs:
+  ell5:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build ell5 kernel and run auto scan
+        shell: bash
+        run: |
+          set +e
+          mkdir -p results/engine results/certificates results/atlas docs
+          echo "# ELL5 CI Build and Auto Scan" > results/engine/ell5_ci_status.md
+          echo "" >> results/engine/ell5_ci_status.md
+          echo "Started: $(date -u)" >> results/engine/ell5_ci_status.md
+          echo "" >> results/engine/ell5_ci_status.md
+
+          echo "## Build ell5" >> results/engine/ell5_ci_status.md
+          python -u tools/build_kernel.py --ell 5 > results/engine/ell5_build.log 2>&1
+          BUILD_STATUS=$?
+          echo "build_status=$BUILD_STATUS" >> results/engine/ell5_ci_status.md
+          tail -80 results/engine/ell5_build.log >> results/engine/ell5_ci_status.md
+          echo "" >> results/engine/ell5_ci_status.md
+
+          echo "## Scan ell1..ell5 model=auto" >> results/engine/ell5_ci_status.md
+          python -u tools/tantrium.py certify --scan all --max-ell 5 --model auto --report results/certificates/scan_all_auto_ell1_ell5_report.md > results/certificates/scan_all_auto_ell1_ell5.log 2>&1
+          SCAN_STATUS=$?
+          echo "scan_status=$SCAN_STATUS" >> results/engine/ell5_ci_status.md
+          tail -120 results/certificates/scan_all_auto_ell1_ell5.log >> results/engine/ell5_ci_status.md
+          echo "" >> results/engine/ell5_ci_status.md
+
+          echo "## Status update" >> results/engine/ell5_ci_status.md
+          python -u tools/tantrium.py status --update >> results/engine/ell5_ci_status.md 2>&1
+          python -u tools/tantrium.py compare-atlas >> results/engine/ell5_ci_status.md 2>&1
+          echo "Finished: $(date -u)" >> results/engine/ell5_ci_status.md
+
+          exit 0
+
+      - name: Commit results back to repository
+        if: always()
+        shell: bash
+        run: |
+          git config user.name "tantrium-proof-foundry-bot"
+          git config user.email "tantrium-proof-foundry-bot@users.noreply.github.com"
+          git add results/engine/ell5_ci_status.md \
+                  results/engine/ell5_build.log \
+                  results/engine/ell5_cumulant_kernel_terms.csv \
+                  results/engine/ell5_atom_to_Rj_map_auto.csv \
+                  results/engine/ell5_kernel_Rj_specialized.csv \
+                  results/engine/ell5_kernel_qd.csv \
+                  results/engine/ell5_mixed_depth_kernel.csv \
+                  results/engine/ell5_mixed_depth_summary.csv \
+                  results/engine/ell5_delta_seed_decomposition.csv \
+                  results/engine/ell5_structure_miner_report.md \
+                  results/certificates/scan_all_auto_ell1_ell5_report.md \
+                  results/certificates/scan_all_auto_ell1_ell5.log \
+                  results/certificates/ell5_*_auto.md \
+                  results/atlas/manifest.json \
+                  results/atlas/events.jsonl \
+                  results/atlas/status.md \
+                  results/atlas/comparative_report.md \
+                  tantrium/theorem_graph/theorem_graph.yaml \
+                  docs/THEOREM_GRAPH.md \
+                  docs/ELL5_MIXED_DEPTH_STATUS.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+          else
+            git commit -m "Run ell5 auto scan and commit generated results"
+            git push
+          fi
