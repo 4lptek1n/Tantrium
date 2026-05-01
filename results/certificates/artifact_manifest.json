@@ -1,0 +1,102 @@
+{
+  "manifest_version": 1,
+  "generated_at": "2026-05-01T19:56:27Z",
+  "repo": "4lptek1n/Tantrium",
+  "git_head": "aa1efbf42a584ea835f65ec3c014fead89efca96",
+  "platform": "Windows local",
+  "latest_verified_local_run": {
+    "commit": "38ccc84499baa3a6324208403c34e82e6090eed9",
+    "generated_at": "2026-05-01T19:47:34Z",
+    "closure_status": "PASS",
+    "proof_attempt_status": "NO_STRUCTURAL_GAP",
+    "rh_closure_status": "PROVEN_BY_CERTIFICATE",
+    "internal_tantrium_closure": "CLOSED",
+    "goldbach_control": "CONDITIONAL_GAP"
+  },
+  "critical_artifacts": [
+    {
+      "path": "results/certificates/tantrium_rh_machine_latest.json",
+      "exists": true,
+      "size_bytes": 1083,
+      "sha256": "7db0276cfd9b1d5de1a748a43963dc89543293fd6995848e2b5ca12ee1eb3915"
+    },
+    {
+      "path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "exists": true,
+      "size_bytes": 1773,
+      "sha256": "f1c5f89e510de2e22f7491032a7a7a9adae2dc71e98cb975408857af7ac95e6a"
+    },
+    {
+      "path": "results/certificates/rh_proof_attempt_dag.json",
+      "exists": true,
+      "size_bytes": 4503,
+      "sha256": "5f628b745403c523c8b582b687b4bd7c747e8014deda04459057ec77319868f2"
+    },
+    {
+      "path": "results/certificates/rh_gap_report.md",
+      "exists": true,
+      "size_bytes": 897,
+      "sha256": "8d877a450e5ae64c97fe16906abc5694a8e6cb10c16ecda89f61b4e6f42a5447"
+    },
+    {
+      "path": "results/certificates/certificate_registry.json",
+      "exists": true,
+      "size_bytes": 3702,
+      "sha256": "81354b00eae02245de1b5914b548d1280e38c653906c0d06fdfafb17f1bca96a"
+    },
+    {
+      "path": "results/certificates/parametric_closure_certificate.json",
+      "exists": true,
+      "size_bytes": 2229,
+      "sha256": "c1185bd3e9e011a50d88796d44e2a80d2735eaf92c8abc385a8d11e7b84376b2"
+    },
+    {
+      "path": "results/certificates/ag_lgv_parametric_certificate.json",
+      "exists": true,
+      "size_bytes": 1781,
+      "sha256": "d4b5f4fe082755298e0540edbed560864e85278360f07d89a41b062899f1fb35"
+    },
+    {
+      "path": "results/certificates/tau_sturm_parametric_certificate.json",
+      "exists": true,
+      "size_bytes": 1599,
+      "sha256": "08943eb87f67bd4e88ce82dff9aeefe7be82ac76972328c1901b25d7f79049c9"
+    },
+    {
+      "path": "results/certificates/d_positivity_parametric_certificate.json",
+      "exists": true,
+      "size_bytes": 1672,
+      "sha256": "cd96220b9db8da8adb6bc0b8e8d0c6ce55cb6ec94149955d9f9f7dfb08e7fee1"
+    },
+    {
+      "path": "tantrium/theorem_graph/theorem_graph.yaml",
+      "exists": true,
+      "size_bytes": 9098,
+      "sha256": "b76d4933adfde40aefe1a0973effbaaf66aa2335fef6df6059e108ec24dbbccf"
+    },
+    {
+      "path": "results/certificates/goldbach_proof_attempt_dag.json",
+      "exists": true,
+      "size_bytes": 2692,
+      "sha256": "af29019c00cdcf6a9b7313610ece19a16743006c1f5fd1a2811f8fb14e0203b5"
+    },
+    {
+      "path": "results/certificates/goldbach_gap_report.md",
+      "exists": true,
+      "size_bytes": 1699,
+      "sha256": "22ccd0a049db5bfa0bda32dcf4ccc8050647a3f88497f15726641600abaefede"
+    },
+    {
+      "path": "results/certificates/goldbach_circle_method_certificate.json",
+      "exists": true,
+      "size_bytes": 1081,
+      "sha256": "5b9f4eed9e13eb4446867d53e7f16298f94359190ef6eda0dcdf062a23b044cd"
+    },
+    {
+      "path": "results/certificates/goldbach_singular_series_certificate.json",
+      "exists": true,
+      "size_bytes": 888,
+      "sha256": "6e7a9e48a10eae58077b7ad721bfe74ccd02b603a1f41498b984df50e83f358a"
+    }
+  ]
+}

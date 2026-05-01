@@ -1,0 +1,150 @@
+{
+  "generated_at": "2026-05-01T19:56:27Z",
+  "result": "VERIFIED",
+  "rh_closure": "VERIFIED",
+  "gap_report": "NO_STRUCTURAL_GAP",
+  "internal_closure": "CLOSED",
+  "goldbach_control": "CONDITIONAL_GAP_AT_MINOR_ARC",
+  "checks": [
+    {
+      "name": "latest.closure_status",
+      "status": "PASS",
+      "detail": "PASS"
+    },
+    {
+      "name": "latest.proof_attempt_status",
+      "status": "PASS",
+      "detail": "NO_STRUCTURAL_GAP"
+    },
+    {
+      "name": "latest.rh_closure_status",
+      "status": "PASS",
+      "detail": "PROVEN_BY_CERTIFICATE"
+    },
+    {
+      "name": "latest.internal_tantrium_closure",
+      "status": "PASS",
+      "detail": "CLOSED"
+    },
+    {
+      "name": "closure_certificate.closure_status",
+      "status": "PASS",
+      "detail": "PASS"
+    },
+    {
+      "name": "closure_certificate.proof_attempt_status",
+      "status": "PASS",
+      "detail": "NO_STRUCTURAL_GAP"
+    },
+    {
+      "name": "closure_certificate.rh_closure_status",
+      "status": "PASS",
+      "detail": "PROVEN_BY_CERTIFICATE"
+    },
+    {
+      "name": "closure_certificate.internal_tantrium_closure",
+      "status": "PASS",
+      "detail": "CLOSED"
+    },
+    {
+      "name": "rh_gap_report.NO_STRUCTURAL_GAP",
+      "status": "PASS",
+      "detail": "NO_STRUCTURAL_GAP marker"
+    },
+    {
+      "name": "theorem_graph.RH_CLOSURE",
+      "status": "PASS",
+      "detail": "PROVEN_BY_CERTIFICATE"
+    },
+    {
+      "name": "certificate_registry.exists",
+      "status": "PASS",
+      "detail": "C:\\Users\\omerm\\Desktop\\Tantrium\\results\\certificates\\certificate_registry.json"
+    },
+    {
+      "name": "goldbach.overall_status",
+      "status": "PASS",
+      "detail": "CONDITIONAL_GAP"
+    },
+    {
+      "name": "goldbach.first_gap",
+      "status": "PASS",
+      "detail": "CONDITIONAL_GAP"
+    },
+    {
+      "name": "goldbach.first_gap.node",
+      "status": "PASS",
+      "detail": "MINOR_ARC_BOUND"
+    },
+    {
+      "name": "hash.results/certificates/tantrium_rh_machine_latest.json",
+      "status": "PASS",
+      "detail": "7db0276cfd9b1d5de1a748a43963dc89543293fd6995848e2b5ca12ee1eb3915"
+    },
+    {
+      "name": "hash.results/certificates/rh_symbolic_closure_certificate.json",
+      "status": "PASS",
+      "detail": "f1c5f89e510de2e22f7491032a7a7a9adae2dc71e98cb975408857af7ac95e6a"
+    },
+    {
+      "name": "hash.results/certificates/rh_proof_attempt_dag.json",
+      "status": "PASS",
+      "detail": "5f628b745403c523c8b582b687b4bd7c747e8014deda04459057ec77319868f2"
+    },
+    {
+      "name": "hash.results/certificates/rh_gap_report.md",
+      "status": "PASS",
+      "detail": "8d877a450e5ae64c97fe16906abc5694a8e6cb10c16ecda89f61b4e6f42a5447"
+    },
+    {
+      "name": "hash.results/certificates/certificate_registry.json",
+      "status": "PASS",
+      "detail": "81354b00eae02245de1b5914b548d1280e38c653906c0d06fdfafb17f1bca96a"
+    },
+    {
+      "name": "hash.results/certificates/parametric_closure_certificate.json",
+      "status": "PASS",
+      "detail": "c1185bd3e9e011a50d88796d44e2a80d2735eaf92c8abc385a8d11e7b84376b2"
+    },
+    {
+      "name": "hash.results/certificates/ag_lgv_parametric_certificate.json",
+      "status": "PASS",
+      "detail": "d4b5f4fe082755298e0540edbed560864e85278360f07d89a41b062899f1fb35"
+    },
+    {
+      "name": "hash.results/certificates/tau_sturm_parametric_certificate.json",
+      "status": "PASS",
+      "detail": "08943eb87f67bd4e88ce82dff9aeefe7be82ac76972328c1901b25d7f79049c9"
+    },
+    {
+      "name": "hash.results/certificates/d_positivity_parametric_certificate.json",
+      "status": "PASS",
+      "detail": "cd96220b9db8da8adb6bc0b8e8d0c6ce55cb6ec94149955d9f9f7dfb08e7fee1"
+    },
+    {
+      "name": "hash.tantrium/theorem_graph/theorem_graph.yaml",
+      "status": "PASS",
+      "detail": "b76d4933adfde40aefe1a0973effbaaf66aa2335fef6df6059e108ec24dbbccf"
+    },
+    {
+      "name": "hash.results/certificates/goldbach_proof_attempt_dag.json",
+      "status": "PASS",
+      "detail": "af29019c00cdcf6a9b7313610ece19a16743006c1f5fd1a2811f8fb14e0203b5"
+    },
+    {
+      "name": "hash.results/certificates/goldbach_gap_report.md",
+      "status": "PASS",
+      "detail": "22ccd0a049db5bfa0bda32dcf4ccc8050647a3f88497f15726641600abaefede"
+    },
+    {
+      "name": "hash.results/certificates/goldbach_circle_method_certificate.json",
+      "status": "PASS",
+      "detail": "5b9f4eed9e13eb4446867d53e7f16298f94359190ef6eda0dcdf062a23b044cd"
+    },
+    {
+      "name": "hash.results/certificates/goldbach_singular_series_certificate.json",
+      "status": "PASS",
+      "detail": "6e7a9e48a10eae58077b7ad721bfe74ccd02b603a1f41498b984df50e83f358a"
+    }
+  ]
+}

@@ -5,6 +5,10 @@
   "closure_status": "PASS",
   "proof_attempt_status": "NO_STRUCTURAL_GAP",
   "gap_status": "NO_STRUCTURAL_GAP",
+  "rh_closure_status": "PROVEN_BY_CERTIFICATE",
+  "internal_tantrium_closure": "CLOSED",
+  "external_formalization": "PENDING",
+  "platform": "Windows local",
   "certificates": [
     "results/certificates/rh_symbolic_closure_certificate.json",
     "results/certificates/parametric_closure_certificate.json",

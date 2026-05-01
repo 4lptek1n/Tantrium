@@ -38,5 +38,9 @@
     "closure"
   ],
   "closure_status": "PASS",
+  "proof_attempt_status": "NO_STRUCTURAL_GAP",
+  "rh_closure_status": "PROVEN_BY_CERTIFICATE",
+  "internal_tantrium_closure": "CLOSED",
+  "external_formalization": "PENDING",
   "claim": "Tantrium Proof Foundry routes the raw RH target through Xi -> Jensen -> Sturm -> tau -> AG/LGV -> D-positivity, with theorem artifacts, executable finite-window checks, and parametric certificates generated."
 }

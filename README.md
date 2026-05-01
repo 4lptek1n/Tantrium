@@ -388,7 +388,7 @@ This establishes the current Tantrium closure milestone.
 <!-- VERIFIED_CLOSURE_RUN_START -->
 ## Verified Closure Run
 
-Latest verified closure commit: `5a0b620`
+Latest verified closure commit: `38ccc84`
 
 Run:
 
