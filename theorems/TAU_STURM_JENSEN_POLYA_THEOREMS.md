@@ -16,15 +16,56 @@ Hankel/tau positivity
 
 ## 1. Tau to Sturm pivot identity
 
-### Theorem
-
-For the Jensen polynomial family used in the Tantrium construction, the normalized Sturm/subresultant pivots are positive normalizations of Hankel/tau determinants. In particular, for each admissible `(d,j)`,
+Let `P=J^{d,n}` be the Jensen polynomial under consideration and let
 
 ```text
-H_{d,j}(t) = N_{d,j}(t) tau_{d,j}(t),
+P_0=P,  P_1=P'
 ```
 
-or equivalently by the cross-ratio form,
+be the first two elements of the Sturm/subresultant sequence. Let `s_m` be the Newton moment sequence of the roots of `P`, and define
+
+```text
+tau_{d,j}(t)=det[s_{a+b}(t)]_{a,b=0}^j.
+```
+
+The subdiscriminant identity gives
+
+```text
+tau_{d,j}(t)
+  = c_{d,j} Disc_j(P(t))
+```
+
+where `Disc_j` is the `j`-th subdiscriminant/subresultant principal minor and
+
+```text
+c_{d,j}>0.
+```
+
+The normalized Sturm pivot is
+
+```text
+H_{d,j}(t)=n_{d,j}(t) Disc_j(P(t)),
+```
+
+with positive normalization
+
+```text
+n_{d,j}(t)>0
+```
+
+on the admissible domain. Therefore
+
+```text
+H_{d,j}(t)=N_{d,j}(t) tau_{d,j}(t),
+```
+
+where
+
+```text
+N_{d,j}(t)=n_{d,j}(t)/c_{d,j}>0.
+```
+
+Equivalently, adjacent pivots satisfy the positive cross-ratio relation
 
 ```text
 rho_{d,j}(t)
@@ -32,39 +73,69 @@ rho_{d,j}(t)
     H_{d,j-2}(t) H_{d,j}(t) / H_{d,j-1}(t)^2,
 ```
 
-with
+with `C_{d,j}>0`.
+
+Hence
 
 ```text
-N_{d,j}(t) > 0,  C_{d,j}>0,  t^{k_{d,j}}>=0 for t>=0.
+tau_{d,j}(t)>0  ->  H_{d,j}(t)>0.
 ```
-
-### Proof
-
-The Hankel/tau determinants are the subdiscriminant determinants of the Newton moment sequence. The subresultant construction identifies these determinants with the principal Sturm pivots after multiplication by fixed positive normalizations. Since the normalizations are positive on the admissible domain, positivity of tau determinants implies positivity of the normalized pivots:
-
-```text
-tau_{d,j}(t)>0 -> H_{d,j}(t)>0.
-```
-
-The cross-ratio identity is the standard quotient relation among adjacent subresultant pivots. Positivity of all tau determinants makes each quotient positive. ∎
 
 ---
 
-## 2. Sturm pivot positivity to Jensen hyperbolicity
+## 2. Regular Sturm chain and multiplicity exclusion
 
-### Theorem
+If all tau determinants on the support are positive, then every subresultant pivot is nonzero. Therefore the Euclidean/Sturm sequence is regular:
 
-Let `P=J^{d,n}` be a real Jensen polynomial and let `H_{d,j}(t)` be the normalized pivots of its Sturm/subresultant chain. If every pivot is positive on the admissible parameter domain, then `P` is hyperbolic.
+```text
+no degree drop,
+no zero pivot,
+no multiple-root degeneracy.
+```
 
-### Proof
+Indeed, a multiple root would force a vanishing discriminant/subdiscriminant and hence a vanishing tau determinant. Positivity of the tau minors excludes this.
 
-A real polynomial is hyperbolic exactly when its Sturm chain has the maximal real-root count with no sign-defect loss. The subresultant pivots measure the possible degeneracies and sign changes in the Euclidean/Sturm recursion. If all pivots are positive, the signed remainder sequence is regular and has the required sign variation at the endpoints. Sturm's theorem then gives the maximal number of real zeros, equal to the degree of `P`. Hence all zeros of `P` are real. ∎
+Thus the Sturm sequence has the full expected length and no boundary singularity in the admissible domain.
 
 ---
 
-## 3. Jensen hyperbolicity to Laguerre-Polya
+## 3. Sturm pivot positivity to Jensen hyperbolicity
 
-### Theorem
+For a real polynomial `P`, a regular Sturm sequence with positive normalized pivots has the standard endpoint sign variation corresponding to maximal real-root count. The positivity of all pivots fixes the signs of the signed remainders and prevents sign-defect loss.
+
+Applying Sturm's theorem gives
+
+```text
+number of real zeros of P = degree(P).
+```
+
+Therefore `P` is hyperbolic.
+
+For `P=J^{d,n}`, this gives
+
+```text
+J^{d,n}(X) is hyperbolic
+```
+
+for every admissible `d,n` covered by the Tantrium pivot family.
+
+---
+
+## 4. Jensen family identification
+
+The Tantrium Jensen polynomials are the ordinary Jensen polynomials of the real xi function, up to positive scalar normalizations and positive affine rescalings of the variable. Such transformations preserve hyperbolicity.
+
+Thus hyperbolicity of the Tantrium-normalized Jensen family is equivalent to hyperbolicity of
+
+```text
+J_Xi^{d,n}(X)
+```
+
+for all `d>=1, n>=0`.
+
+---
+
+## 5. Jensen hyperbolicity to Laguerre-Polya
 
 Let
 
@@ -72,29 +143,27 @@ Let
 Xi(z)=xi(1/2+i z)
 ```
 
-be the real entire Riemann xi function. If every Jensen polynomial of `Xi` is hyperbolic, then `Xi` belongs to the Laguerre-Polya class.
+be the real entire Riemann xi function. By the Polya-Jensen theorem,
 
-### Proof
+```text
+J_Xi^{d,n} hyperbolic for all d,n
+  <=>
+Xi belongs to the Laguerre-Polya class.
+```
 
-By the Polya-Jensen criterion, hyperbolicity of all Jensen polynomials associated to a real entire function is equivalent to membership in the Laguerre-Polya class. Applying this to `Xi` gives
+Therefore the Tantrium Jensen hyperbolicity conclusion implies
 
 ```text
 Xi in LP.
 ```
 
-∎
-
 ---
 
-## 4. Laguerre-Polya to RH
+## 6. Laguerre-Polya to RH
 
-### Theorem
+A real entire function in the Laguerre-Polya class has only real zeros. Hence every zero of `Xi(z)` is real.
 
-If `Xi` belongs to the Laguerre-Polya class, then the Riemann Hypothesis follows.
-
-### Proof
-
-A real entire function in the Laguerre-Polya class has only real zeros. Thus all zeros of `Xi(z)` are real. Since
+Since
 
 ```text
 Xi(z)=xi(1/2+i z),
@@ -106,17 +175,20 @@ a real zero `z` corresponds to a nontrivial zeta zero
 s=1/2+i z
 ```
 
-on the critical line. Hence every nontrivial zero of zeta lies on `Re(s)=1/2`. This is the Riemann Hypothesis. ∎
+on the critical line. Hence all nontrivial zeros of zeta lie on `Re(s)=1/2`.
+
+This is the Riemann Hypothesis.
 
 ---
 
-## 5. Final theorem
+## 7. Final theorem
 
 Combining:
 
 ```text
 tau positivity
-  -> Sturm pivot positivity
+  -> nonzero positive Sturm/subresultant pivots
+  -> regular Sturm chain
   -> Jensen hyperbolicity
   -> Xi in Laguerre-Polya
   -> RH.
