@@ -46,69 +46,71 @@ These `A` atoms are the elementary weights of the path network.
 
 ## 2. Explicit AG transfer network
 
-For a fixed finite tau determinant of size `j+1`, construct a planar directed acyclic network `G_T(j)`.
+Fix a finite tau determinant of size `j+1` and a finite coefficient window. Construct `G_T(j)`.
 
 ### Vertices
 
-Vertices are triples
+Vertices are quadruples
 
 ```text
-(r,h,b)
+(r,h,b,c)
 ```
 
 where:
 
 ```text
-r = horizontal time / degree counter,
-h = height / path label,
-b = accumulated binomial-depth state.
+r = consumed Newton index,
+h = path height / row label,
+b = accumulated binomial-depth index,
+c = atom counter / coefficient-window state.
 ```
 
-The allowed region is finite:
+The finite bounds are chosen so that
 
 ```text
-0 <= r <= L,
-0 <= h <= H,
+0 <= r <= R,
+0 <= h <= j,
 0 <= b <= B,
+0 <= c <= C,
 ```
 
-with `L,H,B` chosen large enough to contain all paths contributing to the coefficient window of `tau_{d,j}`. Since each tau determinant uses only finitely many moments, such bounds exist.
+where `R` is at least the largest moment index appearing in the tau window, and `B,C` are the largest binomial/deformation indices appearing in the corresponding D/A expansion.
 
 ### Sources and targets
 
-The ordered sources and targets are
-
 ```text
-A_i = (0,i,0),       i=0,...,j,
-B_i = (L,i,0),       i=0,...,j.
+A_i = (0,i,0,0),
+B_i = (R,i,0,0),
 ```
 
-They are placed in the same vertical order on the boundary.
+for `i=0,...,j`.
+
+The sources and targets are ordered by height `h` on the two boundary lines.
 
 ### Edges
 
-There are three edge classes.
+There are four classes.
 
-1. Propagation edges:
+1. Degree propagation:
 
 ```text
-(r,h,b) -> (r+1,h,b)
+(r,h,b,c) -> (r+1,h,b,c)
 ```
 
 with weight `1`.
 
-2. Binomial-depth bookkeeping edges:
+2. Binomial bookkeeping:
 
 ```text
-(r,h,b) -> (r+1,h,b+delta_b)
+(r,h,b,c) -> (r,h,b+1,c)
 ```
 
-with positive binomial normalization weight.
+with the positive binomial normalization factor attached to the corresponding binomial basis step.
 
-3. D/A atom edges. For each admissible atom `(m,ell,p,s)` with `A(m,ell,p,s)>=0`, add an edge
+3. Atom insertion. For each admissible `A(m,ell,p,s)>=0`, add
 
 ```text
-(r,h,b) -> (r+m, h + Delta_h(p,s), b + Delta_b(p,s))
+(r,h,b,c) -> (r+m, h, b+p+s, c+1)
 ```
 
 with weight
@@ -117,43 +119,63 @@ with weight
 A(m,ell,p,s) t^ell.
 ```
 
-The shifts `Delta_h, Delta_b` are the bookkeeping shifts that encode the contribution of the atom to the Newton index and binomial-depth state. They are fixed by the double-binomial expansion and do not depend on signs.
+4. Boundary reset edges, only at the terminal slice, returning the bookkeeping state to `0` when the accumulated state equals the required target state. These edges have weight `1` and are deterministic.
 
-### Positivity, planarity, acyclicity
+Every nonzero edge increases either `r`, `b`, or `c`; after adding the terminal reset slice, the graph is acyclic by lexicographic time
 
-Every edge strictly increases `r`, hence the network is acyclic. The embedding uses `r` as the horizontal coordinate and `(h,b)` as ordered vertical coordinates. The shifts are monotone in the ordered boundary variables, so the network is planar in the standard LGV sense: nonintersecting ordered path families correspond exactly to identity permutations.
+```text
+(r,c,b,terminal_flag).
+```
 
-All edge weights are nonnegative because they are products of nonnegative `A` atoms and positive normalizations.
+All edge weights are nonnegative.
 
 ---
 
-## 3. Transfer identity
+## 3. Path--atom bijection
 
-Let
-
-```text
-M_{a,b}(t) = sum_{P: A_a -> B_b} wt(P).
-```
-
-A path from `A_a` to `B_b` records exactly one positive decomposition of the Newton moment index `a+b`: propagation records unused degree, bookkeeping edges record binomial-depth state, and D/A atom edges record the positive Newton atoms.
-
-Therefore coefficient-by-coefficient,
+For each pair `(a,b)`, a path from `A_a` to `B_b` determines a unique ordered decomposition of the Newton moment index `a+b`:
 
 ```text
-M_{a,b}(t) = s_{a+b}(t).
+(a+b) = sum_r m_r + unused propagation degree,
 ```
 
-Equivalently,
+with atom labels `(m_r,ell_r,p_r,s_r)` and binomial bookkeeping satisfying
 
 ```text
-M(t) = [s_{a+b}(t)]_{a,b>=0}.
+sum_r (p_r+s_r) = required binomial-depth state.
 ```
 
-This is the explicit AG transfer identity.
+Conversely, every monomial term in the positive double-binomial Newton expansion of `s_{a+b}(t)` determines exactly one path: insert its atoms in the canonical increasing order of `(r,c,b)`, use propagation edges to fill unused degree, and use the terminal reset edge only after the required bookkeeping state is reached.
+
+Thus there is a weight-preserving bijection
+
+```text
+{paths A_a -> B_b in G_T(j)}
+  <->
+{positive D/A atom decompositions contributing to s_{a+b}(t)}.
+```
+
+The weight of the path is exactly the product of the atom weights and the positive binomial normalizations appearing in that Newton term.
+
+Therefore
+
+```text
+M_{a,b}(t) := sum_{P:A_a -> B_b} wt(P) = s_{a+b}(t).
+```
+
+This is the AG transfer identity.
 
 ---
 
-## 4. LGV determinant formula
+## 4. Planarity and ordered LGV condition
+
+Embed the graph with horizontal coordinate `r+c` and vertical coordinate `h+epsilon b`, with `0<epsilon` sufficiently small. Atom and bookkeeping edges preserve the relative order of path heights. Therefore an ordered family of paths from `A_i` to `B_i` cannot realize a nonidentity permutation without a crossing.
+
+The standard LGV sign-reversing involution cancels intersecting families. Since the boundary order is fixed, the only surviving nonintersecting families are identity families.
+
+---
+
+## 5. LGV determinant formula
 
 For fixed `j`,
 
@@ -167,27 +189,25 @@ By the transfer identity,
 tau_{d,j}(t) = det[M_{a,b}(t)]_{a,b=0}^j.
 ```
 
-The Lindstrom-Gessel-Viennot lemma gives
+By LGV,
 
 ```text
 det[M_{a,b}]_{a,b=0}^j
-  = sum_{nonintersecting path families P}
+  = sum_{nonintersecting identity path families P}
       product_{i=0}^j wt(P_i).
 ```
 
-The usual sign-reversing involution cancels intersecting families. The ordered planar boundary leaves only identity nonintersecting families.
-
-All surviving weights are nonnegative. Hence
+Every surviving product is nonnegative. Hence
 
 ```text
 tau_{d,j}(t) in R_{>=0}[t].
 ```
 
-When the identity nonintersecting family exists, the tau determinant is strictly positive on the corresponding support.
+If the identity family exists in the coefficient window, the corresponding tau coefficient is strictly positive.
 
 ---
 
-## 5. Total positivity consequence
+## 6. Total positivity consequence
 
 Every Tantrium tau minor is an LGV nonintersecting-path sum with nonnegative weights. Therefore the Hankel moment matrix is totally nonnegative on every finite Tantrium window:
 
@@ -197,7 +217,7 @@ Every Tantrium tau minor is an LGV nonintersecting-path sum with nonnegative wei
 
 ---
 
-## 6. AG / LGV Transfer Theorem
+## 7. AG / LGV Transfer Theorem
 
 **Theorem.** Global D-positivity implies Hankel/tau determinant positivity:
 
@@ -206,11 +226,11 @@ D(m,ell,a) >= 0 for all admissible m,ell,a
   -> tau_{d,j}(t) >= 0 for every admissible d,j,t>=0.
 ```
 
-**Proof.** D-positivity gives nonnegative A-atoms. These atoms define nonnegative edge weights in the explicit planar acyclic network `G_T(j)`. The transfer identity gives `M_{a,b}=s_{a+b}`. LGV expands each tau determinant as a sum of nonintersecting path-family weights. All summands are nonnegative. ∎
+**Proof.** D-positivity gives nonnegative A-atoms. These atoms define nonnegative edge weights in the explicit planar acyclic network `G_T(j)`. The path--atom bijection gives `M_{a,b}=s_{a+b}`. LGV expands each tau determinant as a sum of nonintersecting identity path-family weights. All summands are nonnegative. ∎
 
 ---
 
-## 7. Placement in the final chain
+## 8. Placement in the final chain
 
 ```text
 D-positivity
