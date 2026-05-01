@@ -69,20 +69,37 @@ def write_gap_report(dag: dict, gaps: list[tuple[str, str, str]]) -> str:
         ]
     else:
         first_gap_id, first_gap_status, first_gap_notes = gaps[0]
+        first_node_data = dag["nodes"].get(first_gap_id, {})
+        first_missing_cert = first_node_data.get("certificate_file") or "none"
+        first_missing_dep = ", ".join(first_node_data.get("dependencies", [])) or "none"
+        if first_gap_status == "OPEN_GAP":
+            first_action = f"Create a parametric certificate for {first_gap_id} and add theorem file."
+        else:
+            first_action = f"Upgrade {first_gap_id} from finite-window check to a parametric certificate."
         lines += [
             "## Result",
             "",
             f"**FIRST GAP: `{first_gap_id}` — {first_gap_status}**",
             "",
-            f"Reason: {first_gap_notes}",
+            f"- node: `{first_gap_id}`",
+            f"- missing_certificate: `{first_missing_cert}`",
+            f"- missing_dependency: `{first_missing_dep}`",
+            f"- suggested_next_action: {first_action}",
             "",
             "## All Weak Nodes",
             "",
-            "| Node | Status | Notes |",
-            "|------|--------|-------|",
+            "| Node | Status | Missing Certificate | Suggested Action |",
+            "|------|--------|--------------------|--------------------|",
         ]
         for node_id, status, notes in gaps:
-            lines.append(f"| `{node_id}` | {status} | {notes} |")
+            nd = dag["nodes"].get(node_id, {})
+            mc = nd.get("certificate_file") or "none"
+            action = (
+                f"Add parametric cert for {node_id}"
+                if status == "OPEN_GAP"
+                else f"Upgrade {node_id} to parametric cert"
+            )
+            lines.append(f"| `{node_id}` | {status} | `{mc}` | {action} |")
         lines += [
             "",
             "## What This Means",

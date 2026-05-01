@@ -1,10 +1,10 @@
 {
   "meta": {
-    "last_updated": "2026-05-01T17:07:40Z",
-    "commit_sha": "7263f09f047e4b60229567779a1ea120b52f53b0",
+    "last_updated": "2026-05-01T17:21:07Z",
+    "commit_sha": "2661d4b630da64779be57b8839100909b6901b80",
     "rh_closure_status": "certified_local",
     "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
-    "last_prove_run": "2026-05-01T17:07:41Z",
+    "last_prove_run": "2026-05-01T17:21:07Z",
     "proof_attempt_status": "NO_STRUCTURAL_GAP"
   },
   "nodes": {
@@ -19,7 +19,11 @@
       ],
       "notes": [
         "Raw RH statement: all nontrivial zeros of zeta on Re(s)=1/2"
-      ]
+      ],
+      "dependencies": [],
+      "theorem_file": "inputs/rh_raw_hypothesis.yaml",
+      "certificate_path": null,
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "XI_REAL_FORM": {
       "title": "Xi Real Form",
@@ -35,7 +39,13 @@
       ],
       "notes": [
         "Xi(z)=xi(1/2+i z) has only real zeros iff RH holds"
-      ]
+      ],
+      "dependencies": [
+        "RH_RAW_TARGET"
+      ],
+      "theorem_file": "inputs/rh_raw_hypothesis.yaml",
+      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "JENSEN_HYPERBOLICITY": {
       "title": "Jensen Hyperbolicity Target",
@@ -51,7 +61,13 @@
       ],
       "notes": [
         "J_Xi^{d,n} hyperbolic for all d>=1, n>=0"
-      ]
+      ],
+      "dependencies": [
+        "XI_REAL_FORM"
+      ],
+      "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "certificate_path": "results/certificates/tau_sturm_parametric_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "STURM_PIVOT_POSITIVITY": {
       "title": "Sturm Pivot Positivity",
@@ -67,7 +83,13 @@
       ],
       "notes": [
         "Positive normalized Sturm pivots from Jensen hyperbolicity"
-      ]
+      ],
+      "dependencies": [
+        "JENSEN_HYPERBOLICITY"
+      ],
+      "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "certificate_path": "results/certificates/tau_sturm_parametric_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "TAU_SUBDISCRIMINANT": {
       "title": "Tau/Subdiscriminant Bridge",
@@ -83,7 +105,13 @@
       ],
       "notes": [
         "tau_j=Disc_j(P), H_j=N_j tau_j with N_j>0; Cauchy-Binet/Vandermonde"
-      ]
+      ],
+      "dependencies": [
+        "STURM_PIVOT_POSITIVITY"
+      ],
+      "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "certificate_path": "results/certificates/tau_sturm_parametric_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "AG_LGV_TRANSFER": {
       "title": "AG/LGV Transfer Identity",
@@ -99,7 +127,13 @@
       ],
       "notes": [
         "M_{a,b}=s_{a+b}, tau=sum nonintersecting path weights; path_atom_bijection+LGV"
-      ]
+      ],
+      "dependencies": [
+        "TAU_SUBDISCRIMINANT"
+      ],
+      "theorem_file": "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
+      "certificate_path": "results/certificates/ag_lgv_parametric_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "CELL_SUPPORT_POSITIVITY": {
       "title": "Cell Support Positivity",
@@ -115,7 +149,13 @@
       ],
       "notes": [
         "Cell-level support preservation for D-positivity argument"
-      ]
+      ],
+      "dependencies": [
+        "AG_LGV_TRANSFER"
+      ],
+      "theorem_file": "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+      "certificate_path": "results/certificates/d_positivity_parametric_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "D_POSITIVITY": {
       "title": "D-Positivity Theorem",
@@ -131,7 +171,13 @@
       ],
       "notes": [
         "D(m,ell,a)>=0; closed via canonical_refinement+kappa_s+dyadic_capacity+Uniform_Lift"
-      ]
+      ],
+      "dependencies": [
+        "CELL_SUPPORT_POSITIVITY"
+      ],
+      "theorem_file": "theorems/D_POSITIVITY_THEOREM.md",
+      "certificate_path": "results/certificates/d_positivity_parametric_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "DYADIC_TRANSPORT": {
       "title": "Dyadic Transport Theorem",
@@ -147,7 +193,13 @@
       ],
       "notes": [
         "Dyadic transport via support-preserving injection"
-      ]
+      ],
+      "dependencies": [
+        "D_POSITIVITY"
+      ],
+      "theorem_file": "docs/DYADIC_TRANSPORT_THEOREM.md",
+      "certificate_path": "results/certificates/d_positivity_parametric_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "RH_SYMBOLIC_CLOSURE": {
       "title": "RH Symbolic Closure",
@@ -162,11 +214,43 @@
       "notes": [
         "Full RH symbolic closure certified.",
         "certificate_path: results/certificates/rh_symbolic_closure_certificate.json"
-      ]
+      ],
+      "dependencies": [
+        "DYADIC_TRANSPORT"
+      ],
+      "theorem_file": "results/certificates/rh_symbolic_closure_certificate.json",
+      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
     },
     "RH_CLOSURE": {
       "status": "certified_local",
-      "title": "RH_CLOSURE"
+      "title": "RH_CLOSURE",
+      "dependencies": [
+        "RH_SYMBOLIC_CLOSURE"
+      ],
+      "theorem_file": "results/certificates/rh_symbolic_closure_certificate.json",
+      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "updated_at": "2026-05-01T17:19:13Z"
+    },
+    "RH_PROOF_ATTEMPT": {
+      "title": "Rh Proof Attempt",
+      "status": "certified_local",
+      "dependencies": [
+        "RH_SYMBOLIC_CLOSURE"
+      ],
+      "theorem_file": "results/certificates/rh_proof_attempt_dag.json",
+      "certificate_path": "results/certificates/rh_proof_attempt_dag.json",
+      "updated_at": "2026-05-01T17:19:13Z"
+    },
+    "RH_GAP_FINDER": {
+      "title": "Rh Gap Finder",
+      "status": "certified_local",
+      "dependencies": [
+        "RH_PROOF_ATTEMPT"
+      ],
+      "theorem_file": "results/certificates/rh_gap_report.md",
+      "certificate_path": "results/certificates/rh_gap_report.md",
+      "updated_at": "2026-05-01T17:19:13Z"
     }
   }
 }

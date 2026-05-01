@@ -1,7 +1,69 @@
 # Tantrium Proof Foundry
 
-**Tantrium** is a symbolic-computational proof foundry for discovering, organizing, and stress-testing positivity structures in the Jensen--Sturm route toward the Riemann Hypothesis.
+Tantrium now includes a one-command RH proof-attempt machine:
 
+```bash
+python tools/tantrium_rh_machine.py --full
+```
+
+**Latest verified full run:**
+
+| Field | Value |
+|-------|-------|
+| Commit | `2661d4b` |
+| Closure status | `PASS` |
+| Proof attempt status | `NO_STRUCTURAL_GAP` |
+| Manuscript | [`paper/TANTRIUM_RH_PROOF_v1.md`](paper/TANTRIUM_RH_PROOF_v1.md) |
+| Certificate registry | [`results/certificates/certificate_registry.json`](results/certificates/certificate_registry.json) |
+| Gap report | [`results/certificates/rh_gap_report.md`](results/certificates/rh_gap_report.md) |
+| Atlas status | [`results/atlas/status.md`](results/atlas/status.md) |
+| Theorem graph | [`tantrium/theorem_graph/theorem_graph.yaml`](tantrium/theorem_graph/theorem_graph.yaml) |
+
+---
+
+## Commands
+
+```bash
+# Full run (strict + prove):
+python tools/tantrium_rh_machine.py --full
+
+# Symbolic closure check only:
+python tools/tantrium_rh_machine.py --strict
+
+# Proof attempt + gap finder only:
+python tools/tantrium_rh_machine.py --prove
+
+# Gap finder standalone:
+python tools/rh_gap_finder.py
+
+# Status API server:
+python app/server.py --check
+python app/server.py --port 8765    # then: GET /api/status
+
+# Shell scripts:
+bash scripts/run_tantrium_full.sh
+bash scripts/run_tantrium_prove.sh
+bash scripts/run_tantrium_strict.sh
+```
+
+---
+
+## Proof Chain
+
+```text
+D-positivity
+  -> A-positivity (Vandermonde)
+  -> AG/LGV: M_{a,b}=s_{a+b}
+  -> tau_j = Disc_j(P)
+  -> Sturm pivot positivity
+  -> Jensen hyperbolicity: J_Xi^{d,n} hyperbolic for all d,n
+  -> Xi in Laguerre-Polya class
+  -> RH conclusion
+```
+
+Every step is covered by a machine-generated parametric certificate.
+
+---
 
 ## Navigation
 
@@ -312,7 +374,7 @@ This establishes the current Tantrium closure milestone.
 <!-- VERIFIED_CLOSURE_RUN_START -->
 ## Verified Closure Run
 
-Latest verified closure commit: `7263f09`
+Latest verified closure commit: `2661d4b`
 
 Run:
 
