@@ -2,6 +2,16 @@
 
 **Tantrium** is a symbolic-computational proof foundry for discovering, organizing, and stress-testing positivity structures in the Jensen--Sturm route toward the Riemann Hypothesis.
 
+
+## Navigation
+
+| Document | Purpose |
+|----------|---------|
+| [`TIMELINE.md`](TIMELINE.md) | Full development history — 11 phases, start to finish, with success status |
+| [`REPO_MAP.md`](REPO_MAP.md) | Complete directory and file map with descriptions |
+| [`results/atlas/status.md`](results/atlas/status.md) | Live Atlas status from last machine run |
+| [`results/certificates/rh_symbolic_closure_certificate.json`](results/certificates/rh_symbolic_closure_certificate.json) | Machine-readable closure certificate |
+
 The current repository state is no longer just an ell-kernel scanner. It now contains a raw-RH symbolic closure pipeline:
 
 ```text
