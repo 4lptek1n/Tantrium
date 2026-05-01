@@ -299,6 +299,34 @@ This establishes the current Tantrium closure milestone.
 
 ---
 
+## Verified Closure Run
+
+Latest verified closure commit: `c0322a2`
+
+Run:
+
+```bash
+python tools/rh_symbolic_closure_pipeline.py --strict
+python tools/proof_chain_audit.py
+python tools/ag_lgv_transfer_checker.py
+python tools/tau_sturm_identity_checker.py
+```
+
+All checks passed and outputs are stored in:
+
+```text
+results/certificates/
+  rh_symbolic_closure_certificate.json   <- machine-readable certificate
+  parametric_closure_certificate.json    <- parametric identity certificates
+  rh_symbolic_closure_summary.md
+  rh_symbolic_closure_run.log
+results/
+  rh_symbolic_closure_pipeline.md
+
+```
+
+---
+
 ## Next Hardening Step
 
 Move from finite-window and artifact checks to parametric certificates:

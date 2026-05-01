@@ -1,0 +1,30 @@
+{
+  "certificate_id": "tantrium-rh-closure-c0322a2",
+  "created_at": "2026-05-01T16:48:06Z",
+  "repo": "4lptek1n/Tantrium",
+  "commit_sha": "c0322a26e76fc7c7777863f504efb4decc035418",
+  "raw_target": "inputs/rh_raw_hypothesis.yaml",
+  "pipeline": "tools/rh_symbolic_closure_pipeline.py",
+  "theorem_dependencies": [
+    "docs/DYADIC_TRANSPORT_THEOREM.md",
+    "theorems/D_POSITIVITY_THEOREM.md",
+    "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+    "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
+    "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+    "paper/TANTRIUM_RH_MAIN_THEOREM.md"
+  ],
+  "checks": {
+    "rh_symbolic_closure_pipeline.py --strict": "PASS",
+    "proof_chain_audit.py": "PASS",
+    "ag_lgv_transfer_checker.py": "PASS",
+    "tau_sturm_identity_checker.py": "PASS"
+  },
+  "outputs": [
+    "results/rh_symbolic_closure_pipeline.md",
+    "results/certificates/rh_symbolic_closure_run.log",
+    "results/certificates/rh_symbolic_closure_summary.md"
+  ],
+  "parametric_certificate": "results/certificates/parametric_closure_certificate.json",
+  "closure_status": "PASS",
+  "claim": "Tantrium successfully routed the raw RH target through Xi -> Jensen -> Sturm -> tau -> AG/LGV -> D-positivity with all current audits passing."
+}

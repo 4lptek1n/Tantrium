@@ -1,3 +1,5 @@
+> **Machine-readable certificate:** `results/certificates/rh_symbolic_closure_certificate.json`
+
 # Tantrium RH Symbolic Closure Summary
 
 **Run Date:** Fri May  1 04:43:09 PM UTC 2026
