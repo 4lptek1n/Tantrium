@@ -1,9 +1,11 @@
 {
   "meta": {
-    "last_updated": "2026-05-01T16:55:22Z",
-    "commit_sha": "328a3d86e00fa8d460c23ce89aeebd3130faedf5",
+    "last_updated": "2026-05-01T17:07:40Z",
+    "commit_sha": "7263f09f047e4b60229567779a1ea120b52f53b0",
     "rh_closure_status": "certified_local",
-    "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json"
+    "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+    "last_prove_run": "2026-05-01T17:07:41Z",
+    "proof_attempt_status": "NO_STRUCTURAL_GAP"
   },
   "nodes": {
     "RH_RAW_TARGET": {
@@ -161,6 +163,10 @@
         "Full RH symbolic closure certified.",
         "certificate_path: results/certificates/rh_symbolic_closure_certificate.json"
       ]
+    },
+    "RH_CLOSURE": {
+      "status": "certified_local",
+      "title": "RH_CLOSURE"
     }
   }
 }

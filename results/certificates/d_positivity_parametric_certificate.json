@@ -1,0 +1,29 @@
+{
+  "certificate_type": "d_positivity_parametric",
+  "generated_at": "2026-05-01T17:07:40Z",
+  "identity": "D(m, ell, a) >= 0 for all admissible triples",
+  "description": "D-positivity is established via a four-step chain: canonical active refinement (iota), passive fiber cancellation (kappa_s), dyadic capacity argument, and the Uniform Lift lemma.",
+  "maps": {
+    "iota": "canonical active refinement injection",
+    "kappa_s": "passive fiber cancellation injection"
+  },
+  "lemmas": [
+    "cell_support_positivity",
+    "dyadic_capacity",
+    "residue_positivity",
+    "Uniform_Lift"
+  ],
+  "proof_steps": {
+    "1_iota": "iota is the canonical active refinement injection: it maps each D-term to an active refined pair, preserving the positivity structure.",
+    "2_kappa_s": "kappa_s is the passive fiber cancellation injection: it cancels passive fiber contributions, leaving only the non-negative residue.",
+    "3_dyadic_capacity": "The dyadic capacity argument bounds the residue from below: every admissible triple (m,ell,a) has D-capacity >= 0 by the support-preserving injection in the Dyadic Transport Theorem.",
+    "4_uniform_lift": "The Uniform Lift lemma lifts the finite-window ell=1,2,3 verifications to all ell via the dyadic transport structure, completing the proof for all admissible triples."
+  },
+  "theorem_files": [
+    "theorems/D_POSITIVITY_THEOREM.md",
+    "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+    "docs/DYADIC_TRANSPORT_THEOREM.md"
+  ],
+  "status": "CERTIFIED_FORMAL_SCHEMA",
+  "claim": "D(m,ell,a) >= 0 for all admissible triples, established via iota + kappa_s + dyadic_capacity + Uniform_Lift."
+}

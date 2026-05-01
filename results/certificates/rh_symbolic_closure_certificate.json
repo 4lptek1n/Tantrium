@@ -1,8 +1,8 @@
 {
-  "certificate_id": "tantrium-rh-closure-328a3d8",
-  "generated_at": "2026-05-01T16:55:22Z",
+  "certificate_id": "tantrium-rh-closure-7263f09",
+  "generated_at": "2026-05-01T17:07:40Z",
   "repo": "4lptek1n/Tantrium",
-  "current_commit_sha": "328a3d86e00fa8d460c23ce89aeebd3130faedf5",
+  "current_commit_sha": "7263f09f047e4b60229567779a1ea120b52f53b0",
   "raw_target": "inputs/rh_raw_hypothesis.yaml",
   "pipeline": "tools/tantrium_rh_machine.py",
   "theorem_dependencies": [

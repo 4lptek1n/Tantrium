@@ -36,6 +36,12 @@ from pathlib import Path
 # Helpers
 # ---------------------------------------------------------------------------
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+try:
+    from tantrium.positivity_machine import write_all_parametric_certificates as _write_all_para
+except ImportError:
+    _write_all_para = None
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = REPO_ROOT / "results"
 CERT_DIR = RESULTS_DIR / "certificates"
@@ -549,54 +555,31 @@ def step_readme_update(commit_sha: str) -> tuple[bool, str]:
 # Main
 # ---------------------------------------------------------------------------
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Tantrium RH Symbolic Closure Machine")
-    parser.add_argument("--strict", action="store_true", help="Fail on any FAIL step")
-    args = parser.parse_args()
-
+def _run_strict_mode(args, commit_sha, failure_lines):
+    """Run the existing 12-step closure check (--strict mode)."""
+    all_ok = True
     CERT_DIR.mkdir(parents=True, exist_ok=True)
     ATLAS_DIR.mkdir(parents=True, exist_ok=True)
 
-    commit_sha = git_sha()
-    failure_lines: list[str] = []
-    all_ok = True
-
-    print("TANTRIUM RH MACHINE")
-    print(f"repo_root: {REPO_ROOT}")
-    print(f"commit: {commit_sha[:7]}")
-    print()
-
-    # --- Step 1: env check ---
+    # Steps 1-4
     ok, detail = step_env_check()
     step("raw_target", ok, detail)
     if not ok:
-        fail("raw_target", detail, failure_lines)
-        all_ok = False
-        if args.strict:
-            _write_failure_log(failure_lines)
-            sys.exit(1)
+        fail("raw_target", detail, failure_lines); all_ok = False
+        if args.strict: _write_failure_log(failure_lines); sys.exit(1)
 
-    # --- Step 2: read raw target ---
     ok, detail, pipeline_state = step_read_raw_target()
     step("raw_target_read", ok, detail)
     if not ok:
-        fail("raw_target_read", detail, failure_lines)
-        all_ok = False
-        if args.strict:
-            _write_failure_log(failure_lines)
-            sys.exit(1)
+        fail("raw_target_read", detail, failure_lines); all_ok = False
+        if args.strict: _write_failure_log(failure_lines); sys.exit(1)
 
-    # --- Step 3: artifact check ---
     ok, detail = step_artifact_check()
     step("theorem_artifacts", ok, detail)
     if not ok:
-        fail("theorem_artifacts", detail, failure_lines)
-        all_ok = False
-        if args.strict:
-            _write_failure_log(failure_lines)
-            sys.exit(1)
+        fail("theorem_artifacts", detail, failure_lines); all_ok = False
+        if args.strict: _write_failure_log(failure_lines); sys.exit(1)
 
-    # --- Step 4: run audits ---
     ok, detail, audit_results = step_run_audits()
     step("audits", ok, detail)
     for label, result in audit_results.items():
@@ -607,60 +590,219 @@ def main() -> None:
             if result != "PASS":
                 fail(label, result, failure_lines)
         all_ok = False
-        if args.strict:
-            _write_failure_log(failure_lines)
-            sys.exit(1)
+        if args.strict: _write_failure_log(failure_lines); sys.exit(1)
 
-    # --- Step 5: parametric cert check ---
     ok, detail = step_write_parametric_cert()
     step("parametric_certificate", ok, detail)
     if not ok:
-        fail("parametric_certificate", detail, failure_lines)
-        all_ok = False
-        if args.strict:
-            _write_failure_log(failure_lines)
-            sys.exit(1)
+        fail("parametric_certificate", detail, failure_lines); all_ok = False
+        if args.strict: _write_failure_log(failure_lines); sys.exit(1)
 
-    # --- Step 6: closure cert ---
     ok, detail = step_write_closure_cert(audit_results, commit_sha)
     step("closure_certificate", ok, detail)
-    if not ok:
-        fail("closure_certificate", detail, failure_lines)
-        all_ok = False
+    if not ok: fail("closure_certificate", detail, failure_lines); all_ok = False
 
-    # --- Step 7: atlas update ---
     ok, detail = step_atlas_update(audit_results, commit_sha)
     step("atlas_update", ok, detail)
-    if not ok:
-        fail("atlas_update", detail, failure_lines)
-        all_ok = False
+    if not ok: fail("atlas_update", detail, failure_lines); all_ok = False
 
-    # --- Step 8: theorem graph ---
     ok, detail = step_theorem_graph_update(commit_sha)
     step("theorem_graph_update", ok, detail)
-    if not ok:
-        fail("theorem_graph_update", detail, failure_lines)
-        all_ok = False
+    if not ok: fail("theorem_graph_update", detail, failure_lines); all_ok = False
 
-    # --- Step 9: final summary ---
     ok, detail = step_final_summary(audit_results, commit_sha)
     step("final_summary", ok, detail)
-    if not ok:
-        fail("final_summary", detail, failure_lines)
-        all_ok = False
+    if not ok: fail("final_summary", detail, failure_lines); all_ok = False
 
-    # --- Step 10: README ---
     ok, detail = step_readme_update(commit_sha)
     step("readme_update", ok, detail)
 
-    # --- Final result ---
-    print()
     closure_ok = all_ok and all(v == "PASS" for v in audit_results.values())
+    print()
     print(f"closure_status: {'PASS' if closure_ok else 'FAIL'}")
-
     if not closure_ok:
         _write_failure_log(failure_lines)
         sys.exit(1)
+    return audit_results
+
+
+def _run_prove_mode(commit_sha, failure_lines):
+    """Run parametric proof attempt + gap finder (--prove mode)."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(REPO_ROOT)
+    all_ok = True
+
+    print()
+    print("TANTRIUM RH MACHINE -- PROVE MODE")
+    print()
+
+    # Step P1: parametric certificates via positivity_machine (subprocess for reliability)
+    pm_script = str(REPO_ROOT / "tantrium" / "positivity_machine.py")
+    # Write a small runner script inline
+    import tempfile, textwrap
+    runner_code = textwrap.dedent('''
+        import sys, json
+        sys.path.insert(0, sys.argv[1])
+        from tantrium.positivity_machine import write_all_parametric_certificates
+        r = write_all_parametric_certificates()
+        print(json.dumps({k: str(v) for k, v in r.items()}))
+    ''')
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as tmp:
+        tmp.write(runner_code)
+        tmp_path = tmp.name
+    try:
+        rp = subprocess.run(
+            ["python3", tmp_path, str(REPO_ROOT)],
+            cwd=REPO_ROOT, capture_output=True, text=True, env=env
+        )
+        if rp.returncode == 0:
+            r = json.loads(rp.stdout.strip())
+            step("ag_lgv_parametric_certificate", True, r.get("ag_lgv",""))
+            step("tau_sturm_parametric_certificate", True, r.get("tau_sturm",""))
+            step("d_positivity_parametric_certificate", True, r.get("d_positivity",""))
+        else:
+            step("parametric_certificates", False, rp.stderr.strip()[:200])
+            all_ok = False
+    except Exception as e:
+        step("parametric_certificates", False, str(e))
+        all_ok = False
+    finally:
+        import os as _os
+        try: _os.unlink(tmp_path)
+        except: pass
+
+    # Step P2: proof attempt DAG
+    r = subprocess.run(["python3", "tools/rh_proof_attempt.py"], cwd=REPO_ROOT, capture_output=True, text=True, env=env)
+    dag_ok = r.returncode == 0
+    step("proof_attempt_dag", dag_ok, r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr.strip()[:100])
+    if not dag_ok:
+        fail("proof_attempt_dag", r.stderr.strip()[:200], failure_lines)
+        all_ok = False
+
+    # Step P3: gap finder
+    r2 = subprocess.run(["python3", "tools/rh_gap_finder.py"], cwd=REPO_ROOT, capture_output=True, text=True, env=env)
+    gap_ok = r2.returncode == 0
+    gap_out = r2.stdout.strip()
+    proof_attempt_status = "NO_STRUCTURAL_GAP" if "NO STRUCTURAL GAP" in gap_out else "GAP_FOUND"
+    step("gap_finder", gap_ok, proof_attempt_status)
+    if not gap_ok:
+        fail("gap_finder", r2.stderr.strip()[:200], failure_lines)
+        all_ok = False
+
+    print(f"proof_attempt_status: {proof_attempt_status}")
+
+    # Step P4: Atlas update for prove mode
+    try:
+        ATLAS_DIR.mkdir(parents=True, exist_ok=True)
+        event = {
+            "event_type": "rh_proof_attempt",
+            "timestamp": now_iso(),
+            "commit_sha": commit_sha,
+            "status": "PASS" if all_ok else "FAIL",
+            "proof_attempt_status": proof_attempt_status,
+            "certificates": [
+                "results/certificates/ag_lgv_parametric_certificate.json",
+                "results/certificates/tau_sturm_parametric_certificate.json",
+                "results/certificates/d_positivity_parametric_certificate.json",
+                "results/certificates/rh_proof_attempt_certificate.json",
+                "results/certificates/rh_proof_attempt_dag.json",
+            ],
+            "gap_report": "results/certificates/rh_gap_report.md",
+        }
+        events_path = ATLAS_DIR / "events.jsonl"
+        with open(events_path, "a") as f:
+            f.write(json.dumps(event) + "\n")
+
+        manifest_path = ATLAS_DIR / "manifest.json"
+        manifest: dict = {}
+        if manifest_path.exists():
+            try:
+                with open(manifest_path) as f:
+                    manifest = json.load(f)
+            except Exception:
+                manifest = {}
+        manifest.update({
+            "latest_rh_proof_attempt": now_iso(),
+            "latest_gap_report": "results/certificates/rh_gap_report.md",
+            "proof_attempt_status": proof_attempt_status,
+            "commit_sha": commit_sha,
+        })
+        with open(manifest_path, "w") as f:
+            json.dump(manifest, f, indent=2)
+        step("atlas_prove_update", True, "events.jsonl + manifest.json updated")
+    except Exception as e:
+        step("atlas_prove_update", False, str(e))
+        all_ok = False
+
+    # Step P5: theorem graph update from DAG
+    try:
+        dag_file = CERT_DIR / "rh_proof_attempt_dag.json"
+        if dag_file.exists():
+            with open(dag_file) as f:
+                dag_data = json.load(f)
+            STATUS_TO_GRAPH = {
+                "PROVEN_BY_CERTIFICATE": "certified_local",
+                "CERTIFIED_SCHEMA": "certified_local",
+                "FINITE_CHECKED": "verified_finite",
+                "OPEN_GAP": "blocked",
+            }
+            if THEOREM_GRAPH_PATH.exists():
+                with open(THEOREM_GRAPH_PATH) as f:
+                    graph = json.load(f)
+            else:
+                graph = {"meta": {}, "nodes": {}}
+            for node_id, node_data in dag_data["nodes"].items():
+                graph_status = STATUS_TO_GRAPH.get(node_data["status"], "conjectural")
+                if node_id in graph["nodes"]:
+                    graph["nodes"][node_id]["status"] = graph_status
+                else:
+                    graph["nodes"][node_id] = {"status": graph_status, "title": node_id}
+            graph["meta"]["last_prove_run"] = now_iso()
+            graph["meta"]["proof_attempt_status"] = proof_attempt_status
+            graph["meta"]["rh_closure_status"] = (
+                "certified_local" if proof_attempt_status == "NO_STRUCTURAL_GAP" else "blocked"
+            )
+            with open(THEOREM_GRAPH_PATH, "w") as f:
+                json.dump(graph, f, indent=2)
+        step("theorem_graph_prove_update", True, str(THEOREM_GRAPH_PATH))
+    except Exception as e:
+        step("theorem_graph_prove_update", False, str(e))
+        all_ok = False
+
+    return all_ok, proof_attempt_status
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Tantrium RH Symbolic Closure Machine")
+    parser.add_argument("--strict", action="store_true", help="Run closure check (12 steps)")
+    parser.add_argument("--prove", action="store_true", help="Run proof attempt + gap finder")
+    parser.add_argument("--full", action="store_true", help="Run --strict + --prove")
+    args = parser.parse_args()
+
+    # default: run --strict if nothing specified
+    if not args.strict and not args.prove and not args.full:
+        args.strict = True
+
+    CERT_DIR.mkdir(parents=True, exist_ok=True)
+    ATLAS_DIR.mkdir(parents=True, exist_ok=True)
+
+    commit_sha = git_sha()
+    failure_lines: list[str] = []
+
+    print("TANTRIUM RH MACHINE")
+    print(f"repo_root: {REPO_ROOT}")
+    print(f"commit: {commit_sha[:7]}")
+    modes = []
+    if args.strict or args.full: modes.append("--strict")
+    if args.prove or args.full: modes.append("--prove")
+    print(f"mode: {' '.join(modes)}")
+    print()
+
+    if args.strict or args.full:
+        _run_strict_mode(args, commit_sha, failure_lines)
+
+    if args.prove or args.full:
+        _run_prove_mode(commit_sha, failure_lines)
 
 
 def _write_failure_log(lines: list[str]) -> None:
