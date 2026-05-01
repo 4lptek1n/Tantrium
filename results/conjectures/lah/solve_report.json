@@ -1,0 +1,28 @@
+{
+  "blocker_certificate_path": "results/conjectures/lah/blocker_certificate.json",
+  "certificate_registry_loaded": true,
+  "command_used": "python tools/tantrium_autosolver.py --problem lah",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "counterexample_path": null,
+  "final_status": "BLOCKED_BY_NAMED_GAP",
+  "first_gap": "GENERAL_J_STAIRCASE_QUOTIENT_PROOF",
+  "generated_at": "2026-05-01T22:45:52Z",
+  "notes": [
+    "Gate A/B artifacts and finite proofs are present, but the general-j staircase quotient has not been promoted to a full parametric proof certificate."
+  ],
+  "problem": "lah",
+  "problem_spec": {
+    "exists": true,
+    "path": "inputs\\conjectures\\lah.yaml",
+    "raw": "name: Lah Shadow / Gate A\nstatement: The lambda^{-2} Gate A perturbation has Lah polynomial leading term.\nreduction_chain:\n  - LAH_SHADOW\n  - GATE_A_PERTURBATION\n  - GATE_A_CROSS_RATIO\nknown_theorems:\n  - Lah polynomial expansion\n  - Exact lambda^{-2} perturbation\ncertificates:\n  - math/gate_a.py\n  - math/gate_a_verify.py\nexpected_gap_types:\n  - SYMBOLIC_PARAMETER_ENCODING\nmachine_entrypoint: none\n"
+  },
+  "proof_certificate_path": null,
+  "strategies": [
+    {
+      "detail": "Gate A/B artifacts and finite proofs are present, but the general-j staircase quotient has not been promoted to a full parametric proof certificate.",
+      "name": "schema_lifter_lah",
+      "status": "BLOCKED_BY_NAMED_GAP"
+    }
+  ],
+  "theorem_graph_loaded": true
+}

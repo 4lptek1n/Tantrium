@@ -1,0 +1,13 @@
+{
+  "blocked_node": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
+  "certificate_type": "named_blocker",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "final_status": "BLOCKED_BY_NAMED_GAP",
+  "first_gap": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
+  "frontier_certificate_path": "results/conjectures/coefficient_positivity/frontier_certificate.json",
+  "generated_at": "2026-05-01T22:45:53Z",
+  "named_gap": "PARAMETRIC_POSITIVITY_NOT_YET_CERTIFIED",
+  "problem": "coefficient_positivity",
+  "reason": "Atlas data and linked Gate B/D-positivity/AG-LGV artifacts are present, but the first uncertified coefficient frontier is not yet promoted to a parametric positivity certificate.",
+  "symbolic_law_candidate_path": "results/conjectures/coefficient_positivity/symbolic_law_candidate.json"
+}

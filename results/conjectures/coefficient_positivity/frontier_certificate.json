@@ -1,0 +1,37 @@
+{
+  "atlas_manifest": {
+    "path": "results/atlas/manifest.json",
+    "sha256": "a7d06fbaa94419a3cecbc54729b1d837ce15ef2119c483b673f1adeac75f81c0"
+  },
+  "blocker_certificate_path": "results/conjectures/coefficient_positivity/blocker_certificate.json",
+  "blocker_type": "PARAMETRIC_POSITIVITY_NOT_YET_CERTIFIED",
+  "certificate_type": "frontier_certificate",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "counterexample_path": null,
+  "final_status": "BLOCKED_BY_NAMED_GAP",
+  "first_gap": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
+  "frontier": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
+  "generated_at": "2026-05-01T22:45:53Z",
+  "linked_artifacts": [
+    {
+      "path": "theorems/GATE_B_STAIRCASE_THEOREM.md",
+      "sha256": "29554a00f7748bbf846b7da6c4414628996cf8511e3ab71934f68e8337e78a8d"
+    },
+    {
+      "path": "theorems/D_POSITIVITY_THEOREM.md",
+      "sha256": "2b03b98b316c55d6b6964e5065b3aa967409ff70118a440431d2a29169060fe6"
+    },
+    {
+      "path": "results/certificates/ag_lgv_parametric_certificate.json",
+      "sha256": "ba84c031298ecea79adeee9e720d838d02f6bef47d18cfd3d56d2247d989f2c5"
+    }
+  ],
+  "probes_attempted": [
+    "atlas_manifest_read",
+    "Gate_B_staircase_link",
+    "D_positivity_link",
+    "AG_LGV_path_model_link",
+    "symbolic_law_candidate_generation"
+  ],
+  "problem": "coefficient_positivity"
+}

@@ -1,0 +1,28 @@
+{
+  "blocker_certificate_path": null,
+  "certificate_registry_loaded": true,
+  "command_used": "python tools/tantrium_autosolver.py --problem rh",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "counterexample_path": null,
+  "final_status": "INTERNAL_CLOSED",
+  "first_gap": null,
+  "generated_at": "2026-05-01T22:45:50Z",
+  "notes": [
+    "RH remains internally closed by Tantrium certificate stack."
+  ],
+  "problem": "rh",
+  "problem_spec": {
+    "exists": true,
+    "path": "inputs\\conjectures\\rh.yaml",
+    "raw": "name: Riemann Hypothesis\nstatement: All nontrivial zeros of zeta(s) lie on Re(s)=1/2.\nreduction_chain:\n  - RH_RAW_TARGET\n  - XI_REAL_FORM\n  - JENSEN_HYPERBOLICITY\n  - STURM_PIVOT_POSITIVITY\n  - TAU_SUBDISCRIMINANT\n  - AG_LGV_TRANSFER\n  - CELL_SUPPORT_POSITIVITY\n  - D_POSITIVITY\n  - DYADIC_TRANSPORT\n  - RH_CLOSURE\nknown_theorems:\n  - Polya-Jensen theorem\n  - Laguerre-Polya characterization\n  - Sturm theorem\n  - Cauchy-Binet\ncertificates:\n  - results/certificates/rh_symbolic_closure_certificate.json\n  - results/certificates/rh_proof_attempt_dag.json\nexpected_gap_types: []\nmachine_entrypoint: python tools/tantrium_rh_machine.py --full\n"
+  },
+  "proof_certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+  "strategies": [
+    {
+      "detail": "external_formalization:      PENDING",
+      "name": "rh_machine_full",
+      "status": "PASS"
+    }
+  ],
+  "theorem_graph_loaded": true
+}

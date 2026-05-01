@@ -1,0 +1,30 @@
+{
+  "blocked_node": "MINOR_ARC_BOUND",
+  "certificate_type": "named_blocker",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "dependencies": [
+    {
+      "name": "singular_series_positivity",
+      "status": "PROVEN_BY_CERTIFICATE"
+    },
+    {
+      "name": "circle_method_major_arc",
+      "status": "CERTIFIED_SCHEMA"
+    },
+    {
+      "name": "minor_arc",
+      "status": "BLOCKED_BY_NAMED_GAP"
+    }
+  ],
+  "final_status": "BLOCKED_BY_NAMED_GAP",
+  "first_gap": "MINOR_ARC_UNCONDITIONAL_BOUND",
+  "generated_at": "2026-05-01T22:45:52Z",
+  "named_gap": "MINOR_ARC_UNCONDITIONAL_BOUND",
+  "problem": "goldbach",
+  "reason": "Binary Goldbach closure requires an unconditional minor arc bound strong enough to dominate the Hardy-Littlewood major arc main term.",
+  "suggested_attack_path": [
+    "Strengthen binary minor arc estimates without GRH.",
+    "Produce a certificate that |I_minor(N)| is o(N/log(N)^2).",
+    "Bind the estimate to the existing major-arc certificate."
+  ]
+}

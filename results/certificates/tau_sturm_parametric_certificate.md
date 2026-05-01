@@ -1,6 +1,6 @@
 # Tau/Sturm Parametric Certificate
 
-Generated: 2026-05-01T20:35:53Z
+Generated: 2026-05-01T22:45:51Z
 
 ## Identities
 

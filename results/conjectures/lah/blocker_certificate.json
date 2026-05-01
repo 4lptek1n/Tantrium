@@ -1,0 +1,72 @@
+{
+  "artifacts": [
+    {
+      "path": "math/gate_a.py",
+      "sha256": "f6a8807a25d6fb286b596138f3c2b09061cc72679eb458734a71254f80d359e9"
+    },
+    {
+      "path": "math/gate_a_verify.py",
+      "sha256": "1667ec24cdd1e4ca86c1f737998c7e571057ee154dac70bf20bd8edb9179e807"
+    },
+    {
+      "path": "math/SUMMARY.md",
+      "sha256": "a066faaefbe6f0cd507566c142b7e5629f2985ea6766075e81359fbaffd0c60d"
+    },
+    {
+      "path": "theorems/GATE_A_PERTURBATION_THEOREM.md",
+      "sha256": "2fbaaa46bce2aaaf3deef1a4d8a89968497fefd3e534b59db84e2a7a0dce7ffa"
+    },
+    {
+      "path": "theorems/GATE_A_CROSS_RATIO_THEOREM.md",
+      "sha256": "76caa5f9877d966b290e7bc452a73c1d74d5d4eefe89a5cb18165c232aea5d71"
+    },
+    {
+      "path": "theorems/GATE_B_STAIRCASE_THEOREM.md",
+      "sha256": "29554a00f7748bbf846b7da6c4414628996cf8511e3ab71934f68e8337e78a8d"
+    },
+    {
+      "path": "theorems/GATE_B_FINDINGS.md",
+      "sha256": "690f36c87be73352f3752eb3fb85532f04cfacfa0c66b9797e844747d70e2ae6"
+    },
+    {
+      "path": "theorems/FIRST_FIVE_PIVOTS.md",
+      "sha256": "35c0ef4c921c056089a1f25046a4ac6e357267d51e66fbac6256119b6ef76236"
+    }
+  ],
+  "attempted_nodes": [
+    "LAH_SHADOW",
+    "GATE_A_PERTURBATION",
+    "GATE_A_CROSS_RATIO",
+    "GATE_B_STAIRCASE_RAMP",
+    "FIRST_FIVE_PIVOTS"
+  ],
+  "blocked_node": "GATE_B_STAIRCASE_QUOTIENT",
+  "blocker_certificate_path": "results/conjectures/lah/blocker_certificate.json",
+  "certificate_type": "named_blocker",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "dependencies": [
+    {
+      "name": "LAH_SHADOW",
+      "status": "CERTIFIED_SCHEMA"
+    },
+    {
+      "name": "GATE_A_PERTURBATION",
+      "status": "CERTIFIED_SCHEMA"
+    },
+    {
+      "name": "GATE_A_CROSS_RATIO",
+      "status": "CERTIFIED_SCHEMA"
+    },
+    {
+      "name": "FIRST_FIVE_PIVOTS",
+      "status": "VERIFIED_FINITE"
+    }
+  ],
+  "final_status": "BLOCKED_BY_NAMED_GAP",
+  "first_gap": "GENERAL_J_STAIRCASE_QUOTIENT_PROOF",
+  "generated_at": "2026-05-01T22:45:52Z",
+  "missing_artifacts": [],
+  "named_gap": "GENERAL_J_STAIRCASE_QUOTIENT_PROOF",
+  "problem": "lah",
+  "reason": "Gate A/B artifacts and finite proofs are present, but the general-j staircase quotient has not been promoted to a full parametric proof certificate."
+}

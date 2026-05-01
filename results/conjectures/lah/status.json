@@ -1,14 +1,19 @@
 {
-  "closure_status": "CERTIFIED_SCHEMA",
+  "blocker_certificate_path": "results/conjectures/lah/blocker_certificate.json",
+  "closure_status": "BLOCKED_BY_NAMED_GAP",
+  "command_used": "python tools/tantrium_conjecture_machine.py --problem lah --solve --full",
+  "counterexample_path": null,
   "external_formalization": "PENDING",
-  "first_gap": null,
-  "generated_at": "2026-05-01T20:35:54Z",
-  "internal_tantrium_closure": "CERTIFIED_SCHEMA",
+  "final_status": "BLOCKED_BY_NAMED_GAP",
+  "first_gap": "GENERAL_J_STAIRCASE_QUOTIENT_PROOF",
+  "generated_at": "2026-05-01T22:45:52Z",
+  "internal_tantrium_closure": "BLOCKED_BY_NAMED_GAP",
   "main_certificate": "math/gate_a_verify.py",
   "name": "lah",
   "problem": "lah",
-  "proof_attempt_status": "HISTORICAL_SCHEMA",
-  "run_detail": "not required",
+  "proof_attempt_status": "BLOCKED_BY_NAMED_GAP",
+  "proof_certificate_path": null,
+  "run_detail": "solve-or-certify-gap completed",
   "run_ok": true,
-  "status": "CERTIFIED_SCHEMA"
+  "status": "BLOCKED_BY_NAMED_GAP"
 }

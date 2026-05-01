@@ -1,14 +1,19 @@
 {
-  "closure_status": "ATLAS_DRIVEN",
+  "blocker_certificate_path": "results/conjectures/coefficient_positivity/blocker_certificate.json",
+  "closure_status": "BLOCKED_BY_NAMED_GAP",
+  "command_used": "python tools/tantrium_conjecture_machine.py --problem coefficient_positivity --solve --full",
+  "counterexample_path": null,
   "external_formalization": "PENDING",
+  "final_status": "BLOCKED_BY_NAMED_GAP",
   "first_gap": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
-  "generated_at": "2026-05-01T20:35:55Z",
-  "internal_tantrium_closure": "ATLAS_DRIVEN",
+  "generated_at": "2026-05-01T22:45:53Z",
+  "internal_tantrium_closure": "BLOCKED_BY_NAMED_GAP",
   "main_certificate": "results/atlas/manifest.json",
   "name": "coefficient_positivity",
   "problem": "coefficient_positivity",
-  "proof_attempt_status": "FINITE_AND_ATLAS_GUARDED",
-  "run_detail": "not required",
+  "proof_attempt_status": "BLOCKED_BY_NAMED_GAP",
+  "proof_certificate_path": null,
+  "run_detail": "solve-or-certify-gap completed",
   "run_ok": true,
-  "status": "ATLAS_DRIVEN"
+  "status": "BLOCKED_BY_NAMED_GAP"
 }

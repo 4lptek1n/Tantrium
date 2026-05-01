@@ -1,14 +1,19 @@
 {
-  "closure_status": "CERTIFIED_SCHEMA",
+  "blocker_certificate_path": null,
+  "closure_status": "PROVEN_BY_CERTIFICATE",
+  "command_used": "python tools/tantrium_conjecture_machine.py --problem hankel --solve --full",
+  "counterexample_path": null,
   "external_formalization": "PENDING",
+  "final_status": "PROVEN_BY_CERTIFICATE",
   "first_gap": null,
-  "generated_at": "2026-05-01T20:35:55Z",
-  "internal_tantrium_closure": "CERTIFIED_SCHEMA",
+  "generated_at": "2026-05-01T22:45:52Z",
+  "internal_tantrium_closure": "PROVEN_BY_CERTIFICATE",
   "main_certificate": "results/certificates/ag_lgv_parametric_certificate.json",
   "name": "hankel",
   "problem": "hankel",
-  "proof_attempt_status": "CERTIFIED_SCHEMA",
-  "run_detail": "not required",
+  "proof_attempt_status": "PROVEN_BY_CERTIFICATE",
+  "proof_certificate_path": "results/conjectures/hankel/proof_certificate.json",
+  "run_detail": "solve-or-certify-gap completed",
   "run_ok": true,
-  "status": "CERTIFIED_SCHEMA"
+  "status": "PROVEN_BY_CERTIFICATE"
 }

@@ -57,6 +57,13 @@ python tools/tantrium_theorem_graph_audit.py
 python tools/tantrium_conjecture_machine.py --problem rh --full
 python tools/tantrium_conjecture_machine.py --problem goldbach --full
 
+# Solve-or-certify-gap mode:
+python tools/tantrium_conjecture_machine.py --problem rh --solve --full
+python tools/tantrium_conjecture_machine.py --problem goldbach --solve --full
+python tools/tantrium_conjecture_machine.py --problem lah --solve --full
+python tools/tantrium_conjecture_machine.py --problem hankel --solve --full
+python tools/tantrium_conjecture_machine.py --problem coefficient_positivity --solve --full
+
 # Status API server:
 python app/server.py --check
 python app/server.py --port 8765    # then: GET /api/status
@@ -408,7 +415,7 @@ This establishes the current Tantrium closure milestone.
 <!-- VERIFIED_CLOSURE_RUN_START -->
 ## Verified Closure Run
 
-Latest verified closure commit: `dd73547`
+Latest verified closure commit: `2357a44`
 
 Run:
 

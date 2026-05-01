@@ -1,0 +1,15 @@
+{
+  "candidate_links": [
+    "log_det_cumulants",
+    "Gate_B_staircase_quotient",
+    "D_positivity",
+    "AG_LGV_path_model"
+  ],
+  "certificate_type": "symbolic_law_candidate",
+  "deep": false,
+  "generated_at": "2026-05-01T22:45:53Z",
+  "max_frontier": 5,
+  "problem": "coefficient_positivity",
+  "reason": "No all-parameter positivity certificate was produced for the first uncertified atlas frontier.",
+  "status": "CANDIDATE_ONLY"
+}

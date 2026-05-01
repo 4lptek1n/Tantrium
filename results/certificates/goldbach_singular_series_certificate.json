@@ -2,7 +2,7 @@
   "certificate_type": "goldbach_singular_series",
   "claim": "G(n) = prod of positive local factors > 0 for all even n > 2.",
   "description": "G(n) > 0 for all even n > 2 by product formula positivity.",
-  "generated_at": "2026-05-01T20:35:54Z",
+  "generated_at": "2026-05-01T22:45:52Z",
   "proof_method": [
     "product_formula",
     "mertens_bound",

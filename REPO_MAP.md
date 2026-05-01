@@ -20,6 +20,10 @@ has a role in the project's history or current operation.
 | `tools/tantrium_formalization_audit.py` | Formalization-readiness classifier |
 | `tools/tantrium_theorem_graph_audit.py` | Theorem graph metadata and digest hardener |
 | `tools/tantrium_conjecture_machine.py` | General conjecture machine interface |
+| `tools/tantrium_autosolver.py` | Central solve-or-certify-gap autosolver |
+| `tools/tantrium_schema_lifter.py` | Schema-to-proof or named-blocker lifter |
+| `tools/tantrium_frontier_solver.py` | Atlas frontier solver and blocker generator |
+| `tools/tantrium_gap_certifier.py` | Theorem-level named blocker certificate writer |
 | `tools/goldbach_machine.py` | Goldbach control proof-attempt machine |
 | `tools/tantrium.py` | Proof Foundry CLI (atlas, scan, dispatch) |
 
@@ -137,6 +141,8 @@ has a role in the project's history or current operation.
 | `GATE_A_B_INTEGRATION.md` | Historical Gate A/B integration with current machine |
 | `PLATFORM_COMPATIBILITY.md` | Windows/Linux platform policy |
 | `TANTRIUM_CONJECTURE_MACHINE_REPORT.md` | Multi-problem status table |
+| `TANTRIUM_FULL_MACHINE_STATUS.md` | Solve-or-certify-gap final status table |
+| `TANTRIUM_AUTOSOLVER_ARCHITECTURE.md` | Autosolver architecture |
 | `FINAL_RH_PROOF_CHAIN.md` | Final proof chain assembly |
 | `PROOF_FOUNDRY_ARCHITECTURE.md` | Architecture overview |
 | `ELL3_ATOM_TO_RJ_MAP.md` | ell=3 atom to Rj map |

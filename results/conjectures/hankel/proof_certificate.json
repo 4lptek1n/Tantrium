@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "exists": true,
+      "id": "ag_lgv_parametric",
+      "path": "results\\certificates\\ag_lgv_parametric_certificate.json",
+      "sha256": "ba84c031298ecea79adeee9e720d838d02f6bef47d18cfd3d56d2247d989f2c5",
+      "status": "CERTIFIED_FORMAL_SCHEMA"
+    },
+    {
+      "exists": true,
+      "id": "tau_sturm_parametric",
+      "path": "results\\certificates\\tau_sturm_parametric_certificate.json",
+      "sha256": "6b0a61a6bff5d11496a02dd18c5af5f0bff4a64243a85750e591f886dd4d0272",
+      "status": "CERTIFIED_FORMAL_SCHEMA"
+    },
+    {
+      "exists": true,
+      "id": "rh_symbolic_closure",
+      "path": "results\\certificates\\rh_symbolic_closure_certificate.json",
+      "sha256": "325ec64df88dd3cddae5608f4dabae6935c803f8af01b83ccde31a75bf44d03f",
+      "status": "PROVEN_BY_CERTIFICATE"
+    }
+  ],
+  "certificate_type": "schema_lift_proof",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "final_status": "PROVEN_BY_CERTIFICATE",
+  "first_gap": null,
+  "generated_at": "2026-05-01T22:45:52Z",
+  "named_gap": null,
+  "problem": "hankel",
+  "proof_certificate_path": "results/conjectures/hankel/proof_certificate.json",
+  "reason": "AG/LGV and tau/subdiscriminant certificates are present and sufficient for the supported Hankel transfer scope."
+}

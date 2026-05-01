@@ -1,7 +1,7 @@
 {
   "certificates": [
     {
-      "content_digest": "ec314afdd09c8cb6",
+      "content_digest": "325ec64df88dd3cd",
       "depends_on": [],
       "description": "Symbolic closure of the RH chain.",
       "generated_by": "tools/rh_symbolic_closure_pipeline.py",
@@ -13,7 +13,7 @@
       "type": "symbolic_closure"
     },
     {
-      "content_digest": "e09697c1c30d634b",
+      "content_digest": "5befcaba13305943",
       "depends_on": [
         "rh_symbolic_closure"
       ],
@@ -27,7 +27,7 @@
       "type": "parametric_closure"
     },
     {
-      "content_digest": "f99134465007e845",
+      "content_digest": "ba84c031298ecea7",
       "depends_on": [
         "d_positivity_parametric"
       ],
@@ -41,7 +41,7 @@
       "type": "ag_lgv_parametric"
     },
     {
-      "content_digest": "7996b17791a7a5e5",
+      "content_digest": "6b0a61a6bff5d114",
       "depends_on": [
         "ag_lgv_parametric"
       ],
@@ -55,7 +55,7 @@
       "type": "tau_sturm_parametric"
     },
     {
-      "content_digest": "e70dd255b8bf95bb",
+      "content_digest": "c96f20bef9f508c6",
       "depends_on": [],
       "description": "D(m,ell,a) >= 0 for all admissible triples.",
       "generated_by": "tantrium/positivity_machine.py",
@@ -67,7 +67,7 @@
       "type": "d_positivity_parametric"
     },
     {
-      "content_digest": "591434a0c1f80b36",
+      "content_digest": "cc0b4cce746197e4",
       "depends_on": [
         "ag_lgv_parametric",
         "tau_sturm_parametric",
@@ -84,9 +84,61 @@
       "type": "proof_attempt_dag"
     }
   ],
+  "conjecture_solve_results": {
+    "coefficient_positivity": {
+      "blocker_certificate_path": "results/conjectures/coefficient_positivity/blocker_certificate.json",
+      "command_used": "python tools/tantrium_conjecture_machine.py --problem coefficient_positivity --solve --full",
+      "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+      "counterexample_path": null,
+      "final_status": "BLOCKED_BY_NAMED_GAP",
+      "first_gap": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
+      "generated_at": "2026-05-01T22:45:53Z",
+      "proof_certificate_path": null
+    },
+    "goldbach": {
+      "blocker_certificate_path": "results/conjectures/goldbach/blocker_certificate.json",
+      "command_used": "python tools/tantrium_conjecture_machine.py --problem goldbach --solve --full",
+      "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+      "counterexample_path": null,
+      "final_status": "BLOCKED_BY_NAMED_GAP",
+      "first_gap": "MINOR_ARC_UNCONDITIONAL_BOUND",
+      "generated_at": "2026-05-01T22:45:52Z",
+      "proof_certificate_path": null
+    },
+    "hankel": {
+      "blocker_certificate_path": null,
+      "command_used": "python tools/tantrium_conjecture_machine.py --problem hankel --solve --full",
+      "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+      "counterexample_path": null,
+      "final_status": "PROVEN_BY_CERTIFICATE",
+      "first_gap": null,
+      "generated_at": "2026-05-01T22:45:52Z",
+      "proof_certificate_path": "results/conjectures/hankel/proof_certificate.json"
+    },
+    "lah": {
+      "blocker_certificate_path": "results/conjectures/lah/blocker_certificate.json",
+      "command_used": "python tools/tantrium_conjecture_machine.py --problem lah --solve --full",
+      "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+      "counterexample_path": null,
+      "final_status": "BLOCKED_BY_NAMED_GAP",
+      "first_gap": "GENERAL_J_STAIRCASE_QUOTIENT_PROOF",
+      "generated_at": "2026-05-01T22:45:52Z",
+      "proof_certificate_path": null
+    },
+    "rh": {
+      "blocker_certificate_path": null,
+      "command_used": "python tools/tantrium_conjecture_machine.py --problem rh --solve --full",
+      "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+      "counterexample_path": null,
+      "final_status": "INTERNAL_CLOSED",
+      "first_gap": null,
+      "generated_at": "2026-05-01T22:45:52Z",
+      "proof_certificate_path": "results/certificates/rh_symbolic_closure_certificate.json"
+    }
+  },
   "gap_status": "NO_STRUCTURAL_GAP",
-  "generated_at": "2026-05-01T20:35:53Z",
-  "latest_commit": "dd735470eb2f64ee973b5c6b551211884d78ac66",
+  "generated_at": "2026-05-01T22:45:52Z",
+  "latest_commit": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
   "machine_entrypoint": "python tools/tantrium_rh_machine.py --full",
   "main_closure_certificate": "results/certificates/rh_symbolic_closure_certificate.json",
   "proof_attempt_status": "NO_STRUCTURAL_GAP",

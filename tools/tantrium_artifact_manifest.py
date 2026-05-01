@@ -170,6 +170,24 @@ ARTIFACTS: list[dict[str, str | None]] = [
         "theorem_node": "GOLDBACH_SINGULAR_SERIES",
         "certificate_id": "goldbach_singular_series",
     },
+    {"path": "tools/tantrium_autosolver.py", "role": "autosolver", "theorem_node": None, "certificate_id": None},
+    {"path": "tools/tantrium_frontier_solver.py", "role": "frontier_solver", "theorem_node": None, "certificate_id": None},
+    {"path": "tools/tantrium_schema_lifter.py", "role": "schema_lifter", "theorem_node": None, "certificate_id": None},
+    {"path": "tools/tantrium_gap_certifier.py", "role": "gap_certifier", "theorem_node": None, "certificate_id": None},
+    {"path": "tools/tantrium_conjecture_machine.py", "role": "solve_or_certify_gap_machine", "theorem_node": None, "certificate_id": None},
+    {"path": "docs/TANTRIUM_FULL_MACHINE_STATUS.md", "role": "full_machine_status", "theorem_node": None, "certificate_id": None},
+    {"path": "docs/TANTRIUM_AUTOSOLVER_ARCHITECTURE.md", "role": "autosolver_architecture", "theorem_node": None, "certificate_id": None},
+    {"path": "results/conjectures/rh/status.json", "role": "solve_status", "theorem_node": "RH_CLOSURE", "certificate_id": "rh_symbolic_closure", "required": False},
+    {"path": "results/conjectures/rh/solve_report.json", "role": "solve_report", "theorem_node": "RH_CLOSURE", "certificate_id": "rh_symbolic_closure", "required": False},
+    {"path": "results/conjectures/goldbach/status.json", "role": "solve_status", "theorem_node": "GOLDBACH_CONTROL", "certificate_id": None, "required": False},
+    {"path": "results/conjectures/goldbach/blocker_certificate.json", "role": "named_blocker", "theorem_node": "MINOR_ARC_BOUND", "certificate_id": None, "required": False},
+    {"path": "results/conjectures/lah/status.json", "role": "solve_status", "theorem_node": "GATE_A_PERTURBATION", "certificate_id": None, "required": False},
+    {"path": "results/conjectures/lah/blocker_certificate.json", "role": "named_blocker", "theorem_node": "GATE_B_STAIRCASE_QUOTIENT", "certificate_id": None, "required": False},
+    {"path": "results/conjectures/hankel/status.json", "role": "solve_status", "theorem_node": "AG_LGV_TRANSFER", "certificate_id": "ag_lgv_parametric", "required": False},
+    {"path": "results/conjectures/hankel/proof_certificate.json", "role": "proof_certificate", "theorem_node": "AG_LGV_TRANSFER", "certificate_id": "ag_lgv_parametric", "required": False},
+    {"path": "results/conjectures/coefficient_positivity/status.json", "role": "solve_status", "theorem_node": "FIRST_UNCERTIFIED_ATLAS_FRONTIER", "certificate_id": None, "required": False},
+    {"path": "results/conjectures/coefficient_positivity/frontier_certificate.json", "role": "frontier_certificate", "theorem_node": "FIRST_UNCERTIFIED_ATLAS_FRONTIER", "certificate_id": None, "required": False},
+    {"path": "results/conjectures/coefficient_positivity/blocker_certificate.json", "role": "named_blocker", "theorem_node": "FIRST_UNCERTIFIED_ATLAS_FRONTIER", "certificate_id": None, "required": False},
 ]
 
 
@@ -213,6 +231,7 @@ def artifact_record(spec: dict[str, str | None]) -> dict[str, Any]:
         "role": spec["role"],
         "theorem_node": spec["theorem_node"],
         "certificate_id": spec["certificate_id"],
+        "required": spec.get("required", True),
         "exists": exists,
         "size_bytes": path.stat().st_size if exists else None,
         "sha256": sha256_file(path) if exists else None,
@@ -323,7 +342,7 @@ def main() -> int:
     )
     MANIFEST_MD.write_text(write_manifest_md(manifest), encoding="utf-8")
 
-    missing = [item["path"] for item in manifest["artifacts"] if not item["exists"]]
+    missing = [item["path"] for item in manifest["artifacts"] if item.get("required", True) and not item["exists"]]
     print("TANTRIUM ARTIFACT MANIFEST")
     print(f"ARTIFACTS: {len(manifest['artifacts'])}")
     print(f"MISSING: {len(missing)}")

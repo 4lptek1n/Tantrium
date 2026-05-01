@@ -1,11 +1,9 @@
 {
   "meta": {
     "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
-    "commit_sha": "dd735470eb2f64ee973b5c6b551211884d78ac66",
-    "external_formalization": "PENDING",
-    "internal_tantrium_closure": "CLOSED",
-    "last_prove_run": "2026-05-01T20:35:53Z",
-    "last_updated": "2026-05-01T20:36:03Z",
+    "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+    "last_prove_run": "2026-05-01T22:45:52Z",
+    "last_updated": "2026-05-01T22:45:51Z",
     "proof_attempt_status": "NO_STRUCTURAL_GAP",
     "rh_closure_status": "PROVEN_BY_CERTIFICATE"
   },

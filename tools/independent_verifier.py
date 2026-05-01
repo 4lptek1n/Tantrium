@@ -44,6 +44,20 @@ REQUIRED_RH_DAG_NODES = [
     "RH_CLOSURE",
 ]
 
+FINAL_STATUSES = {
+    "INTERNAL_CLOSED",
+    "PROVEN_BY_CERTIFICATE",
+    "COUNTEREXAMPLE_FOUND",
+    "BLOCKED_BY_NAMED_GAP",
+}
+INTERMEDIATE_STATUSES = {
+    "CERTIFIED_SCHEMA",
+    "ATLAS_DRIVEN",
+    "VERIFIED_FINITE",
+    "CONDITIONAL_GAP",
+    "OPEN_GAP",
+}
+
 
 def rel_path(path: str) -> Path:
     return REPO_ROOT / path
@@ -243,28 +257,66 @@ def verify() -> dict[str, Any]:
     except Exception as exc:
         checks.append(check("atlas_manifest.parseable", False, str(exc)))
 
+    verify_problem_final_statuses(checks)
+
+    return build_report(checks)
+
+
+def verify_problem_final_statuses(checks: list[dict[str, Any]]) -> None:
     try:
-        goldbach = load_json("results/certificates/goldbach_proof_attempt_dag.json")
-        minor = goldbach.get("nodes", {}).get("MINOR_ARC_BOUND", {})
-        gap_text = load_text("results/certificates/goldbach_gap_report.md")
+        goldbach = load_json("results/conjectures/goldbach/status.json")
+        blocker = load_json("results/conjectures/goldbach/blocker_certificate.json")
         checks.append(
             check(
-                "goldbach.overall_status",
-                goldbach.get("overall_status") == "CONDITIONAL_GAP",
-                str(goldbach.get("overall_status")),
+                "goldbach.final_status",
+                goldbach.get("final_status") == "BLOCKED_BY_NAMED_GAP",
+                str(goldbach.get("final_status")),
             )
         )
         checks.append(
             check(
-                "goldbach.first_gap",
-                minor.get("status") == "CONDITIONAL_GAP" and "MINOR_ARC_BOUND" in gap_text,
-                str(minor.get("status")),
+                "goldbach.named_gap",
+                goldbach.get("first_gap") == "MINOR_ARC_UNCONDITIONAL_BOUND"
+                and blocker.get("named_gap") == "MINOR_ARC_UNCONDITIONAL_BOUND",
+                f"status_gap={goldbach.get('first_gap')} blocker_gap={blocker.get('named_gap')}",
             )
         )
     except Exception as exc:
         checks.append(check("goldbach_control.parseable", False, str(exc)))
 
-    return build_report(checks)
+    for problem in ["lah", "hankel", "coefficient_positivity"]:
+        try:
+            status = load_json(f"results/conjectures/{problem}/status.json")
+            final_status = status.get("final_status") or status.get("status")
+            checks.append(
+                check(
+                    f"{problem}.final_status.allowed",
+                    final_status in FINAL_STATUSES and final_status not in INTERMEDIATE_STATUSES,
+                    str(final_status),
+                )
+            )
+            if final_status == "BLOCKED_BY_NAMED_GAP":
+                blocker_path = status.get("blocker_certificate_path")
+                blocker_exists = bool(blocker_path) and rel_path(str(blocker_path)).exists()
+                checks.append(
+                    check(
+                        f"{problem}.blocker_certificate.exists",
+                        blocker_exists,
+                        str(blocker_path),
+                    )
+                )
+            if final_status == "PROVEN_BY_CERTIFICATE":
+                proof_path = status.get("proof_certificate_path")
+                proof_exists = bool(proof_path) and rel_path(str(proof_path)).exists()
+                checks.append(
+                    check(
+                        f"{problem}.proof_certificate.exists",
+                        proof_exists,
+                        str(proof_path),
+                    )
+                )
+        except Exception as exc:
+            checks.append(check(f"{problem}.status.parseable", False, str(exc)))
 
 
 def build_report(checks: list[dict[str, Any]]) -> dict[str, Any]:
@@ -296,10 +348,24 @@ def build_report(checks: list[dict[str, Any]]) -> dict[str, Any]:
         )
         else "FAILED",
         "goldbach_control": "CONDITIONAL_GAP_AT_MINOR_ARC"
-        if any(item["name"] == "goldbach.first_gap" and item["status"] == "PASS" for item in checks)
+        if any(item["name"] == "goldbach.named_gap" and item["status"] == "PASS" for item in checks)
+        else "FAILED",
+        "lah_status": problem_status(checks, "lah"),
+        "hankel_status": problem_status(checks, "hankel"),
+        "coefficient_positivity_status": problem_status(checks, "coefficient_positivity"),
+        "goldbach_named_blocker": "BLOCKED_BY_NAMED_GAP_AT_MINOR_ARC"
+        if any(item["name"] == "goldbach.named_gap" and item["status"] == "PASS" for item in checks)
         else "FAILED",
         "checks": checks,
     }
+
+
+def problem_status(checks: list[dict[str, Any]], problem: str) -> str:
+    prefix = f"{problem}.final_status.allowed"
+    for item in checks:
+        if item["name"] == prefix and item["status"] == "PASS":
+            return str(item.get("detail"))
+    return "FAILED"
 
 
 def write_report_md(report: dict[str, Any]) -> str:
@@ -328,10 +394,11 @@ def main() -> int:
 
     print("TANTRIUM INDEPENDENT VERIFIER")
     print(f"RH_CLOSURE: {report['rh_closure']}")
+    print(f"GOLDBACH_CONTROL: {report['goldbach_named_blocker']}")
+    print(f"LAH_STATUS: {report['lah_status']}")
+    print(f"HANKEL_STATUS: {report['hankel_status']}")
+    print(f"COEFFICIENT_POSITIVITY_STATUS: {report['coefficient_positivity_status']}")
     print(f"ARTIFACT_HASHES: {report['artifact_hashes']}")
-    print(f"GAP_REPORT: {report['gap_report']}")
-    print(f"INTERNAL_CLOSURE: {report['internal_closure']}")
-    print(f"GOLDBACH_CONTROL: {report['goldbach_control']}")
     print(f"RESULT: {report['result']}")
     if report["result"] != "VERIFIED":
         print(f"FIRST_FAILURE: {report['first_failure']}")

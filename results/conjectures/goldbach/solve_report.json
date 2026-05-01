@@ -1,0 +1,28 @@
+{
+  "blocker_certificate_path": "results/conjectures/goldbach/blocker_certificate.json",
+  "certificate_registry_loaded": true,
+  "command_used": "python tools/tantrium_autosolver.py --problem goldbach",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "counterexample_path": null,
+  "final_status": "BLOCKED_BY_NAMED_GAP",
+  "first_gap": "MINOR_ARC_UNCONDITIONAL_BOUND",
+  "generated_at": "2026-05-01T22:45:52Z",
+  "notes": [
+    "Binary Goldbach closure requires an unconditional minor arc bound strong enough to dominate the Hardy-Littlewood major arc main term."
+  ],
+  "problem": "goldbach",
+  "problem_spec": {
+    "exists": true,
+    "path": "inputs\\conjectures\\goldbach.yaml",
+    "raw": "name: Goldbach Conjecture\nstatement: Every even integer n > 2 is a sum of two primes.\nreduction_chain:\n  - GOLDBACH_RAW_TARGET\n  - SINGULAR_SERIES_POSITIVITY\n  - CIRCLE_METHOD_MAJOR_ARC\n  - MINOR_ARC_BOUND\n  - GOLDBACH_CLOSURE\nknown_theorems:\n  - Hardy-Littlewood circle method major arc\n  - Singular series positivity\ncertificates:\n  - results/certificates/goldbach_circle_method_certificate.json\n  - results/certificates/goldbach_singular_series_certificate.json\nexpected_gap_types:\n  - MINOR_ARC_BOUND\nmachine_entrypoint: python tools/goldbach_machine.py\n"
+  },
+  "proof_certificate_path": null,
+  "strategies": [
+    {
+      "detail": "  The machine correctly identifies this as CONDITIONAL_GAP, not OPEN_GAP.",
+      "name": "goldbach_machine",
+      "status": "PASS"
+    }
+  ],
+  "theorem_graph_loaded": true
+}

@@ -1,10 +1,13 @@
 # Tantrium Conjecture Report: rh
 
-Generated: 2026-05-01T20:35:54Z
+Generated: 2026-05-01T22:45:52Z
 Status: `INTERNAL_CLOSED`
-Proof attempt: `NO_STRUCTURAL_GAP`
-Closure: `PROVEN_BY_CERTIFICATE`
+Final status: `INTERNAL_CLOSED`
+Proof attempt: `INTERNAL_CLOSED`
+Closure: `INTERNAL_CLOSED`
 First gap: `None`
 Main certificate: `results/certificates/rh_symbolic_closure_certificate.json`
+Blocker certificate: `None`
+Proof certificate: `results/certificates/rh_symbolic_closure_certificate.json`
 
 External formalization remains `PENDING`.

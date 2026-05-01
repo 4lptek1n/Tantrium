@@ -1,10 +1,13 @@
 # Tantrium Conjecture Report: lah
 
-Generated: 2026-05-01T20:35:54Z
-Status: `CERTIFIED_SCHEMA`
-Proof attempt: `HISTORICAL_SCHEMA`
-Closure: `CERTIFIED_SCHEMA`
-First gap: `None`
+Generated: 2026-05-01T22:45:52Z
+Status: `BLOCKED_BY_NAMED_GAP`
+Final status: `BLOCKED_BY_NAMED_GAP`
+Proof attempt: `BLOCKED_BY_NAMED_GAP`
+Closure: `BLOCKED_BY_NAMED_GAP`
+First gap: `GENERAL_J_STAIRCASE_QUOTIENT_PROOF`
 Main certificate: `math/gate_a_verify.py`
+Blocker certificate: `results/conjectures/lah/blocker_certificate.json`
+Proof certificate: `None`
 
 External formalization remains `PENDING`.

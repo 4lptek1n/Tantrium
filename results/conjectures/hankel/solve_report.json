@@ -1,0 +1,28 @@
+{
+  "blocker_certificate_path": null,
+  "certificate_registry_loaded": true,
+  "command_used": "python tools/tantrium_autosolver.py --problem hankel",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "counterexample_path": null,
+  "final_status": "PROVEN_BY_CERTIFICATE",
+  "first_gap": null,
+  "generated_at": "2026-05-01T22:45:52Z",
+  "notes": [
+    "AG/LGV and tau/subdiscriminant certificates are present and sufficient for the supported Hankel transfer scope."
+  ],
+  "problem": "hankel",
+  "problem_spec": {
+    "exists": true,
+    "path": "inputs\\conjectures\\hankel.yaml",
+    "raw": "name: Hankel / AG-LGV Positivity\nstatement: Hankel minors transfer through AG/LGV path families into Tantrium positivity certificates.\nreduction_chain:\n  - AG_LGV_TRANSFER\n  - TAU_SUBDISCRIMINANT\n  - STURM_PIVOT_POSITIVITY\nknown_theorems:\n  - Lindstrom-Gessel-Viennot lemma\n  - Cauchy-Binet identity\n  - Vandermonde-square subdiscriminant expansion\ncertificates:\n  - results/certificates/ag_lgv_parametric_certificate.json\n  - results/certificates/tau_sturm_parametric_certificate.json\nexpected_gap_types:\n  - EXTERNAL_FORMALIZATION\nmachine_entrypoint: none\n"
+  },
+  "proof_certificate_path": "results/conjectures/hankel/proof_certificate.json",
+  "strategies": [
+    {
+      "detail": "AG/LGV and tau/subdiscriminant certificates are present and sufficient for the supported Hankel transfer scope.",
+      "name": "schema_lifter_hankel",
+      "status": "PROVEN_BY_CERTIFICATE"
+    }
+  ],
+  "theorem_graph_loaded": true
+}

@@ -1,0 +1,28 @@
+{
+  "blocker_certificate_path": "results/conjectures/coefficient_positivity/blocker_certificate.json",
+  "certificate_registry_loaded": true,
+  "command_used": "python tools/tantrium_autosolver.py --problem coefficient_positivity",
+  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "counterexample_path": null,
+  "final_status": "BLOCKED_BY_NAMED_GAP",
+  "first_gap": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
+  "generated_at": "2026-05-01T22:45:53Z",
+  "notes": [
+    "Atlas data and linked Gate B/D-positivity/AG-LGV artifacts are present, but the first uncertified coefficient frontier is not yet promoted to a parametric positivity certificate."
+  ],
+  "problem": "coefficient_positivity",
+  "problem_spec": {
+    "exists": true,
+    "path": "inputs\\conjectures\\coefficient_positivity.yaml",
+    "raw": "name: Coefficient Positivity Frontier\nstatement: Atlas-driven coefficient positivity checks remain guarded by explicit scanned frontiers.\nreduction_chain:\n  - GATE_B_STAIRCASE_RAMP\n  - FIRST_FIVE_PIVOTS\n  - K7_SHARPNESS\n  - ATLAS_MEMORY\nknown_theorems:\n  - Gate B first-five pivot positivity\n  - K7 sharpness obstruction\ncertificates:\n  - results/atlas/manifest.json\n  - atlas/k7_sharpness_reproduction.json\nexpected_gap_types:\n  - FIRST_UNCERTIFIED_ATLAS_FRONTIER\nmachine_entrypoint: none\n"
+  },
+  "proof_certificate_path": null,
+  "strategies": [
+    {
+      "detail": "Atlas data and linked Gate B/D-positivity/AG-LGV artifacts are present, but the first uncertified coefficient frontier is not yet promoted to a parametric positivity certificate.",
+      "name": "frontier_solver_coefficient_positivity",
+      "status": "BLOCKED_BY_NAMED_GAP"
+    }
+  ],
+  "theorem_graph_loaded": true
+}
