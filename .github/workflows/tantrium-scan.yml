@@ -1,0 +1,53 @@
+name: Tantrium Proof Foundry Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_ell:
+        description: "Maximum ell layer to scan"
+        required: true
+        default: "5"
+      model:
+        description: "Dyadic transport model"
+        required: true
+        default: "qdiff"
+  push:
+    paths:
+      - "tools/tantrium.py"
+      - "tools/build_kernel.py"
+      - "tantrium/**"
+      - ".github/workflows/tantrium-scan.yml"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Proof Foundry scan
+        run: |
+          python tools/tantrium.py certify --scan all --max-ell "${{ github.event.inputs.max_ell || '5' }}" --model "${{ github.event.inputs.model || 'qdiff' }}"
+
+      - name: Update status
+        if: always()
+        run: |
+          python tools/tantrium.py status --update || true
+          python tools/tantrium.py compare-atlas || true
+
+      - name: Upload scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tantrium-scan-results
+          path: |
+            results/certificates/**
+            results/atlas/**
+            results/engine/*structure_miner_report.md
+            tantrium/theorem_graph/theorem_graph.yaml
+            docs/THEOREM_GRAPH.md
