@@ -1,5 +1,5 @@
 <!-- MACHINE_STATUS -->
-**Last machine run:** `2026-05-01T19:47:34Z`  commit `38ccc84`  status: **PASS**  command: `python tools/tantrium_rh_machine.py --strict`
+**Last machine run:** `2026-05-01T20:35:53Z` commit `dd73547` status: **PASS** command: `python tools/tantrium_rh_machine.py --strict`
 <!-- MACHINE_STATUS -->
 
 # Tantrium Closure Result

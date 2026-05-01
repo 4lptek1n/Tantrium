@@ -16,6 +16,10 @@ has a role in the project's history or current operation.
 | `tools/tau_sturm_identity_checker.py` | Tau/Sturm finite-window verifier |
 | `tools/parametric_certificate_generator.py` | Parametric certificate generator |
 | `tools/independent_verifier.py` | Independent artifact manifest and verifier |
+| `tools/tantrium_artifact_manifest.py` | Manifest generator with SHA256 roles and status boundary |
+| `tools/tantrium_formalization_audit.py` | Formalization-readiness classifier |
+| `tools/tantrium_theorem_graph_audit.py` | Theorem graph metadata and digest hardener |
+| `tools/tantrium_conjecture_machine.py` | General conjecture machine interface |
 | `tools/goldbach_machine.py` | Goldbach control proof-attempt machine |
 | `tools/tantrium.py` | Proof Foundry CLI (atlas, scan, dispatch) |
 
@@ -58,6 +62,10 @@ has a role in the project's history or current operation.
 | `tau_sturm_identity_checker.py` | Tau/Sturm identity checker — Phase 9 |
 | `parametric_certificate_generator.py` | Parametric certificate generator — Phase 10 |
 | `independent_verifier.py` | Generates and verifies sealed artifact manifest for RH run plus Goldbach control |
+| `tantrium_artifact_manifest.py` | Generates `artifact_manifest.json/.md` with hashes, roles, Python/platform metadata |
+| `tantrium_formalization_audit.py` | Classifies theorem artifacts for Lean/Coq readiness |
+| `tantrium_theorem_graph_audit.py` | Adds graph statements, dependencies, certificate paths, digests, and scopes |
+| `tantrium_conjecture_machine.py` | Runs RH, Goldbach, Lah, Hankel, and coefficient-positivity problem interfaces |
 | `goldbach_machine.py` | Control machine that should stop at the minor-arc gap |
 | `tantrium.py` | Proof Foundry CLI (atlas, preprocess, scan) — Phase 6 |
 
@@ -123,6 +131,12 @@ has a role in the project's history or current operation.
 | `TANTRIUM_FINAL_MANUSCRIPT.md` | **Required by pipeline** — final manuscript |
 | `TANTRIUM_CLOSURE_RESULT.md` | **Required by pipeline** — closure result (machine-updated) |
 | `TANTRIUM_ARTIFACT_GOVERNANCE.md` | Governance for sealed artifact sets, verifier requirements, and allowed claims |
+| `TANTRIUM_CURRENT_STATE.md` | Current local trust baseline |
+| `REPRODUCIBILITY.md` | Clean-room reproduction commands |
+| `LEAN_COQ_FORMALIZATION_ROADMAP.md` | Formalization plan and boundary |
+| `GATE_A_B_INTEGRATION.md` | Historical Gate A/B integration with current machine |
+| `PLATFORM_COMPATIBILITY.md` | Windows/Linux platform policy |
+| `TANTRIUM_CONJECTURE_MACHINE_REPORT.md` | Multi-problem status table |
 | `FINAL_RH_PROOF_CHAIN.md` | Final proof chain assembly |
 | `PROOF_FOUNDRY_ARCHITECTURE.md` | Architecture overview |
 | `ELL3_ATOM_TO_RJ_MAP.md` | ell=3 atom to Rj map |
@@ -139,6 +153,7 @@ has a role in the project's history or current operation.
 | File | Purpose |
 |------|---------|
 | `TANTRIUM_RH_MAIN_THEOREM.md` | **Required by pipeline** — main theorem |
+| `TANTRIUM_RH_PROOF_v2.md` | Hardened artifact-first manuscript |
 | `00_WHITEPAPER.md` | D-positivity white paper |
 | `01_STATUS.md` | Status snapshot |
 | `02_MASTER_CHECKPOINT.md` | Master checkpoint |
@@ -316,6 +331,7 @@ archive/notes/
 | `k7_matrix.yml` | K7 matrix scan |
 | `tantrium-scan.yml` | General Tantrium scan |
 | `tantrium-ell5-build-scan.yml` | ell=5 persistent build scan |
+| `tantrium-reproducibility.yml` | Lightweight reproducibility and verifier workflow |
 
 ---
 

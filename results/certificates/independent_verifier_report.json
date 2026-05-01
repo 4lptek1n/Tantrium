@@ -1,150 +1,611 @@
 {
-  "generated_at": "2026-05-01T20:11:57Z",
-  "result": "VERIFIED",
-  "rh_closure": "VERIFIED",
-  "gap_report": "NO_STRUCTURAL_GAP",
-  "internal_closure": "CLOSED",
-  "goldbach_control": "CONDITIONAL_GAP_AT_MINOR_ARC",
+  "artifact_hashes": "VERIFIED",
   "checks": [
     {
-      "name": "latest.closure_status",
-      "status": "PASS",
-      "detail": "PASS"
+      "detail": "C:\\Users\\omerm\\Desktop\\Tantrium\\results\\certificates\\artifact_manifest.json",
+      "name": "artifact_manifest.exists",
+      "status": "PASS"
     },
     {
-      "name": "latest.proof_attempt_status",
-      "status": "PASS",
-      "detail": "NO_STRUCTURAL_GAP"
+      "detail": "json",
+      "name": "artifact_manifest.parseable",
+      "status": "PASS"
     },
     {
-      "name": "latest.rh_closure_status",
-      "status": "PASS",
-      "detail": "PROVEN_BY_CERTIFICATE"
+      "detail": "exists",
+      "name": "artifact.exists.README.md",
+      "status": "PASS"
     },
     {
-      "name": "latest.internal_tantrium_closure",
-      "status": "PASS",
-      "detail": "CLOSED"
+      "detail": "13621",
+      "name": "artifact.nonempty.README.md",
+      "status": "PASS"
     },
     {
-      "name": "closure_certificate.closure_status",
-      "status": "PASS",
-      "detail": "PASS"
+      "detail": "d89609d6892c7310448e1245b4b18c9a2d93bcfd677e436a0e280222c55ce5ba",
+      "name": "hash.README.md",
+      "status": "PASS"
     },
     {
-      "name": "closure_certificate.proof_attempt_status",
-      "status": "PASS",
-      "detail": "NO_STRUCTURAL_GAP"
+      "detail": "exists",
+      "name": "artifact.exists.TIMELINE.md",
+      "status": "PASS"
     },
     {
-      "name": "closure_certificate.rh_closure_status",
-      "status": "PASS",
-      "detail": "PROVEN_BY_CERTIFICATE"
+      "detail": "15214",
+      "name": "artifact.nonempty.TIMELINE.md",
+      "status": "PASS"
     },
     {
-      "name": "closure_certificate.internal_tantrium_closure",
-      "status": "PASS",
-      "detail": "CLOSED"
+      "detail": "142ccbcd600d168fa39a5895edb64af29301ef894daf8c5c11f7e869c7020546",
+      "name": "hash.TIMELINE.md",
+      "status": "PASS"
     },
     {
-      "name": "rh_gap_report.NO_STRUCTURAL_GAP",
-      "status": "PASS",
-      "detail": "NO_STRUCTURAL_GAP marker"
+      "detail": "exists",
+      "name": "artifact.exists.REPO_MAP.md",
+      "status": "PASS"
     },
     {
-      "name": "theorem_graph.RH_CLOSURE",
-      "status": "PASS",
-      "detail": "PROVEN_BY_CERTIFICATE"
+      "detail": "15008",
+      "name": "artifact.nonempty.REPO_MAP.md",
+      "status": "PASS"
     },
     {
-      "name": "certificate_registry.exists",
-      "status": "PASS",
-      "detail": "C:\\Users\\omerm\\Desktop\\Tantrium\\results\\certificates\\certificate_registry.json"
+      "detail": "bedf8dcc3843088ccc43e13edc8eb56f45b6e1ed392ad65d5caeb6d450c6180a",
+      "name": "hash.REPO_MAP.md",
+      "status": "PASS"
     },
     {
-      "name": "goldbach.overall_status",
-      "status": "PASS",
-      "detail": "CONDITIONAL_GAP"
+      "detail": "exists",
+      "name": "artifact.exists.paper/TANTRIUM_RH_PROOF_v1.md",
+      "status": "PASS"
     },
     {
-      "name": "goldbach.first_gap",
-      "status": "PASS",
-      "detail": "CONDITIONAL_GAP"
+      "detail": "14130",
+      "name": "artifact.nonempty.paper/TANTRIUM_RH_PROOF_v1.md",
+      "status": "PASS"
     },
     {
-      "name": "goldbach.first_gap.node",
-      "status": "PASS",
-      "detail": "MINOR_ARC_BOUND"
+      "detail": "12d0c2e826fa5df321e91ab53aced3ee3df4a1dbe2f987ce2620764f64f32fda",
+      "name": "hash.paper/TANTRIUM_RH_PROOF_v1.md",
+      "status": "PASS"
     },
     {
-      "name": "hash.results/certificates/tantrium_rh_machine_latest.json",
-      "status": "PASS",
-      "detail": "7db0276cfd9b1d5de1a748a43963dc89543293fd6995848e2b5ca12ee1eb3915"
+      "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_INTERNAL_CLOSURE_STATUS.md",
+      "status": "PASS"
     },
     {
-      "name": "hash.results/certificates/rh_symbolic_closure_certificate.json",
-      "status": "PASS",
-      "detail": "f1c5f89e510de2e22f7491032a7a7a9adae2dc71e98cb975408857af7ac95e6a"
+      "detail": "2221",
+      "name": "artifact.nonempty.docs/TANTRIUM_INTERNAL_CLOSURE_STATUS.md",
+      "status": "PASS"
     },
     {
-      "name": "hash.results/certificates/rh_proof_attempt_dag.json",
-      "status": "PASS",
-      "detail": "5f628b745403c523c8b582b687b4bd7c747e8014deda04459057ec77319868f2"
+      "detail": "5a4c0a77b30d33397ed2b932fbc5fc572152ae4533fe7b8376d63fbcfcdb38ce",
+      "name": "hash.docs/TANTRIUM_INTERNAL_CLOSURE_STATUS.md",
+      "status": "PASS"
     },
     {
-      "name": "hash.results/certificates/rh_gap_report.md",
-      "status": "PASS",
-      "detail": "8d877a450e5ae64c97fe16906abc5694a8e6cb10c16ecda89f61b4e6f42a5447"
+      "detail": "exists",
+      "name": "artifact.exists.docs/DYADIC_TRANSPORT_THEOREM.md",
+      "status": "PASS"
     },
     {
+      "detail": "6871",
+      "name": "artifact.nonempty.docs/DYADIC_TRANSPORT_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "4fe85bc2bdc67645497335781f2bd86ebe2708e8f7396836de63fd596a5fcbf5",
+      "name": "hash.docs/DYADIC_TRANSPORT_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_FINAL_MANUSCRIPT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "9153",
+      "name": "artifact.nonempty.docs/TANTRIUM_FINAL_MANUSCRIPT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "3ed56c07bcdcde947172c80315e060e027ab029b155d0882ef20ccd756a02b05",
+      "name": "hash.docs/TANTRIUM_FINAL_MANUSCRIPT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_CLOSURE_RESULT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "3325",
+      "name": "artifact.nonempty.docs/TANTRIUM_CLOSURE_RESULT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "f0da27cfbe868a923ddea31c2654e14ae956496f30a22f7facd107f8be199a8c",
+      "name": "hash.docs/TANTRIUM_CLOSURE_RESULT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.theorems/D_POSITIVITY_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "6280",
+      "name": "artifact.nonempty.theorems/D_POSITIVITY_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "2b03b98b316c55d6b6964e5065b3aa967409ff70118a440431d2a29169060fe6",
+      "name": "hash.theorems/D_POSITIVITY_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "4473",
+      "name": "artifact.nonempty.theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "fd6b4eec93cc3ff2f5834825996022acab9f5389520486b1aa77036061ef3994",
+      "name": "hash.theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "6744",
+      "name": "artifact.nonempty.theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "ba616f97703448b42d835159b0e8714bc4a2509bec2036327e3b91a1be07e055",
+      "name": "hash.theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "4841",
+      "name": "artifact.nonempty.theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "e84d7c15ab6a8c07eafbeb7df4ea58930537ae6bf6e293fb27972d54b33ac8bd",
+      "name": "hash.theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.theorems/GATE_B_FINDINGS.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "2999",
+      "name": "artifact.nonempty.theorems/GATE_B_FINDINGS.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "690f36c87be73352f3752eb3fb85532f04cfacfa0c66b9797e844747d70e2ae6",
+      "name": "hash.theorems/GATE_B_FINDINGS.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.math/README.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "4426",
+      "name": "artifact.nonempty.math/README.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "e3f96c14bfacf9e38543d5c365d50e62314738139671deb4b46173cf9484cb24",
+      "name": "hash.math/README.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.math/SUMMARY.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "6560",
+      "name": "artifact.nonempty.math/SUMMARY.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "a066faaefbe6f0cd507566c142b7e5629f2985ea6766075e81359fbaffd0c60d",
+      "name": "hash.math/SUMMARY.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.math/gate_a.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "4178",
+      "name": "artifact.nonempty.math/gate_a.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "f6a8807a25d6fb286b596138f3c2b09061cc72679eb458734a71254f80d359e9",
+      "name": "hash.math/gate_a.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.math/gate_a_verify.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "8279",
+      "name": "artifact.nonempty.math/gate_a_verify.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1667ec24cdd1e4ca86c1f737998c7e571057ee154dac70bf20bd8edb9179e807",
+      "name": "hash.math/gate_a_verify.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/certificate_registry.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "3704",
+      "name": "artifact.nonempty.results/certificates/certificate_registry.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "21419c148e7e293adeb9012ed34a6b909c22c49c19782842250c4c4970af9aba",
       "name": "hash.results/certificates/certificate_registry.json",
-      "status": "PASS",
-      "detail": "81354b00eae02245de1b5914b548d1280e38c653906c0d06fdfafb17f1bca96a"
+      "status": "PASS"
     },
     {
-      "name": "hash.results/certificates/parametric_closure_certificate.json",
-      "status": "PASS",
-      "detail": "c1185bd3e9e011a50d88796d44e2a80d2735eaf92c8abc385a8d11e7b84376b2"
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/rh_symbolic_closure_certificate.json",
+      "status": "PASS"
     },
     {
-      "name": "hash.results/certificates/ag_lgv_parametric_certificate.json",
-      "status": "PASS",
-      "detail": "d4b5f4fe082755298e0540edbed560864e85278360f07d89a41b062899f1fb35"
+      "detail": "1781",
+      "name": "artifact.nonempty.results/certificates/rh_symbolic_closure_certificate.json",
+      "status": "PASS"
     },
     {
-      "name": "hash.results/certificates/tau_sturm_parametric_certificate.json",
-      "status": "PASS",
-      "detail": "08943eb87f67bd4e88ce82dff9aeefe7be82ac76972328c1901b25d7f79049c9"
+      "detail": "ec314afdd09c8cb69c5f23bac7590665184c2f6bbb19e5368da7a567ba5dd05b",
+      "name": "hash.results/certificates/rh_symbolic_closure_certificate.json",
+      "status": "PASS"
     },
     {
-      "name": "hash.results/certificates/d_positivity_parametric_certificate.json",
-      "status": "PASS",
-      "detail": "cd96220b9db8da8adb6bc0b8e8d0c6ce55cb6ec94149955d9f9f7dfb08e7fee1"
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/rh_proof_attempt_dag.json",
+      "status": "PASS"
     },
     {
+      "detail": "4503",
+      "name": "artifact.nonempty.results/certificates/rh_proof_attempt_dag.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "591434a0c1f80b36d88ea88fa38c875c02cd2578dced4d514b26cdd902d8ed09",
+      "name": "hash.results/certificates/rh_proof_attempt_dag.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/rh_gap_report.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "897",
+      "name": "artifact.nonempty.results/certificates/rh_gap_report.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "03b57ff554bbf73bf37dd243ee148a687a1da14ce3a4d16ade0ccf29590988e0",
+      "name": "hash.results/certificates/rh_gap_report.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/tantrium_rh_machine_latest.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "1092",
+      "name": "artifact.nonempty.results/certificates/tantrium_rh_machine_latest.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "49cfbfb417983c8ce539dd2c0b953cd3cbf838fb1a15b150536f7767028c94ea",
+      "name": "hash.results/certificates/tantrium_rh_machine_latest.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/independent_verifier_report.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "17822",
+      "name": "artifact.nonempty.results/certificates/independent_verifier_report.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "self-report regenerated; existence checked",
+      "name": "hash.results/certificates/independent_verifier_report.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/atlas/manifest.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "591",
+      "name": "artifact.nonempty.results/atlas/manifest.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "3f7fe24b09bb1e6650813b4988d14791fa5eaa1fbe419ed1b1dbea57cf097b85",
+      "name": "hash.results/atlas/manifest.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/atlas/status.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "1174",
+      "name": "artifact.nonempty.results/atlas/status.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "265dba5f327b284dd8a4b02d3cf708033c89e6d886bcf2cb59096f03a7a27af4",
+      "name": "hash.results/atlas/status.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tantrium/theorem_graph/theorem_graph.yaml",
+      "status": "PASS"
+    },
+    {
+      "detail": "18953",
+      "name": "artifact.nonempty.tantrium/theorem_graph/theorem_graph.yaml",
+      "status": "PASS"
+    },
+    {
+      "detail": "4604ed3171cebea1b1e3ffd726bc110d2304489c316b45208c24912c4aa60382",
       "name": "hash.tantrium/theorem_graph/theorem_graph.yaml",
-      "status": "PASS",
-      "detail": "b76d4933adfde40aefe1a0973effbaaf66aa2335fef6df6059e108ec24dbbccf"
+      "status": "PASS"
     },
     {
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/goldbach_proof_attempt_dag.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "2694",
+      "name": "artifact.nonempty.results/certificates/goldbach_proof_attempt_dag.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "75cff169cfdf1a9a60a1ca81e88ff928af4a1087b6672a8f4bd009431c6693f3",
       "name": "hash.results/certificates/goldbach_proof_attempt_dag.json",
-      "status": "PASS",
-      "detail": "af29019c00cdcf6a9b7313610ece19a16743006c1f5fd1a2811f8fb14e0203b5"
+      "status": "PASS"
     },
     {
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/goldbach_gap_report.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "1703",
+      "name": "artifact.nonempty.results/certificates/goldbach_gap_report.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "db1a7b0dc929f2fd0b236cac88c3844eb30a990497eab6d7859582bc7dcb6d56",
       "name": "hash.results/certificates/goldbach_gap_report.md",
-      "status": "PASS",
-      "detail": "22ccd0a049db5bfa0bda32dcf4ccc8050647a3f88497f15726641600abaefede"
+      "status": "PASS"
     },
     {
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/goldbach_circle_method_certificate.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "1083",
+      "name": "artifact.nonempty.results/certificates/goldbach_circle_method_certificate.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "ef6f1b3dcc3fe7f786cf2bd49e585d105c623205775e9a03180c9cbae9907290",
       "name": "hash.results/certificates/goldbach_circle_method_certificate.json",
-      "status": "PASS",
-      "detail": "5b9f4eed9e13eb4446867d53e7f16298f94359190ef6eda0dcdf062a23b044cd"
+      "status": "PASS"
     },
     {
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/goldbach_singular_series_certificate.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "890",
+      "name": "artifact.nonempty.results/certificates/goldbach_singular_series_certificate.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "1074d46007cbabd5bb43f17ef31ba25ad86eb73d99e92f3c53b4db6a198b0866",
       "name": "hash.results/certificates/goldbach_singular_series_certificate.json",
-      "status": "PASS",
-      "detail": "6e7a9e48a10eae58077b7ad721bfe74ccd02b603a1f41498b984df50e83f358a"
+      "status": "PASS"
+    },
+    {
+      "detail": "manifest hashes",
+      "name": "artifact_hashes",
+      "status": "PASS"
+    },
+    {
+      "detail": "2",
+      "name": "certificate_registry.parseable",
+      "status": "PASS"
+    },
+    {
+      "detail": "PASS",
+      "name": "closure_certificate.closure_status",
+      "status": "PASS"
+    },
+    {
+      "detail": "NO_STRUCTURAL_GAP",
+      "name": "closure_certificate.proof_attempt_status",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "closure_certificate.rh_closure_status",
+      "status": "PASS"
+    },
+    {
+      "detail": "CLOSED",
+      "name": "closure_certificate.internal_tantrium_closure",
+      "status": "PASS"
+    },
+    {
+      "detail": "latest=PASS closure=PASS",
+      "name": "latest_agrees.closure_status",
+      "status": "PASS"
+    },
+    {
+      "detail": "latest=NO_STRUCTURAL_GAP closure=NO_STRUCTURAL_GAP",
+      "name": "latest_agrees.proof_attempt_status",
+      "status": "PASS"
+    },
+    {
+      "detail": "latest=PROVEN_BY_CERTIFICATE closure=PROVEN_BY_CERTIFICATE",
+      "name": "latest_agrees.rh_closure_status",
+      "status": "PASS"
+    },
+    {
+      "detail": "latest=CLOSED closure=CLOSED",
+      "name": "latest_agrees.internal_tantrium_closure",
+      "status": "PASS"
+    },
+    {
+      "detail": "PENDING",
+      "name": "latest.external_formalization",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.RH_RAW_TARGET",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.XI_REAL_FORM",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.JENSEN_HYPERBOLICITY",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.STURM_PIVOT_POSITIVITY",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.TAU_SUBDISCRIMINANT",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.AG_LGV_TRANSFER",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.CELL_SUPPORT_POSITIVITY",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.D_POSITIVITY",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.DYADIC_TRANSPORT",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "rh_dag.RH_CLOSURE",
+      "status": "PASS"
+    },
+    {
+      "detail": "NO STRUCTURAL GAP FOUND",
+      "name": "rh_gap_report.no_structural_gap_found",
+      "status": "PASS"
+    },
+    {
+      "detail": "PROVEN_BY_CERTIFICATE",
+      "name": "theorem_graph.RH_CLOSURE",
+      "status": "PASS"
+    },
+    {
+      "detail": "results/certificates/rh_symbolic_closure_certificate.json",
+      "name": "atlas.latest_rh_closure_certificate",
+      "status": "PASS"
+    },
+    {
+      "detail": "results/certificates/certificate_registry.json",
+      "name": "atlas.latest_certificate_registry",
+      "status": "PASS"
+    },
+    {
+      "detail": "NO_STRUCTURAL_GAP",
+      "name": "atlas.proof_attempt_status",
+      "status": "PASS"
+    },
+    {
+      "detail": "CONDITIONAL_GAP",
+      "name": "goldbach.overall_status",
+      "status": "PASS"
+    },
+    {
+      "detail": "CONDITIONAL_GAP",
+      "name": "goldbach.first_gap",
+      "status": "PASS"
     }
-  ]
+  ],
+  "first_failure": null,
+  "gap_report": "NO_STRUCTURAL_GAP",
+  "goldbach_control": "CONDITIONAL_GAP_AT_MINOR_ARC",
+  "internal_closure": "CLOSED",
+  "result": "VERIFIED",
+  "rh_closure": "VERIFIED"
 }

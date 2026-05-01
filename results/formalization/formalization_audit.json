@@ -1,0 +1,121 @@
+{
+  "classifications": {
+    "EXTERNAL_STANDARD_THEOREM": 7,
+    "FORMAL_READY": 5,
+    "NEEDS_SYMBOLIC_PARAMETER_PROOF": 3
+  },
+  "entries": [
+    {
+      "classification": "NEEDS_SYMBOLIC_PARAMETER_PROOF",
+      "excerpt": "# D-Positivity Theorem ## Statement For every admissible triple `(m, ell, a)`, the primitive Newton-moment seed coefficient satisfies ```text D(m, ell, a) >= 0. ``` Equivalently, if `x=d-2` and `Q_{m,ell}(x)` is the coefficient of `lambda^(",
+      "exists": true,
+      "path": "theorems/D_POSITIVITY_THEOREM.md",
+      "reason": "All-parameter symbolic proof obligation that should be encoded before external closure."
+    },
+    {
+      "classification": "NEEDS_SYMBOLIC_PARAMETER_PROOF",
+      "excerpt": "# Cell Support Positivity Theorem ## Purpose This theorem formalizes the cell-level support statement needed by Dyadic Transport: ```text s in iota(D) => C_cell(s) > 0. ``` The issue is that `iota` is first defined on cumulant-depth terms, ",
+      "exists": true,
+      "path": "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+      "reason": "All-parameter symbolic proof obligation that should be encoded before external closure."
+    },
+    {
+      "classification": "EXTERNAL_STANDARD_THEOREM",
+      "excerpt": "# Tantrium AG / LGV Transfer Theorem ## Purpose This theorem closes the AG-style transfer problem in the external Tantrium chain: proving that D-positive Newton atoms generate a positive planar path transfer matrix whose Hankel determinants",
+      "exists": true,
+      "path": "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
+      "reason": "Known external theorem to connect through mathlib or a cited formal library."
+    },
+    {
+      "classification": "EXTERNAL_STANDARD_THEOREM",
+      "excerpt": "# Tau--Sturm--Jensen--Polya Theorem Bridge ## Purpose This file formalizes the final external bridge: ```text Hankel/tau positivity -> Sturm pivot positivity -> Jensen hyperbolicity -> Polya-Jensen conclusion -> RH. ``` --- ## 1. Tau to sub",
+      "exists": true,
+      "path": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "reason": "Known external theorem to connect through mathlib or a cited formal library."
+    },
+    {
+      "classification": "FORMAL_READY",
+      "excerpt": "# Gate B Findings: Staircase Quotients and Refined Divisors Gate B asks why the hidden factors `H_{d,j}(t)` are positive for the first five pivots. The working object is ```math H_{d,j}(t)=\\sum_{k=0}^{T_j}a_k^{(j)}(n)t^k, \\qquad T_j=\\frac{j",
+      "exists": true,
+      "path": "theorems/GATE_B_FINDINGS.md",
+      "reason": "Finite algebraic identity, determinant identity, or certificate/hash consistency."
+    },
+    {
+      "classification": "FORMAL_READY",
+      "excerpt": "# First Five Pivot Theorem This file records the theorem-level checkpoint for the Sturm-Toda transition family ```math P_{\\lambda,d}(z)=\\exp\\left(-\\frac14D^2+\\lambda\\left(zD^2-\\frac1{24}D^3\\right)\\right)z^d. ``` Let `t=lambda^2`, and let th",
+      "exists": true,
+      "path": "theorems/FIRST_FIVE_PIVOTS.md",
+      "reason": "Finite algebraic identity, determinant identity, or certificate/hash consistency."
+    },
+    {
+      "classification": "FORMAL_READY",
+      "excerpt": "# K7 Sharpness: H_{d,6} is not universally positive ## Finding The seventh trailing Bezoutian block `K_7`, corresponding to the sixth hidden factor `H_{d,6}(t)`, is not universally positive. The decisive reproduced counterexample is: ```mat",
+      "exists": true,
+      "path": "theorems/K7_SHARPNESS.md",
+      "reason": "Finite algebraic identity, determinant identity, or certificate/hash consistency."
+    },
+    {
+      "classification": "EXTERNAL_STANDARD_THEOREM",
+      "excerpt": "# Lah Shadow A key structural observation in the Sturm\u2013Toda transition case study is the large-parameter Lah shadow. Consider ```math P_{\\lambda,d}(z)=e^{-\\frac14D^2+\\lambda(zD^2-\\frac1{24}D^3)}z^d. ``` Under the scaling ```math z=\\lambda w",
+      "exists": true,
+      "path": "theorems/LAH_SHADOW.md",
+      "reason": "Known external theorem to connect through mathlib or a cited formal library."
+    },
+    {
+      "classification": "EXTERNAL_STANDARD_THEOREM",
+      "excerpt": "# Dyadic Transport Theorem ## Status This document records the closed Tantrium transport theorem. The theorem is the formal mechanism proving global D-positivity from the connected cumulant/Hermite-depth kernel. The transport theorem does n",
+      "exists": true,
+      "path": "docs/DYADIC_TRANSPORT_THEOREM.md",
+      "reason": "Known external theorem to connect through mathlib or a cited formal library."
+    },
+    {
+      "classification": "EXTERNAL_STANDARD_THEOREM",
+      "excerpt": "# The Tantrium Positivity Engine: Final Manuscript Assembly ## Abstract This manuscript assembles the Tantrium proof route into a single ordered chain. The internal Tantrium theorem is global D-positivity, proved by dyadic transport through",
+      "exists": true,
+      "path": "docs/TANTRIUM_FINAL_MANUSCRIPT.md",
+      "reason": "Known external theorem to connect through mathlib or a cited formal library."
+    },
+    {
+      "classification": "FORMAL_READY",
+      "excerpt": "<!-- MACHINE_STATUS --> **Last machine run:** `2026-05-01T20:35:53Z` commit `dd73547` status: **PASS** command: `python tools/tantrium_rh_machine.py --strict` <!-- MACHINE_STATUS --> # Tantrium Closure Result ## Result Tantrium Proof Foundr",
+      "exists": true,
+      "path": "docs/TANTRIUM_CLOSURE_RESULT.md",
+      "reason": "Finite algebraic identity, determinant identity, or certificate/hash consistency."
+    },
+    {
+      "classification": "FORMAL_READY",
+      "excerpt": "# Tantrium RH Proof \u2014 Version 1 **Machine artifact status:** `NO_STRUCTURAL_GAP` **Latest full run command:** `python tools/tantrium_rh_machine.py --full` **Closure status:** `PASS` **Certificate registry:** `results/certificates/certificat",
+      "exists": true,
+      "path": "paper/TANTRIUM_RH_PROOF_v1.md",
+      "reason": "Finite algebraic identity, determinant identity, or certificate/hash consistency."
+    },
+    {
+      "classification": "EXTERNAL_STANDARD_THEOREM",
+      "excerpt": "{ \"certificate_id\": \"tantrium-rh-closure-dd73547\", \"certificates\": [ \"results/certificates/parametric_closure_certificate.json\" ], \"claim\": \"Tantrium Proof Foundry routes the raw RH target through Xi -> Jensen -> Sturm -> tau -> AG/LGV -> D",
+      "exists": true,
+      "path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "reason": "Known external theorem to connect through mathlib or a cited formal library."
+    },
+    {
+      "classification": "EXTERNAL_STANDARD_THEOREM",
+      "excerpt": "{ \"certificates\": [ { \"content_digest\": \"ec314afdd09c8cb6\", \"depends_on\": [], \"description\": \"Symbolic closure of the RH chain.\", \"generated_by\": \"tools/rh_symbolic_closure_pipeline.py\", \"id\": \"rh_symbolic_closure\", \"path\": \"results/certifi",
+      "exists": true,
+      "path": "results/certificates/certificate_registry.json",
+      "reason": "Known external theorem to connect through mathlib or a cited formal library."
+    },
+    {
+      "classification": "NEEDS_SYMBOLIC_PARAMETER_PROOF",
+      "excerpt": "{ \"generated_at\": \"2026-05-01T20:35:53Z\", \"overall_status\": \"NO_STRUCTURAL_GAP\", \"nodes\": { \"RH_RAW_TARGET\": { \"statement\": \"All nontrivial zeros of zeta(s) lie on Re(s)=1/2.\", \"dependencies\": [], \"theorem_file\": \"inputs/rh_raw_hypothesis.y",
+      "exists": true,
+      "path": "results/certificates/rh_proof_attempt_dag.json",
+      "reason": "All-parameter symbolic proof obligation that should be encoded before external closure."
+    }
+  ],
+  "generated_at": "2026-05-01T20:36:03Z",
+  "status_boundary": {
+    "external_formalization": "PENDING",
+    "internal_tantrium_closure": "CLOSED",
+    "proof_attempt_status": "NO_STRUCTURAL_GAP",
+    "rh_closure_status": "PROVEN_BY_CERTIFICATE"
+  }
+}

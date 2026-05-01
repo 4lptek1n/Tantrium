@@ -1,0 +1,12 @@
+{
+  "nodes": {
+    "LAH": {
+      "certificate_file": "math/gate_a_verify.py",
+      "dependencies": [],
+      "statement": "name: Lah Shadow / Gate A",
+      "status": "CERTIFIED_SCHEMA"
+    }
+  },
+  "overall_status": "CERTIFIED_SCHEMA",
+  "problem": "lah"
+}

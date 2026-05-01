@@ -1,30 +1,9 @@
 {
-  "certificate_id": "tantrium-rh-closure-38ccc84",
-  "generated_at": "2026-05-01T19:47:34Z",
-  "repo": "4lptek1n/Tantrium",
-  "current_commit_sha": "38ccc84499baa3a6324208403c34e82e6090eed9",
-  "raw_target": "inputs/rh_raw_hypothesis.yaml",
-  "pipeline": "tools/tantrium_rh_machine.py",
-  "theorem_dependencies": [
-    "docs/DYADIC_TRANSPORT_THEOREM.md",
-    "theorems/D_POSITIVITY_THEOREM.md",
-    "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
-    "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
-    "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
-    "paper/TANTRIUM_RH_MAIN_THEOREM.md",
-    "docs/TANTRIUM_FINAL_MANUSCRIPT.md",
-    "docs/TANTRIUM_CLOSURE_RESULT.md"
-  ],
-  "executable_checks": {
-    "proof_chain_audit.py": "PASS",
-    "ag_lgv_transfer_checker.py": "PASS",
-    "tau_sturm_identity_checker.py": "PASS",
-    "rh_symbolic_closure_pipeline.py --strict": "PASS",
-    "parametric_certificate_generator.py": "PASS"
-  },
+  "certificate_id": "tantrium-rh-closure-dd73547",
   "certificates": [
     "results/certificates/parametric_closure_certificate.json"
   ],
+  "claim": "Tantrium Proof Foundry routes the raw RH target through Xi -> Jensen -> Sturm -> tau -> AG/LGV -> D-positivity, with theorem artifacts, executable finite-window checks, and parametric certificates generated.",
   "closure_chain": [
     "RH raw target",
     "Xi(z)=xi(1/2+i z)",
@@ -38,9 +17,30 @@
     "closure"
   ],
   "closure_status": "PASS",
-  "proof_attempt_status": "NO_STRUCTURAL_GAP",
-  "rh_closure_status": "PROVEN_BY_CERTIFICATE",
-  "internal_tantrium_closure": "CLOSED",
+  "current_commit_sha": "dd735470eb2f64ee973b5c6b551211884d78ac66",
+  "executable_checks": {
+    "ag_lgv_transfer_checker.py": "PASS",
+    "parametric_certificate_generator.py": "PASS",
+    "proof_chain_audit.py": "PASS",
+    "rh_symbolic_closure_pipeline.py --strict": "PASS",
+    "tau_sturm_identity_checker.py": "PASS"
+  },
   "external_formalization": "PENDING",
-  "claim": "Tantrium Proof Foundry routes the raw RH target through Xi -> Jensen -> Sturm -> tau -> AG/LGV -> D-positivity, with theorem artifacts, executable finite-window checks, and parametric certificates generated."
+  "generated_at": "2026-05-01T20:35:53Z",
+  "internal_tantrium_closure": "CLOSED",
+  "pipeline": "tools/tantrium_rh_machine.py",
+  "proof_attempt_status": "NO_STRUCTURAL_GAP",
+  "raw_target": "inputs/rh_raw_hypothesis.yaml",
+  "repo": "4lptek1n/Tantrium",
+  "rh_closure_status": "PROVEN_BY_CERTIFICATE",
+  "theorem_dependencies": [
+    "docs/DYADIC_TRANSPORT_THEOREM.md",
+    "theorems/D_POSITIVITY_THEOREM.md",
+    "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+    "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
+    "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+    "paper/TANTRIUM_RH_MAIN_THEOREM.md",
+    "docs/TANTRIUM_FINAL_MANUSCRIPT.md",
+    "docs/TANTRIUM_CLOSURE_RESULT.md"
+  ]
 }

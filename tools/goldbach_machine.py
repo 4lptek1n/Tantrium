@@ -135,7 +135,7 @@ def write_goldbach_certificates(finite_result, singular_result, circle_result) -
         "claim": "G(n) = prod of positive local factors > 0 for all even n > 2.",
     }
     sc_path = CERT_DIR / "goldbach_singular_series_certificate.json"
-    sc_path.write_text(json.dumps(sc, indent=2))
+    sc_path.write_text(json.dumps(sc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     paths["singular_series"] = str(sc_path)
 
     # Circle method cert
@@ -159,7 +159,7 @@ def write_goldbach_certificates(finite_result, singular_result, circle_result) -
         ),
     }
     cc_path = CERT_DIR / "goldbach_circle_method_certificate.json"
-    cc_path.write_text(json.dumps(cc, indent=2))
+    cc_path.write_text(json.dumps(cc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     paths["circle_method"] = str(cc_path)
 
     return paths
@@ -244,7 +244,7 @@ def build_goldbach_dag(finite_result, singular_result, circle_result, cert_paths
     }
 
     dag_path = CERT_DIR / "goldbach_proof_attempt_dag.json"
-    dag_path.write_text(json.dumps(dag, indent=2))
+    dag_path.write_text(json.dumps(dag, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return dag
 
 
@@ -317,7 +317,7 @@ def write_goldbach_gap_report(dag: dict) -> str:
         lines.append(f"| `{nid}` | {d['status']} |")
 
     gap_path = CERT_DIR / "goldbach_gap_report.md"
-    gap_path.write_text("\n".join(lines) + "\n")
+    gap_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return "CONDITIONAL_GAP" if gaps else "NO_STRUCTURAL_GAP"
 
 

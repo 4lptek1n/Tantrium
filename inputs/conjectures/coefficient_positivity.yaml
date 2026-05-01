@@ -1,0 +1,16 @@
+name: Coefficient Positivity Frontier
+statement: Atlas-driven coefficient positivity checks remain guarded by explicit scanned frontiers.
+reduction_chain:
+  - GATE_B_STAIRCASE_RAMP
+  - FIRST_FIVE_PIVOTS
+  - K7_SHARPNESS
+  - ATLAS_MEMORY
+known_theorems:
+  - Gate B first-five pivot positivity
+  - K7 sharpness obstruction
+certificates:
+  - results/atlas/manifest.json
+  - atlas/k7_sharpness_reproduction.json
+expected_gap_types:
+  - FIRST_UNCERTIFIED_ATLAS_FRONTIER
+machine_entrypoint: none

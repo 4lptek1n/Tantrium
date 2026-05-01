@@ -1,0 +1,15 @@
+name: Lah Shadow / Gate A
+statement: The lambda^{-2} Gate A perturbation has Lah polynomial leading term.
+reduction_chain:
+  - LAH_SHADOW
+  - GATE_A_PERTURBATION
+  - GATE_A_CROSS_RATIO
+known_theorems:
+  - Lah polynomial expansion
+  - Exact lambda^{-2} perturbation
+certificates:
+  - math/gate_a.py
+  - math/gate_a_verify.py
+expected_gap_types:
+  - SYMBOLIC_PARAMETER_ENCODING
+machine_entrypoint: none

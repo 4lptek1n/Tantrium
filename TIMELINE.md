@@ -333,3 +333,35 @@ python tools/tantrium_rh_machine.py --strict
 | 9 | May 1 | RH Symbolic Closure Pipeline | PASS |
 | 10 | May 1 | Machine-Readable Certificates | PASS |
 | 11 | May 1 | One-Command Closure Machine | PASS |
+
+---
+
+## Phase 12 — Reproducible Formalization-Ready Hardening (2026-05-01)
+**Status: IN PROGRESS / LOCAL HARDENING PASS**
+
+Goal: convert the working proof machine into a reproducible, independently
+auditable, formalization-ready research system.
+
+Key additions:
+
+- `tools/tantrium_artifact_manifest.py`
+- `tools/independent_verifier.py` hardened as a read-only verifier of sealed artifacts
+- `tools/tantrium_formalization_audit.py`
+- `tools/tantrium_theorem_graph_audit.py`
+- `tools/tantrium_conjecture_machine.py`
+- `scripts/reproduce_tantrium_local.sh`
+- `scripts/reproduce_tantrium_windows.ps1`
+- `.github/workflows/tantrium-reproducibility.yml`
+- `formal/lean/` Lean scaffold
+- `paper/TANTRIUM_RH_PROOF_v2.md`
+- `release/arxiv/` artifact bundle scaffold
+
+Current boundary:
+
+```text
+Internal Tantrium closure: CLOSED
+RH_CLOSURE: PROVEN_BY_CERTIFICATE
+Proof attempt: NO_STRUCTURAL_GAP
+External formalization: PENDING
+Goldbach control: CONDITIONAL_GAP at MINOR_ARC_BOUND
+```

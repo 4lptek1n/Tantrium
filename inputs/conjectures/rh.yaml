@@ -1,0 +1,23 @@
+name: Riemann Hypothesis
+statement: All nontrivial zeros of zeta(s) lie on Re(s)=1/2.
+reduction_chain:
+  - RH_RAW_TARGET
+  - XI_REAL_FORM
+  - JENSEN_HYPERBOLICITY
+  - STURM_PIVOT_POSITIVITY
+  - TAU_SUBDISCRIMINANT
+  - AG_LGV_TRANSFER
+  - CELL_SUPPORT_POSITIVITY
+  - D_POSITIVITY
+  - DYADIC_TRANSPORT
+  - RH_CLOSURE
+known_theorems:
+  - Polya-Jensen theorem
+  - Laguerre-Polya characterization
+  - Sturm theorem
+  - Cauchy-Binet
+certificates:
+  - results/certificates/rh_symbolic_closure_certificate.json
+  - results/certificates/rh_proof_attempt_dag.json
+expected_gap_types: []
+machine_entrypoint: python tools/tantrium_rh_machine.py --full

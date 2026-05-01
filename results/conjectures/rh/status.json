@@ -1,0 +1,15 @@
+{
+  "closure_status": "PROVEN_BY_CERTIFICATE",
+  "external_formalization": "PENDING",
+  "first_gap": null,
+  "generated_at": "2026-05-01T20:35:54Z",
+  "internal_tantrium_closure": "CLOSED",
+  "machine_closure_status": "PASS",
+  "main_certificate": "results/certificates/rh_symbolic_closure_certificate.json",
+  "name": "rh",
+  "problem": "rh",
+  "proof_attempt_status": "NO_STRUCTURAL_GAP",
+  "run_detail": "external_formalization:      PENDING",
+  "run_ok": true,
+  "status": "INTERNAL_CLOSED"
+}

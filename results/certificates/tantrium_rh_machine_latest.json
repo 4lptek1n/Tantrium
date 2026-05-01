@@ -1,14 +1,5 @@
 {
-  "generated_at": "2026-05-01T19:47:34Z",
-  "commit_sha": "38ccc84499baa3a6324208403c34e82e6090eed9",
-  "mode": "--full",
-  "closure_status": "PASS",
-  "proof_attempt_status": "NO_STRUCTURAL_GAP",
-  "gap_status": "NO_STRUCTURAL_GAP",
-  "rh_closure_status": "PROVEN_BY_CERTIFICATE",
-  "internal_tantrium_closure": "CLOSED",
-  "external_formalization": "PENDING",
-  "platform": "Windows local",
+  "atlas": "results/atlas/manifest.json",
   "certificates": [
     "results/certificates/rh_symbolic_closure_certificate.json",
     "results/certificates/parametric_closure_certificate.json",
@@ -18,8 +9,17 @@
     "results/certificates/rh_proof_attempt_dag.json",
     "results/certificates/certificate_registry.json"
   ],
+  "closure_status": "PASS",
+  "commit_sha": "dd735470eb2f64ee973b5c6b551211884d78ac66",
+  "external_formalization": "PENDING",
   "gap_report": "results/certificates/rh_gap_report.md",
-  "atlas": "results/atlas/manifest.json",
-  "theorem_graph": "tantrium/theorem_graph/theorem_graph.yaml",
-  "manuscript": "paper/TANTRIUM_RH_PROOF_v1.md"
+  "gap_status": "NO_STRUCTURAL_GAP",
+  "generated_at": "2026-05-01T20:35:53Z",
+  "internal_tantrium_closure": "CLOSED",
+  "manuscript": "paper/TANTRIUM_RH_PROOF_v1.md",
+  "mode": "--full",
+  "platform": "Windows local",
+  "proof_attempt_status": "NO_STRUCTURAL_GAP",
+  "rh_closure_status": "PROVEN_BY_CERTIFICATE",
+  "theorem_graph": "tantrium/theorem_graph/theorem_graph.yaml"
 }

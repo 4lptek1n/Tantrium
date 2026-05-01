@@ -1,0 +1,4 @@
+{
+  "main_certificate": "results/atlas/manifest.json",
+  "problem": "coefficient_positivity"
+}

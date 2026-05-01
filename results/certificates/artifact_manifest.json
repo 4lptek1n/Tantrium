@@ -1,102 +1,303 @@
 {
-  "manifest_version": 1,
-  "generated_at": "2026-05-01T20:11:57Z",
-  "repo": "4lptek1n/Tantrium",
-  "git_head": "9421192b1f6a298423db13fd0a7117f8d432e887",
-  "platform": "Windows local",
-  "latest_verified_local_run": {
-    "commit": "38ccc84499baa3a6324208403c34e82e6090eed9",
-    "generated_at": "2026-05-01T19:47:34Z",
-    "closure_status": "PASS",
-    "proof_attempt_status": "NO_STRUCTURAL_GAP",
-    "rh_closure_status": "PROVEN_BY_CERTIFICATE",
-    "internal_tantrium_closure": "CLOSED",
-    "goldbach_control": "CONDITIONAL_GAP"
-  },
-  "critical_artifacts": [
+  "artifacts": [
     {
-      "path": "results/certificates/tantrium_rh_machine_latest.json",
+      "certificate_id": null,
       "exists": true,
-      "size_bytes": 1083,
-      "sha256": "7db0276cfd9b1d5de1a748a43963dc89543293fd6995848e2b5ca12ee1eb3915"
+      "path": "README.md",
+      "role": "overview",
+      "sha256": "d89609d6892c7310448e1245b4b18c9a2d93bcfd677e436a0e280222c55ce5ba",
+      "size_bytes": 13621,
+      "theorem_node": null
     },
     {
-      "path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "certificate_id": null,
       "exists": true,
-      "size_bytes": 1773,
-      "sha256": "f1c5f89e510de2e22f7491032a7a7a9adae2dc71e98cb975408857af7ac95e6a"
+      "path": "TIMELINE.md",
+      "role": "history",
+      "sha256": "142ccbcd600d168fa39a5895edb64af29301ef894daf8c5c11f7e869c7020546",
+      "size_bytes": 15214,
+      "theorem_node": null
     },
     {
-      "path": "results/certificates/rh_proof_attempt_dag.json",
+      "certificate_id": null,
       "exists": true,
-      "size_bytes": 4503,
-      "sha256": "5f628b745403c523c8b582b687b4bd7c747e8014deda04459057ec77319868f2"
+      "path": "REPO_MAP.md",
+      "role": "repository_map",
+      "sha256": "bedf8dcc3843088ccc43e13edc8eb56f45b6e1ed392ad65d5caeb6d450c6180a",
+      "size_bytes": 15008,
+      "theorem_node": null
     },
     {
-      "path": "results/certificates/rh_gap_report.md",
+      "certificate_id": null,
       "exists": true,
-      "size_bytes": 897,
-      "sha256": "8d877a450e5ae64c97fe16906abc5694a8e6cb10c16ecda89f61b4e6f42a5447"
+      "path": "paper/TANTRIUM_RH_PROOF_v1.md",
+      "role": "manuscript_v1",
+      "sha256": "12d0c2e826fa5df321e91ab53aced3ee3df4a1dbe2f987ce2620764f64f32fda",
+      "size_bytes": 14130,
+      "theorem_node": "RH_CLOSURE"
     },
     {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/TANTRIUM_INTERNAL_CLOSURE_STATUS.md",
+      "role": "status_boundary",
+      "sha256": "5a4c0a77b30d33397ed2b932fbc5fc572152ae4533fe7b8376d63fbcfcdb38ce",
+      "size_bytes": 2221,
+      "theorem_node": "RH_CLOSURE"
+    },
+    {
+      "certificate_id": "d_positivity_parametric",
+      "exists": true,
+      "path": "docs/DYADIC_TRANSPORT_THEOREM.md",
+      "role": "theorem_document",
+      "sha256": "4fe85bc2bdc67645497335781f2bd86ebe2708e8f7396836de63fd596a5fcbf5",
+      "size_bytes": 6871,
+      "theorem_node": "DYADIC_TRANSPORT"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/TANTRIUM_FINAL_MANUSCRIPT.md",
+      "role": "manuscript",
+      "sha256": "3ed56c07bcdcde947172c80315e060e027ab029b155d0882ef20ccd756a02b05",
+      "size_bytes": 9153,
+      "theorem_node": "RH_CLOSURE"
+    },
+    {
+      "certificate_id": "rh_symbolic_closure",
+      "exists": true,
+      "path": "docs/TANTRIUM_CLOSURE_RESULT.md",
+      "role": "closure_result",
+      "sha256": "f0da27cfbe868a923ddea31c2654e14ae956496f30a22f7facd107f8be199a8c",
+      "size_bytes": 3325,
+      "theorem_node": "RH_CLOSURE"
+    },
+    {
+      "certificate_id": "d_positivity_parametric",
+      "exists": true,
+      "path": "theorems/D_POSITIVITY_THEOREM.md",
+      "role": "theorem_document",
+      "sha256": "2b03b98b316c55d6b6964e5065b3aa967409ff70118a440431d2a29169060fe6",
+      "size_bytes": 6280,
+      "theorem_node": "D_POSITIVITY"
+    },
+    {
+      "certificate_id": "d_positivity_parametric",
+      "exists": true,
+      "path": "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+      "role": "theorem_document",
+      "sha256": "fd6b4eec93cc3ff2f5834825996022acab9f5389520486b1aa77036061ef3994",
+      "size_bytes": 4473,
+      "theorem_node": "CELL_SUPPORT_POSITIVITY"
+    },
+    {
+      "certificate_id": "ag_lgv_parametric",
+      "exists": true,
+      "path": "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
+      "role": "theorem_document",
+      "sha256": "ba616f97703448b42d835159b0e8714bc4a2509bec2036327e3b91a1be07e055",
+      "size_bytes": 6744,
+      "theorem_node": "AG_LGV_TRANSFER"
+    },
+    {
+      "certificate_id": "tau_sturm_parametric",
+      "exists": true,
+      "path": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "role": "theorem_document",
+      "sha256": "e84d7c15ab6a8c07eafbeb7df4ea58930537ae6bf6e293fb27972d54b33ac8bd",
+      "size_bytes": 4841,
+      "theorem_node": "TAU_SUBDISCRIMINANT"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "theorems/GATE_B_FINDINGS.md",
+      "role": "historical_theorem_document",
+      "sha256": "690f36c87be73352f3752eb3fb85532f04cfacfa0c66b9797e844747d70e2ae6",
+      "size_bytes": 2999,
+      "theorem_node": "GATE_B_STAIRCASE_RAMP"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "math/README.md",
+      "role": "historical_math",
+      "sha256": "e3f96c14bfacf9e38543d5c365d50e62314738139671deb4b46173cf9484cb24",
+      "size_bytes": 4426,
+      "theorem_node": "LAH_SHADOW"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "math/SUMMARY.md",
+      "role": "historical_math",
+      "sha256": "a066faaefbe6f0cd507566c142b7e5629f2985ea6766075e81359fbaffd0c60d",
+      "size_bytes": 6560,
+      "theorem_node": "GATE_A_PERTURBATION"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "math/gate_a.py",
+      "role": "historical_executable",
+      "sha256": "f6a8807a25d6fb286b596138f3c2b09061cc72679eb458734a71254f80d359e9",
+      "size_bytes": 4178,
+      "theorem_node": "GATE_A_PERTURBATION"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "math/gate_a_verify.py",
+      "role": "historical_executable",
+      "sha256": "1667ec24cdd1e4ca86c1f737998c7e571057ee154dac70bf20bd8edb9179e807",
+      "size_bytes": 8279,
+      "theorem_node": "GATE_A_CROSS_RATIO"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
       "path": "results/certificates/certificate_registry.json",
-      "exists": true,
-      "size_bytes": 3702,
-      "sha256": "81354b00eae02245de1b5914b548d1280e38c653906c0d06fdfafb17f1bca96a"
+      "role": "certificate_registry",
+      "sha256": "21419c148e7e293adeb9012ed34a6b909c22c49c19782842250c4c4970af9aba",
+      "size_bytes": 3704,
+      "theorem_node": null
     },
     {
-      "path": "results/certificates/parametric_closure_certificate.json",
+      "certificate_id": "rh_symbolic_closure",
       "exists": true,
-      "size_bytes": 2229,
-      "sha256": "c1185bd3e9e011a50d88796d44e2a80d2735eaf92c8abc385a8d11e7b84376b2"
-    },
-    {
-      "path": "results/certificates/ag_lgv_parametric_certificate.json",
-      "exists": true,
+      "path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "role": "closure_certificate",
+      "sha256": "ec314afdd09c8cb69c5f23bac7590665184c2f6bbb19e5368da7a567ba5dd05b",
       "size_bytes": 1781,
-      "sha256": "d4b5f4fe082755298e0540edbed560864e85278360f07d89a41b062899f1fb35"
+      "theorem_node": "RH_CLOSURE"
     },
     {
-      "path": "results/certificates/tau_sturm_parametric_certificate.json",
+      "certificate_id": "rh_proof_attempt_dag",
       "exists": true,
-      "size_bytes": 1599,
-      "sha256": "08943eb87f67bd4e88ce82dff9aeefe7be82ac76972328c1901b25d7f79049c9"
+      "path": "results/certificates/rh_proof_attempt_dag.json",
+      "role": "proof_attempt_dag",
+      "sha256": "591434a0c1f80b36d88ea88fa38c875c02cd2578dced4d514b26cdd902d8ed09",
+      "size_bytes": 4503,
+      "theorem_node": "RH_PROOF_ATTEMPT"
     },
     {
-      "path": "results/certificates/d_positivity_parametric_certificate.json",
+      "certificate_id": null,
       "exists": true,
-      "size_bytes": 1672,
-      "sha256": "cd96220b9db8da8adb6bc0b8e8d0c6ce55cb6ec94149955d9f9f7dfb08e7fee1"
+      "path": "results/certificates/rh_gap_report.md",
+      "role": "gap_report",
+      "sha256": "03b57ff554bbf73bf37dd243ee148a687a1da14ce3a4d16ade0ccf29590988e0",
+      "size_bytes": 897,
+      "theorem_node": "RH_GAP_FINDER"
     },
     {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/certificates/tantrium_rh_machine_latest.json",
+      "role": "latest_machine_run",
+      "sha256": "49cfbfb417983c8ce539dd2c0b953cd3cbf838fb1a15b150536f7767028c94ea",
+      "size_bytes": 1092,
+      "theorem_node": "RH_CLOSURE"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/certificates/independent_verifier_report.json",
+      "role": "independent_verifier_report",
+      "sha256": "5d7245fbbd33b278220c771ba6b95c1b3c6e6397ee1c37a03aea4df3f07fb9d6",
+      "size_bytes": 17822,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/atlas/manifest.json",
+      "role": "atlas_manifest",
+      "sha256": "3f7fe24b09bb1e6650813b4988d14791fa5eaa1fbe419ed1b1dbea57cf097b85",
+      "size_bytes": 591,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/atlas/status.md",
+      "role": "atlas_status",
+      "sha256": "265dba5f327b284dd8a4b02d3cf708033c89e6d886bcf2cb59096f03a7a27af4",
+      "size_bytes": 1174,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
       "path": "tantrium/theorem_graph/theorem_graph.yaml",
-      "exists": true,
-      "size_bytes": 9098,
-      "sha256": "b76d4933adfde40aefe1a0973effbaaf66aa2335fef6df6059e108ec24dbbccf"
+      "role": "theorem_graph",
+      "sha256": "4604ed3171cebea1b1e3ffd726bc110d2304489c316b45208c24912c4aa60382",
+      "size_bytes": 18953,
+      "theorem_node": null
     },
     {
+      "certificate_id": null,
+      "exists": true,
       "path": "results/certificates/goldbach_proof_attempt_dag.json",
-      "exists": true,
-      "size_bytes": 2692,
-      "sha256": "af29019c00cdcf6a9b7313610ece19a16743006c1f5fd1a2811f8fb14e0203b5"
+      "role": "control_problem_dag",
+      "sha256": "75cff169cfdf1a9a60a1ca81e88ff928af4a1087b6672a8f4bd009431c6693f3",
+      "size_bytes": 2694,
+      "theorem_node": "GOLDBACH_CONTROL"
     },
     {
+      "certificate_id": null,
+      "exists": true,
       "path": "results/certificates/goldbach_gap_report.md",
-      "exists": true,
-      "size_bytes": 1699,
-      "sha256": "22ccd0a049db5bfa0bda32dcf4ccc8050647a3f88497f15726641600abaefede"
+      "role": "control_problem_gap_report",
+      "sha256": "db1a7b0dc929f2fd0b236cac88c3844eb30a990497eab6d7859582bc7dcb6d56",
+      "size_bytes": 1703,
+      "theorem_node": "GOLDBACH_CONTROL"
     },
     {
+      "certificate_id": "goldbach_circle_method",
+      "exists": true,
       "path": "results/certificates/goldbach_circle_method_certificate.json",
-      "exists": true,
-      "size_bytes": 1081,
-      "sha256": "5b9f4eed9e13eb4446867d53e7f16298f94359190ef6eda0dcdf062a23b044cd"
+      "role": "control_problem_certificate",
+      "sha256": "ef6f1b3dcc3fe7f786cf2bd49e585d105c623205775e9a03180c9cbae9907290",
+      "size_bytes": 1083,
+      "theorem_node": "GOLDBACH_MAJOR_ARC"
     },
     {
-      "path": "results/certificates/goldbach_singular_series_certificate.json",
+      "certificate_id": "goldbach_singular_series",
       "exists": true,
-      "size_bytes": 888,
-      "sha256": "6e7a9e48a10eae58077b7ad721bfe74ccd02b603a1f41498b984df50e83f358a"
+      "path": "results/certificates/goldbach_singular_series_certificate.json",
+      "role": "control_problem_certificate",
+      "sha256": "1074d46007cbabd5bb43f17ef31ba25ad86eb73d99e92f3c53b4db6a198b0866",
+      "size_bytes": 890,
+      "theorem_node": "GOLDBACH_SINGULAR_SERIES"
     }
-  ]
+  ],
+  "command_used": "phase12 final seal",
+  "dirty_working_tree": true,
+  "generated_at": "2026-05-01T20:36:10Z",
+  "git_head": "dd735470eb2f64ee973b5c6b551211884d78ac66",
+  "latest_verified_local_run": {
+    "closure_status": "PASS",
+    "commit": "dd735470eb2f64ee973b5c6b551211884d78ac66",
+    "external_formalization": "PENDING",
+    "generated_at": "2026-05-01T20:35:53Z",
+    "goldbach_control": "CONDITIONAL_GAP",
+    "internal_tantrium_closure": "CLOSED",
+    "proof_attempt_status": "NO_STRUCTURAL_GAP",
+    "rh_closure_status": "PROVEN_BY_CERTIFICATE"
+  },
+  "manifest_version": 2,
+  "platform": {
+    "machine": "AMD64",
+    "python_implementation": "CPython",
+    "release": "11",
+    "system": "Windows"
+  },
+  "python_version": "3.14.2",
+  "repo": "4lptek1n/Tantrium",
+  "status_boundary": {
+    "external_formalization": "PENDING",
+    "internal_tantrium_closure": "CLOSED",
+    "proof_attempt_status": "NO_STRUCTURAL_GAP",
+    "rh_closure_status": "PROVEN_BY_CERTIFICATE"
+  }
 }

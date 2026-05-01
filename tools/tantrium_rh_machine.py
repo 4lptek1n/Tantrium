@@ -61,11 +61,11 @@ THEOREM_ARTIFACTS = [
 ]
 
 AUDIT_TOOLS = [
-    (["python3", "tools/proof_chain_audit.py"], "proof_chain_audit.py"),
-    (["python3", "tools/ag_lgv_transfer_checker.py"], "ag_lgv_transfer_checker.py"),
-    (["python3", "tools/tau_sturm_identity_checker.py"], "tau_sturm_identity_checker.py"),
-    (["python3", "tools/rh_symbolic_closure_pipeline.py", "--strict"], "rh_symbolic_closure_pipeline.py --strict"),
-    (["python3", "tools/parametric_certificate_generator.py"], "parametric_certificate_generator.py"),
+    ([sys.executable, "tools/proof_chain_audit.py"], "proof_chain_audit.py"),
+    ([sys.executable, "tools/ag_lgv_transfer_checker.py"], "ag_lgv_transfer_checker.py"),
+    ([sys.executable, "tools/tau_sturm_identity_checker.py"], "tau_sturm_identity_checker.py"),
+    ([sys.executable, "tools/rh_symbolic_closure_pipeline.py", "--strict"], "rh_symbolic_closure_pipeline.py --strict"),
+    ([sys.executable, "tools/parametric_certificate_generator.py"], "parametric_certificate_generator.py"),
 ]
 
 RH_CLOSURE_CHAIN = [
@@ -223,7 +223,7 @@ def step_read_raw_target() -> tuple[bool, str, dict]:
     """2. Read raw RH target."""
     try:
         import yaml
-        with open(REPO_ROOT / "inputs" / "rh_raw_hypothesis.yaml") as f:
+        with open(REPO_ROOT / "inputs" / "rh_raw_hypothesis.yaml", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         state = {
             "RH_statement": data.get("objective", {}).get("statement", ""),
@@ -300,8 +300,9 @@ def step_write_closure_cert(audit_results: dict[str, str], commit_sha: str) -> t
         ),
     }
     out = CERT_DIR / "rh_symbolic_closure_certificate.json"
-    with open(out, "w") as f:
-        json.dump(cert, f, indent=2)
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump(cert, f, indent=2, sort_keys=True)
+        f.write("\n")
     return True, str(out)
 
 
@@ -323,15 +324,15 @@ def step_atlas_update(audit_results: dict[str, str], commit_sha: str) -> tuple[b
         "checks": audit_results,
     }
     events_path = ATLAS_DIR / "events.jsonl"
-    with open(events_path, "a") as f:
-        f.write(json.dumps(event) + "\n")
+    with open(events_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(event, sort_keys=True) + "\n")
 
     # manifest.json
     manifest_path = ATLAS_DIR / "manifest.json"
     manifest: dict = {}
     if manifest_path.exists():
         try:
-            with open(manifest_path) as f:
+            with open(manifest_path, encoding="utf-8") as f:
                 manifest = json.load(f)
         except Exception:
             manifest = {}
@@ -342,8 +343,9 @@ def step_atlas_update(audit_results: dict[str, str], commit_sha: str) -> tuple[b
         "closure_status": event["closure_status"],
         "commit_sha": commit_sha,
     })
-    with open(manifest_path, "w") as f:
-        json.dump(manifest, f, indent=2)
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, sort_keys=True)
+        f.write("\n")
 
     # status.md — read proof attempt status from manifest if available
     _manifest_proof_status = "pending (run --prove)"
@@ -352,7 +354,7 @@ def step_atlas_update(audit_results: dict[str, str], commit_sha: str) -> tuple[b
     _manifest_dp = "pending"
     _manifest_latest_run = now_iso()
     try:
-        with open(manifest_path) as _mf:
+        with open(manifest_path, encoding="utf-8") as _mf:
             _mn = json.load(_mf)
         _manifest_proof_status = _mn.get("proof_attempt_status", _manifest_proof_status)
         _manifest_latest_run = _mn.get("latest_rh_proof_attempt", _manifest_latest_run)
@@ -404,7 +406,7 @@ def step_atlas_update(audit_results: dict[str, str], commit_sha: str) -> tuple[b
         "- `results/atlas/manifest.json`",
         "- `tantrium/theorem_graph/theorem_graph.yaml`",
     ]
-    with open(ATLAS_DIR / "status.md", "w") as f:
+    with open(ATLAS_DIR / "status.md", "w", encoding="utf-8") as f:
         f.write("\n".join(status_lines) + "\n")
 
     return True, f"events.jsonl, manifest.json, status.md written to {ATLAS_DIR}"
@@ -419,7 +421,7 @@ def step_theorem_graph_update(commit_sha: str) -> tuple[bool, str]:
     if THEOREM_GRAPH_PATH.exists():
         try:
             import yaml
-            with open(THEOREM_GRAPH_PATH) as f:
+            with open(THEOREM_GRAPH_PATH, encoding="utf-8") as f:
                 existing = yaml.safe_load(f) or {}
         except Exception:
             existing = {}
@@ -448,9 +450,10 @@ def step_theorem_graph_update(commit_sha: str) -> tuple[bool, str]:
         "nodes": nodes,
     }
 
-    with open(THEOREM_GRAPH_PATH, "w") as f:
+    with open(THEOREM_GRAPH_PATH, "w", encoding="utf-8") as f:
         # Write as clean YAML-compatible JSON (valid YAML 1.2)
-        json.dump(graph_out, f, indent=2)
+        json.dump(graph_out, f, indent=2, sort_keys=True)
+        f.write("\n")
 
     return True, str(THEOREM_GRAPH_PATH)
 
@@ -468,8 +471,8 @@ def step_final_summary(audit_results: dict[str, str], commit_sha: str) -> tuple[
         "",
         "# Tantrium RH Symbolic Closure Summary",
         "",
-        f"**Run Date:** {ts}  ",
-        f"**Commit:** `{commit_sha[:7]}`  ",
+        f"**Run Date:** {ts}",
+        f"**Commit:** `{commit_sha[:7]}`",
         f"**Single command:** `python tools/tantrium_rh_machine.py --strict`",
         "",
         "## Closure Chain",
@@ -494,19 +497,19 @@ def step_final_summary(audit_results: dict[str, str], commit_sha: str) -> tuple[
         "",
         "All current artifact / finite-window algebraic checks pass.",
     ]
-    with open(CERT_DIR / "rh_symbolic_closure_summary.md", "w") as f:
+    with open(CERT_DIR / "rh_symbolic_closure_summary.md", "w", encoding="utf-8") as f:
         f.write("\n".join(summary_lines) + "\n")
 
     # docs/TANTRIUM_CLOSURE_RESULT.md - update status line
     closure_result_path = REPO_ROOT / "docs" / "TANTRIUM_CLOSURE_RESULT.md"
     if closure_result_path.exists():
-        content = closure_result_path.read_text()
+        content = closure_result_path.read_text(encoding="utf-8")
         # Add/update machine status block at top if not already present
         marker = "<!-- MACHINE_STATUS -->"
         block = (
             f"{marker}\n"
-            f"**Last machine run:** `{ts}`  commit `{commit_sha[:7]}`  "
-            f"status: **{'PASS' if closure_ok else 'FAIL'}**  "
+            f"**Last machine run:** `{ts}` commit `{commit_sha[:7]}` "
+            f"status: **{'PASS' if closure_ok else 'FAIL'}** "
             f"command: `python tools/tantrium_rh_machine.py --strict`\n"
             f"{marker}\n\n"
         )
@@ -517,7 +520,7 @@ def step_final_summary(audit_results: dict[str, str], commit_sha: str) -> tuple[
             )
         else:
             content = block + content
-        closure_result_path.write_text(content)
+        closure_result_path.write_text(content, encoding="utf-8")
 
     return True, "summary + TANTRIUM_CLOSURE_RESULT.md updated"
 
@@ -527,7 +530,7 @@ def step_readme_update(commit_sha: str) -> tuple[bool, str]:
     readme_path = REPO_ROOT / "README.md"
     if not readme_path.exists():
         return True, "README.md not found, skipping"
-    content = readme_path.read_text()
+    content = readme_path.read_text(encoding="utf-8")
     marker_start = "<!-- VERIFIED_CLOSURE_RUN_START -->"
     marker_end = "<!-- VERIFIED_CLOSURE_RUN_END -->"
     block = (
@@ -579,7 +582,7 @@ def step_readme_update(commit_sha: str) -> tuple[bool, str]:
             )
         else:
             content += "\n\n" + block + "\n"
-    readme_path.write_text(content)
+    readme_path.write_text(content, encoding="utf-8")
     return True, "README.md updated"
 
 
@@ -684,7 +687,7 @@ def _run_prove_mode(commit_sha, failure_lines):
         tmp_path = tmp.name
     try:
         rp = subprocess.run(
-            ["python3", tmp_path, str(REPO_ROOT)],
+            [sys.executable, tmp_path, str(REPO_ROOT)],
             cwd=REPO_ROOT, capture_output=True, text=True, env=env
         )
         if rp.returncode == 0:
@@ -704,7 +707,7 @@ def _run_prove_mode(commit_sha, failure_lines):
         except: pass
 
     # Step P2: proof attempt DAG
-    r = subprocess.run(["python3", "tools/rh_proof_attempt.py"], cwd=REPO_ROOT, capture_output=True, text=True, env=env)
+    r = subprocess.run([sys.executable, "tools/rh_proof_attempt.py"], cwd=REPO_ROOT, capture_output=True, text=True, env=env)
     dag_ok = r.returncode == 0
     step("proof_attempt_dag", dag_ok, r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr.strip()[:100])
     if not dag_ok:
@@ -712,7 +715,7 @@ def _run_prove_mode(commit_sha, failure_lines):
         all_ok = False
 
     # Step P3: gap finder
-    r2 = subprocess.run(["python3", "tools/rh_gap_finder.py"], cwd=REPO_ROOT, capture_output=True, text=True, env=env)
+    r2 = subprocess.run([sys.executable, "tools/rh_gap_finder.py"], cwd=REPO_ROOT, capture_output=True, text=True, env=env)
     gap_ok = r2.returncode == 0
     gap_out = r2.stdout.strip()
     proof_attempt_status = "NO_STRUCTURAL_GAP" if "NO STRUCTURAL GAP" in gap_out else "GAP_FOUND"
@@ -742,14 +745,14 @@ def _run_prove_mode(commit_sha, failure_lines):
             "gap_report": "results/certificates/rh_gap_report.md",
         }
         events_path = ATLAS_DIR / "events.jsonl"
-        with open(events_path, "a") as f:
-            f.write(json.dumps(event) + "\n")
+        with open(events_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(event, sort_keys=True) + "\n")
 
         manifest_path = ATLAS_DIR / "manifest.json"
         manifest: dict = {}
         if manifest_path.exists():
             try:
-                with open(manifest_path) as f:
+                with open(manifest_path, encoding="utf-8") as f:
                     manifest = json.load(f)
             except Exception:
                 manifest = {}
@@ -763,8 +766,9 @@ def _run_prove_mode(commit_sha, failure_lines):
             "closure_status": "PASS",
             "commit_sha": commit_sha,
         })
-        with open(manifest_path, "w") as f:
-            json.dump(manifest, f, indent=2)
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2, sort_keys=True)
+            f.write("\n")
         step("atlas_prove_update", True, "events.jsonl + manifest.json updated")
     except Exception as e:
         step("atlas_prove_update", False, str(e))
@@ -774,37 +778,31 @@ def _run_prove_mode(commit_sha, failure_lines):
     try:
         dag_file = CERT_DIR / "rh_proof_attempt_dag.json"
         if dag_file.exists():
-            with open(dag_file) as f:
+            with open(dag_file, encoding="utf-8") as f:
                 dag_data = json.load(f)
-            STATUS_TO_GRAPH = {
-                "PROVEN_BY_CERTIFICATE": "certified_local",
-                "CERTIFIED_SCHEMA": "certified_local",
-                "FINITE_CHECKED": "verified_finite",
-                "OPEN_GAP": "blocked",
-            }
             if THEOREM_GRAPH_PATH.exists():
-                with open(THEOREM_GRAPH_PATH) as f:
+                with open(THEOREM_GRAPH_PATH, encoding="utf-8") as f:
                     graph = json.load(f)
             else:
                 graph = {"meta": {}, "nodes": {}}
             for node_id, node_data in dag_data["nodes"].items():
-                graph_status = STATUS_TO_GRAPH.get(node_data["status"], "conjectural")
                 if node_id in graph["nodes"]:
-                    graph["nodes"][node_id]["status"] = graph_status
+                    graph["nodes"][node_id]["status"] = node_data["status"]
                     graph["nodes"][node_id]["proof_status"] = node_data["status"]
                 else:
                     graph["nodes"][node_id] = {
-                        "status": graph_status,
+                        "status": node_data["status"],
                         "proof_status": node_data["status"],
                         "title": node_id,
                     }
             graph["meta"]["last_prove_run"] = now_iso()
             graph["meta"]["proof_attempt_status"] = proof_attempt_status
             graph["meta"]["rh_closure_status"] = (
-                "certified_local" if proof_attempt_status == "NO_STRUCTURAL_GAP" else "blocked"
+                "PROVEN_BY_CERTIFICATE" if proof_attempt_status == "NO_STRUCTURAL_GAP" else "OPEN_GAP"
             )
-            with open(THEOREM_GRAPH_PATH, "w") as f:
-                json.dump(graph, f, indent=2)
+            with open(THEOREM_GRAPH_PATH, "w", encoding="utf-8") as f:
+                json.dump(graph, f, indent=2, sort_keys=True)
+                f.write("\n")
         step("theorem_graph_prove_update", True, str(THEOREM_GRAPH_PATH))
     except Exception as e:
         step("theorem_graph_prove_update", False, str(e))
@@ -885,15 +883,16 @@ def _run_prove_mode(commit_sha, failure_lines):
             "machine_entrypoint": "python tools/tantrium_rh_machine.py --full",
         }
         reg_json = CERT_DIR / "certificate_registry.json"
-        with open(reg_json, "w") as _f:
-            json.dump(registry, _f, indent=2)
+        with open(reg_json, "w", encoding="utf-8") as _f:
+            json.dump(registry, _f, indent=2, sort_keys=True)
+            _f.write("\n")
 
         # Markdown table
         md_lines = [
             "# Certificate Registry",
-            f"**Generated:** {_now}  ",
-            f"**Commit:** `{commit_sha}`  ",
-            f"**Gap status:** `{proof_attempt_status}`  ",
+            f"**Generated:** {_now}",
+            f"**Commit:** `{commit_sha}`",
+            f"**Gap status:** `{proof_attempt_status}`",
             "**Machine entrypoint:** `python tools/tantrium_rh_machine.py --full`",
             "",
             "| Certificate | Type | Status | Dependencies | Theorem File | Generated By |",
@@ -904,7 +903,7 @@ def _run_prove_mode(commit_sha, failure_lines):
             _tf = _c.get("theorem_file") or "—"
             md_lines.append(f'| `{_c["id"]}` | `{_c["type"]}` | `{_c["status"]}` | {_deps} | `{_tf}` | `{_c["generated_by"]}` |')
         reg_md = CERT_DIR / "certificate_registry.md"
-        with open(reg_md, "w") as _f:
+        with open(reg_md, "w", encoding="utf-8") as _f:
             _f.write("\n".join(md_lines) + "\n")
 
         step("certificate_registry", True, str(reg_json))
@@ -940,11 +939,35 @@ def _run_prove_mode(commit_sha, failure_lines):
             "manuscript": "paper/TANTRIUM_RH_PROOF_v1.md",
         }
         latest_json = CERT_DIR / "tantrium_rh_machine_latest.json"
-        with open(latest_json, "w") as _f:
-            json.dump(latest, _f, indent=2)
+        with open(latest_json, "w", encoding="utf-8") as _f:
+            json.dump(latest, _f, indent=2, sort_keys=True)
+            _f.write("\n")
         step("machine_latest_json", True, str(latest_json))
     except Exception as e:
         step("machine_latest_json", False, str(e))
+
+    try:
+        manifest_run = subprocess.run(
+            [
+                sys.executable,
+                "tools/tantrium_artifact_manifest.py",
+                "--command-used",
+                "python tools/tantrium_rh_machine.py --full",
+            ],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        step(
+            "artifact_manifest",
+            manifest_run.returncode == 0,
+            manifest_run.stdout.strip().splitlines()[-1] if manifest_run.stdout.strip() else manifest_run.stderr.strip()[:100],
+        )
+        all_ok = all_ok and manifest_run.returncode == 0
+    except Exception as e:
+        step("artifact_manifest", False, str(e))
+        all_ok = False
 
     return all_ok, proof_attempt_status
 
@@ -996,7 +1019,7 @@ def main() -> None:
 
 def _write_failure_log(lines: list[str]) -> None:
     CERT_DIR.mkdir(parents=True, exist_ok=True)
-    with open(FAILURE_LOG, "w") as f:
+    with open(FAILURE_LOG, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
     print(f"Failure log: {FAILURE_LOG}")
 

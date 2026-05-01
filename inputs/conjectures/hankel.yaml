@@ -1,0 +1,16 @@
+name: Hankel / AG-LGV Positivity
+statement: Hankel minors transfer through AG/LGV path families into Tantrium positivity certificates.
+reduction_chain:
+  - AG_LGV_TRANSFER
+  - TAU_SUBDISCRIMINANT
+  - STURM_PIVOT_POSITIVITY
+known_theorems:
+  - Lindstrom-Gessel-Viennot lemma
+  - Cauchy-Binet identity
+  - Vandermonde-square subdiscriminant expansion
+certificates:
+  - results/certificates/ag_lgv_parametric_certificate.json
+  - results/certificates/tau_sturm_parametric_certificate.json
+expected_gap_types:
+  - EXTERNAL_FORMALIZATION
+machine_entrypoint: none

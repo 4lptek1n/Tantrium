@@ -1,0 +1,14 @@
+{
+  "closure_status": "ATLAS_DRIVEN",
+  "external_formalization": "PENDING",
+  "first_gap": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
+  "generated_at": "2026-05-01T20:35:55Z",
+  "internal_tantrium_closure": "ATLAS_DRIVEN",
+  "main_certificate": "results/atlas/manifest.json",
+  "name": "coefficient_positivity",
+  "problem": "coefficient_positivity",
+  "proof_attempt_status": "FINITE_AND_ATLAS_GUARDED",
+  "run_detail": "not required",
+  "run_ok": true,
+  "status": "ATLAS_DRIVEN"
+}

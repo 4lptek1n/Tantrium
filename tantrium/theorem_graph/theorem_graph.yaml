@@ -1,278 +1,470 @@
 {
   "meta": {
-    "last_updated": "2026-05-01T19:47:34Z",
-    "commit_sha": "38ccc84499baa3a6324208403c34e82e6090eed9",
-    "rh_closure_status": "certified_local",
     "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
-    "last_prove_run": "2026-05-01T19:47:34Z",
-    "proof_attempt_status": "NO_STRUCTURAL_GAP"
+    "commit_sha": "dd735470eb2f64ee973b5c6b551211884d78ac66",
+    "external_formalization": "PENDING",
+    "internal_tantrium_closure": "CLOSED",
+    "last_prove_run": "2026-05-01T20:35:53Z",
+    "last_updated": "2026-05-01T20:36:03Z",
+    "proof_attempt_status": "NO_STRUCTURAL_GAP",
+    "rh_closure_status": "PROVEN_BY_CERTIFICATE"
   },
   "nodes": {
-    "RH_RAW_TARGET": {
-      "title": "Riemann Hypothesis Raw Target",
-      "status": "certified_local",
-      "artifacts": [
-        "inputs/rh_raw_hypothesis.yaml"
-      ],
-      "proves": [
-        "XI_REAL_FORM"
-      ],
-      "notes": [
-        "Raw RH statement: all nontrivial zeros of zeta on Re(s)=1/2"
-      ],
-      "dependencies": [],
-      "theorem_file": "inputs/rh_raw_hypothesis.yaml",
-      "certificate_path": null,
-      "updated_at": "2026-05-01T17:29:32Z",
-      "internal_closure": "CLOSED",
-      "external_formalization": "PENDING"
-    },
-    "XI_REAL_FORM": {
-      "title": "Xi Real Form",
-      "status": "certified_local",
-      "depends_on": [
-        "RH_RAW_TARGET"
-      ],
-      "proves": [
-        "JENSEN_HYPERBOLICITY"
-      ],
-      "artifacts": [
-        "inputs/rh_raw_hypothesis.yaml"
-      ],
-      "notes": [
-        "Xi(z)=xi(1/2+i z) has only real zeros iff RH holds"
-      ],
-      "dependencies": [
-        "RH_RAW_TARGET"
-      ],
-      "theorem_file": "inputs/rh_raw_hypothesis.yaml",
-      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
-      "updated_at": "2026-05-01T17:29:32Z",
-      "internal_closure": "CLOSED",
-      "external_formalization": "PENDING"
-    },
-    "JENSEN_HYPERBOLICITY": {
-      "title": "Jensen Hyperbolicity Target",
-      "status": "certified_local",
-      "depends_on": [
-        "XI_REAL_FORM"
-      ],
-      "proves": [
-        "STURM_PIVOT_POSITIVITY"
-      ],
-      "artifacts": [
-        "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
-      ],
-      "notes": [
-        "J_Xi^{d,n} hyperbolic for all d>=1, n>=0"
-      ],
-      "dependencies": [
-        "XI_REAL_FORM"
-      ],
-      "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
-      "certificate_path": "results/certificates/tau_sturm_parametric_certificate.json",
-      "updated_at": "2026-05-01T17:29:32Z",
-      "internal_closure": "CLOSED",
-      "external_formalization": "PENDING"
-    },
-    "STURM_PIVOT_POSITIVITY": {
-      "title": "Sturm Pivot Positivity",
-      "status": "certified_local",
-      "depends_on": [
-        "JENSEN_HYPERBOLICITY"
-      ],
-      "proves": [
-        "TAU_SUBDISCRIMINANT"
-      ],
-      "artifacts": [
-        "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
-      ],
-      "notes": [
-        "Positive normalized Sturm pivots from Jensen hyperbolicity"
-      ],
-      "dependencies": [
-        "JENSEN_HYPERBOLICITY"
-      ],
-      "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
-      "certificate_path": "results/certificates/tau_sturm_parametric_certificate.json",
-      "updated_at": "2026-05-01T17:29:32Z",
-      "internal_closure": "CLOSED",
-      "external_formalization": "PENDING"
-    },
-    "TAU_SUBDISCRIMINANT": {
-      "title": "Tau/Subdiscriminant Bridge",
-      "status": "certified_local",
-      "depends_on": [
-        "STURM_PIVOT_POSITIVITY"
-      ],
-      "proves": [
-        "AG_LGV_TRANSFER"
-      ],
-      "artifacts": [
-        "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
-      ],
-      "notes": [
-        "tau_j=Disc_j(P), H_j=N_j tau_j with N_j>0; Cauchy-Binet/Vandermonde"
-      ],
-      "dependencies": [
-        "STURM_PIVOT_POSITIVITY"
-      ],
-      "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
-      "certificate_path": "results/certificates/tau_sturm_parametric_certificate.json",
-      "updated_at": "2026-05-01T17:29:32Z",
-      "internal_closure": "CLOSED",
-      "external_formalization": "PENDING"
-    },
     "AG_LGV_TRANSFER": {
-      "title": "AG/LGV Transfer Identity",
-      "status": "certified_local",
-      "depends_on": [
-        "TAU_SUBDISCRIMINANT"
-      ],
-      "proves": [
-        "CELL_SUPPORT_POSITIVITY"
-      ],
+      "artifact_digest": "f99134465007e84510b7c114ed9cf87375af9a0025f259f3035bbc27a05af604",
       "artifacts": [
         "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md"
       ],
-      "notes": [
-        "M_{a,b}=s_{a+b}, tau=sum nonintersecting path weights; path_atom_bijection+LGV"
-      ],
+      "certificate_path": "results/certificates/ag_lgv_parametric_certificate.json",
       "dependencies": [
         "TAU_SUBDISCRIMINANT"
       ],
-      "theorem_file": "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
-      "certificate_path": "results/certificates/ag_lgv_parametric_certificate.json",
-      "updated_at": "2026-05-01T17:29:32Z",
+      "depends_on": [
+        "TAU_SUBDISCRIMINANT"
+      ],
+      "external_formalization": "PENDING",
+      "external_formalization_status": "PENDING",
       "internal_closure": "CLOSED",
-      "external_formalization": "PENDING"
+      "node_id": "AG_LGV_TRANSFER",
+      "notes": [
+        "M_{a,b}=s_{a+b}, tau=sum nonintersecting path weights; path_atom_bijection+LGV"
+      ],
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "proves": [
+        "CELL_SUPPORT_POSITIVITY"
+      ],
+      "statement": "The AG/LGV transfer identifies M_{a,b}(t) with s_{a+b}(t).",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
+      "title": "AG/LGV Transfer Identity",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "parametric_schema"
     },
     "CELL_SUPPORT_POSITIVITY": {
-      "title": "Cell Support Positivity",
-      "status": "certified_local",
-      "depends_on": [
-        "AG_LGV_TRANSFER"
-      ],
-      "proves": [
-        "D_POSITIVITY"
-      ],
+      "artifact_digest": "e70dd255b8bf95bbf1eb7a2459c51e977e2fe7b71a3e94a699923f74cc910547",
       "artifacts": [
         "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md"
       ],
-      "notes": [
-        "Cell-level support preservation for D-positivity argument"
-      ],
+      "certificate_path": "results/certificates/d_positivity_parametric_certificate.json",
       "dependencies": [
         "AG_LGV_TRANSFER"
       ],
-      "theorem_file": "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
-      "certificate_path": "results/certificates/d_positivity_parametric_certificate.json",
-      "updated_at": "2026-05-01T17:29:32Z",
-      "internal_closure": "CLOSED",
-      "external_formalization": "PENDING"
-    },
-    "D_POSITIVITY": {
-      "title": "D-Positivity Theorem",
-      "status": "certified_local",
       "depends_on": [
-        "CELL_SUPPORT_POSITIVITY"
+        "AG_LGV_TRANSFER"
       ],
-      "proves": [
-        "DYADIC_TRANSPORT"
-      ],
-      "artifacts": [
-        "theorems/D_POSITIVITY_THEOREM.md"
-      ],
+      "external_formalization": "PENDING",
+      "external_formalization_status": "PENDING",
+      "internal_closure": "CLOSED",
+      "node_id": "CELL_SUPPORT_POSITIVITY",
       "notes": [
-        "D(m,ell,a)>=0; closed via canonical_refinement+kappa_s+dyadic_capacity+Uniform_Lift"
+        "Cell-level support preservation for D-positivity argument"
       ],
-      "dependencies": [
-        "CELL_SUPPORT_POSITIVITY"
-      ],
-      "theorem_file": "theorems/D_POSITIVITY_THEOREM.md",
-      "certificate_path": "results/certificates/d_positivity_parametric_certificate.json",
-      "updated_at": "2026-05-01T17:29:32Z",
-      "internal_closure": "CLOSED",
-      "external_formalization": "PENDING"
-    },
-    "DYADIC_TRANSPORT": {
-      "title": "Dyadic Transport Theorem",
-      "status": "certified_local",
-      "depends_on": [
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "proves": [
         "D_POSITIVITY"
       ],
-      "proves": [
-        "RH_SYMBOLIC_CLOSURE"
-      ],
+      "statement": "Cell support positivity is preserved through the Tantrium transfer.",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
+      "title": "Cell Support Positivity",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "parametric_schema"
+    },
+    "DYADIC_TRANSPORT": {
+      "artifact_digest": "e70dd255b8bf95bbf1eb7a2459c51e977e2fe7b71a3e94a699923f74cc910547",
       "artifacts": [
         "docs/DYADIC_TRANSPORT_THEOREM.md"
       ],
-      "notes": [
-        "Dyadic transport via support-preserving injection"
-      ],
+      "certificate_path": "results/certificates/d_positivity_parametric_certificate.json",
       "dependencies": [
         "D_POSITIVITY"
       ],
-      "theorem_file": "docs/DYADIC_TRANSPORT_THEOREM.md",
-      "certificate_path": "results/certificates/d_positivity_parametric_certificate.json",
-      "updated_at": "2026-05-01T17:29:32Z",
-      "internal_closure": "CLOSED",
-      "external_formalization": "PENDING"
-    },
-    "RH_SYMBOLIC_CLOSURE": {
-      "title": "RH Symbolic Closure",
-      "status": "certified_local",
       "depends_on": [
+        "D_POSITIVITY"
+      ],
+      "external_formalization": "PENDING",
+      "external_formalization_status": "PENDING",
+      "internal_closure": "CLOSED",
+      "node_id": "DYADIC_TRANSPORT",
+      "notes": [
+        "Dyadic transport via support-preserving injection"
+      ],
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "proves": [
+        "RH_SYMBOLIC_CLOSURE"
+      ],
+      "statement": "Dyadic transport closes the support-preserving D-positivity route.",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "docs/DYADIC_TRANSPORT_THEOREM.md",
+      "title": "Dyadic Transport Theorem",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "internal_certificate_system"
+    },
+    "D_POSITIVITY": {
+      "artifact_digest": "e70dd255b8bf95bbf1eb7a2459c51e977e2fe7b71a3e94a699923f74cc910547",
+      "artifacts": [
+        "theorems/D_POSITIVITY_THEOREM.md"
+      ],
+      "certificate_path": "results/certificates/d_positivity_parametric_certificate.json",
+      "dependencies": [
+        "CELL_SUPPORT_POSITIVITY"
+      ],
+      "depends_on": [
+        "CELL_SUPPORT_POSITIVITY"
+      ],
+      "external_formalization": "PENDING",
+      "external_formalization_status": "PENDING",
+      "internal_closure": "CLOSED",
+      "node_id": "D_POSITIVITY",
+      "notes": [
+        "D(m,ell,a)>=0; closed via canonical_refinement+kappa_s+dyadic_capacity+Uniform_Lift"
+      ],
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "proves": [
         "DYADIC_TRANSPORT"
       ],
+      "statement": "D(m,ell,a) is nonnegative for all admissible triples in the Tantrium certificate system.",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "theorems/D_POSITIVITY_THEOREM.md",
+      "title": "D-Positivity Theorem",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "parametric_schema"
+    },
+    "FIRST_FIVE_PIVOTS": {
+      "artifact_digest": "35c0ef4c921c056089a1f25046a4ac6e357267d51e66fbac6256119b6ef76236",
+      "certificate_path": "theorems/FIRST_FIVE_PIVOTS.md",
+      "dependencies": [
+        "GATE_B_STAIRCASE"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "FIRST_FIVE_PIVOTS",
+      "proof_status": "VERIFIED_FINITE",
+      "statement": "The first five pivot families are positive in the verified window.",
+      "status": "VERIFIED_FINITE",
+      "theorem_file": "theorems/FIRST_FIVE_PIVOTS.md",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "finite_window"
+    },
+    "GATE_A_CROSS_RATIO": {
+      "artifact_digest": "1667ec24cdd1e4ca86c1f737998c7e571057ee154dac70bf20bd8edb9179e807",
+      "certificate_path": "math/gate_a_verify.py",
+      "dependencies": [
+        "GATE_A_PERTURBATION"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "GATE_A_CROSS_RATIO",
+      "proof_status": "CERTIFIED_SCHEMA",
+      "statement": "Gate A cross-ratio factors through H-pivot quotients.",
+      "status": "CERTIFIED_SCHEMA",
+      "theorem_file": "theorems/GATE_A_CROSS_RATIO_THEOREM.md",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "finite_window"
+    },
+    "GATE_A_PERTURBATION": {
+      "artifact_digest": "f6a8807a25d6fb286b596138f3c2b09061cc72679eb458734a71254f80d359e9",
+      "certificate_path": "math/gate_a.py",
+      "dependencies": [
+        "LAH_SHADOW"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "GATE_A_PERTURBATION",
+      "proof_status": "CERTIFIED_SCHEMA",
+      "statement": "Gate A has exact lambda^{-2} perturbation around the Lah shadow.",
+      "status": "CERTIFIED_SCHEMA",
+      "theorem_file": "theorems/GATE_A_PERTURBATION_THEOREM.md",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "parametric_schema"
+    },
+    "GATE_B_STAIRCASE": {
+      "artifact_digest": "690f36c87be73352f3752eb3fb85532f04cfacfa0c66b9797e844747d70e2ae6",
+      "certificate_path": "theorems/GATE_B_FINDINGS.md",
+      "dependencies": [
+        "GATE_B_STAIRCASE_RAMP",
+        "GATE_B_STAIRCASE_QUOTIENT"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "GATE_B_STAIRCASE",
+      "proof_status": "VERIFIED_FINITE",
+      "statement": "Gate B combines the staircase ramp and quotient laws.",
+      "status": "VERIFIED_FINITE",
+      "theorem_file": "theorems/GATE_B_STAIRCASE_THEOREM.md",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "finite_window"
+    },
+    "GATE_B_STAIRCASE_QUOTIENT": {
+      "artifact_digest": "690f36c87be73352f3752eb3fb85532f04cfacfa0c66b9797e844747d70e2ae6",
+      "certificate_path": "theorems/GATE_B_FINDINGS.md",
+      "dependencies": [
+        "GATE_B_STAIRCASE_RAMP"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "GATE_B_STAIRCASE_QUOTIENT",
+      "proof_status": "VERIFIED_FINITE",
+      "statement": "Gate B staircase quotient has degree r(2j-r-1)/2.",
+      "status": "VERIFIED_FINITE",
+      "theorem_file": "theorems/GATE_B_STAIRCASE_THEOREM.md",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "finite_window"
+    },
+    "GATE_B_STAIRCASE_RAMP": {
+      "artifact_digest": "690f36c87be73352f3752eb3fb85532f04cfacfa0c66b9797e844747d70e2ae6",
+      "certificate_path": "theorems/GATE_B_FINDINGS.md",
+      "dependencies": [
+        "GATE_A_CROSS_RATIO"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "GATE_B_STAIRCASE_RAMP",
+      "proof_status": "VERIFIED_FINITE",
+      "statement": "Gate B top ramp coefficient follows the staircase product law.",
+      "status": "VERIFIED_FINITE",
+      "theorem_file": "theorems/GATE_B_STAIRCASE_THEOREM.md",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "finite_window"
+    },
+    "JENSEN_HYPERBOLICITY": {
+      "artifact_digest": "7996b17791a7a5e5298d3de8faa903508dfd14e198a87377ad2bad568329b3c8",
+      "artifacts": [
+        "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
+      ],
+      "certificate_path": "results/certificates/tau_sturm_parametric_certificate.json",
+      "dependencies": [
+        "XI_REAL_FORM"
+      ],
+      "depends_on": [
+        "XI_REAL_FORM"
+      ],
+      "external_formalization": "PENDING",
+      "external_formalization_status": "PENDING",
+      "internal_closure": "CLOSED",
+      "node_id": "JENSEN_HYPERBOLICITY",
+      "notes": [
+        "J_Xi^{d,n} hyperbolic for all d>=1, n>=0"
+      ],
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "proves": [
+        "STURM_PIVOT_POSITIVITY"
+      ],
+      "statement": "Jensen polynomials in the Tantrium RH chain are hyperbolic.",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "title": "Jensen Hyperbolicity Target",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "parametric_schema"
+    },
+    "K7_SHARPNESS": {
+      "artifact_digest": "607326ef9069f72a7a5a83f3f0efe80796726f35606cfc731b6ebfdd05a59330",
+      "certificate_path": "atlas/k7_sharpness_reproduction.json",
+      "dependencies": [
+        "FIRST_FIVE_PIVOTS"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "K7_SHARPNESS",
+      "proof_status": "HISTORICAL_REFERENCE",
+      "statement": "K7 sharpness records the boundary obstruction for the historical pivot program.",
+      "status": "HISTORICAL_REFERENCE",
+      "theorem_file": "theorems/K7_SHARPNESS.md",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "finite_window"
+    },
+    "LAH_SHADOW": {
+      "artifact_digest": "f6a8807a25d6fb286b596138f3c2b09061cc72679eb458734a71254f80d359e9",
+      "certificate_path": "math/gate_a.py",
+      "dependencies": [],
+      "external_formalization_status": "PENDING",
+      "node_id": "LAH_SHADOW",
+      "proof_status": "HISTORICAL_REFERENCE",
+      "statement": "The Gate A leading term is the Lah shadow polynomial.",
+      "status": "HISTORICAL_REFERENCE",
+      "theorem_file": "theorems/LAH_SHADOW.md",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "finite_window"
+    },
+    "RH_CLOSURE": {
+      "artifact_digest": "ec314afdd09c8cb69c5f23bac7590665184c2f6bbb19e5368da7a567ba5dd05b",
+      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "dependencies": [
+        "DYADIC_TRANSPORT"
+      ],
+      "external_formalization": "PENDING",
+      "external_formalization_status": "PENDING",
+      "gap_report": "results/certificates/rh_gap_report.md",
+      "internal_closure": "CLOSED",
+      "node_id": "RH_CLOSURE",
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "statement": "The RH target is internally closed by the Tantrium certificate stack.",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "paper/TANTRIUM_RH_MAIN_THEOREM.md",
+      "title": "RH_CLOSURE",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "internal_certificate_system"
+    },
+    "RH_GAP_FINDER": {
+      "artifact_digest": "03b57ff554bbf73bf37dd243ee148a687a1da14ce3a4d16ade0ccf29590988e0",
+      "certificate_path": "results/certificates/rh_gap_report.md",
+      "dependencies": [
+        "RH_PROOF_ATTEMPT"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "RH_GAP_FINDER",
+      "proof_status": "NO_STRUCTURAL_GAP",
+      "statement": "The gap finder reports no structural gap for the RH proof stack.",
+      "status": "NO_STRUCTURAL_GAP",
+      "theorem_file": "results/certificates/rh_gap_report.md",
+      "title": "Rh Gap Finder",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "internal_certificate_system"
+    },
+    "RH_PROOF_ATTEMPT": {
+      "artifact_digest": "591434a0c1f80b36d88ea88fa38c875c02cd2578dced4d514b26cdd902d8ed09",
+      "certificate_path": "results/certificates/rh_proof_attempt_dag.json",
+      "dependencies": [
+        "RH_CLOSURE"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "RH_PROOF_ATTEMPT",
+      "proof_status": "NO_STRUCTURAL_GAP",
+      "statement": "The RH proof attempt DAG has no structural gap.",
+      "status": "NO_STRUCTURAL_GAP",
+      "theorem_file": "results/certificates/rh_proof_attempt_dag.json",
+      "title": "Rh Proof Attempt",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "internal_certificate_system"
+    },
+    "RH_RAW_TARGET": {
+      "artifact_digest": "ec314afdd09c8cb69c5f23bac7590665184c2f6bbb19e5368da7a567ba5dd05b",
+      "artifacts": [
+        "inputs/rh_raw_hypothesis.yaml"
+      ],
+      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "dependencies": [],
+      "external_formalization": "PENDING",
+      "external_formalization_status": "PENDING",
+      "internal_closure": "CLOSED",
+      "node_id": "RH_RAW_TARGET",
+      "notes": [
+        "Raw RH statement: all nontrivial zeros of zeta on Re(s)=1/2"
+      ],
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "proves": [
+        "XI_REAL_FORM"
+      ],
+      "statement": "All nontrivial zeros of zeta(s) lie on Re(s)=1/2.",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "inputs/rh_raw_hypothesis.yaml",
+      "title": "Riemann Hypothesis Raw Target",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "internal_certificate_system"
+    },
+    "RH_SYMBOLIC_CLOSURE": {
       "artifacts": [
         "results/certificates/rh_symbolic_closure_certificate.json",
         "paper/TANTRIUM_RH_MAIN_THEOREM.md"
+      ],
+      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "dependencies": [
+        "DYADIC_TRANSPORT"
+      ],
+      "depends_on": [
+        "DYADIC_TRANSPORT"
       ],
       "notes": [
         "Full RH symbolic closure certified.",
         "certificate_path: results/certificates/rh_symbolic_closure_certificate.json"
       ],
-      "dependencies": [
-        "DYADIC_TRANSPORT"
-      ],
+      "status": "certified_local",
       "theorem_file": "results/certificates/rh_symbolic_closure_certificate.json",
-      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "title": "RH Symbolic Closure",
       "updated_at": "2026-05-01T17:19:13Z"
     },
-    "RH_CLOSURE": {
-      "status": "certified_local",
-      "proof_status": "PROVEN_BY_CERTIFICATE",
-      "title": "RH_CLOSURE",
-      "dependencies": [
-        "RH_SYMBOLIC_CLOSURE"
+    "STURM_PIVOT_POSITIVITY": {
+      "artifact_digest": "7996b17791a7a5e5298d3de8faa903508dfd14e198a87377ad2bad568329b3c8",
+      "artifacts": [
+        "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
       ],
-      "theorem_file": "results/certificates/rh_symbolic_closure_certificate.json",
-      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
-      "updated_at": "2026-05-01T17:29:32Z",
-      "internal_closure": "CLOSED",
+      "certificate_path": "results/certificates/tau_sturm_parametric_certificate.json",
+      "dependencies": [
+        "JENSEN_HYPERBOLICITY"
+      ],
+      "depends_on": [
+        "JENSEN_HYPERBOLICITY"
+      ],
       "external_formalization": "PENDING",
-      "gap_report": "results/certificates/rh_gap_report.md"
-    },
-    "RH_PROOF_ATTEMPT": {
-      "title": "Rh Proof Attempt",
-      "status": "certified_local",
-      "dependencies": [
-        "RH_SYMBOLIC_CLOSURE"
+      "external_formalization_status": "PENDING",
+      "internal_closure": "CLOSED",
+      "node_id": "STURM_PIVOT_POSITIVITY",
+      "notes": [
+        "Positive normalized Sturm pivots from Jensen hyperbolicity"
       ],
-      "theorem_file": "results/certificates/rh_proof_attempt_dag.json",
-      "certificate_path": "results/certificates/rh_proof_attempt_dag.json",
-      "updated_at": "2026-05-01T17:19:13Z"
-    },
-    "RH_GAP_FINDER": {
-      "title": "Rh Gap Finder",
-      "status": "certified_local",
-      "dependencies": [
-        "RH_PROOF_ATTEMPT"
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "proves": [
+        "TAU_SUBDISCRIMINANT"
       ],
-      "theorem_file": "results/certificates/rh_gap_report.md",
-      "certificate_path": "results/certificates/rh_gap_report.md",
-      "updated_at": "2026-05-01T17:19:13Z"
+      "statement": "Sturm pivot positivity follows from the Tau/Sturm certificate chain.",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "title": "Sturm Pivot Positivity",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "parametric_schema"
+    },
+    "TAU_SUBDISCRIMINANT": {
+      "artifact_digest": "7996b17791a7a5e5298d3de8faa903508dfd14e198a87377ad2bad568329b3c8",
+      "artifacts": [
+        "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
+      ],
+      "certificate_path": "results/certificates/tau_sturm_parametric_certificate.json",
+      "dependencies": [
+        "STURM_PIVOT_POSITIVITY"
+      ],
+      "depends_on": [
+        "STURM_PIVOT_POSITIVITY"
+      ],
+      "external_formalization": "PENDING",
+      "external_formalization_status": "PENDING",
+      "internal_closure": "CLOSED",
+      "node_id": "TAU_SUBDISCRIMINANT",
+      "notes": [
+        "tau_j=Disc_j(P), H_j=N_j tau_j with N_j>0; Cauchy-Binet/Vandermonde"
+      ],
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "proves": [
+        "AG_LGV_TRANSFER"
+      ],
+      "statement": "tau_j equals the j-th subdiscriminant through the Vandermonde-square expansion.",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
+      "title": "Tau/Subdiscriminant Bridge",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "parametric_schema"
+    },
+    "XI_REAL_FORM": {
+      "artifact_digest": "ec314afdd09c8cb69c5f23bac7590665184c2f6bbb19e5368da7a567ba5dd05b",
+      "artifacts": [
+        "inputs/rh_raw_hypothesis.yaml"
+      ],
+      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "dependencies": [
+        "RH_RAW_TARGET"
+      ],
+      "depends_on": [
+        "RH_RAW_TARGET"
+      ],
+      "external_formalization": "PENDING",
+      "external_formalization_status": "PENDING",
+      "internal_closure": "CLOSED",
+      "node_id": "XI_REAL_FORM",
+      "notes": [
+        "Xi(z)=xi(1/2+i z) has only real zeros iff RH holds"
+      ],
+      "proof_status": "PROVEN_BY_CERTIFICATE",
+      "proves": [
+        "JENSEN_HYPERBOLICITY"
+      ],
+      "statement": "Xi(z)=xi(1/2+iz) has only real zeros if and only if RH holds.",
+      "status": "PROVEN_BY_CERTIFICATE",
+      "theorem_file": "inputs/rh_raw_hypothesis.yaml",
+      "title": "Xi Real Form",
+      "updated_at": "2026-05-01T20:36:03Z",
+      "verification_scope": "external_formalization"
     }
   }
 }

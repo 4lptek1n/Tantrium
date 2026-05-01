@@ -1,0 +1,7 @@
+{
+  "certificates": [
+    "results/certificates/goldbach_circle_method_certificate.json",
+    "results/certificates/goldbach_singular_series_certificate.json"
+  ],
+  "problem": "goldbach"
+}

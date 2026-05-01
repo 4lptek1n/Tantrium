@@ -1,0 +1,17 @@
+name: Goldbach Conjecture
+statement: Every even integer n > 2 is a sum of two primes.
+reduction_chain:
+  - GOLDBACH_RAW_TARGET
+  - SINGULAR_SERIES_POSITIVITY
+  - CIRCLE_METHOD_MAJOR_ARC
+  - MINOR_ARC_BOUND
+  - GOLDBACH_CLOSURE
+known_theorems:
+  - Hardy-Littlewood circle method major arc
+  - Singular series positivity
+certificates:
+  - results/certificates/goldbach_circle_method_certificate.json
+  - results/certificates/goldbach_singular_series_certificate.json
+expected_gap_types:
+  - MINOR_ARC_BOUND
+machine_entrypoint: python tools/goldbach_machine.py

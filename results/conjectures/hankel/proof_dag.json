@@ -1,0 +1,12 @@
+{
+  "nodes": {
+    "HANKEL": {
+      "certificate_file": "results/certificates/ag_lgv_parametric_certificate.json",
+      "dependencies": [],
+      "statement": "name: Hankel / AG-LGV Positivity",
+      "status": "CERTIFIED_SCHEMA"
+    }
+  },
+  "overall_status": "CERTIFIED_SCHEMA",
+  "problem": "hankel"
+}

@@ -1,0 +1,14 @@
+{
+  "closure_status": "CERTIFIED_SCHEMA",
+  "external_formalization": "PENDING",
+  "first_gap": null,
+  "generated_at": "2026-05-01T20:35:54Z",
+  "internal_tantrium_closure": "CERTIFIED_SCHEMA",
+  "main_certificate": "math/gate_a_verify.py",
+  "name": "lah",
+  "problem": "lah",
+  "proof_attempt_status": "HISTORICAL_SCHEMA",
+  "run_detail": "not required",
+  "run_ok": true,
+  "status": "CERTIFIED_SCHEMA"
+}

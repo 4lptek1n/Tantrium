@@ -1,0 +1,43 @@
+TANTRIUM RH MACHINE
+repo_root: C:\Users\omerm\Desktop\Tantrium
+commit: dd73547
+mode: --strict --prove
+
+raw_target: PASS  [repo_root OK, inputs/rh_raw_hypothesis.yaml found]
+raw_target_read: PASS  [loaded 5 pipeline targets]
+theorem_artifacts: PASS  [8 theorem artifacts OK]
+audits: PASS  [5/5 PASS]
+  PASS proof_chain_audit.py
+  PASS ag_lgv_transfer_checker.py
+  PASS tau_sturm_identity_checker.py
+  PASS rh_symbolic_closure_pipeline.py --strict
+  PASS parametric_certificate_generator.py
+parametric_certificate: PASS  [C:\Users\omerm\Desktop\Tantrium\results\certificates\parametric_closure_certificate.json]
+closure_certificate: PASS  [C:\Users\omerm\Desktop\Tantrium\results\certificates\rh_symbolic_closure_certificate.json]
+atlas_update: PASS  [events.jsonl, manifest.json, status.md written to C:\Users\omerm\Desktop\Tantrium\results\atlas]
+theorem_graph_update: PASS  [C:\Users\omerm\Desktop\Tantrium\tantrium\theorem_graph\theorem_graph.yaml]
+final_summary: PASS  [summary + TANTRIUM_CLOSURE_RESULT.md updated]
+readme_update: PASS  [README.md updated]
+
+closure_status: PASS
+
+TANTRIUM RH MACHINE -- PROVE MODE
+
+ag_lgv_parametric_certificate: PASS  [C:\Users\omerm\Desktop\Tantrium\results\certificates\ag_lgv_parametric_certificate.json]
+tau_sturm_parametric_certificate: PASS  [C:\Users\omerm\Desktop\Tantrium\results\certificates\tau_sturm_parametric_certificate.json]
+d_positivity_parametric_certificate: PASS  [C:\Users\omerm\Desktop\Tantrium\results\certificates\d_positivity_parametric_certificate.json]
+proof_attempt_dag: PASS  [overall_status: NO_STRUCTURAL_GAP]
+gap_finder: PASS  [NO_STRUCTURAL_GAP]
+proof_attempt_status: NO_STRUCTURAL_GAP
+atlas_prove_update: PASS  [events.jsonl + manifest.json updated]
+theorem_graph_prove_update: PASS  [C:\Users\omerm\Desktop\Tantrium\tantrium\theorem_graph\theorem_graph.yaml]
+certificate_registry: PASS  [C:\Users\omerm\Desktop\Tantrium\results\certificates\certificate_registry.json]
+machine_latest_json: PASS  [C:\Users\omerm\Desktop\Tantrium\results\certificates\tantrium_rh_machine_latest.json]
+artifact_manifest: PASS  [RESULT: GENERATED]
+
+TANTRIUM RH MACHINE -- FULL MODE
+closure_status:              PASS
+proof_attempt_status:        NO_STRUCTURAL_GAP
+rh_closure_status:           PROVEN_BY_CERTIFICATE
+internal_tantrium_closure:   CLOSED
+external_formalization:      PENDING

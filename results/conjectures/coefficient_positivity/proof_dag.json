@@ -1,0 +1,12 @@
+{
+  "nodes": {
+    "COEFFICIENT_POSITIVITY": {
+      "certificate_file": "results/atlas/manifest.json",
+      "dependencies": [],
+      "statement": "name: Coefficient Positivity Frontier",
+      "status": "ATLAS_DRIVEN"
+    }
+  },
+  "overall_status": "ATLAS_DRIVEN",
+  "problem": "coefficient_positivity"
+}

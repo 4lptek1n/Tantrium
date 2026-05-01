@@ -1,0 +1,14 @@
+{
+  "closure_status": "CERTIFIED_SCHEMA",
+  "external_formalization": "PENDING",
+  "first_gap": null,
+  "generated_at": "2026-05-01T20:35:55Z",
+  "internal_tantrium_closure": "CERTIFIED_SCHEMA",
+  "main_certificate": "results/certificates/ag_lgv_parametric_certificate.json",
+  "name": "hankel",
+  "problem": "hankel",
+  "proof_attempt_status": "CERTIFIED_SCHEMA",
+  "run_detail": "not required",
+  "run_ok": true,
+  "status": "CERTIFIED_SCHEMA"
+}

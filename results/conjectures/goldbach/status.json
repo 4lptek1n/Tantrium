@@ -1,0 +1,14 @@
+{
+  "closure_status": "CONDITIONAL_GAP",
+  "external_formalization": "PENDING",
+  "first_gap": "MINOR_ARC_BOUND",
+  "generated_at": "2026-05-01T20:35:54Z",
+  "internal_tantrium_closure": "CONDITIONAL_GAP",
+  "main_certificate": "results/certificates/goldbach_circle_method_certificate.json",
+  "name": "goldbach",
+  "problem": "goldbach",
+  "proof_attempt_status": "CONDITIONAL_GAP",
+  "run_detail": "  The machine correctly identifies this as CONDITIONAL_GAP, not OPEN_GAP.",
+  "run_ok": true,
+  "status": "CONDITIONAL_GAP"
+}

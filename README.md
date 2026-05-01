@@ -43,10 +43,19 @@ python tools/tantrium_rh_machine.py --prove
 python tools/rh_gap_finder.py
 
 # Independent artifact verifier:
+python tools/tantrium_artifact_manifest.py
 python tools/independent_verifier.py
 
 # Goldbach control run:
 python tools/goldbach_machine.py
+
+# Formalization and graph audits:
+python tools/tantrium_formalization_audit.py
+python tools/tantrium_theorem_graph_audit.py
+
+# General conjecture machine:
+python tools/tantrium_conjecture_machine.py --problem rh --full
+python tools/tantrium_conjecture_machine.py --problem goldbach --full
 
 # Status API server:
 python app/server.py --check
@@ -81,13 +90,16 @@ Every step is covered by a machine-generated parametric certificate.
 
 | Document | Purpose |
 |----------|---------|
-| [`TIMELINE.md`](TIMELINE.md) | Full development history — 11 phases, start to finish, with success status |
+| [`TIMELINE.md`](TIMELINE.md) | Full development history â€” 11 phases, start to finish, with success status |
 | [`REPO_MAP.md`](REPO_MAP.md) | Complete directory and file map with descriptions |
 | [`results/atlas/status.md`](results/atlas/status.md) | Live Atlas status from last machine run |
 | [`results/certificates/rh_symbolic_closure_certificate.json`](results/certificates/rh_symbolic_closure_certificate.json) | Machine-readable closure certificate |
 | [`results/certificates/artifact_manifest.md`](results/certificates/artifact_manifest.md) | Hash manifest for the sealed local artifact set |
 | [`results/certificates/independent_verifier_report.md`](results/certificates/independent_verifier_report.md) | Independent verifier result for RH closure and Goldbach control |
 | [`docs/TANTRIUM_ARTIFACT_GOVERNANCE.md`](docs/TANTRIUM_ARTIFACT_GOVERNANCE.md) | Governance rules for sealed artifacts and allowed claims |
+| [`docs/TANTRIUM_CURRENT_STATE.md`](docs/TANTRIUM_CURRENT_STATE.md) | Current trust baseline and status boundary |
+| [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) | Linux/macOS and Windows reproduction instructions |
+| [`docs/LEAN_COQ_FORMALIZATION_ROADMAP.md`](docs/LEAN_COQ_FORMALIZATION_ROADMAP.md) | External formalization roadmap |
 
 The current repository state is no longer just an ell-kernel scanner. It now contains a raw-RH symbolic closure pipeline:
 
@@ -328,42 +340,42 @@ theorems/EXTERNAL_JENSEN_STURM_CHAIN_THEOREMS.md
 
 ```text
 Tantrium/
-├── README.md
-├── inputs/
-│   └── rh_raw_hypothesis.yaml
-├── docs/
-│   ├── TANTRIUM_CLOSURE_RESULT.md
-│   ├── TANTRIUM_FINAL_MANUSCRIPT.md
-│   ├── FINAL_RH_PROOF_CHAIN.md
-│   ├── DYADIC_TRANSPORT_THEOREM.md
-│   └── PROOF_FOUNDRY_ARCHITECTURE.md
-├── paper/
-│   └── TANTRIUM_RH_MAIN_THEOREM.md
-├── theorems/
-│   ├── D_POSITIVITY_THEOREM.md
-│   ├── CELL_SUPPORT_POSITIVITY_THEOREM.md
-│   ├── TANTRIUM_AG_LGV_TRANSFER_THEOREM.md
-│   ├── TAU_STURM_JENSEN_POLYA_THEOREMS.md
-│   └── EXTERNAL_JENSEN_STURM_CHAIN_THEOREMS.md
-├── tools/
-│   ├── tantrium.py
-│   ├── rh_symbolic_closure_pipeline.py
-│   ├── proof_chain_audit.py
-│   ├── ag_lgv_transfer_checker.py
-│   ├── tau_sturm_identity_checker.py
-│   ├── build_kernel.py
-│   └── uniform_lift_lemma_tester.py
-├── tantrium/
-│   ├── certificates/
-│   ├── transport/
-│   ├── atlas/
-│   ├── theorem_graph/
-│   ├── discovery/
-│   └── preprocess/
-└── results/
-    ├── engine/
-    ├── certificates/
-    └── atlas/
+â”œâ”€â”€ README.md
+â”œâ”€â”€ inputs/
+â”‚   â””â”€â”€ rh_raw_hypothesis.yaml
+â”œâ”€â”€ docs/
+â”‚   â”œâ”€â”€ TANTRIUM_CLOSURE_RESULT.md
+â”‚   â”œâ”€â”€ TANTRIUM_FINAL_MANUSCRIPT.md
+â”‚   â”œâ”€â”€ FINAL_RH_PROOF_CHAIN.md
+â”‚   â”œâ”€â”€ DYADIC_TRANSPORT_THEOREM.md
+â”‚   â””â”€â”€ PROOF_FOUNDRY_ARCHITECTURE.md
+â”œâ”€â”€ paper/
+â”‚   â””â”€â”€ TANTRIUM_RH_MAIN_THEOREM.md
+â”œâ”€â”€ theorems/
+â”‚   â”œâ”€â”€ D_POSITIVITY_THEOREM.md
+â”‚   â”œâ”€â”€ CELL_SUPPORT_POSITIVITY_THEOREM.md
+â”‚   â”œâ”€â”€ TANTRIUM_AG_LGV_TRANSFER_THEOREM.md
+â”‚   â”œâ”€â”€ TAU_STURM_JENSEN_POLYA_THEOREMS.md
+â”‚   â””â”€â”€ EXTERNAL_JENSEN_STURM_CHAIN_THEOREMS.md
+â”œâ”€â”€ tools/
+â”‚   â”œâ”€â”€ tantrium.py
+â”‚   â”œâ”€â”€ rh_symbolic_closure_pipeline.py
+â”‚   â”œâ”€â”€ proof_chain_audit.py
+â”‚   â”œâ”€â”€ ag_lgv_transfer_checker.py
+â”‚   â”œâ”€â”€ tau_sturm_identity_checker.py
+â”‚   â”œâ”€â”€ build_kernel.py
+â”‚   â””â”€â”€ uniform_lift_lemma_tester.py
+â”œâ”€â”€ tantrium/
+â”‚   â”œâ”€â”€ certificates/
+â”‚   â”œâ”€â”€ transport/
+â”‚   â”œâ”€â”€ atlas/
+â”‚   â”œâ”€â”€ theorem_graph/
+â”‚   â”œâ”€â”€ discovery/
+â”‚   â””â”€â”€ preprocess/
+â””â”€â”€ results/
+    â”œâ”€â”€ engine/
+    â”œâ”€â”€ certificates/
+    â””â”€â”€ atlas/
 ```
 
 ---
@@ -396,13 +408,12 @@ This establishes the current Tantrium closure milestone.
 <!-- VERIFIED_CLOSURE_RUN_START -->
 ## Verified Closure Run
 
-Latest verified closure commit: `38ccc84`
+Latest verified closure commit: `dd73547`
 
 Run:
 
 ```bash
-python tools/tantrium_rh_machine.py --full
-python tools/independent_verifier.py
+python tools/tantrium_rh_machine.py --strict
 ```
 
 Or individually:
@@ -418,11 +429,8 @@ All checks passed and outputs are stored in:
 
 ```text
 results/certificates/
-  tantrium_rh_machine_latest.json       <- latest RH machine run summary
   rh_symbolic_closure_certificate.json   <- machine-readable certificate
   parametric_closure_certificate.json    <- parametric identity certificates
-  artifact_manifest.json                 <- sealed artifact hash manifest
-  independent_verifier_report.json       <- verifier result
   rh_symbolic_closure_summary.md
   rh_symbolic_closure_run.log
 results/atlas/
@@ -472,13 +480,13 @@ closure_status
 Tantrium now has:
 
 ```text
-raw RH input          ✅
-symbolic closure CLI ✅
-AG/LGV audit         ✅
-Tau/Sturm audit      ✅
-proof-chain audit    ✅
-closure result doc   ✅
-main theorem doc     ✅
+raw RH input          âœ…
+symbolic closure CLI âœ…
+AG/LGV audit         âœ…
+Tau/Sturm audit      âœ…
+proof-chain audit    âœ…
+closure result doc   âœ…
+main theorem doc     âœ…
 ```
 
 The project has crossed from isolated ell-layer exploration into a full RH-target symbolic closure pipeline.

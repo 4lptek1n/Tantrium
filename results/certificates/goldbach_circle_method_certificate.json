@@ -1,29 +1,29 @@
 {
   "certificate_type": "goldbach_circle_method",
-  "generated_at": "2026-05-01T19:47:44Z",
-  "theorem_file": "theorems/GOLDBACH_CIRCLE_METHOD_THEOREM.md",
+  "circle_method_check": {
+    "G_N": 0.939154,
+    "N": 10000,
+    "note": "Leading term of Hardy-Littlewood circle method.",
+    "positive": true,
+    "r_approx": 110.71,
+    "status": "PASS"
+  },
+  "claim": "The major arc contribution to r(N) is positive for all large even N. Binary Goldbach closure conditional on minor arc bound.",
   "description": "Major arc: I_major(N) = G(N)*N/log^2(N)*(1+o(1)) > 0.",
+  "finite_window": {
+    "failed": [],
+    "status": "PASS",
+    "verified": 4999,
+    "window": "4 <= n <= 10000, even"
+  },
+  "generated_at": "2026-05-01T20:35:54Z",
+  "minor_arc_note": "Minor arc bound is unconditional for ternary Goldbach (Helfgott 2013). For binary Goldbach, Vinogradov minor arc bound requires GRH or remains conditional.",
+  "minor_arc_status": "CONDITIONAL",
   "proof_method": [
     "hardy_littlewood_circle_method",
     "major_arc_estimate",
     "singular_series"
   ],
-  "finite_window": {
-    "window": "4 <= n <= 10000, even",
-    "verified": 4999,
-    "failed": [],
-    "status": "PASS"
-  },
-  "circle_method_check": {
-    "N": 10000,
-    "G_N": 0.939154,
-    "r_approx": 110.71,
-    "positive": true,
-    "status": "PASS",
-    "note": "Leading term of Hardy-Littlewood circle method."
-  },
   "status": "CERTIFIED_SCHEMA",
-  "minor_arc_status": "CONDITIONAL",
-  "minor_arc_note": "Minor arc bound is unconditional for ternary Goldbach (Helfgott 2013). For binary Goldbach, Vinogradov minor arc bound requires GRH or remains conditional.",
-  "claim": "The major arc contribution to r(N) is positive for all large even N. Binary Goldbach closure conditional on minor arc bound."
+  "theorem_file": "theorems/GOLDBACH_CIRCLE_METHOD_THEOREM.md"
 }

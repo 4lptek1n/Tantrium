@@ -1,8 +1,8 @@
 # Tantrium Atlas Status
 
-Last updated: 2026-05-01T19:47:34Z
-Commit: `38ccc84`
-Latest proof attempt run: 2026-05-01T19:46:49Z
+Last updated: 2026-05-01T20:35:53Z
+Commit: `dd73547`
+Latest proof attempt run: 2026-05-01T20:35:32Z
 
 ## RH Symbolic Closure
 
@@ -25,9 +25,9 @@ Latest proof attempt run: 2026-05-01T19:46:49Z
 
 ## Key Paths
 
-- `paper/TANTRIUM_RH_PROOF_v1.md` — Final proof manuscript
-- `results/certificates/certificate_registry.json` — Certificate registry
-- `results/certificates/rh_gap_report.md` — Gap finder report
+- `paper/TANTRIUM_RH_PROOF_v1.md` â€” Final proof manuscript
+- `results/certificates/certificate_registry.json` â€” Certificate registry
+- `results/certificates/rh_gap_report.md` â€” Gap finder report
 - `results/certificates/rh_symbolic_closure_certificate.json`
 - `results/certificates/parametric_closure_certificate.json`
 - `results/certificates/ag_lgv_parametric_certificate.json`
