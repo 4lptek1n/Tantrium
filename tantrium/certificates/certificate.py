@@ -126,9 +126,9 @@ class Certificate:
     def overspent_sources(self) -> dict[str, Fraction]:
         used = self.source_usage()
         return {
-            sid: used_mass - source.mass
-            for sid, source in self.sources.items()
-            if used_mass > source.mass
+            sid: used_mass - self.sources[sid].mass
+            for sid, used_mass in used.items()
+            if used_mass > self.sources[sid].mass
         }
 
     def verify(self) -> tuple[bool, list[str]]:
@@ -149,6 +149,8 @@ class Certificate:
             "deficits": len(self.deficits),
             "edges": len(self.edges),
             "max_half_power": max((e.half_power for e in self.edges), default=0),
+            "uncovered_count": len(self.uncovered_deficits()),
+            "overspent_count": len(self.overspent_sources()),
             "errors": errors,
         }
 
@@ -163,6 +165,8 @@ class Certificate:
             f"Deficits: {s['deficits']}",
             f"Edges: {s['edges']}",
             f"Max half-power: {s['max_half_power']}",
+            f"Uncovered count: {s['uncovered_count']}",
+            f"Overspent count: {s['overspent_count']}",
             "",
         ]
         if s["errors"]:
