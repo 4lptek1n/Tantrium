@@ -15,6 +15,8 @@ has a role in the project's history or current operation.
 | `tools/ag_lgv_transfer_checker.py` | AG/LGV finite-window verifier |
 | `tools/tau_sturm_identity_checker.py` | Tau/Sturm finite-window verifier |
 | `tools/parametric_certificate_generator.py` | Parametric certificate generator |
+| `tools/independent_verifier.py` | Independent artifact manifest and verifier |
+| `tools/goldbach_machine.py` | Goldbach control proof-attempt machine |
 | `tools/tantrium.py` | Proof Foundry CLI (atlas, scan, dispatch) |
 
 ---
@@ -55,6 +57,8 @@ has a role in the project's history or current operation.
 | `ag_lgv_transfer_checker.py` | AG/LGV transfer identity checker — Phase 9 |
 | `tau_sturm_identity_checker.py` | Tau/Sturm identity checker — Phase 9 |
 | `parametric_certificate_generator.py` | Parametric certificate generator — Phase 10 |
+| `independent_verifier.py` | Generates and verifies sealed artifact manifest for RH run plus Goldbach control |
+| `goldbach_machine.py` | Control machine that should stop at the minor-arc gap |
 | `tantrium.py` | Proof Foundry CLI (atlas, preprocess, scan) — Phase 6 |
 
 ### ell=2 tools (Phase 4)
@@ -118,6 +122,7 @@ has a role in the project's history or current operation.
 | `DYADIC_TRANSPORT_THEOREM.md` | **Required by pipeline** — dyadic transport |
 | `TANTRIUM_FINAL_MANUSCRIPT.md` | **Required by pipeline** — final manuscript |
 | `TANTRIUM_CLOSURE_RESULT.md` | **Required by pipeline** — closure result (machine-updated) |
+| `TANTRIUM_ARTIFACT_GOVERNANCE.md` | Governance for sealed artifact sets, verifier requirements, and allowed claims |
 | `FINAL_RH_PROOF_CHAIN.md` | Final proof chain assembly |
 | `PROOF_FOUNDRY_ARCHITECTURE.md` | Architecture overview |
 | `ELL3_ATOM_TO_RJ_MAP.md` | ell=3 atom to Rj map |
@@ -164,8 +169,15 @@ proofs/
 results/
 ├── rh_symbolic_closure_pipeline.md         ← Phase 9 pipeline output
 ├── certificates/
+│   ├── tantrium_rh_machine_latest.json       ← Latest full RH machine run summary
 │   ├── rh_symbolic_closure_certificate.json  ← Machine-readable closure cert
 │   ├── parametric_closure_certificate.json   ← Parametric identity certs
+│   ├── artifact_manifest.json                ← SHA256 manifest for sealed artifacts
+│   ├── artifact_manifest.md                  ← Human-readable manifest
+│   ├── independent_verifier_report.json      ← Machine-readable verifier report
+│   ├── independent_verifier_report.md        ← Human-readable verifier report
+│   ├── goldbach_proof_attempt_dag.json       ← Goldbach control DAG
+│   ├── goldbach_gap_report.md                ← Goldbach control gap report
 │   ├── rh_symbolic_closure_summary.md        ← Human-readable summary
 │   └── rh_symbolic_closure_run.log           ← Full run log
 ├── atlas/
@@ -348,4 +360,9 @@ Dyadic Transport                   [docs/DYADIC_TRANSPORT_THEOREM.md]
 RH Symbolic Closure                [paper/TANTRIUM_RH_MAIN_THEOREM.md]
   ↓
 results/certificates/rh_symbolic_closure_certificate.json
+  ↓
+tools/independent_verifier.py
+  ↓
+results/certificates/artifact_manifest.json
+results/certificates/independent_verifier_report.json
 ```

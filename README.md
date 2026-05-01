@@ -10,27 +10,19 @@ python tools/tantrium_rh_machine.py --full
 
 | Field | Value |
 |-------|-------|
-| Commit | `5a0b620` |
-| Full machine run | `PASS` |
-| Proof attempt | `NO_STRUCTURAL_GAP` |
-| RH_CLOSURE node | `PROVEN_BY_CERTIFICATE` |
-| Internal certificate status | `CLOSED` |
-| External formalization status | `PENDING` |
-| Manuscript | [`paper/TANTRIUM_RH_PROOF_v1.md`](paper/TANTRIUM_RH_PROOF_v1.md) |
-| Closure declaration | [`docs/TANTRIUM_INTERNAL_CLOSURE_STATUS.md`](docs/TANTRIUM_INTERNAL_CLOSURE_STATUS.md) |
-| Certificate registry | [`results/certificates/certificate_registry.json`](results/certificates/certificate_registry.json) |
-| Gap report | [`results/certificates/rh_gap_report.md`](results/certificates/rh_gap_report.md) |
-| Atlas status | [`results/atlas/status.md`](results/atlas/status.md) |
-
-| Field | Value |
-|-------|-------|
-| Commit | `2661d4b` |
+| Run commit | `38ccc84499baa3a6324208403c34e82e6090eed9` |
+| Generated at | `2026-05-01T19:47:34Z` |
+| Platform | `Windows local` |
 | Closure status | `PASS` |
 | Proof attempt status | `NO_STRUCTURAL_GAP` |
-| Manuscript | [`paper/TANTRIUM_RH_PROOF_v1.md`](paper/TANTRIUM_RH_PROOF_v1.md) |
+| RH closure status | `PROVEN_BY_CERTIFICATE` |
+| Internal Tantrium closure | `CLOSED` |
+| External formalization | `PENDING` |
+| Goldbach control | `CONDITIONAL_GAP` at `MINOR_ARC_BOUND` |
+| Manifest | [`results/certificates/artifact_manifest.json`](results/certificates/artifact_manifest.json) |
+| Independent verifier report | [`results/certificates/independent_verifier_report.md`](results/certificates/independent_verifier_report.md) |
 | Certificate registry | [`results/certificates/certificate_registry.json`](results/certificates/certificate_registry.json) |
 | Gap report | [`results/certificates/rh_gap_report.md`](results/certificates/rh_gap_report.md) |
-| Atlas status | [`results/atlas/status.md`](results/atlas/status.md) |
 | Theorem graph | [`tantrium/theorem_graph/theorem_graph.yaml`](tantrium/theorem_graph/theorem_graph.yaml) |
 
 ---
@@ -49,6 +41,12 @@ python tools/tantrium_rh_machine.py --prove
 
 # Gap finder standalone:
 python tools/rh_gap_finder.py
+
+# Independent artifact verifier:
+python tools/independent_verifier.py
+
+# Goldbach control run:
+python tools/goldbach_machine.py
 
 # Status API server:
 python app/server.py --check
@@ -87,6 +85,9 @@ Every step is covered by a machine-generated parametric certificate.
 | [`REPO_MAP.md`](REPO_MAP.md) | Complete directory and file map with descriptions |
 | [`results/atlas/status.md`](results/atlas/status.md) | Live Atlas status from last machine run |
 | [`results/certificates/rh_symbolic_closure_certificate.json`](results/certificates/rh_symbolic_closure_certificate.json) | Machine-readable closure certificate |
+| [`results/certificates/artifact_manifest.md`](results/certificates/artifact_manifest.md) | Hash manifest for the sealed local artifact set |
+| [`results/certificates/independent_verifier_report.md`](results/certificates/independent_verifier_report.md) | Independent verifier result for RH closure and Goldbach control |
+| [`docs/TANTRIUM_ARTIFACT_GOVERNANCE.md`](docs/TANTRIUM_ARTIFACT_GOVERNANCE.md) | Governance rules for sealed artifacts and allowed claims |
 
 The current repository state is no longer just an ell-kernel scanner. It now contains a raw-RH symbolic closure pipeline:
 
@@ -105,9 +106,12 @@ RH raw target
 The first full local closure run passed the current artifact and finite-window algebraic checks.
 
 ```text
-RH SYMBOLIC CLOSURE PIPELINE
-checks=6 commands=3 failures=0
-PASS raw RH target routed through Tantrium symbolic closure stack
+TANTRIUM INDEPENDENT VERIFIER
+RH_CLOSURE: VERIFIED
+GAP_REPORT: NO_STRUCTURAL_GAP
+INTERNAL_CLOSURE: CLOSED
+GOLDBACH_CONTROL: CONDITIONAL_GAP_AT_MINOR_ARC
+RESULT: VERIFIED
 ```
 
 ---
@@ -217,6 +221,7 @@ results/rh_symbolic_closure_pipeline.md
 Run the current proof-stack audit suite:
 
 ```bash
+python tools/independent_verifier.py
 python tools/proof_chain_audit.py
 python tools/ag_lgv_transfer_checker.py
 python tools/tau_sturm_identity_checker.py
@@ -365,20 +370,23 @@ Tantrium/
 
 ## Current Passing Local Closure Run
 
-The raw RH target was routed through the stack locally with:
+The raw RH target was routed through the stack locally on Windows with:
 
 ```text
-checks=6
-commands=3
-failures=0
+commit: 38ccc84499baa3a6324208403c34e82e6090eed9
+generated_at: 2026-05-01T19:47:34Z
+closure_status: PASS
+proof_attempt_status: NO_STRUCTURAL_GAP
+rh_closure_status: PROVEN_BY_CERTIFICATE
+internal_tantrium_closure: CLOSED
+external_formalization: PENDING
 ```
 
-The three executable checks passed:
+The independent verifier also checks a Goldbach control run:
 
 ```text
-proof_chain_audit.py
-ag_lgv_transfer_checker.py
-tau_sturm_identity_checker.py
+goldbach_closure_status: CONDITIONAL_GAP
+first_gap: MINOR_ARC_BOUND
 ```
 
 This establishes the current Tantrium closure milestone.
@@ -393,7 +401,8 @@ Latest verified closure commit: `38ccc84`
 Run:
 
 ```bash
-python tools/tantrium_rh_machine.py --strict
+python tools/tantrium_rh_machine.py --full
+python tools/independent_verifier.py
 ```
 
 Or individually:
@@ -409,8 +418,11 @@ All checks passed and outputs are stored in:
 
 ```text
 results/certificates/
+  tantrium_rh_machine_latest.json       <- latest RH machine run summary
   rh_symbolic_closure_certificate.json   <- machine-readable certificate
   parametric_closure_certificate.json    <- parametric identity certificates
+  artifact_manifest.json                 <- sealed artifact hash manifest
+  independent_verifier_report.json       <- verifier result
   rh_symbolic_closure_summary.md
   rh_symbolic_closure_run.log
 results/atlas/
