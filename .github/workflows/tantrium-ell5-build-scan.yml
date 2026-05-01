@@ -7,6 +7,7 @@ on:
       - ".github/workflows/tantrium-ell5-build-scan.yml"
       - "tools/**"
       - "tantrium/**"
+      - "scripts/**"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +16,6 @@ permissions:
 jobs:
   ell5:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,26 +47,13 @@ jobs:
         run: |
           set +e
           mkdir -p results/engine results/certificates results/atlas docs
-          echo "" >> results/engine/ell5_ci_status.md
-          echo "## Build ell5" >> results/engine/ell5_ci_status.md
-          python -u tools/build_kernel.py --ell 5 > results/engine/ell5_build.log 2>&1
+          bash scripts/run_ell5_persistent.sh > results/engine/ell5_build.log 2>&1
           BUILD_STATUS=$?
-          echo "build_status=$BUILD_STATUS" >> results/engine/ell5_ci_status.md
-          tail -80 results/engine/ell5_build.log >> results/engine/ell5_ci_status.md
           echo "" >> results/engine/ell5_ci_status.md
-
-          echo "## Scan ell1..ell5 model=auto" >> results/engine/ell5_ci_status.md
-          python -u tools/tantrium.py certify --scan all --max-ell 5 --model auto --report results/certificates/scan_all_auto_ell1_ell5_report.md > results/certificates/scan_all_auto_ell1_ell5.log 2>&1
-          SCAN_STATUS=$?
-          echo "scan_status=$SCAN_STATUS" >> results/engine/ell5_ci_status.md
-          tail -120 results/certificates/scan_all_auto_ell1_ell5.log >> results/engine/ell5_ci_status.md
-          echo "" >> results/engine/ell5_ci_status.md
-
-          echo "## Status update" >> results/engine/ell5_ci_status.md
-          python -u tools/tantrium.py status --update >> results/engine/ell5_ci_status.md 2>&1
-          python -u tools/tantrium.py compare-atlas >> results/engine/ell5_ci_status.md 2>&1
+          echo "## Persistent runner" >> results/engine/ell5_ci_status.md
+          echo "runner_status=$BUILD_STATUS" >> results/engine/ell5_ci_status.md
+          tail -160 results/engine/ell5_build.log >> results/engine/ell5_ci_status.md
           echo "Finished: $(date -u)" >> results/engine/ell5_ci_status.md
-
           exit 0
 
       - name: Commit results back to repository
@@ -99,6 +86,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No generated changes to commit."
           else
-            git commit -m "Run ell5 auto scan and commit generated results"
+            git commit -m "Run ell5 persistent auto scan and commit generated results"
             git push
           fi
