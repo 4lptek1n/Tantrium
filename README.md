@@ -1,178 +1,303 @@
-# Tantrium
+# Tantrium Proof Foundry
 
-**A symbolic-computational proof framework for positivity structures on the path to the Riemann Hypothesis.**
+**Tantrium** is a symbolic-computational proof foundry for discovering and certifying positivity structures in the Jensen--Sturm route toward the Riemann Hypothesis.
 
-> **Honest status:** The Riemann Hypothesis is not proved in this repository.  
-> What exists is a rigorous proof architecture, a verified reduction chain, and layer-by-layer formal progress.
+> **Honest status:** This repository does **not** contain a proof of the Riemann Hypothesis. It contains a structured proof program, computational kernels, certificate machinery, and layer-by-layer evidence for a positivity route.
 
 ---
 
-## Abstract
+## Current Project State
 
-Tantrium is a structure-discovery framework following a **Generate → Factor → Certify** loop. It reduces the global coefficient positivity problem to primitive Newton-moment seed coefficients and certifies them layer by layer.
+Tantrium has evolved from a collection of exploratory scripts into a proof-discovery pipeline:
 
-**The working proof chain:**
-
+```text
+Kernel generation
+  -> Hermite / q_d reduction
+  -> mixed-depth q_d, q_{d-1} kernel
+  -> structure mining
+  -> dyadic transport certification
+  -> Atlas memory
+  -> theorem graph / obstruction tracking
 ```
+
+The active engine is the **Tantrium Proof Foundry**.
+
+---
+
+## Main Proof Route
+
+The intended chain is:
+
+```text
 D-seed positivity
-  ⟹  Newton moment positivity
-  ⟹  Hankel / tau positivity
-  ⟹  coefficient positivity
-  ⟹  Jensen / Sturm / Pólya route
-  ⟹  RH route
+  -> Newton moment positivity
+  -> Hankel / tau determinant positivity
+  -> coefficient positivity of Sturm pivots
+  -> Jensen polynomial hyperbolicity route
+  -> Polya route toward RH
 ```
 
-**Layer status:**
+The repository is focused on the first and hardest part of this chain: proving positivity of the primitive D-seed layers.
 
-| Layer | Mechanism | Status |
-|-------|-----------|--------|
-| ell = 0 | Connected matching | ✅ Structurally solved |
-| ell = 1 | Split-Pair Dominance | ✅ Structurally solved |
-| ell = 2 | Diagonal Residue / q8 production | ◑ Active — 1064 coordinates verified |
-| ell = 3 | Lambda-6 cumulant kernel | ◌ Scout started |
+---
 
-**Current bottleneck:** ell=2 formal closure via Diagonal Residue mechanism.  
-**Core identity:** `C_{m+1}(i) = 8^{-m} C_m^{conv}(i) + S_m(i)`, with `S_m(i) ≥ 0`.
+## Layer Status
+
+| Layer | Main mechanism | Current status |
+|---:|---|---|
+| ell=0 | connected matching / base positivity | structurally solved |
+| ell=1 | Split-Pair Dominance | structurally solved; auto model uses `split_pair` |
+| ell=2 | Diagonal Residue / dyadic transport | structurally solved in the Foundry model; auto model uses `diagonal_residue` |
+| ell=3 | Higher Split-Family / qdiff | mixed-depth kernel and qdiff certificates established for interior regions |
+| ell=4 | Uniform-lift probe layer | auto dispatch closes cached kernels through ell=4 |
+| ell=5 | heavy compute layer | kernel generation completed in Replit; persistent CI/cache flow is being wired |
+
+Current operational target:
+
+```text
+python tools/tantrium.py certify --scan all --max-ell 5 --model auto
+```
+
+---
+
+## Auto Model Dispatch
+
+The Proof Foundry no longer uses a single transport model for every region. It dispatches by layer and q-region:
+
+```text
+ell = 1                  -> split_pair
+ell = 2                  -> diagonal_residue
+ell >= 3, low q <= 10    -> low_q_family / q6_low_family
+ell >= 3, top q = max_q  -> boundary_family
+ell >= 3, interior q     -> qdiff
+```
+
+The important fix is model-aware source filtering:
+
+```text
+split_pair, diagonal_residue, low_q_family, boundary_family -> source_policy = all
+qdiff                                                       -> source_policy = q_ge_target
+```
+
+Earlier failures were partly caused by filtering away valid sources before the selected model had a chance to use them.
 
 ---
 
 ## Repository Map
 
-```
+```text
 Tantrium/
+├── README.md
+├── docs/
+│   ├── PROOF_FOUNDRY_ARCHITECTURE.md
+│   ├── DYADIC_TRANSPORT_THEOREM.md
+│   ├── ELL3_HIGHER_SPLIT_FAMILY_DOMINANCE_LEMMA.md
+│   ├── FIXED_AUTO_SCAN_ELL1_ELL4_REPORT.md
+│   ├── ELL5_TIMEOUT_AND_CACHE_POLICY.md
+│   └── THEOREM_GRAPH.md
 │
-├── paper/                        ← Start here — main whitepaper + status
-│   ├── 00_WHITEPAPER.md          Main D-Positivity paper & blueprint
-│   ├── 01_STATUS.md              Honest current status & next steps
-│   ├── 02_MASTER_CHECKPOINT.md   Full state checkpoint
-│   ├── 03_PARADIGM.md            Core Generate→Factor→Certify paradigm
-│   ├── 04_PROOF_SKELETON.md      Proof architecture overview
-│   └── 05_STURM_TODA_CASE_STUDY.md  First case study
+├── tantrium/
+│   ├── certificates/
+│   │   └── certificate.py
+│   ├── transport/
+│   │   ├── dyadic_flow.py
+│   │   └── model_dispatch.py
+│   ├── atlas/
+│   │   ├── atlas_db.py
+│   │   ├── comparative.py
+│   │   └── schema.sql
+│   ├── theorem_graph/
+│   │   ├── graph_store.py
+│   │   ├── state_machine.py
+│   │   └── theorem_graph.yaml
+│   ├── discovery/
+│   │   └── structure_miner.py
+│   └── preprocess/
+│       └── preprocessor.py
 │
-├── proofs/                       ← Formal proof documents, layer by layer
-│   ├── ell0_connected_matching/  ell=0 — solved
-│   ├── ell1_split_pair/          ell=1 — solved
-│   │   └── PROOF.md
-│   ├── ell2_diagonal_residue/    ell=2 — active (30 documents)
-│   │   ├── FORMAL_PROOF.md       ← Key source-of-truth
-│   │   ├── THEOREM.md
-│   │   ├── PATH_MODEL.md
-│   │   ├── RESIDUE_MAPS_SPEC.md
-│   │   ├── TERM_BY_TERM_COMPLETION.md
-│   │   ├── FINAL_CLOSURE_CRITERION.md
-│   │   └── [attack notes & failed routes]
-│   └── ell3_scout/               ell=3 — exploration
-│       ├── SCOUT_PLAN.md
-│       └── CUMULANT_KERNEL_DRAFT.md
+├── tools/
+│   ├── tantrium.py
+│   ├── build_kernel.py
+│   ├── ell3_qd_reducer.py
+│   ├── ell3_delta_transform.py
+│   ├── q6_obstruction_analyzer.py
+│   └── uniform_lift_lemma_tester.py
 │
-├── theorems/                     ← Named theorems & verified results
-│   ├── D_POSITIVITY_THEOREM.md   Main theorem target
-│   ├── FIRST_FIVE_PIVOTS.md
-│   ├── LAH_SHADOW.md
-│   ├── K5_J4_RESULT.md
-│   ├── K6_J5_RESULT.md
-│   ├── K7_SHARPNESS.md
-│   ├── BEZOUTIAN_BLOCK_FORMULAS.md
-│   ├── TRANSITION_TOP_COEFFICIENTS.md
-│   └── [more results...]
+├── scripts/
+│   ├── run_ell5_persistent.sh
+│   └── run_proof_foundry_scan.sh
 │
-├── blueprints/                   ← Attack plans, programs, roadmaps
-│   ├── ROADMAP.md
-│   ├── PROOF_PROGRAM.md
-│   ├── CUMULANT_PROGRAM.md
-│   ├── MOMENT_PATH_PROGRAM.md
-│   ├── D_CLUSTER_CANCELLATION_PROGRAM.md
-│   ├── FAILURE_FRONTIER.md
-│   └── [more strategy docs...]
+├── results/
+│   ├── engine/
+│   ├── certificates/
+│   └── atlas/
 │
-├── atlas/                        ← Computational verification data
-│   ├── engine/                   CSV/MD/TXT reports (33 files)
-│   │   ├── ell2_rho_atlas_extended_report.md
-│   │   ├── ell2_noncircular_q8_operator_report.md
-│   │   ├── ell3_cumulant_kernel_terms.csv
-│   │   └── [all engine outputs...]
-│   └── k7_sharpness_reproduction.*
-│
-├── src/tantrium/                 ← Python proof engine (importable package)
-│   ├── algebra/                  positivity.py, sheffer.py, sturm.py
-│   ├── core/                     pipeline.py, systems.py, fast_newton_top.py
-│   ├── discovery/                patterns.py
-│   └── positivity/               catalog.py, cumulants.py, failure_hunter.py
-│
-├── math/                         ← Standalone computation scripts
-│   ├── pivots.py, positivity.py, verify.py
-│   ├── gate_a.py, gate_a_sturm.py, gate_a_verify.py
-│   ├── lah_sturm.py, asymptotic.py
-│   └── [H_d* cache files]
-│
-├── tools/                        ← Analysis & generation tools
-│   ├── ell3_cumulant_kernel_generator.py   ← Run this for ell=3 data
-│   ├── ell2_rho_diagonal_atlas.py
-│   ├── ell2_certificate_solver.py
-│   ├── run_positivity_engine_v1.py
-│   └── analyze_newton_moment_vandermonde.py
-│
-├── archive/notes/                ← Raw session notes (preserved)
-│
-└── infra/                        ← Web/API infrastructure (Replit scaffold)
-    ├── artifacts/                API server + mockup sandbox
-    └── lib/                      TypeScript packages
+├── paper/
+├── proofs/
+├── theorems/
+├── blueprints/
+├── math/
+└── archive/
 ```
 
 ---
 
 ## Quick Start
 
-**Read the paper:**
-```
-paper/00_WHITEPAPER.md    ← main document
-paper/01_STATUS.md        ← current honest status
-```
+From the repository root:
 
-**Run ell=3 cumulant kernel generator:**
 ```bash
-python tools/ell3_cumulant_kernel_generator.py
+PYTHONPATH="$PWD" python3 -m tools.tantrium graph --status all
 ```
 
-**Use the Python engine:**
-```python
-from src.tantrium.algebra import positivity, sturm
-from src.tantrium.core import pipeline
+Build a kernel:
+
+```bash
+PYTHONPATH="$PWD" python3 -m tools.tantrium build-kernel --ell 4
+```
+
+Run the automatic certificate scan:
+
+```bash
+PYTHONPATH="$PWD" python3 -m tools.tantrium certify --scan all --max-ell 5 --model auto --report results/certificates/scan_all_auto_ell1_ell5_report.md
+```
+
+Read the final report:
+
+```bash
+cat results/certificates/scan_all_auto_ell1_ell5_report.md
+```
+
+Expected final line format:
+
+```text
+No obstruction found in scanned kernels.
+```
+
+or:
+
+```text
+First obstruction: ell=X q=Y model=Z errors=[...]
 ```
 
 ---
 
-## What To Work On Next
+## Persistent ell=5 Runner
 
-Per `paper/01_STATUS.md`:
+ell=5 kernel generation is the current heavy compute step. Use the persistent runner when possible:
 
-1. Finish ell=2 formal proof closure → `proofs/ell2_diagonal_residue/FORMAL_PROOF.md`
-2. Generate ell=3 cumulant kernel data → `tools/ell3_cumulant_kernel_generator.py`
-3. Find ell=3 quotient factor
-4. Build ell=3 rho atlas
-5. Search diagonal coordinate and non-circular production operator for ell=3
+```bash
+bash scripts/run_ell5_persistent.sh
+```
 
----
+It checks for:
 
-## The Core Parametric Family
+```text
+results/engine/ell5_mixed_depth_kernel.csv
+```
 
-$$P_{\lambda,d}(z) = e^{-\frac{1}{4}D^2 + \lambda(zD^2 - \frac{1}{24}D^3)} z^d$$
+If the cache exists, it skips rebuilding the ell=5 kernel and runs the auto scan. If the cache is missing, it builds ell=5 first.
 
-Normalized Sturm pivots reveal a Toda/subresultant cross-ratio structure:
+The GitHub workflow:
 
-$$\rho_{d,j}(t) = C_{d,j} \, t^{k_{d,j}} \frac{H_{d,j-2}(t)\,H_{d,j}(t)}{H_{d,j-1}(t)^2}, \quad t = \lambda^2$$
+```text
+.github/workflows/tantrium-ell5-build-scan.yml
+```
 
-Empirically verified: $H_{d,j}(t) \in \mathbb{R}_{>0}[t]$ for $j \leq 5$.
-
-**Staircase Ramp Law:**
-
-$$[t^{T_j}]\widetilde{H}_{d,j}(t) = 2^{T_j}\prod_{m=1}^{j}(n+m)^m, \quad T_j = \tfrac{j(j+1)}{2}, \quad n = d-(j+1)$$
-
-**Lah Shadow:**
-
-$$\lambda^{-d} P_{\lambda,d}(\lambda w) \;\to\; \sum_{k=1}^{d} L(d,k)\,w^k$$
+is intended to run this persistent script and commit generated reports back to the repository.
 
 ---
 
-*Tantrium is a research prototype. It is not a chatbot, theorem prover, or AutoML tool.  
-It is a structure-discovery framework for exposing hidden algebraic order.*
+## Important Generated Files
+
+```text
+results/engine/ell5_kernel_Rj_specialized.csv
+results/engine/ell5_kernel_qd.csv
+results/engine/ell5_mixed_depth_kernel.csv
+results/engine/ell5_mixed_depth_summary.csv
+results/engine/ell5_delta_seed_decomposition.csv
+results/certificates/scan_all_auto_ell1_ell5_report.md
+results/atlas/manifest.json
+results/atlas/events.jsonl
+tantrium/theorem_graph/theorem_graph.yaml
+```
+
+---
+
+## Certificate Object
+
+The durable mathematical object is not a raw CSV row. It is a certificate:
+
+```text
+Certificate(
+  sources,
+  deficits,
+  dyadic transport edges,
+  verification status,
+  theorem_id,
+  kernel_id
+)
+```
+
+A certificate succeeds when all deficits are covered and no source is overspent.
+
+---
+
+## Atlas Memory
+
+The Atlas records:
+
+```text
+kernels
+certificates
+obstructions
+structure reports
+comparative pattern reports
+```
+
+Default files:
+
+```text
+results/atlas/manifest.json
+results/atlas/events.jsonl
+results/atlas/status.md
+results/atlas/comparative_report.md
+```
+
+---
+
+## Obstruction Handling
+
+If certification fails, the Foundry records an obstruction with coordinates such as:
+
+```text
+ell
+q_target
+model
+source_policy
+missing_targets
+missing_mass
+```
+
+These obstructions are fed into the theorem graph so failures become searchable proof tasks rather than lost terminal output.
+
+---
+
+## Research Notes
+
+Key structural discoveries represented in this repository include:
+
+- Split-Pair dominance for ell=1.
+- Diagonal residue / dyadic transport for ell=2.
+- Higher Split-Family dominance for ell=3.
+- qdiff interior transport and low-q / boundary model dispatch for higher layers.
+- The need for model-aware source filtering.
+- The persistent ell=5 cache workflow.
+
+---
+
+## What This Repository Is Not
+
+Tantrium is not a completed RH proof. It is not a general-purpose theorem prover. It is a research foundry for exposing and certifying algebraic positivity structures.
+
+The goal is disciplined progress: every generated kernel, certificate, obstruction, and theorem status should become a durable artifact.
