@@ -1,0 +1,37 @@
+{
+  "certificate_type": "goldbach_singular_series",
+  "generated_at": "2026-05-01T17:33:13Z",
+  "theorem_file": "theorems/GOLDBACH_SINGULAR_SERIES_THEOREM.md",
+  "description": "G(n) > 0 for all even n > 2 by product formula positivity.",
+  "proof_method": [
+    "product_formula",
+    "mertens_bound",
+    "local_factor_positivity"
+  ],
+  "sample_verification": {
+    "sample_ns": [
+      4,
+      6,
+      10,
+      100,
+      1000,
+      10000,
+      99998,
+      999998
+    ],
+    "G_values": {
+      "4": 0.660658,
+      "6": 1.761755,
+      "10": 0.939603,
+      "100": 0.939603,
+      "1000": 0.939603,
+      "10000": 0.939603,
+      "99998": 0.660658,
+      "999998": 0.689717
+    },
+    "all_positive": true,
+    "status": "PASS"
+  },
+  "status": "CERTIFIED_SCHEMA",
+  "claim": "G(n) = prod of positive local factors > 0 for all even n > 2."
+}

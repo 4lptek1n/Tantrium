@@ -1,0 +1,29 @@
+# Goldbach Raw Hypothesis
+# "Every even integer n > 2 is the sum of two primes."
+problem_id: goldbach_conjecture
+statement: "For all even integers n > 2, there exist primes p, q such that n = p + q."
+source: "Goldbach letter to Euler, 1742"
+known_status: "Verified computationally for n <= 4e18 (Oliveira e Silva, 2013)"
+approach: "Circle method (Hardy-Littlewood-Vinogradov) via positivity of singular series"
+
+pipeline_targets:
+  - id: GOLDBACH_RAW_TARGET
+    statement: "For all even n > 2, exists p,q prime with n=p+q."
+  - id: EXPONENTIAL_SUM_POSITIVITY
+    statement: "The exponential sum S(alpha,N) has positive major arc contribution."
+  - id: SINGULAR_SERIES_POSITIVITY
+    statement: "The singular series G(n) > 0 for all even n > 2."
+  - id: CIRCLE_METHOD_MAJOR_ARC
+    statement: "Major arc integral I_major(n) > c * n/log^2(n) for all large even n."
+  - id: MINOR_ARC_BOUND
+    statement: "Minor arc contribution is o(n/log^2(n)) — subdominant."
+  - id: GOLDBACH_CLOSURE
+    statement: "Goldbach(n) holds for all even n > 2."
+
+chain: >
+  GOLDBACH_RAW_TARGET
+  -> EXPONENTIAL_SUM_POSITIVITY
+  -> SINGULAR_SERIES_POSITIVITY
+  -> CIRCLE_METHOD_MAJOR_ARC
+  -> MINOR_ARC_BOUND
+  -> GOLDBACH_CLOSURE
