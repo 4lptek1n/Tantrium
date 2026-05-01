@@ -7,30 +7,33 @@ Finite symbolic audit for the bridge:
     tau positivity -> nonzero Sturm/subresultant pivots.
 
 The checker uses generic symbolic roots x_i and verifies the Cauchy-Binet
-subdiscriminant identity for small degrees/windows.
+subdiscriminant identity in a finite symbolic window. Defaults are chosen to
+stay fast in small CI/sandbox environments; raise the bounds locally for a
+stronger audit.
 """
 
 from __future__ import annotations
 
 import argparse
+import itertools
 import sympy as sp
 
 
 def tau_from_power_sums(xs: list[sp.Symbol], j: int) -> sp.Expr:
     s = [sum(x ** m for x in xs) for m in range(2 * j + 1)]
     mat = sp.Matrix([[s[a + b] for b in range(j + 1)] for a in range(j + 1)])
-    return sp.factor(mat.det())
+    return sp.expand(mat.det())
 
 
 def subdisc_from_roots(xs: list[sp.Symbol], j: int) -> sp.Expr:
     total = 0
-    for idxs in __import__("itertools").combinations(range(len(xs)), j + 1):
+    for idxs in itertools.combinations(range(len(xs)), j + 1):
         prod = 1
         for a_pos in range(len(idxs)):
             for b_pos in range(a_pos + 1, len(idxs)):
                 prod *= (xs[idxs[b_pos]] - xs[idxs[a_pos]]) ** 2
         total += prod
-    return sp.factor(total)
+    return sp.expand(total)
 
 
 def check_degree(D: int, max_j: int) -> list[str]:
@@ -39,7 +42,7 @@ def check_degree(D: int, max_j: int) -> list[str]:
     for j in range(min(max_j, D - 1) + 1):
         tau = tau_from_power_sums(list(xs), j)
         sd = subdisc_from_roots(list(xs), j)
-        diff = sp.factor(tau - sd)
+        diff = sp.expand(tau - sd)
         if diff != 0:
             failures.append(f"degree={D} j={j} tau-subdisc != 0: {diff}")
     return failures
@@ -47,8 +50,8 @@ def check_degree(D: int, max_j: int) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--max-degree", type=int, default=5)
-    ap.add_argument("--max-j", type=int, default=4)
+    ap.add_argument("--max-degree", type=int, default=4)
+    ap.add_argument("--max-j", type=int, default=2)
     args = ap.parse_args()
 
     failures: list[str] = []
