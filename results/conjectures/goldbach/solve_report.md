@@ -1,6 +1,6 @@
 # Tantrium Autosolver Report: goldbach
 
-Generated: 2026-05-01T22:45:52Z
+Generated: 2026-05-02T00:29:28Z
 Final status: `BLOCKED_BY_NAMED_GAP`
 First gap: `MINOR_ARC_UNCONDITIONAL_BOUND`
 Proof certificate: `None`

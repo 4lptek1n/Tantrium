@@ -1,0 +1,31 @@
+{
+  "campaign_priority": 90,
+  "known_blockers": [
+    "GENERAL_J_STAIRCASE_QUOTIENT_PROOF"
+  ],
+  "known_certificates": [
+    "math/gate_a_verify.py",
+    "theorems/GATE_B_FINDINGS.md"
+  ],
+  "known_reductions": [
+    "Gate A lambda^{-2} perturbation",
+    "Gate B top ramp",
+    "first-five pivot positivity"
+  ],
+  "objects": [
+    "H_{d,j}(t)",
+    "Q_{j,r}(n)",
+    "Lah shadow",
+    "Gate B staircase quotients"
+  ],
+  "parameters": [
+    "d",
+    "j",
+    "r",
+    "n",
+    "t"
+  ],
+  "problem_id": "lah_gate_ab_generalization",
+  "statement": "Refine or prove the general Gate B staircase quotient theorem behind the Lah/Gate A blocker.",
+  "target_status": "REFINED_SUBGAP"
+}

@@ -1,0 +1,31 @@
+{
+  "campaign_priority": 85,
+  "known_blockers": [
+    "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
+    "PARAMETRIC_POSITIVITY_NOT_YET_CERTIFIED"
+  ],
+  "known_certificates": [
+    "results/atlas/manifest.json",
+    "results/certificates/d_positivity_parametric_certificate.json"
+  ],
+  "known_reductions": [
+    "D-positivity",
+    "Gate B staircase quotient",
+    "AG/LGV transfer"
+  ],
+  "objects": [
+    "coefficient atlas",
+    "log-det cumulants",
+    "D-seed",
+    "AG/LGV path model"
+  ],
+  "parameters": [
+    "ell",
+    "q",
+    "j",
+    "k"
+  ],
+  "problem_id": "coefficient_frontier_parametric_lift",
+  "statement": "Attack the first uncertified coefficient positivity atlas frontier.",
+  "target_status": "REFINED_SUBGAP"
+}

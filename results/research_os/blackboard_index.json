@@ -1,0 +1,119 @@
+{
+  "by_agent": {
+    "Atlas Writer": 20,
+    "Certificate Builder": 20,
+    "Counterexample Hunter": 20,
+    "Evidence Miner": 20,
+    "Formalization Bridge": 20,
+    "Manuscript Builder": 20,
+    "Registry Updater": 20,
+    "Repository Cartographer": 20,
+    "Research Director": 21,
+    "Strategy Engine": 20,
+    "Theorem Synthesizer": 20,
+    "Verifier": 1
+  },
+  "by_campaign": {
+    "all": 1,
+    "coefficient_frontier_parametric_lift": 55,
+    "goldbach_minor_arc_bound": 55,
+    "lah_gate_ab_generalization": 55,
+    "proof_machine_benchmark": 1,
+    "rh_formalization_bootstrap": 55
+  },
+  "event_count": 222,
+  "latest_by_campaign": {
+    "all": {
+      "agent": "Research Director",
+      "campaign": "all",
+      "confidence": "mechanical",
+      "event_id": "390cdff0c4f24cb1bf7d096b91f99b38",
+      "event_type": "loop_completed",
+      "inputs": [],
+      "next_actions": [],
+      "outputs": [
+        "results\\research_os\\runs\\20260502T003107Z\\run_summary.json"
+      ],
+      "status": "NEXT_SUBGAP_IDENTIFIED",
+      "timestamp": "2026-05-02T00:31:08Z"
+    },
+    "coefficient_frontier_parametric_lift": {
+      "agent": "Research Director",
+      "campaign": "coefficient_frontier_parametric_lift",
+      "confidence": "mechanical",
+      "event_id": "9ae6641fce2c4902b65c46dd1289df2a",
+      "event_type": "campaign_completed",
+      "inputs": [],
+      "next_actions": [
+        "construct a D-seed or LGV path representation for the first frontier coefficient"
+      ],
+      "outputs": [
+        "results\\research_os\\campaigns\\coefficient_frontier\\campaign_summary.json"
+      ],
+      "status": "REFINED_SUBGAP",
+      "timestamp": "2026-05-02T00:31:08Z"
+    },
+    "goldbach_minor_arc_bound": {
+      "agent": "Research Director",
+      "campaign": "goldbach_minor_arc_bound",
+      "confidence": "mechanical",
+      "event_id": "c6964c3638b7430db12911cb9282a497",
+      "event_type": "campaign_completed",
+      "inputs": [],
+      "next_actions": [
+        "isolate the exact Type II bilinear estimate needed for minor arc domination"
+      ],
+      "outputs": [
+        "results\\research_os\\campaigns\\goldbach_minor_arc\\campaign_summary.json"
+      ],
+      "status": "REFINED_SUBGAP",
+      "timestamp": "2026-05-02T00:31:08Z"
+    },
+    "lah_gate_ab_generalization": {
+      "agent": "Research Director",
+      "campaign": "lah_gate_ab_generalization",
+      "confidence": "mechanical",
+      "event_id": "0fe6de1ece464149abfcc5d879faf3dc",
+      "event_type": "campaign_completed",
+      "inputs": [],
+      "next_actions": [
+        "derive the subresultant recurrence for Q_{j,r} and classify K7 sharpness"
+      ],
+      "outputs": [
+        "results\\research_os\\campaigns\\lah_gate_ab\\campaign_summary.json"
+      ],
+      "status": "REFINED_SUBGAP",
+      "timestamp": "2026-05-02T00:31:08Z"
+    },
+    "proof_machine_benchmark": {
+      "agent": "Verifier",
+      "campaign": "proof_machine_benchmark",
+      "confidence": "mechanical",
+      "event_id": "95d54a899c574c9c9ce9bb41dd76aac5",
+      "event_type": "benchmarks_completed",
+      "inputs": [],
+      "next_actions": [],
+      "outputs": [
+        "results/benchmarks/benchmark_report.json"
+      ],
+      "status": "COUNTEREXAMPLE_SEARCH_COMPLETED",
+      "timestamp": "2026-05-02T00:31:26Z"
+    },
+    "rh_formalization_bootstrap": {
+      "agent": "Research Director",
+      "campaign": "rh_formalization_bootstrap",
+      "confidence": "mechanical",
+      "event_id": "2cab12e59ecd463abc818e1f879b73e3",
+      "event_type": "campaign_completed",
+      "inputs": [],
+      "next_actions": [
+        "formalize the tau/subdiscriminant Cauchy-Binet lemma first"
+      ],
+      "outputs": [
+        "results\\research_os\\campaigns\\rh_formalization\\campaign_summary.json"
+      ],
+      "status": "FORMALIZATION_BOOTSTRAP_READY",
+      "timestamp": "2026-05-02T00:31:08Z"
+    }
+  }
+}

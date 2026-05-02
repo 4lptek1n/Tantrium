@@ -106,8 +106,12 @@ def verify_manifest_hashes(manifest: dict[str, Any], checks: list[dict[str, Any]
     for artifact in manifest_artifacts(manifest):
         path_name = str(artifact.get("path", ""))
         path = rel_path(path_name)
+        required = bool(artifact.get("required", True))
         exists = path.exists()
         nonempty = exists and path.stat().st_size > 0
+        if not required and not exists:
+            checks.append(check(f"artifact.optional.{path_name}", True, "optional artifact not generated"))
+            continue
         checks.append(check(f"artifact.exists.{path_name}", exists, "exists" if exists else "missing"))
         checks.append(
             check(

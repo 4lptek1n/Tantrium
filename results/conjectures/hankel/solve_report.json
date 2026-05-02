@@ -2,11 +2,11 @@
   "blocker_certificate_path": null,
   "certificate_registry_loaded": true,
   "command_used": "python tools/tantrium_autosolver.py --problem hankel",
-  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "commit_sha": "7e51cf71740da28d7114bcab0ff72c7fae243240",
   "counterexample_path": null,
   "final_status": "PROVEN_BY_CERTIFICATE",
   "first_gap": null,
-  "generated_at": "2026-05-01T22:45:52Z",
+  "generated_at": "2026-05-02T00:29:28Z",
   "notes": [
     "AG/LGV and tau/subdiscriminant certificates are present and sufficient for the supported Hankel transfer scope."
   ],

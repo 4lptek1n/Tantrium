@@ -1,0 +1,9 @@
+{
+  "campaign": "goldbach_minor_arc_bound",
+  "coverage": {
+    "type": "analytic blocker, no finite counterexample claim"
+  },
+  "found": false,
+  "note": "Goldbach campaign records an analytic estimate gap rather than a finite counterexample search.",
+  "status": "COUNTEREXAMPLE_SEARCH_COMPLETED"
+}

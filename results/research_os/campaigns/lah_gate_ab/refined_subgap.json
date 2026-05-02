@@ -1,0 +1,9 @@
+{
+  "attempt_count": 3,
+  "campaign": "lah_gate_ab_generalization",
+  "certificate_scope": "research_os_refined_gap_certificate",
+  "counterexample_found": false,
+  "reason": "General-j staircase quotient closure now reduces to an explicit subresultant recurrence for Q_{j,r}.",
+  "refined_subgap": "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
+  "status": "REFINED_SUBGAP"
+}

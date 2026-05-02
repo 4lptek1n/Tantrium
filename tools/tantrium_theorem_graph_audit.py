@@ -195,6 +195,42 @@ NODES: list[dict[str, Any]] = [
         "certificate_path": "atlas/k7_sharpness_reproduction.json",
         "verification_scope": "finite_window",
     },
+    {
+        "node_id": "RESEARCH_OS_LAH_GATE_AB",
+        "statement": "The research OS refines the Lah/Gate B blocker into a sharper subresultant recurrence subgap.",
+        "status": "REFINED_SUBGAP",
+        "dependencies": ["GATE_B_STAIRCASE_QUOTIENT", "K7_SHARPNESS"],
+        "theorem_file": "results/research_os/campaigns/lah_gate_ab/human_review_packet.md",
+        "certificate_path": "results/research_os/campaigns/lah_gate_ab/synthesis_status.json",
+        "verification_scope": "internal_certificate_system",
+    },
+    {
+        "node_id": "RESEARCH_OS_COEFFICIENT_FRONTIER",
+        "statement": "The research OS refines the coefficient frontier blocker into a D-seed/LGV representation subgap.",
+        "status": "REFINED_SUBGAP",
+        "dependencies": ["D_POSITIVITY", "AG_LGV_TRANSFER"],
+        "theorem_file": "results/research_os/campaigns/coefficient_frontier/human_review_packet.md",
+        "certificate_path": "results/research_os/campaigns/coefficient_frontier/synthesis_status.json",
+        "verification_scope": "internal_certificate_system",
+    },
+    {
+        "node_id": "RESEARCH_OS_GOLDBACH_MINOR_ARC",
+        "statement": "The research OS refines the Goldbach minor arc blocker into a Type II bilinear estimate subgap.",
+        "status": "REFINED_SUBGAP",
+        "dependencies": ["GOLDBACH_CONTROL"],
+        "theorem_file": "results/research_os/campaigns/goldbach_minor_arc/human_review_packet.md",
+        "certificate_path": "results/research_os/campaigns/goldbach_minor_arc/synthesis_status.json",
+        "verification_scope": "internal_certificate_system",
+    },
+    {
+        "node_id": "RESEARCH_OS_RH_FORMALIZATION",
+        "statement": "The research OS converts RH external formalization pending into a concrete Lean work queue.",
+        "status": "FORMALIZATION_BOOTSTRAP_READY",
+        "dependencies": ["RH_CLOSURE"],
+        "theorem_file": "docs/LEAN_FORMALIZATION_WORK_QUEUE.md",
+        "certificate_path": "results/formalization/lean_work_queue.json",
+        "verification_scope": "external_formalization",
+    },
 ]
 
 

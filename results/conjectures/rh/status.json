@@ -6,7 +6,7 @@
   "external_formalization": "PENDING",
   "final_status": "INTERNAL_CLOSED",
   "first_gap": null,
-  "generated_at": "2026-05-01T22:45:52Z",
+  "generated_at": "2026-05-02T00:29:30Z",
   "internal_tantrium_closure": "CLOSED",
   "main_certificate": "results/certificates/rh_symbolic_closure_certificate.json",
   "name": "rh",

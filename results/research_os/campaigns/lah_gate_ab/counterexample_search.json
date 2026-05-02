@@ -1,0 +1,13 @@
+{
+  "campaign": "lah_gate_ab_generalization",
+  "coverage": {
+    "j": [
+      1,
+      8
+    ],
+    "r": "all available finite windows"
+  },
+  "found": false,
+  "note": "No finite counterexample was promoted; K7 remains a structural sharpness boundary.",
+  "status": "COUNTEREXAMPLE_SEARCH_COMPLETED"
+}

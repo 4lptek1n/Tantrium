@@ -16,7 +16,7 @@
     "verified": 4999,
     "window": "4 <= n <= 10000, even"
   },
-  "generated_at": "2026-05-01T22:45:52Z",
+  "generated_at": "2026-05-02T00:29:28Z",
   "minor_arc_note": "Minor arc bound is unconditional for ternary Goldbach (Helfgott 2013). For binary Goldbach, Vinogradov minor arc bound requires GRH or remains conditional.",
   "minor_arc_status": "CONDITIONAL",
   "proof_method": [

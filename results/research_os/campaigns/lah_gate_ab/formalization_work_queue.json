@@ -1,0 +1,30 @@
+{
+  "campaign": "lah_gate_ab_generalization",
+  "status": "FORMALIZATION_SCAFFOLD_GENERATED",
+  "work_queue": [
+    {
+      "difficulty": "medium",
+      "lean_file": "formal/lean/Tantrium/GeneralStaircaseDivisorTheorem.lean",
+      "mathlib_anchor": "new lemma skeleton",
+      "source_campaign": "lah_gate_ab_generalization",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "lah_gate_ab_generalization:GENERAL_STAIRCASE_DIVISOR_THEOREM"
+    },
+    {
+      "difficulty": "medium",
+      "lean_file": "formal/lean/Tantrium/GeneralQuotientDegreeTheorem.lean",
+      "mathlib_anchor": "new lemma skeleton",
+      "source_campaign": "lah_gate_ab_generalization",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "lah_gate_ab_generalization:GENERAL_QUOTIENT_DEGREE_THEOREM"
+    },
+    {
+      "difficulty": "high",
+      "lean_file": "formal/lean/Tantrium/K7SharpnessStructureTheorem.lean",
+      "mathlib_anchor": "new lemma skeleton",
+      "source_campaign": "lah_gate_ab_generalization",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "lah_gate_ab_generalization:K7_SHARPNESS_STRUCTURE_THEOREM"
+    }
+  ]
+}

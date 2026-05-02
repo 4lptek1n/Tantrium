@@ -1,0 +1,94 @@
+{
+  "attempts": [
+    {
+      "attempt_id": "coefficient_frontier_parametric_lift:ATLAS_FRONTIER_D_SEED_LIFT_THEOREM:attempt1",
+      "candidate_id": "ATLAS_FRONTIER_D_SEED_LIFT_THEOREM",
+      "certificate_generated": false,
+      "failed_step": "no parametric positive expansion for the first frontier was certified",
+      "next_action": "construct a D-seed or LGV path representation for the first frontier coefficient",
+      "rank": 1,
+      "refined_subgap": "MISSING_D_SEED_OR_LGV_FRONTIER_REPRESENTATION",
+      "steps": [
+        "load evidence",
+        "check dependency certificates",
+        "try strongest ranked strategy",
+        "record exact obstruction"
+      ],
+      "strategy": "D-seed representation"
+    },
+    {
+      "attempt_id": "coefficient_frontier_parametric_lift:LOG_DET_CUMULANT_FRONTIER_THEOREM:attempt1",
+      "candidate_id": "LOG_DET_CUMULANT_FRONTIER_THEOREM",
+      "certificate_generated": false,
+      "failed_step": "no parametric positive expansion for the first frontier was certified",
+      "next_action": "construct a D-seed or LGV path representation for the first frontier coefficient",
+      "rank": 2,
+      "refined_subgap": "MISSING_D_SEED_OR_LGV_FRONTIER_REPRESENTATION",
+      "steps": [
+        "load evidence",
+        "check dependency certificates",
+        "try strongest ranked strategy",
+        "record exact obstruction"
+      ],
+      "strategy": "factorization"
+    }
+  ],
+  "campaign": "coefficient_frontier_parametric_lift",
+  "ranked_candidates": [
+    {
+      "candidate_id": "ATLAS_FRONTIER_D_SEED_LIFT_THEOREM",
+      "conclusion": "The first frontier coefficient is certified by a D-seed expansion.",
+      "counterexample_search": {},
+      "dependencies": [
+        "D_POSITIVITY",
+        "AG_LGV_TRANSFER"
+      ],
+      "evidence": [
+        "engine mixed-depth summaries",
+        "D-positivity certificate"
+      ],
+      "formal_variables": [
+        "ell",
+        "q",
+        "j",
+        "k"
+      ],
+      "hypotheses": [
+        "frontier coefficient is inside current atlas support"
+      ],
+      "proof_strategies": [
+        "D-seed representation",
+        "binomial basis expansion",
+        "LGV lift"
+      ],
+      "risk": "high",
+      "score": 0.66,
+      "statement_latex": "\\text{The first uncertified atlas frontier admits a D-seed positive representation}."
+    },
+    {
+      "candidate_id": "LOG_DET_CUMULANT_FRONTIER_THEOREM",
+      "conclusion": "A log-det cumulant expression gives a parametric positivity certificate.",
+      "counterexample_search": {},
+      "dependencies": [
+        "LOG_DET_CUMULANT_PROGRAM"
+      ],
+      "evidence": [
+        "ell mixed-depth kernel CSVs"
+      ],
+      "formal_variables": [
+        "ell",
+        "q"
+      ],
+      "hypotheses": [
+        "cumulant kernel data exists"
+      ],
+      "proof_strategies": [
+        "factorization",
+        "recurrence discovery"
+      ],
+      "risk": "high",
+      "score": 0.61,
+      "statement_latex": "\\text{The frontier coefficient is a nonnegative log-det cumulant combination}."
+    }
+  ]
+}

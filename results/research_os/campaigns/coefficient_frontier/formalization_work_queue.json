@@ -1,0 +1,22 @@
+{
+  "campaign": "coefficient_frontier_parametric_lift",
+  "status": "FORMALIZATION_SCAFFOLD_GENERATED",
+  "work_queue": [
+    {
+      "difficulty": "medium",
+      "lean_file": "formal/lean/Tantrium/AtlasFrontierDSeedLiftTheorem.lean",
+      "mathlib_anchor": "new lemma skeleton",
+      "source_campaign": "coefficient_frontier_parametric_lift",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "coefficient_frontier_parametric_lift:ATLAS_FRONTIER_D_SEED_LIFT_THEOREM"
+    },
+    {
+      "difficulty": "medium",
+      "lean_file": "formal/lean/Tantrium/LogDetCumulantFrontierTheorem.lean",
+      "mathlib_anchor": "new lemma skeleton",
+      "source_campaign": "coefficient_frontier_parametric_lift",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "coefficient_frontier_parametric_lift:LOG_DET_CUMULANT_FRONTIER_THEOREM"
+    }
+  ]
+}

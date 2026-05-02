@@ -6,7 +6,7 @@
   "external_formalization": "PENDING",
   "final_status": "PROVEN_BY_CERTIFICATE",
   "first_gap": null,
-  "generated_at": "2026-05-01T22:45:52Z",
+  "generated_at": "2026-05-02T00:29:28Z",
   "internal_tantrium_closure": "PROVEN_BY_CERTIFICATE",
   "main_certificate": "results/certificates/ag_lgv_parametric_certificate.json",
   "name": "hankel",

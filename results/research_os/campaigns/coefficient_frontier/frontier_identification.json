@@ -1,0 +1,11 @@
+{
+  "blocker": "PARAMETRIC_POSITIVITY_NOT_YET_CERTIFIED",
+  "campaign": "coefficient_frontier_parametric_lift",
+  "candidate_connections": [
+    "log-det cumulants",
+    "Gate B staircase quotient",
+    "D-positivity",
+    "AG/LGV path model"
+  ],
+  "frontier": "FIRST_UNCERTIFIED_ATLAS_FRONTIER"
+}

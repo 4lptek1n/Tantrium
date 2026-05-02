@@ -1,0 +1,48 @@
+{
+  "benchmarks": [
+    {
+      "expected": "INTERNAL_CLOSED",
+      "name": "rh",
+      "observed": "INTERNAL_CLOSED",
+      "result": "PASS"
+    },
+    {
+      "expected": "PROVEN_BY_CERTIFICATE",
+      "name": "hankel",
+      "observed": "PROVEN_BY_CERTIFICATE",
+      "result": "PASS"
+    },
+    {
+      "expected": "BLOCKED_BY_NAMED_GAP",
+      "name": "goldbach",
+      "observed": "BLOCKED_BY_NAMED_GAP",
+      "result": "PASS"
+    },
+    {
+      "expected": "REFINED_SUBGAP_OR_PROOF",
+      "name": "lah",
+      "observed": "REFINED_SUBGAP",
+      "result": "PASS"
+    },
+    {
+      "expected": "FRONTIER_IDENTIFIED",
+      "name": "coefficient_frontier",
+      "observed": "REFINED_SUBGAP",
+      "result": "PASS"
+    },
+    {
+      "expected": "COUNTEREXAMPLE_FOUND",
+      "name": "false_positive_quadratic",
+      "observed": "COUNTEREXAMPLE_FOUND",
+      "result": "PASS"
+    },
+    {
+      "expected": "OPEN_GAP",
+      "name": "missing_theorem_graph_node",
+      "observed": "MISSING_THEOREM_GRAPH_NODE",
+      "result": "PASS"
+    }
+  ],
+  "generated_at": "2026-05-02T00:31:26Z",
+  "result": "PASS"
+}

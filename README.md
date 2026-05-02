@@ -64,6 +64,14 @@ python tools/tantrium_conjecture_machine.py --problem lah --solve --full
 python tools/tantrium_conjecture_machine.py --problem hankel --solve --full
 python tools/tantrium_conjecture_machine.py --problem coefficient_positivity --solve --full
 
+# Autonomous research OS campaigns:
+python tools/tantrium_research_os.py --campaign lah --deep
+python tools/tantrium_research_os.py --campaign coefficient_frontier --deep
+python tools/tantrium_research_os.py --campaign goldbach_minor_arc --deep
+python tools/tantrium_research_os.py --campaign rh_formalization --deep
+python tools/tantrium_research_loop.py --campaign all --iterations 3 --deep
+python tools/tantrium_research_evaluator.py
+
 # Status API server:
 python app/server.py --check
 python app/server.py --port 8765    # then: GET /api/status
@@ -107,6 +115,11 @@ Every step is covered by a machine-generated parametric certificate.
 | [`docs/TANTRIUM_CURRENT_STATE.md`](docs/TANTRIUM_CURRENT_STATE.md) | Current trust baseline and status boundary |
 | [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) | Linux/macOS and Windows reproduction instructions |
 | [`docs/LEAN_COQ_FORMALIZATION_ROADMAP.md`](docs/LEAN_COQ_FORMALIZATION_ROADMAP.md) | External formalization roadmap |
+| [`docs/TANTRIUM_RESEARCH_OS_ARCHITECTURE.md`](docs/TANTRIUM_RESEARCH_OS_ARCHITECTURE.md) | Autonomous research OS architecture |
+| [`docs/TANTRIUM_RESEARCH_OS_MASTER_REPORT.md`](docs/TANTRIUM_RESEARCH_OS_MASTER_REPORT.md) | Research OS campaign status and command report |
+| [`docs/TANTRIUM_THEOREM_SYNTHESIS_REPORT.md`](docs/TANTRIUM_THEOREM_SYNTHESIS_REPORT.md) | Theorem candidate generation report |
+| [`docs/TANTRIUM_BENCHMARK_REPORT.md`](docs/TANTRIUM_BENCHMARK_REPORT.md) | Benchmark proving the machine is not blind PASS |
+| [`docs/LEAN_FORMALIZATION_WORK_QUEUE.md`](docs/LEAN_FORMALIZATION_WORK_QUEUE.md) | Concrete Lean work queue from the research OS |
 
 The current repository state is no longer just an ell-kernel scanner. It now contains a raw-RH symbolic closure pipeline:
 
@@ -415,7 +428,7 @@ This establishes the current Tantrium closure milestone.
 <!-- VERIFIED_CLOSURE_RUN_START -->
 ## Verified Closure Run
 
-Latest verified closure commit: `2357a44`
+Latest verified closure commit: `7e51cf7`
 
 Run:
 

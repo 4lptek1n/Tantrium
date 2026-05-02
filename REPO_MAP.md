@@ -24,6 +24,15 @@ has a role in the project's history or current operation.
 | `tools/tantrium_schema_lifter.py` | Schema-to-proof or named-blocker lifter |
 | `tools/tantrium_frontier_solver.py` | Atlas frontier solver and blocker generator |
 | `tools/tantrium_gap_certifier.py` | Theorem-level named blocker certificate writer |
+| `tools/tantrium_research_os.py` | Autonomous research OS campaign runner |
+| `tools/tantrium_research_loop.py` | Iterative research campaign loop |
+| `tools/tantrium_problem_ingest.py` | Research problem IR writer |
+| `tools/tantrium_theorem_synthesizer.py` | Theorem candidate generator |
+| `tools/tantrium_strategy_engine.py` | Strategy ranking and proof attempt recorder |
+| `tools/tantrium_counterexample_hunter.py` | Counterexample search recorder |
+| `tools/tantrium_certificate_builder.py` | Research-level refined-subgap certificate builder |
+| `tools/tantrium_formalization_bridge.py` | Lean work queue bridge |
+| `tools/tantrium_research_evaluator.py` | Research OS benchmark evaluator |
 | `tools/goldbach_machine.py` | Goldbach control proof-attempt machine |
 | `tools/tantrium.py` | Proof Foundry CLI (atlas, scan, dispatch) |
 
@@ -143,6 +152,11 @@ has a role in the project's history or current operation.
 | `TANTRIUM_CONJECTURE_MACHINE_REPORT.md` | Multi-problem status table |
 | `TANTRIUM_FULL_MACHINE_STATUS.md` | Solve-or-certify-gap final status table |
 | `TANTRIUM_AUTOSOLVER_ARCHITECTURE.md` | Autosolver architecture |
+| `TANTRIUM_RESEARCH_OS_ARCHITECTURE.md` | Autonomous research OS architecture |
+| `TANTRIUM_RESEARCH_OS_MASTER_REPORT.md` | Campaign status and master report |
+| `TANTRIUM_THEOREM_SYNTHESIS_REPORT.md` | Theorem candidate synthesis report |
+| `TANTRIUM_BENCHMARK_REPORT.md` | Benchmark report |
+| `LEAN_FORMALIZATION_WORK_QUEUE.md` | Concrete Lean formalization work queue |
 | `FINAL_RH_PROOF_CHAIN.md` | Final proof chain assembly |
 | `PROOF_FOUNDRY_ARCHITECTURE.md` | Architecture overview |
 | `ELL3_ATOM_TO_RJ_MAP.md` | ell=3 atom to Rj map |

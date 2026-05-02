@@ -1,0 +1,9 @@
+{
+  "attempt_count": 2,
+  "campaign": "rh_formalization_bootstrap",
+  "certificate_scope": "research_os_refined_gap_certificate",
+  "counterexample_found": false,
+  "reason": "Internal RH closure is unchanged; the external formalization queue is now concrete.",
+  "refined_subgap": "LEAN_MATHLIB_LGV_BRIDGE_NOT_COMPLETED",
+  "status": "FORMALIZATION_BOOTSTRAP_READY"
+}

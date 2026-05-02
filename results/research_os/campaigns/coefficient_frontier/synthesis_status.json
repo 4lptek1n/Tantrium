@@ -1,0 +1,9 @@
+{
+  "attempt_count": 2,
+  "campaign": "coefficient_frontier_parametric_lift",
+  "certificate_scope": "research_os_refined_gap_certificate",
+  "counterexample_found": false,
+  "reason": "The first atlas frontier needs a parametric D-seed or LGV representation; finite evidence alone is insufficient.",
+  "refined_subgap": "MISSING_D_SEED_OR_LGV_FRONTIER_REPRESENTATION",
+  "status": "REFINED_SUBGAP"
+}

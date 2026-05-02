@@ -1,0 +1,14 @@
+{
+  "campaign": "goldbach_minor_arc_bound",
+  "status": "FORMALIZATION_SCAFFOLD_GENERATED",
+  "work_queue": [
+    {
+      "difficulty": "medium",
+      "lean_file": "formal/lean/Tantrium/MinorArcDominationBound.lean",
+      "mathlib_anchor": "new lemma skeleton",
+      "source_campaign": "goldbach_minor_arc_bound",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "goldbach_minor_arc_bound:MINOR_ARC_DOMINATION_BOUND"
+    }
+  ]
+}

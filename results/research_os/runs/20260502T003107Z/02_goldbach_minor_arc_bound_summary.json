@@ -1,0 +1,11 @@
+{
+  "campaign": "goldbach_minor_arc_bound",
+  "candidate_count": 1,
+  "counterexample_found": false,
+  "formalization_items": 1,
+  "proof_attempt_count": 1,
+  "public_name": "goldbach_minor_arc",
+  "refined_subgap": "MISSING_TYPE_II_BILINEAR_ESTIMATE",
+  "result_dir": "results\\research_os\\campaigns\\goldbach_minor_arc",
+  "status": "REFINED_SUBGAP"
+}

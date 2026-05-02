@@ -1,0 +1,9 @@
+{
+  "campaign": "rh_formalization_bootstrap",
+  "coverage": {
+    "type": "formalization bootstrap"
+  },
+  "found": false,
+  "note": "No counterexample mode applies to the Lean work queue campaign.",
+  "status": "COUNTEREXAMPLE_SEARCH_COMPLETED"
+}

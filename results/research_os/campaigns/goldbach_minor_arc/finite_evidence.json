@@ -1,0 +1,28 @@
+{
+  "artifacts": [
+    {
+      "exists": true,
+      "path": "results/conjectures/goldbach/blocker_certificate.json",
+      "size_bytes": 1032
+    },
+    {
+      "exists": true,
+      "path": "results/certificates/goldbach_circle_method_certificate.json",
+      "size_bytes": 1083
+    },
+    {
+      "exists": true,
+      "path": "results/certificates/goldbach_singular_series_certificate.json",
+      "size_bytes": 890
+    }
+  ],
+  "campaign": "goldbach_minor_arc_bound",
+  "known_inputs": [
+    "Vaughan identity",
+    "large sieve",
+    "zero-density estimates",
+    "Type I/II sums"
+  ],
+  "status": "EVIDENCE_MINED",
+  "target_bound_role": "minor arc estimate must be strong enough to be dominated by the major arc main term"
+}

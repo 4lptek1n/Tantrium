@@ -1,0 +1,29 @@
+{
+  "campaign_priority": 70,
+  "known_blockers": [
+    "MINOR_ARC_UNCONDITIONAL_BOUND"
+  ],
+  "known_certificates": [
+    "results/conjectures/goldbach/blocker_certificate.json"
+  ],
+  "known_reductions": [
+    "circle method decomposition",
+    "singular series positivity",
+    "major arc schema"
+  ],
+  "objects": [
+    "minor arcs",
+    "major arcs",
+    "singular series",
+    "prime exponential sums"
+  ],
+  "parameters": [
+    "N",
+    "alpha",
+    "Q",
+    "eta"
+  ],
+  "problem_id": "goldbach_minor_arc_bound",
+  "statement": "Specify the unconditional minor arc bound required by the Goldbach control machine.",
+  "target_status": "BLOCKED_BY_NAMED_GAP"
+}

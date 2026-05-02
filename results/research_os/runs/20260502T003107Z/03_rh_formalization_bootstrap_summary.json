@@ -1,0 +1,11 @@
+{
+  "campaign": "rh_formalization_bootstrap",
+  "candidate_count": 2,
+  "counterexample_found": false,
+  "formalization_items": 6,
+  "proof_attempt_count": 2,
+  "public_name": "rh_formalization",
+  "refined_subgap": "LEAN_MATHLIB_LGV_BRIDGE_NOT_COMPLETED",
+  "result_dir": "results\\research_os\\campaigns\\rh_formalization",
+  "status": "FORMALIZATION_BOOTSTRAP_READY"
+}

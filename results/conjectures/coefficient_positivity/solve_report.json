@@ -2,11 +2,11 @@
   "blocker_certificate_path": "results/conjectures/coefficient_positivity/blocker_certificate.json",
   "certificate_registry_loaded": true,
   "command_used": "python tools/tantrium_autosolver.py --problem coefficient_positivity",
-  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "commit_sha": "7e51cf71740da28d7114bcab0ff72c7fae243240",
   "counterexample_path": null,
   "final_status": "BLOCKED_BY_NAMED_GAP",
   "first_gap": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
-  "generated_at": "2026-05-01T22:45:53Z",
+  "generated_at": "2026-05-02T00:29:28Z",
   "notes": [
     "Atlas data and linked Gate B/D-positivity/AG-LGV artifacts are present, but the first uncertified coefficient frontier is not yet promoted to a parametric positivity certificate."
   ],

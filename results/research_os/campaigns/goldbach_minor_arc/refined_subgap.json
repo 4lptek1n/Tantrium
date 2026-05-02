@@ -1,0 +1,9 @@
+{
+  "attempt_count": 1,
+  "campaign": "goldbach_minor_arc_bound",
+  "certificate_scope": "research_os_refined_gap_certificate",
+  "counterexample_found": false,
+  "reason": "The Goldbach blocker is sharpened to the Type II bilinear estimate needed for minor arc domination.",
+  "refined_subgap": "MISSING_TYPE_II_BILINEAR_ESTIMATE",
+  "status": "REFINED_SUBGAP"
+}

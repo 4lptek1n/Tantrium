@@ -6,7 +6,7 @@
   "external_formalization": "PENDING",
   "final_status": "BLOCKED_BY_NAMED_GAP",
   "first_gap": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
-  "generated_at": "2026-05-01T22:45:53Z",
+  "generated_at": "2026-05-02T00:29:28Z",
   "internal_tantrium_closure": "BLOCKED_BY_NAMED_GAP",
   "main_certificate": "results/atlas/manifest.json",
   "name": "coefficient_positivity",

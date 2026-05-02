@@ -1,0 +1,10 @@
+{
+  "campaign": "coefficient_frontier_parametric_lift",
+  "coverage": {
+    "atlas_frontier": "first uncertified frontier",
+    "engine_files": "ell mixed-depth summaries"
+  },
+  "found": false,
+  "note": "No reproducible counterexample artifact was found; obstruction is parametric certification.",
+  "status": "COUNTEREXAMPLE_SEARCH_COMPLETED"
+}

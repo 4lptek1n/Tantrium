@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "exists": true,
+      "path": "formal/lean/Tantrium/Tau.lean",
+      "size_bytes": 203
+    },
+    {
+      "exists": true,
+      "path": "formal/lean/Tantrium/AGLGV.lean",
+      "size_bytes": 252
+    },
+    {
+      "exists": true,
+      "path": "formal/lean/Tantrium/RHChain.lean",
+      "size_bytes": 493
+    },
+    {
+      "exists": true,
+      "path": "results/certificates/rh_symbolic_closure_certificate.json",
+      "size_bytes": 1781
+    }
+  ],
+  "campaign": "rh_formalization_bootstrap",
+  "status": "EVIDENCE_MINED",
+  "target_first_lemmas": [
+    "tau/subdiscriminant Cauchy-Binet identity",
+    "positive normalization H_j=N_j tau_j",
+    "AG/LGV transfer identity",
+    "cell support injection skeleton",
+    "dyadic capacity inequality",
+    "D-positivity induction skeleton"
+  ]
+}

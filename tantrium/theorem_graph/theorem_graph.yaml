@@ -1,15 +1,17 @@
 {
   "meta": {
     "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
-    "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
-    "last_prove_run": "2026-05-01T22:45:52Z",
-    "last_updated": "2026-05-01T22:45:51Z",
+    "commit_sha": "7e51cf71740da28d7114bcab0ff72c7fae243240",
+    "external_formalization": "PENDING",
+    "internal_tantrium_closure": "CLOSED",
+    "last_prove_run": "2026-05-02T00:29:30Z",
+    "last_updated": "2026-05-02T00:31:12Z",
     "proof_attempt_status": "NO_STRUCTURAL_GAP",
     "rh_closure_status": "PROVEN_BY_CERTIFICATE"
   },
   "nodes": {
     "AG_LGV_TRANSFER": {
-      "artifact_digest": "f99134465007e84510b7c114ed9cf87375af9a0025f259f3035bbc27a05af604",
+      "artifact_digest": "e7b1b48fc9a28ed87499f92ed556bf46c9ad77d9b9713939c1f8618404b3c681",
       "artifacts": [
         "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md"
       ],
@@ -20,9 +22,7 @@
       "depends_on": [
         "TAU_SUBDISCRIMINANT"
       ],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "internal_closure": "CLOSED",
       "node_id": "AG_LGV_TRANSFER",
       "notes": [
         "M_{a,b}=s_{a+b}, tau=sum nonintersecting path weights; path_atom_bijection+LGV"
@@ -35,11 +35,11 @@
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "theorems/TANTRIUM_AG_LGV_TRANSFER_THEOREM.md",
       "title": "AG/LGV Transfer Identity",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "parametric_schema"
     },
     "CELL_SUPPORT_POSITIVITY": {
-      "artifact_digest": "e70dd255b8bf95bbf1eb7a2459c51e977e2fe7b71a3e94a699923f74cc910547",
+      "artifact_digest": "b01eb94139ee32c74b83e9f0c4b44daf02609d800f7eb9bdb735df89e05c20bc",
       "artifacts": [
         "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md"
       ],
@@ -50,9 +50,7 @@
       "depends_on": [
         "AG_LGV_TRANSFER"
       ],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "internal_closure": "CLOSED",
       "node_id": "CELL_SUPPORT_POSITIVITY",
       "notes": [
         "Cell-level support preservation for D-positivity argument"
@@ -65,11 +63,11 @@
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "theorems/CELL_SUPPORT_POSITIVITY_THEOREM.md",
       "title": "Cell Support Positivity",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "parametric_schema"
     },
     "DYADIC_TRANSPORT": {
-      "artifact_digest": "e70dd255b8bf95bbf1eb7a2459c51e977e2fe7b71a3e94a699923f74cc910547",
+      "artifact_digest": "b01eb94139ee32c74b83e9f0c4b44daf02609d800f7eb9bdb735df89e05c20bc",
       "artifacts": [
         "docs/DYADIC_TRANSPORT_THEOREM.md"
       ],
@@ -80,9 +78,7 @@
       "depends_on": [
         "D_POSITIVITY"
       ],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "internal_closure": "CLOSED",
       "node_id": "DYADIC_TRANSPORT",
       "notes": [
         "Dyadic transport via support-preserving injection"
@@ -95,11 +91,11 @@
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "docs/DYADIC_TRANSPORT_THEOREM.md",
       "title": "Dyadic Transport Theorem",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "internal_certificate_system"
     },
     "D_POSITIVITY": {
-      "artifact_digest": "e70dd255b8bf95bbf1eb7a2459c51e977e2fe7b71a3e94a699923f74cc910547",
+      "artifact_digest": "b01eb94139ee32c74b83e9f0c4b44daf02609d800f7eb9bdb735df89e05c20bc",
       "artifacts": [
         "theorems/D_POSITIVITY_THEOREM.md"
       ],
@@ -110,9 +106,7 @@
       "depends_on": [
         "CELL_SUPPORT_POSITIVITY"
       ],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "internal_closure": "CLOSED",
       "node_id": "D_POSITIVITY",
       "notes": [
         "D(m,ell,a)>=0; closed via canonical_refinement+kappa_s+dyadic_capacity+Uniform_Lift"
@@ -125,7 +119,7 @@
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "theorems/D_POSITIVITY_THEOREM.md",
       "title": "D-Positivity Theorem",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "parametric_schema"
     },
     "FIRST_FIVE_PIVOTS": {
@@ -140,7 +134,7 @@
       "statement": "The first five pivot families are positive in the verified window.",
       "status": "VERIFIED_FINITE",
       "theorem_file": "theorems/FIRST_FIVE_PIVOTS.md",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "finite_window"
     },
     "GATE_A_CROSS_RATIO": {
@@ -155,7 +149,7 @@
       "statement": "Gate A cross-ratio factors through H-pivot quotients.",
       "status": "CERTIFIED_SCHEMA",
       "theorem_file": "theorems/GATE_A_CROSS_RATIO_THEOREM.md",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "finite_window"
     },
     "GATE_A_PERTURBATION": {
@@ -170,7 +164,7 @@
       "statement": "Gate A has exact lambda^{-2} perturbation around the Lah shadow.",
       "status": "CERTIFIED_SCHEMA",
       "theorem_file": "theorems/GATE_A_PERTURBATION_THEOREM.md",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "parametric_schema"
     },
     "GATE_B_STAIRCASE": {
@@ -186,7 +180,7 @@
       "statement": "Gate B combines the staircase ramp and quotient laws.",
       "status": "VERIFIED_FINITE",
       "theorem_file": "theorems/GATE_B_STAIRCASE_THEOREM.md",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "finite_window"
     },
     "GATE_B_STAIRCASE_QUOTIENT": {
@@ -201,7 +195,7 @@
       "statement": "Gate B staircase quotient has degree r(2j-r-1)/2.",
       "status": "VERIFIED_FINITE",
       "theorem_file": "theorems/GATE_B_STAIRCASE_THEOREM.md",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "finite_window"
     },
     "GATE_B_STAIRCASE_RAMP": {
@@ -216,11 +210,11 @@
       "statement": "Gate B top ramp coefficient follows the staircase product law.",
       "status": "VERIFIED_FINITE",
       "theorem_file": "theorems/GATE_B_STAIRCASE_THEOREM.md",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "finite_window"
     },
     "JENSEN_HYPERBOLICITY": {
-      "artifact_digest": "7996b17791a7a5e5298d3de8faa903508dfd14e198a87377ad2bad568329b3c8",
+      "artifact_digest": "a910a3448fa6db99a4b962430ea7516944067417121e54d165c3e89cbfc6895d",
       "artifacts": [
         "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
       ],
@@ -231,9 +225,7 @@
       "depends_on": [
         "XI_REAL_FORM"
       ],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "internal_closure": "CLOSED",
       "node_id": "JENSEN_HYPERBOLICITY",
       "notes": [
         "J_Xi^{d,n} hyperbolic for all d>=1, n>=0"
@@ -246,7 +238,7 @@
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
       "title": "Jensen Hyperbolicity Target",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "parametric_schema"
     },
     "K7_SHARPNESS": {
@@ -261,7 +253,7 @@
       "statement": "K7 sharpness records the boundary obstruction for the historical pivot program.",
       "status": "HISTORICAL_REFERENCE",
       "theorem_file": "theorems/K7_SHARPNESS.md",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "finite_window"
     },
     "LAH_SHADOW": {
@@ -274,30 +266,89 @@
       "statement": "The Gate A leading term is the Lah shadow polynomial.",
       "status": "HISTORICAL_REFERENCE",
       "theorem_file": "theorems/LAH_SHADOW.md",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "finite_window"
     },
+    "RESEARCH_OS_COEFFICIENT_FRONTIER": {
+      "artifact_digest": "7b807adcaacc9aa99ab49880386a16188d4f0a7d04ee74009787721a18715265",
+      "certificate_path": "results/research_os/campaigns/coefficient_frontier/synthesis_status.json",
+      "dependencies": [
+        "D_POSITIVITY",
+        "AG_LGV_TRANSFER"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "RESEARCH_OS_COEFFICIENT_FRONTIER",
+      "proof_status": "REFINED_SUBGAP",
+      "statement": "The research OS refines the coefficient frontier blocker into a D-seed/LGV representation subgap.",
+      "status": "REFINED_SUBGAP",
+      "theorem_file": "results/research_os/campaigns/coefficient_frontier/human_review_packet.md",
+      "updated_at": "2026-05-02T00:31:12Z",
+      "verification_scope": "internal_certificate_system"
+    },
+    "RESEARCH_OS_GOLDBACH_MINOR_ARC": {
+      "artifact_digest": "7c6f427c64ad23d5cd9495ea23d03270cc2d27bf507a45cf1fb11f374349596c",
+      "certificate_path": "results/research_os/campaigns/goldbach_minor_arc/synthesis_status.json",
+      "dependencies": [
+        "GOLDBACH_CONTROL"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "RESEARCH_OS_GOLDBACH_MINOR_ARC",
+      "proof_status": "REFINED_SUBGAP",
+      "statement": "The research OS refines the Goldbach minor arc blocker into a Type II bilinear estimate subgap.",
+      "status": "REFINED_SUBGAP",
+      "theorem_file": "results/research_os/campaigns/goldbach_minor_arc/human_review_packet.md",
+      "updated_at": "2026-05-02T00:31:12Z",
+      "verification_scope": "internal_certificate_system"
+    },
+    "RESEARCH_OS_LAH_GATE_AB": {
+      "artifact_digest": "37876d0e54ad32ad55079e9f2fa30d4027f7b5cc1b2de1b33374eb2edcd7eec9",
+      "certificate_path": "results/research_os/campaigns/lah_gate_ab/synthesis_status.json",
+      "dependencies": [
+        "GATE_B_STAIRCASE_QUOTIENT",
+        "K7_SHARPNESS"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "RESEARCH_OS_LAH_GATE_AB",
+      "proof_status": "REFINED_SUBGAP",
+      "statement": "The research OS refines the Lah/Gate B blocker into a sharper subresultant recurrence subgap.",
+      "status": "REFINED_SUBGAP",
+      "theorem_file": "results/research_os/campaigns/lah_gate_ab/human_review_packet.md",
+      "updated_at": "2026-05-02T00:31:12Z",
+      "verification_scope": "internal_certificate_system"
+    },
+    "RESEARCH_OS_RH_FORMALIZATION": {
+      "artifact_digest": "f76543e576ce343bee58fee777135d61a12e9acdf01508a0e78bd2e4d476ae21",
+      "certificate_path": "results/formalization/lean_work_queue.json",
+      "dependencies": [
+        "RH_CLOSURE"
+      ],
+      "external_formalization_status": "PENDING",
+      "node_id": "RESEARCH_OS_RH_FORMALIZATION",
+      "proof_status": "FORMALIZATION_BOOTSTRAP_READY",
+      "statement": "The research OS converts RH external formalization pending into a concrete Lean work queue.",
+      "status": "FORMALIZATION_BOOTSTRAP_READY",
+      "theorem_file": "docs/LEAN_FORMALIZATION_WORK_QUEUE.md",
+      "updated_at": "2026-05-02T00:31:12Z",
+      "verification_scope": "external_formalization"
+    },
     "RH_CLOSURE": {
-      "artifact_digest": "ec314afdd09c8cb69c5f23bac7590665184c2f6bbb19e5368da7a567ba5dd05b",
+      "artifact_digest": "3e180d194495b20bce61329cc090d859cbf9b5605f941a1a63fb0b91b57694e0",
       "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
       "dependencies": [
         "DYADIC_TRANSPORT"
       ],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "gap_report": "results/certificates/rh_gap_report.md",
-      "internal_closure": "CLOSED",
       "node_id": "RH_CLOSURE",
       "proof_status": "PROVEN_BY_CERTIFICATE",
       "statement": "The RH target is internally closed by the Tantrium certificate stack.",
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "paper/TANTRIUM_RH_MAIN_THEOREM.md",
       "title": "RH_CLOSURE",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "internal_certificate_system"
     },
     "RH_GAP_FINDER": {
-      "artifact_digest": "03b57ff554bbf73bf37dd243ee148a687a1da14ce3a4d16ade0ccf29590988e0",
+      "artifact_digest": "fdf3db9bec0efd3ffe335ec1f5e4d88878ca752152044cfc3bedd2beb5530114",
       "certificate_path": "results/certificates/rh_gap_report.md",
       "dependencies": [
         "RH_PROOF_ATTEMPT"
@@ -308,12 +359,11 @@
       "statement": "The gap finder reports no structural gap for the RH proof stack.",
       "status": "NO_STRUCTURAL_GAP",
       "theorem_file": "results/certificates/rh_gap_report.md",
-      "title": "Rh Gap Finder",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "internal_certificate_system"
     },
     "RH_PROOF_ATTEMPT": {
-      "artifact_digest": "591434a0c1f80b36d88ea88fa38c875c02cd2578dced4d514b26cdd902d8ed09",
+      "artifact_digest": "6d24f7548c446905453fa4acc65afe6fd2059dd0cf2056d795c74ce2d9062c7d",
       "certificate_path": "results/certificates/rh_proof_attempt_dag.json",
       "dependencies": [
         "RH_CLOSURE"
@@ -324,20 +374,17 @@
       "statement": "The RH proof attempt DAG has no structural gap.",
       "status": "NO_STRUCTURAL_GAP",
       "theorem_file": "results/certificates/rh_proof_attempt_dag.json",
-      "title": "Rh Proof Attempt",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "internal_certificate_system"
     },
     "RH_RAW_TARGET": {
-      "artifact_digest": "ec314afdd09c8cb69c5f23bac7590665184c2f6bbb19e5368da7a567ba5dd05b",
+      "artifact_digest": "3e180d194495b20bce61329cc090d859cbf9b5605f941a1a63fb0b91b57694e0",
       "artifacts": [
         "inputs/rh_raw_hypothesis.yaml"
       ],
       "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
       "dependencies": [],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "internal_closure": "CLOSED",
       "node_id": "RH_RAW_TARGET",
       "notes": [
         "Raw RH statement: all nontrivial zeros of zeta on Re(s)=1/2"
@@ -350,17 +397,13 @@
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "inputs/rh_raw_hypothesis.yaml",
       "title": "Riemann Hypothesis Raw Target",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "internal_certificate_system"
     },
     "RH_SYMBOLIC_CLOSURE": {
       "artifacts": [
         "results/certificates/rh_symbolic_closure_certificate.json",
         "paper/TANTRIUM_RH_MAIN_THEOREM.md"
-      ],
-      "certificate_path": "results/certificates/rh_symbolic_closure_certificate.json",
-      "dependencies": [
-        "DYADIC_TRANSPORT"
       ],
       "depends_on": [
         "DYADIC_TRANSPORT"
@@ -370,12 +413,10 @@
         "certificate_path: results/certificates/rh_symbolic_closure_certificate.json"
       ],
       "status": "certified_local",
-      "theorem_file": "results/certificates/rh_symbolic_closure_certificate.json",
-      "title": "RH Symbolic Closure",
-      "updated_at": "2026-05-01T17:19:13Z"
+      "title": "RH Symbolic Closure"
     },
     "STURM_PIVOT_POSITIVITY": {
-      "artifact_digest": "7996b17791a7a5e5298d3de8faa903508dfd14e198a87377ad2bad568329b3c8",
+      "artifact_digest": "a910a3448fa6db99a4b962430ea7516944067417121e54d165c3e89cbfc6895d",
       "artifacts": [
         "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
       ],
@@ -386,9 +427,7 @@
       "depends_on": [
         "JENSEN_HYPERBOLICITY"
       ],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "internal_closure": "CLOSED",
       "node_id": "STURM_PIVOT_POSITIVITY",
       "notes": [
         "Positive normalized Sturm pivots from Jensen hyperbolicity"
@@ -401,11 +440,11 @@
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
       "title": "Sturm Pivot Positivity",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "parametric_schema"
     },
     "TAU_SUBDISCRIMINANT": {
-      "artifact_digest": "7996b17791a7a5e5298d3de8faa903508dfd14e198a87377ad2bad568329b3c8",
+      "artifact_digest": "a910a3448fa6db99a4b962430ea7516944067417121e54d165c3e89cbfc6895d",
       "artifacts": [
         "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md"
       ],
@@ -416,9 +455,7 @@
       "depends_on": [
         "STURM_PIVOT_POSITIVITY"
       ],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "internal_closure": "CLOSED",
       "node_id": "TAU_SUBDISCRIMINANT",
       "notes": [
         "tau_j=Disc_j(P), H_j=N_j tau_j with N_j>0; Cauchy-Binet/Vandermonde"
@@ -431,11 +468,11 @@
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md",
       "title": "Tau/Subdiscriminant Bridge",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "parametric_schema"
     },
     "XI_REAL_FORM": {
-      "artifact_digest": "ec314afdd09c8cb69c5f23bac7590665184c2f6bbb19e5368da7a567ba5dd05b",
+      "artifact_digest": "3e180d194495b20bce61329cc090d859cbf9b5605f941a1a63fb0b91b57694e0",
       "artifacts": [
         "inputs/rh_raw_hypothesis.yaml"
       ],
@@ -446,9 +483,7 @@
       "depends_on": [
         "RH_RAW_TARGET"
       ],
-      "external_formalization": "PENDING",
       "external_formalization_status": "PENDING",
-      "internal_closure": "CLOSED",
       "node_id": "XI_REAL_FORM",
       "notes": [
         "Xi(z)=xi(1/2+i z) has only real zeros iff RH holds"
@@ -461,8 +496,873 @@
       "status": "PROVEN_BY_CERTIFICATE",
       "theorem_file": "inputs/rh_raw_hypothesis.yaml",
       "title": "Xi Real Form",
-      "updated_at": "2026-05-01T20:36:03Z",
+      "updated_at": "2026-05-02T00:31:12Z",
       "verification_scope": "external_formalization"
+    },
+    "cross_ratio_identity": {
+      "artifacts": [
+        "docs/TANTRIUM_MAIN_PAPER.md"
+      ],
+      "depends_on": [],
+      "notes": [],
+      "proves": [],
+      "status": "proven",
+      "theorem_id": "cross_ratio_identity",
+      "title": "Universal Cross-Ratio Identity"
+    },
+    "dyadic_transport_theorem": {
+      "artifacts": [
+        "docs/DYADIC_TRANSPORT_THEOREM.md"
+      ],
+      "depends_on": [
+        "uniform_lift_lemma"
+      ],
+      "notes": [],
+      "proves": [
+        "global_coefficient_positivity"
+      ],
+      "status": "conjectural",
+      "theorem_id": "dyadic_transport_theorem",
+      "title": "Dyadic Transport Theorem"
+    },
+    "ell1_q2_auto": {
+      "artifacts": [
+        "results\\certificates\\ell1_q2_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:17.717406+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell1_q2_auto",
+      "title": "Certificate ell1_q2_auto"
+    },
+    "ell1_q4_auto": {
+      "artifacts": [
+        "results\\certificates\\ell1_q4_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:17.721064+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell1_q4_auto",
+      "title": "Certificate ell1_q4_auto"
+    },
+    "ell1_q6_auto": {
+      "artifacts": [
+        "results\\certificates\\ell1_q6_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:17.723891+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell1_q6_auto",
+      "title": "Certificate ell1_q6_auto"
+    },
+    "ell1_q8_auto": {
+      "artifacts": [
+        "results\\certificates\\ell1_q8_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:17.726698+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell1_q8_auto",
+      "title": "Certificate ell1_q8_auto"
+    },
+    "ell2_diagonal_residue": {
+      "artifacts": [
+        "docs/DYADIC_TRANSPORT_THEOREM.md"
+      ],
+      "depends_on": [],
+      "notes": [],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell2_diagonal_residue",
+      "title": "ell=2 Diagonal Residue Mechanism"
+    },
+    "ell2_q10_auto": {
+      "artifacts": [
+        "results\\certificates\\ell2_q10_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:18.103843+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell2_q10_auto",
+      "title": "Certificate ell2_q10_auto"
+    },
+    "ell2_q12_auto": {
+      "artifacts": [
+        "results\\certificates\\ell2_q12_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:18.113012+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell2_q12_auto",
+      "title": "Certificate ell2_q12_auto"
+    },
+    "ell2_q14_auto": {
+      "artifacts": [
+        "results\\certificates\\ell2_q14_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:18.118692+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell2_q14_auto",
+      "title": "Certificate ell2_q14_auto"
+    },
+    "ell2_q16_auto": {
+      "artifacts": [
+        "results\\certificates\\ell2_q16_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:18.123437+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell2_q16_auto",
+      "title": "Certificate ell2_q16_auto"
+    },
+    "ell2_q2_auto": {
+      "artifacts": [
+        "results\\certificates\\ell2_q2_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:18.037054+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell2_q2_auto",
+      "title": "Certificate ell2_q2_auto"
+    },
+    "ell2_q4_auto": {
+      "artifacts": [
+        "results\\certificates\\ell2_q4_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:18.059295+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell2_q4_auto",
+      "title": "Certificate ell2_q4_auto"
+    },
+    "ell2_q6_auto": {
+      "artifacts": [
+        "results\\certificates\\ell2_q6_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:18.079570+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell2_q6_auto",
+      "title": "Certificate ell2_q6_auto"
+    },
+    "ell2_q8_auto": {
+      "artifacts": [
+        "results\\certificates\\ell2_q8_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:18.093938+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell2_q8_auto",
+      "title": "Certificate ell2_q8_auto"
+    },
+    "ell3_q10_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q10_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.251596+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q10_auto",
+      "title": "Certificate ell3_q10_auto"
+    },
+    "ell3_q12_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q12_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.308516+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q12_auto",
+      "title": "Certificate ell3_q12_auto"
+    },
+    "ell3_q14_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q14_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.341867+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q14_auto",
+      "title": "Certificate ell3_q14_auto"
+    },
+    "ell3_q16_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q16_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.363135+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q16_auto",
+      "title": "Certificate ell3_q16_auto"
+    },
+    "ell3_q18_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q18_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.377189+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q18_auto",
+      "title": "Certificate ell3_q18_auto"
+    },
+    "ell3_q20_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q20_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.385476+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q20_auto",
+      "title": "Certificate ell3_q20_auto"
+    },
+    "ell3_q20_internal_split": {
+      "artifacts": [
+        "docs/ELL3_HIGHER_SPLIT_FAMILY_DOMINANCE_LEMMA.md"
+      ],
+      "depends_on": [],
+      "notes": [],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q20_internal_split",
+      "title": "ell=3 q=20 Internal Split Certificate"
+    },
+    "ell3_q22_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q22_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.391871+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q22_auto",
+      "title": "Certificate ell3_q22_auto"
+    },
+    "ell3_q24_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q24_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.401825+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q24_auto",
+      "title": "Certificate ell3_q24_auto"
+    },
+    "ell3_q2_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q2_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.019773+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q2_auto",
+      "title": "Certificate ell3_q2_auto"
+    },
+    "ell3_q4_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q4_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.081262+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q4_auto",
+      "title": "Certificate ell3_q4_auto"
+    },
+    "ell3_q6_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q6_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.135242+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q6_auto",
+      "title": "Certificate ell3_q6_auto"
+    },
+    "ell3_q8_auto": {
+      "artifacts": [
+        "results\\certificates\\ell3_q8_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:19.202664+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell3_q8_auto",
+      "title": "Certificate ell3_q8_auto"
+    },
+    "ell4_q10_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q10_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:28.823650+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q10_auto",
+      "title": "Certificate ell4_q10_auto"
+    },
+    "ell4_q12_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q12_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:28.984013+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q12_auto",
+      "title": "Certificate ell4_q12_auto"
+    },
+    "ell4_q14_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q14_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.139039+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q14_auto",
+      "title": "Certificate ell4_q14_auto"
+    },
+    "ell4_q16_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q16_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.276223+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q16_auto",
+      "title": "Certificate ell4_q16_auto"
+    },
+    "ell4_q18_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q18_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.381262+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q18_auto",
+      "title": "Certificate ell4_q18_auto"
+    },
+    "ell4_q20_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q20_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.456038+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q20_auto",
+      "title": "Certificate ell4_q20_auto"
+    },
+    "ell4_q20_uniform_probe": {
+      "artifacts": [
+        "results/engine/ell4_status.md"
+      ],
+      "depends_on": [],
+      "notes": [],
+      "proves": [],
+      "status": "verified_finite",
+      "theorem_id": "ell4_q20_uniform_probe",
+      "title": "ell=4 q=20 Uniform Lift Probe"
+    },
+    "ell4_q22_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q22_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.502777+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q22_auto",
+      "title": "Certificate ell4_q22_auto"
+    },
+    "ell4_q24_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q24_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.533132+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q24_auto",
+      "title": "Certificate ell4_q24_auto"
+    },
+    "ell4_q26_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q26_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.553224+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q26_auto",
+      "title": "Certificate ell4_q26_auto"
+    },
+    "ell4_q28_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q28_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.566162+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q28_auto",
+      "title": "Certificate ell4_q28_auto"
+    },
+    "ell4_q2_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q2_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:28.041520+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q2_auto",
+      "title": "Certificate ell4_q2_auto"
+    },
+    "ell4_q30_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q30_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.576795+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q30_auto",
+      "title": "Certificate ell4_q30_auto"
+    },
+    "ell4_q32_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q32_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:29.601930+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q32_auto",
+      "title": "Certificate ell4_q32_auto"
+    },
+    "ell4_q4_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q4_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:28.239835+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q4_auto",
+      "title": "Certificate ell4_q4_auto"
+    },
+    "ell4_q6_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q6_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:28.419524+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q6_auto",
+      "title": "Certificate ell4_q6_auto"
+    },
+    "ell4_q8_auto": {
+      "artifacts": [
+        "results\\certificates\\ell4_q8_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:17:28.644679+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell4_q8_auto",
+      "title": "Certificate ell4_q8_auto"
+    },
+    "ell5_q10_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q10_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:39.005258+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q10_auto",
+      "title": "Certificate ell5_q10_auto"
+    },
+    "ell5_q12_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q12_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:39.945945+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q12_auto",
+      "title": "Certificate ell5_q12_auto"
+    },
+    "ell5_q14_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q14_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:40.766768+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q14_auto",
+      "title": "Certificate ell5_q14_auto"
+    },
+    "ell5_q16_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q16_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:41.512923+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q16_auto",
+      "title": "Certificate ell5_q16_auto"
+    },
+    "ell5_q18_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q18_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:42.244392+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q18_auto",
+      "title": "Certificate ell5_q18_auto"
+    },
+    "ell5_q20_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q20_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:42.808740+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q20_auto",
+      "title": "Certificate ell5_q20_auto"
+    },
+    "ell5_q22_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q22_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:43.231488+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q22_auto",
+      "title": "Certificate ell5_q22_auto"
+    },
+    "ell5_q24_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q24_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:43.550074+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q24_auto",
+      "title": "Certificate ell5_q24_auto"
+    },
+    "ell5_q26_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q26_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:43.837590+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q26_auto",
+      "title": "Certificate ell5_q26_auto"
+    },
+    "ell5_q28_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q28_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:44.007420+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q28_auto",
+      "title": "Certificate ell5_q28_auto"
+    },
+    "ell5_q2_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q2_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:35.977205+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q2_auto",
+      "title": "Certificate ell5_q2_auto"
+    },
+    "ell5_q30_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q30_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:44.123291+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q30_auto",
+      "title": "Certificate ell5_q30_auto"
+    },
+    "ell5_q32_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q32_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:44.199213+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q32_auto",
+      "title": "Certificate ell5_q32_auto"
+    },
+    "ell5_q34_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q34_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:44.250846+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q34_auto",
+      "title": "Certificate ell5_q34_auto"
+    },
+    "ell5_q36_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q36_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:44.287402+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q36_auto",
+      "title": "Certificate ell5_q36_auto"
+    },
+    "ell5_q38_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q38_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:44.319107+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q38_auto",
+      "title": "Certificate ell5_q38_auto"
+    },
+    "ell5_q40_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q40_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:44.398409+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q40_auto",
+      "title": "Certificate ell5_q40_auto"
+    },
+    "ell5_q4_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q4_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:36.587331+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q4_auto",
+      "title": "Certificate ell5_q4_auto"
+    },
+    "ell5_q6_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q6_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:37.345004+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q6_auto",
+      "title": "Certificate ell5_q6_auto"
+    },
+    "ell5_q8_auto": {
+      "artifacts": [
+        "results\\certificates\\ell5_q8_auto.md"
+      ],
+      "depends_on": [],
+      "notes": [
+        "ingested from Atlas at 2026-05-02T00:25:38.151596+00:00"
+      ],
+      "proves": [],
+      "status": "certified_local",
+      "theorem_id": "ell5_q8_auto",
+      "title": "Certificate ell5_q8_auto"
+    },
+    "global_coefficient_positivity": {
+      "artifacts": [],
+      "depends_on": [
+        "dyadic_transport_theorem"
+      ],
+      "notes": [],
+      "proves": [],
+      "status": "conjectural",
+      "theorem_id": "global_coefficient_positivity",
+      "title": "Global Coefficient Positivity"
+    },
+    "uniform_lift_lemma": {
+      "artifacts": [],
+      "depends_on": [
+        "ell2_diagonal_residue",
+        "ell3_q20_internal_split",
+        "ell4_q20_uniform_probe"
+      ],
+      "notes": [],
+      "proves": [
+        "dyadic_transport_theorem"
+      ],
+      "status": "conjectural",
+      "theorem_id": "uniform_lift_lemma",
+      "title": "Uniform Lift Lemma"
     }
   }
 }

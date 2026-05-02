@@ -1,0 +1,11 @@
+{
+  "campaign": "coefficient_frontier_parametric_lift",
+  "candidate_count": 2,
+  "counterexample_found": false,
+  "formalization_items": 2,
+  "proof_attempt_count": 2,
+  "public_name": "coefficient_frontier",
+  "refined_subgap": "MISSING_D_SEED_OR_LGV_FRONTIER_REPRESENTATION",
+  "result_dir": "results\\research_os\\campaigns\\coefficient_frontier",
+  "status": "REFINED_SUBGAP"
+}

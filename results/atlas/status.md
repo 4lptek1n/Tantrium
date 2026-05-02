@@ -1,8 +1,8 @@
 # Tantrium Atlas Status
 
-Last updated: 2026-05-01T22:45:51Z
-Commit: `2357a44`
-Latest proof attempt run: 2026-05-01T22:45:45Z
+Last updated: 2026-05-02T00:29:30Z
+Commit: `7e51cf7`
+Latest proof attempt run: 2026-05-02T00:29:02Z
 
 ## RH Symbolic Closure
 

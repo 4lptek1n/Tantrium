@@ -1,0 +1,93 @@
+{
+  "campaign": "lah_gate_ab_generalization",
+  "candidates": [
+    {
+      "candidate_id": "GENERAL_STAIRCASE_DIVISOR_THEOREM",
+      "conclusion": "The staircase quotient denominator and top-ramp factors follow the inferred general divisor law.",
+      "counterexample_search": {},
+      "dependencies": [
+        "GATE_A_PERTURBATION",
+        "GATE_B_STAIRCASE_RAMP",
+        "LAH_SHADOW"
+      ],
+      "evidence": [
+        "Gate B first-five positivity",
+        "K7 sharpness boundary"
+      ],
+      "formal_variables": [
+        "d",
+        "j",
+        "r",
+        "n",
+        "t"
+      ],
+      "hypotheses": [
+        "j >= 1",
+        "0 <= r <= j",
+        "Gate A perturbation data exists"
+      ],
+      "proof_strategies": [
+        "induction on j",
+        "subresultant recurrence",
+        "LGV staircase Young diagram model"
+      ],
+      "risk": "high",
+      "score": 0.72,
+      "statement_latex": "H_{d,j}(t) \\text{ admits a uniform staircase divisor compatible with all } Q_{j,r}(n)."
+    },
+    {
+      "candidate_id": "GENERAL_QUOTIENT_DEGREE_THEOREM",
+      "conclusion": "The quotient degree law holds for the general Gate B quotient family.",
+      "counterexample_search": {},
+      "dependencies": [
+        "GATE_B_STAIRCASE_QUOTIENT"
+      ],
+      "evidence": [
+        "finite windows",
+        "top ramp law"
+      ],
+      "formal_variables": [
+        "j",
+        "r",
+        "n"
+      ],
+      "hypotheses": [
+        "j >= 1",
+        "0 <= r <= j"
+      ],
+      "proof_strategies": [
+        "generating function extraction",
+        "recurrence discovery"
+      ],
+      "risk": "medium",
+      "score": 0.81,
+      "statement_latex": "\\deg_n Q_{j,r}(n)=r(2j-r-1)/2."
+    },
+    {
+      "candidate_id": "K7_SHARPNESS_STRUCTURE_THEOREM",
+      "conclusion": "The boundary failure is structural rather than a finite-computation artifact.",
+      "counterexample_search": {},
+      "dependencies": [
+        "FIRST_FIVE_PIVOTS",
+        "K7_SHARPNESS"
+      ],
+      "evidence": [
+        "K7 sharpness artifact"
+      ],
+      "formal_variables": [
+        "k",
+        "j"
+      ],
+      "hypotheses": [
+        "first-five pivot positivity"
+      ],
+      "proof_strategies": [
+        "counterexample-guided refinement",
+        "staircase boundary classification"
+      ],
+      "risk": "medium",
+      "score": 0.68,
+      "statement_latex": "K7 \\text{ is the first sharpness boundary of the safe positivity window}."
+    }
+  ]
+}

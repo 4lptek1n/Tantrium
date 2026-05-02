@@ -1,0 +1,28 @@
+{
+  "campaign_priority": 80,
+  "known_blockers": [
+    "EXTERNAL_FORMALIZATION_PENDING"
+  ],
+  "known_certificates": [
+    "results/certificates/rh_symbolic_closure_certificate.json"
+  ],
+  "known_reductions": [
+    "Tantrium RH certificate chain"
+  ],
+  "objects": [
+    "tau/subdiscriminant",
+    "Sturm pivots",
+    "AG/LGV transfer",
+    "dyadic capacity",
+    "D-positivity"
+  ],
+  "parameters": [
+    "j",
+    "ell",
+    "cells",
+    "paths"
+  ],
+  "problem_id": "rh_formalization_bootstrap",
+  "statement": "Convert internal RH certificate closure into a concrete external Lean work queue.",
+  "target_status": "FORMALIZATION_BOOTSTRAP_READY"
+}

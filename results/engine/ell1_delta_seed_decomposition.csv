@@ -1,0 +1,3 @@
+family,role,qd_power,qdm1_power,Y_power,coefficient,sign,monomial
+Delta^4,delta,4,0,4,-49/288,-,Delta^4
+Delta^4,residual_mixed_depth,3,1,4,-49/288,-,Y^4*q_d^3*q_{d-1}

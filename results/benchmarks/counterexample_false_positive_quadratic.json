@@ -1,0 +1,9 @@
+{
+  "counterexample": {
+    "n": 1,
+    "strict_positive": false,
+    "value": 0
+  },
+  "problem_id": "false_positive_quadratic",
+  "statement": "n^2 - 5n + 4 is positive for every integer n >= 0"
+}

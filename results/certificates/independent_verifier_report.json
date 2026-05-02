@@ -17,12 +17,12 @@
       "status": "PASS"
     },
     {
-      "detail": "14036",
+      "detail": "15141",
       "name": "artifact.nonempty.README.md",
       "status": "PASS"
     },
     {
-      "detail": "fee07efa4765c90f052c53c004c44718e987f810d5583d92a5359766f59807c5",
+      "detail": "e4766b221234de5c3761d859023f9fc259706946ef2ddb34bebb8e79360221e8",
       "name": "hash.README.md",
       "status": "PASS"
     },
@@ -47,12 +47,12 @@
       "status": "PASS"
     },
     {
-      "detail": "15486",
+      "detail": "16561",
       "name": "artifact.nonempty.REPO_MAP.md",
       "status": "PASS"
     },
     {
-      "detail": "f52ce87c8b2237e3ae4d62fb2ae940aef2014819e7aa5415cb1d4bd6cc7a70a4",
+      "detail": "a8b2025303522f420b1e2e918bb275ce4b301c814051712eeb6fb3eefcdda805",
       "name": "hash.REPO_MAP.md",
       "status": "PASS"
     },
@@ -127,7 +127,7 @@
       "status": "PASS"
     },
     {
-      "detail": "33305e64dc35585b517cc18e5f65fd5db1aa2db825f0b0425cb2576b1e28dc25",
+      "detail": "27fa1fe1f811a03f05825c235df164c2f014643ace7998432527cdac1974f615",
       "name": "hash.docs/TANTRIUM_CLOSURE_RESULT.md",
       "status": "PASS"
     },
@@ -272,12 +272,12 @@
       "status": "PASS"
     },
     {
-      "detail": "6248",
+      "detail": "6710",
       "name": "artifact.nonempty.results/certificates/certificate_registry.json",
       "status": "PASS"
     },
     {
-      "detail": "b62c298c672dfeb34707c2e4809d60594eb11c6ac7e69b118eab22ac15edbd4d",
+      "detail": "c6426af4f74da3ab9de02099c17fecc2b3cfd7858598827871d01db45f36ef44",
       "name": "hash.results/certificates/certificate_registry.json",
       "status": "PASS"
     },
@@ -292,7 +292,7 @@
       "status": "PASS"
     },
     {
-      "detail": "325ec64df88dd3cddae5608f4dabae6935c803f8af01b83ccde31a75bf44d03f",
+      "detail": "3e180d194495b20bce61329cc090d859cbf9b5605f941a1a63fb0b91b57694e0",
       "name": "hash.results/certificates/rh_symbolic_closure_certificate.json",
       "status": "PASS"
     },
@@ -307,7 +307,7 @@
       "status": "PASS"
     },
     {
-      "detail": "cc0b4cce746197e4449961528ebbbca9379f235f655509991fc9a331afccaf4f",
+      "detail": "6d24f7548c446905453fa4acc65afe6fd2059dd0cf2056d795c74ce2d9062c7d",
       "name": "hash.results/certificates/rh_proof_attempt_dag.json",
       "status": "PASS"
     },
@@ -322,7 +322,7 @@
       "status": "PASS"
     },
     {
-      "detail": "2df3efae142c53a8d3e86b4dfedfdc31846f71298fa56ef07757586176b910f0",
+      "detail": "fdf3db9bec0efd3ffe335ec1f5e4d88878ca752152044cfc3bedd2beb5530114",
       "name": "hash.results/certificates/rh_gap_report.md",
       "status": "PASS"
     },
@@ -337,7 +337,7 @@
       "status": "PASS"
     },
     {
-      "detail": "c3eb20991296b09831cf53cf34aa0f626f61691f8a5d4f13f92b2b1c4b4aceed",
+      "detail": "b2907b31bf8bdd6428e744c9b3b46c5319ce6074ec9974680e0f2827b655f854",
       "name": "hash.results/certificates/tantrium_rh_machine_latest.json",
       "status": "PASS"
     },
@@ -347,7 +347,7 @@
       "status": "PASS"
     },
     {
-      "detail": "27585",
+      "detail": "37175",
       "name": "artifact.nonempty.results/certificates/independent_verifier_report.json",
       "status": "PASS"
     },
@@ -362,12 +362,12 @@
       "status": "PASS"
     },
     {
-      "detail": "591",
+      "detail": "46762",
       "name": "artifact.nonempty.results/atlas/manifest.json",
       "status": "PASS"
     },
     {
-      "detail": "a7d06fbaa94419a3cecbc54729b1d837ce15ef2119c483b673f1adeac75f81c0",
+      "detail": "d9ce3c23bdb9ce08fb5ba283e09402f539143898ae86fb3b2e4ebe137256a1e4",
       "name": "hash.results/atlas/manifest.json",
       "status": "PASS"
     },
@@ -382,7 +382,7 @@
       "status": "PASS"
     },
     {
-      "detail": "4362ed2ef360bc44e7e10737e785ca6246230280d7bd59cd57af45bb683d8b2e",
+      "detail": "dc191f3ef009978622e5d3fe68cca75f4f874c19d1198b948db6e7faedb14efc",
       "name": "hash.results/atlas/status.md",
       "status": "PASS"
     },
@@ -392,12 +392,12 @@
       "status": "PASS"
     },
     {
-      "detail": "18867",
+      "detail": "45677",
       "name": "artifact.nonempty.tantrium/theorem_graph/theorem_graph.yaml",
       "status": "PASS"
     },
     {
-      "detail": "cacab86e25af10273f906bb8c6edd59bfd9e9e8efa2ccc70bd0cef27705f1197",
+      "detail": "688540c936d7ee68fb612c309eee14d8675eb2c255c02c3debd31f29a0e0ad20",
       "name": "hash.tantrium/theorem_graph/theorem_graph.yaml",
       "status": "PASS"
     },
@@ -412,7 +412,7 @@
       "status": "PASS"
     },
     {
-      "detail": "af8272d679588e58161f5a6dc9520b574eccee73d226a5ab74f4471a6cfbd5b6",
+      "detail": "6c033d31a80d5713792b5bb3fafec8a6ed110a257a1e7f0f61304cef4b54f85f",
       "name": "hash.results/certificates/goldbach_proof_attempt_dag.json",
       "status": "PASS"
     },
@@ -427,7 +427,7 @@
       "status": "PASS"
     },
     {
-      "detail": "b994833ba1ecb0888770d75f71a96e8c5b9dc8e4f275aacbda008659a8bebe68",
+      "detail": "9474ea645e0cc0130b0599cee62e4ba87fcaceed3ef69cc57cfd65f459eea9e8",
       "name": "hash.results/certificates/goldbach_gap_report.md",
       "status": "PASS"
     },
@@ -442,7 +442,7 @@
       "status": "PASS"
     },
     {
-      "detail": "12ed50fed3d539e8d56a034c61cf7d9572bdd965985371765e47c58c9665c5a6",
+      "detail": "8da62488ab712180ac9f8ce9f84e6e530dbc7e787ef0ed6283c238d2ffa6e19f",
       "name": "hash.results/certificates/goldbach_circle_method_certificate.json",
       "status": "PASS"
     },
@@ -457,7 +457,7 @@
       "status": "PASS"
     },
     {
-      "detail": "f728128025c21bd268354da2c3b05610aa2a6004b1d92ccdc582543f5b76a347",
+      "detail": "ca7fb4671b968c8e48647d81da210b41df3980c55879994992a7166de5b37ce9",
       "name": "hash.results/certificates/goldbach_singular_series_certificate.json",
       "status": "PASS"
     },
@@ -538,6 +538,126 @@
     },
     {
       "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_research_os.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1284",
+      "name": "artifact.nonempty.tools/tantrium_research_os.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "2f5b9492e4f1e85162111c2245adaf2f6cb5fe09af83ce9b04b6a29477bed57e",
+      "name": "hash.tools/tantrium_research_os.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_research_loop.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1201",
+      "name": "artifact.nonempty.tools/tantrium_research_loop.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "4f4be0f69bf3e3e7b474c1c3607e34da8a6132f59f3f8019be1b6108a9679a74",
+      "name": "hash.tools/tantrium_research_loop.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_research_evaluator.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "941",
+      "name": "artifact.nonempty.tools/tantrium_research_evaluator.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "7d5db72c42b10ad6d7e7969507cf4a32394e164f46f80e73a5e915a391c25396",
+      "name": "hash.tools/tantrium_research_evaluator.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_theorem_synthesizer.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1477",
+      "name": "artifact.nonempty.tools/tantrium_theorem_synthesizer.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "40c6376ffc9571b7b365f11b6408e854abe4163bca0b7196b00eaabbfc6dc5ad",
+      "name": "hash.tools/tantrium_theorem_synthesizer.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_strategy_engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1597",
+      "name": "artifact.nonempty.tools/tantrium_strategy_engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "ad7258cd122c9a4a0e40888777c73f41693327780cad610493838a4f40844e59",
+      "name": "hash.tools/tantrium_strategy_engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_counterexample_hunter.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1334",
+      "name": "artifact.nonempty.tools/tantrium_counterexample_hunter.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "0895caacae5afbc28c9041a563e32fa0f7d6e71cf6d53f9ff5ed810e852fbfc6",
+      "name": "hash.tools/tantrium_counterexample_hunter.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_certificate_builder.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "2011",
+      "name": "artifact.nonempty.tools/tantrium_certificate_builder.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "6958019a08dfb2a6f91f4fbe54efa2201496966946e50baf675ff60adf021a44",
+      "name": "hash.tools/tantrium_certificate_builder.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_formalization_bridge.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1662",
+      "name": "artifact.nonempty.tools/tantrium_formalization_bridge.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "006ddeb7b463d8a95d06e3f3671370a2703f521637f2f0eb9e2ef9071cf7b9df",
+      "name": "hash.tools/tantrium_formalization_bridge.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
       "name": "artifact.exists.docs/TANTRIUM_FULL_MACHINE_STATUS.md",
       "status": "PASS"
     },
@@ -568,6 +688,81 @@
     },
     {
       "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_RESEARCH_OS_ARCHITECTURE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "1963",
+      "name": "artifact.nonempty.docs/TANTRIUM_RESEARCH_OS_ARCHITECTURE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "9d5ed0706582d77b4f3986845c0b9e46d37adeb71aa4206d9e811051a449b9ec",
+      "name": "hash.docs/TANTRIUM_RESEARCH_OS_ARCHITECTURE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_RESEARCH_OS_MASTER_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "1412",
+      "name": "artifact.nonempty.docs/TANTRIUM_RESEARCH_OS_MASTER_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "437cfd62aeff136f20f48bf316f839ab6050c409d2c9f359415e6bb93280a3d9",
+      "name": "hash.docs/TANTRIUM_RESEARCH_OS_MASTER_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_THEOREM_SYNTHESIS_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "801",
+      "name": "artifact.nonempty.docs/TANTRIUM_THEOREM_SYNTHESIS_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "b512a576591e3a7dda836a474b5ec3eb0fe0b0c7e4bfdfd0209351b47eb097a9",
+      "name": "hash.docs/TANTRIUM_THEOREM_SYNTHESIS_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_BENCHMARK_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "741",
+      "name": "artifact.nonempty.docs/TANTRIUM_BENCHMARK_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "2bb783aa3e1f56836b7ea9940b667e957892e7ae5c3d616913581c6733ff42df",
+      "name": "hash.docs/TANTRIUM_BENCHMARK_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/LEAN_FORMALIZATION_WORK_QUEUE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "899",
+      "name": "artifact.nonempty.docs/LEAN_FORMALIZATION_WORK_QUEUE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "42f772d95b62e0c8203915d6f60069b18467c3e2fad8e506ba761f9e095b7677",
+      "name": "hash.docs/LEAN_FORMALIZATION_WORK_QUEUE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
       "name": "artifact.exists.results/conjectures/rh/status.json",
       "status": "PASS"
     },
@@ -577,7 +772,7 @@
       "status": "PASS"
     },
     {
-      "detail": "c766a3a5b079688ac9c5584b88eba15b473b6e4acd15b54eec7c93235dbd34e3",
+      "detail": "996b2725be6018e8da9b9e7f97f1cb4b72885f3dd5a9d2de6695be5da0c79887",
       "name": "hash.results/conjectures/rh/status.json",
       "status": "PASS"
     },
@@ -592,7 +787,7 @@
       "status": "PASS"
     },
     {
-      "detail": "b3cb411788f2666c48f70c328a7de84eb4638240d0266f288f6d51e6ca48863f",
+      "detail": "c5c290ad3ad13df8e04462b8dad580fb06b12fbd24e04f887e65b3734c15358d",
       "name": "hash.results/conjectures/rh/solve_report.json",
       "status": "PASS"
     },
@@ -607,7 +802,7 @@
       "status": "PASS"
     },
     {
-      "detail": "5b4e8a0e22d19390f2cfbea67b41bd2295ab25d88cbaeaa359c4a3bcbea3bcc0",
+      "detail": "481de047cc858ed483f447a33339dbcdfcf9650783ccebfd9f9505a24cc6ec52",
       "name": "hash.results/conjectures/goldbach/status.json",
       "status": "PASS"
     },
@@ -622,7 +817,7 @@
       "status": "PASS"
     },
     {
-      "detail": "18b709a18eeb3b4307f8664797849c51f0d74bea4325469416622697926969b3",
+      "detail": "2ecda2d4e446aaac2f7da18ffecda58adbe03ba08e07215ed565183f0360587e",
       "name": "hash.results/conjectures/goldbach/blocker_certificate.json",
       "status": "PASS"
     },
@@ -637,7 +832,7 @@
       "status": "PASS"
     },
     {
-      "detail": "8a032bab6a29cdeb18cc19b660eb11a9df2fcf93925228d2135b0d4d57e0c0f1",
+      "detail": "1b39b2d83593c3ac364759b939d288ee48c2973be4d0527718ba95ccaba55dab",
       "name": "hash.results/conjectures/lah/status.json",
       "status": "PASS"
     },
@@ -652,7 +847,7 @@
       "status": "PASS"
     },
     {
-      "detail": "fa03be2f3b1dc0aa5880558b5a4826fb4856f74e9e19805c92879fe44ba162fb",
+      "detail": "578b17f80bb95a5b9a5805a4c2e6eca4de38251b7513522ea6463405c562005a",
       "name": "hash.results/conjectures/lah/blocker_certificate.json",
       "status": "PASS"
     },
@@ -667,7 +862,7 @@
       "status": "PASS"
     },
     {
-      "detail": "b11696d23b9c8b2da3ebdda07bf0b512f287e7a858977093c3fb2996c23d80b7",
+      "detail": "4ce38bce113d8b479a9785a0acfd4d51a59ed72d6ccbdf977a6aca1c662cecd1",
       "name": "hash.results/conjectures/hankel/status.json",
       "status": "PASS"
     },
@@ -682,7 +877,7 @@
       "status": "PASS"
     },
     {
-      "detail": "5dfe5f06b6564bd55ebd396b315fd8469f7b0485ba3b9747b1bf5682b58f90a2",
+      "detail": "f4d77641a147b03f7720b578cb4bbed9c93216ecbb9e2295b6cbf2aefa4bcba8",
       "name": "hash.results/conjectures/hankel/proof_certificate.json",
       "status": "PASS"
     },
@@ -697,7 +892,7 @@
       "status": "PASS"
     },
     {
-      "detail": "805615efb1aaff3a15addd444826e58d3e49322fafa50ec99c48466ac1757d5f",
+      "detail": "c2726681c93c67be21285699a6970bf6ba509b093de749695dabf6f150c55ef2",
       "name": "hash.results/conjectures/coefficient_positivity/status.json",
       "status": "PASS"
     },
@@ -712,7 +907,7 @@
       "status": "PASS"
     },
     {
-      "detail": "c64f26b4952c524c785f67d1e0fe6f55f1d69782cd1b67aa1d8772453ccbe083",
+      "detail": "ee3ba4298356a2c2a9e433aaeb6212c3c23a03979916c01c17a7a2e05c91278e",
       "name": "hash.results/conjectures/coefficient_positivity/frontier_certificate.json",
       "status": "PASS"
     },
@@ -727,8 +922,113 @@
       "status": "PASS"
     },
     {
-      "detail": "ce27ab1d1ce319f91a95873d05924db4c09badcd204aadccc842d235ba9e2474",
+      "detail": "9528ae4fdc5ff6e8146b4b0440064181136fc18a856405305f86ce480310e716",
       "name": "hash.results/conjectures/coefficient_positivity/blocker_certificate.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/blackboard.jsonl",
+      "status": "PASS"
+    },
+    {
+      "detail": "86359",
+      "name": "artifact.nonempty.results/research_os/blackboard.jsonl",
+      "status": "PASS"
+    },
+    {
+      "detail": "b75c933d1efc75034d39aa663bc7f7bc8f4afcae419474525037459f10ed799f",
+      "name": "hash.results/research_os/blackboard.jsonl",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/current_campaigns.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "1721",
+      "name": "artifact.nonempty.results/research_os/current_campaigns.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "ecf2f9dda136c11bf062a4ca62e40fa34aa9d30f2c4e2d17b15a2778618e24e3",
+      "name": "hash.results/research_os/current_campaigns.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/campaigns/lah_gate_ab/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "383",
+      "name": "artifact.nonempty.results/research_os/campaigns/lah_gate_ab/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "37876d0e54ad32ad55079e9f2fa30d4027f7b5cc1b2de1b33374eb2edcd7eec9",
+      "name": "hash.results/research_os/campaigns/lah_gate_ab/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/campaigns/coefficient_frontier/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "410",
+      "name": "artifact.nonempty.results/research_os/campaigns/coefficient_frontier/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "7b807adcaacc9aa99ab49880386a16188d4f0a7d04ee74009787721a18715265",
+      "name": "hash.results/research_os/campaigns/coefficient_frontier/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/campaigns/goldbach_minor_arc/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "373",
+      "name": "artifact.nonempty.results/research_os/campaigns/goldbach_minor_arc/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "7c6f427c64ad23d5cd9495ea23d03270cc2d27bf507a45cf1fb11f374349596c",
+      "name": "hash.results/research_os/campaigns/goldbach_minor_arc/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/campaigns/rh_formalization/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "378",
+      "name": "artifact.nonempty.results/research_os/campaigns/rh_formalization/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "b3088cba3e88179f32a7e8c14e14354d7e910fccb58d0d448096dd1c27ef90c1",
+      "name": "hash.results/research_os/campaigns/rh_formalization/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/benchmarks/benchmark_report.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "1166",
+      "name": "artifact.nonempty.results/benchmarks/benchmark_report.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "870582c8a5d5b4a2eceed97bf4175d3067456e082b377a72b21f922de6c4c91f",
+      "name": "hash.results/benchmarks/benchmark_report.json",
       "status": "PASS"
     },
     {

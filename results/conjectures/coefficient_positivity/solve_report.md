@@ -1,6 +1,6 @@
 # Tantrium Autosolver Report: coefficient_positivity
 
-Generated: 2026-05-01T22:45:53Z
+Generated: 2026-05-02T00:29:28Z
 Final status: `BLOCKED_BY_NAMED_GAP`
 First gap: `FIRST_UNCERTIFIED_ATLAS_FRONTIER`
 Proof certificate: `None`

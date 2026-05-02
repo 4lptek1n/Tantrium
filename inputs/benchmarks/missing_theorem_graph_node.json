@@ -1,0 +1,5 @@
+{
+  "detected_gap": "MISSING_THEOREM_GRAPH_NODE",
+  "problem_id": "missing_theorem_graph_node",
+  "statement": "A theorem graph dependency with no registered node is required."
+}

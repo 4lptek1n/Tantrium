@@ -4,29 +4,29 @@
       "exists": true,
       "id": "ag_lgv_parametric",
       "path": "results\\certificates\\ag_lgv_parametric_certificate.json",
-      "sha256": "ba84c031298ecea79adeee9e720d838d02f6bef47d18cfd3d56d2247d989f2c5",
+      "sha256": "6061ab17d4d334b9bf79085f96b17c4fc4ad884ca272e438d1d4126e79b4378a",
       "status": "CERTIFIED_FORMAL_SCHEMA"
     },
     {
       "exists": true,
       "id": "tau_sturm_parametric",
       "path": "results\\certificates\\tau_sturm_parametric_certificate.json",
-      "sha256": "6b0a61a6bff5d11496a02dd18c5af5f0bff4a64243a85750e591f886dd4d0272",
+      "sha256": "6ef73269475c9188fe4490e23f2564fcb2659d7aae10ed13733d8d65aca93002",
       "status": "CERTIFIED_FORMAL_SCHEMA"
     },
     {
       "exists": true,
       "id": "rh_symbolic_closure",
       "path": "results\\certificates\\rh_symbolic_closure_certificate.json",
-      "sha256": "325ec64df88dd3cddae5608f4dabae6935c803f8af01b83ccde31a75bf44d03f",
+      "sha256": "42dd04345423b517dfe0cd4ccef7c27e34408b0263eda241bb0939f5d57d1f16",
       "status": "PROVEN_BY_CERTIFICATE"
     }
   ],
   "certificate_type": "schema_lift_proof",
-  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "commit_sha": "7e51cf71740da28d7114bcab0ff72c7fae243240",
   "final_status": "PROVEN_BY_CERTIFICATE",
   "first_gap": null,
-  "generated_at": "2026-05-01T22:45:52Z",
+  "generated_at": "2026-05-02T00:29:28Z",
   "named_gap": null,
   "problem": "hankel",
   "proof_certificate_path": "results/conjectures/hankel/proof_certificate.json",

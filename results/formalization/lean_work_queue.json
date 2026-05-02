@@ -1,0 +1,54 @@
+{
+  "campaign": "rh_formalization_bootstrap",
+  "status": "FORMALIZATION_SCAFFOLD_GENERATED",
+  "work_queue": [
+    {
+      "difficulty": "medium",
+      "lean_file": "formal/lean/Tantrium/Tau.lean",
+      "mathlib_anchor": "Matrix.det / Cauchy-Binet",
+      "source_campaign": "rh_formalization_bootstrap",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "rh_formalization_bootstrap:TauCauchyBinet"
+    },
+    {
+      "difficulty": "medium",
+      "lean_file": "formal/lean/Tantrium/Subdiscriminant.lean",
+      "mathlib_anchor": "ordered ring normalization",
+      "source_campaign": "rh_formalization_bootstrap",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "rh_formalization_bootstrap:PositiveNormalization"
+    },
+    {
+      "difficulty": "high",
+      "lean_file": "formal/lean/Tantrium/AGLGV.lean",
+      "mathlib_anchor": "Finset path enumeration",
+      "source_campaign": "rh_formalization_bootstrap",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "rh_formalization_bootstrap:AGLGVTransfer"
+    },
+    {
+      "difficulty": "high",
+      "lean_file": "formal/lean/Tantrium/DyadicTransport.lean",
+      "mathlib_anchor": "finite injections",
+      "source_campaign": "rh_formalization_bootstrap",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "rh_formalization_bootstrap:CellSupportInjection"
+    },
+    {
+      "difficulty": "high",
+      "lean_file": "formal/lean/Tantrium/DyadicTransport.lean",
+      "mathlib_anchor": "finite inequality",
+      "source_campaign": "rh_formalization_bootstrap",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "rh_formalization_bootstrap:DyadicCapacity"
+    },
+    {
+      "difficulty": "high",
+      "lean_file": "formal/lean/Tantrium/DPositivity.lean",
+      "mathlib_anchor": "induction and positivity",
+      "source_campaign": "rh_formalization_bootstrap",
+      "status": "SKELETON_OR_QUEUE",
+      "work_item_id": "rh_formalization_bootstrap:DPositivityInduction"
+    }
+  ]
+}

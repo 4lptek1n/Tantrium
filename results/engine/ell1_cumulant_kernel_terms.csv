@@ -1,0 +1,3 @@
+term_id,ell,total_weight,num_atoms,partition,coefficient,monomial
+1,1,2,1,2,1,E2
+2,1,2,2,1+1,1/2,E1*E1

@@ -2,11 +2,11 @@
   "blocker_certificate_path": "results/conjectures/lah/blocker_certificate.json",
   "certificate_registry_loaded": true,
   "command_used": "python tools/tantrium_autosolver.py --problem lah",
-  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "commit_sha": "7e51cf71740da28d7114bcab0ff72c7fae243240",
   "counterexample_path": null,
   "final_status": "BLOCKED_BY_NAMED_GAP",
   "first_gap": "GENERAL_J_STAIRCASE_QUOTIENT_PROOF",
-  "generated_at": "2026-05-01T22:45:52Z",
+  "generated_at": "2026-05-02T00:29:28Z",
   "notes": [
     "Gate A/B artifacts and finite proofs are present, but the general-j staircase quotient has not been promoted to a full parametric proof certificate."
   ],

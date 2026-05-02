@@ -1,0 +1,46 @@
+{
+  "coefficient_frontier_parametric_lift": {
+    "campaign": "coefficient_frontier_parametric_lift",
+    "candidate_count": 2,
+    "counterexample_found": false,
+    "formalization_items": 2,
+    "proof_attempt_count": 2,
+    "public_name": "coefficient_frontier",
+    "refined_subgap": "MISSING_D_SEED_OR_LGV_FRONTIER_REPRESENTATION",
+    "result_dir": "results\\research_os\\campaigns\\coefficient_frontier",
+    "status": "REFINED_SUBGAP"
+  },
+  "goldbach_minor_arc_bound": {
+    "campaign": "goldbach_minor_arc_bound",
+    "candidate_count": 1,
+    "counterexample_found": false,
+    "formalization_items": 1,
+    "proof_attempt_count": 1,
+    "public_name": "goldbach_minor_arc",
+    "refined_subgap": "MISSING_TYPE_II_BILINEAR_ESTIMATE",
+    "result_dir": "results\\research_os\\campaigns\\goldbach_minor_arc",
+    "status": "REFINED_SUBGAP"
+  },
+  "lah_gate_ab_generalization": {
+    "campaign": "lah_gate_ab_generalization",
+    "candidate_count": 3,
+    "counterexample_found": false,
+    "formalization_items": 3,
+    "proof_attempt_count": 3,
+    "public_name": "lah",
+    "refined_subgap": "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
+    "result_dir": "results\\research_os\\campaigns\\lah_gate_ab",
+    "status": "REFINED_SUBGAP"
+  },
+  "rh_formalization_bootstrap": {
+    "campaign": "rh_formalization_bootstrap",
+    "candidate_count": 2,
+    "counterexample_found": false,
+    "formalization_items": 6,
+    "proof_attempt_count": 2,
+    "public_name": "rh_formalization",
+    "refined_subgap": "LEAN_MATHLIB_LGV_BRIDGE_NOT_COMPLETED",
+    "result_dir": "results\\research_os\\campaigns\\rh_formalization",
+    "status": "FORMALIZATION_BOOTSTRAP_READY"
+  }
+}

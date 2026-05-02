@@ -1,0 +1,92 @@
+{
+  "attempts": [
+    {
+      "attempt_id": "rh_formalization_bootstrap:LEAN_TAU_CAUCHY_BINET_IDENTITY:attempt1",
+      "candidate_id": "LEAN_TAU_CAUCHY_BINET_IDENTITY",
+      "certificate_generated": false,
+      "failed_step": "external Lean proof not attempted in research OS pass",
+      "next_action": "formalize the tau/subdiscriminant Cauchy-Binet lemma first",
+      "rank": 1,
+      "refined_subgap": "LEAN_MATHLIB_LGV_BRIDGE_NOT_COMPLETED",
+      "steps": [
+        "load evidence",
+        "check dependency certificates",
+        "try strongest ranked strategy",
+        "record exact obstruction"
+      ],
+      "strategy": "mathlib Matrix.det"
+    },
+    {
+      "attempt_id": "rh_formalization_bootstrap:LEAN_AG_LGV_TRANSFER_IDENTITY:attempt1",
+      "candidate_id": "LEAN_AG_LGV_TRANSFER_IDENTITY",
+      "certificate_generated": false,
+      "failed_step": "external Lean proof not attempted in research OS pass",
+      "next_action": "formalize the tau/subdiscriminant Cauchy-Binet lemma first",
+      "rank": 2,
+      "refined_subgap": "LEAN_MATHLIB_LGV_BRIDGE_NOT_COMPLETED",
+      "steps": [
+        "load evidence",
+        "check dependency certificates",
+        "try strongest ranked strategy",
+        "record exact obstruction"
+      ],
+      "strategy": "mathlib Finset"
+    }
+  ],
+  "campaign": "rh_formalization_bootstrap",
+  "ranked_candidates": [
+    {
+      "candidate_id": "LEAN_TAU_CAUCHY_BINET_IDENTITY",
+      "conclusion": "First Lean lemma in the RH formalization queue.",
+      "counterexample_search": {},
+      "dependencies": [
+        "TAU_SUBDISCRIMINANT"
+      ],
+      "evidence": [
+        "tau/sturm certificate",
+        "Lean Tau scaffold"
+      ],
+      "formal_variables": [
+        "j",
+        "matrix data"
+      ],
+      "hypotheses": [
+        "finite matrix definitions match certificate normal form"
+      ],
+      "proof_strategies": [
+        "mathlib Matrix.det",
+        "Cauchy-Binet theorem"
+      ],
+      "risk": "medium",
+      "score": 0.83,
+      "statement_latex": "\\tau_j \\text{ equals the required subdiscriminant by Cauchy-Binet}."
+    },
+    {
+      "candidate_id": "LEAN_AG_LGV_TRANSFER_IDENTITY",
+      "conclusion": "Formal bridge from path transfer certificate to Lean statement.",
+      "counterexample_search": {},
+      "dependencies": [
+        "AG_LGV_TRANSFER"
+      ],
+      "evidence": [
+        "AG/LGV certificate",
+        "Lean AGLGV scaffold"
+      ],
+      "formal_variables": [
+        "path family",
+        "weight"
+      ],
+      "hypotheses": [
+        "finite acyclic graph",
+        "nonintersecting path model"
+      ],
+      "proof_strategies": [
+        "mathlib Finset",
+        "LGV lemma statement skeleton"
+      ],
+      "risk": "high",
+      "score": 0.77,
+      "statement_latex": "\\text{The AG/LGV transfer map preserves the certified determinant identity}."
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "artifacts": [
+    {
+      "exists": true,
+      "path": "results/atlas/manifest.json",
+      "size_bytes": 46762
+    },
+    {
+      "exists": true,
+      "path": "results/atlas/status.md",
+      "size_bytes": 1174
+    },
+    {
+      "exists": true,
+      "path": "results/conjectures/coefficient_positivity/blocker_certificate.json",
+      "size_bytes": 805
+    },
+    {
+      "exists": true,
+      "path": "results/certificates/d_positivity_parametric_certificate.json",
+      "size_bytes": 1672
+    }
+  ],
+  "campaign": "coefficient_frontier_parametric_lift",
+  "candidate_connections": [
+    "log-det cumulants",
+    "Gate B staircase quotient",
+    "D-positivity",
+    "AG/LGV path model"
+  ],
+  "engine_summary_rows": {
+    "ell1_mixed_depth_summary.csv": 12,
+    "ell2_mixed_depth_summary.csv": 38,
+    "ell3_mixed_depth_summary.csv": 78,
+    "ell4_mixed_depth_summary.csv": 132,
+    "ell5_mixed_depth_summary.csv": 200
+  },
+  "frontier": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
+  "status": "EVIDENCE_MINED"
+}

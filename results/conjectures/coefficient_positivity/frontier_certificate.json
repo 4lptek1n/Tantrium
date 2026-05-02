@@ -1,17 +1,17 @@
 {
   "atlas_manifest": {
     "path": "results/atlas/manifest.json",
-    "sha256": "a7d06fbaa94419a3cecbc54729b1d837ce15ef2119c483b673f1adeac75f81c0"
+    "sha256": "16e234606be28e9e64157f9cb213552a705e794c682839d530292e55d741ea71"
   },
   "blocker_certificate_path": "results/conjectures/coefficient_positivity/blocker_certificate.json",
   "blocker_type": "PARAMETRIC_POSITIVITY_NOT_YET_CERTIFIED",
   "certificate_type": "frontier_certificate",
-  "commit_sha": "2357a44ca55f94f3dc727eb963b8b89eb2dd092e",
+  "commit_sha": "7e51cf71740da28d7114bcab0ff72c7fae243240",
   "counterexample_path": null,
   "final_status": "BLOCKED_BY_NAMED_GAP",
   "first_gap": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
   "frontier": "FIRST_UNCERTIFIED_ATLAS_FRONTIER",
-  "generated_at": "2026-05-01T22:45:53Z",
+  "generated_at": "2026-05-02T00:29:28Z",
   "linked_artifacts": [
     {
       "path": "theorems/GATE_B_STAIRCASE_THEOREM.md",
@@ -23,7 +23,7 @@
     },
     {
       "path": "results/certificates/ag_lgv_parametric_certificate.json",
-      "sha256": "ba84c031298ecea79adeee9e720d838d02f6bef47d18cfd3d56d2247d989f2c5"
+      "sha256": "6061ab17d4d334b9bf79085f96b17c4fc4ad884ca272e438d1d4126e79b4378a"
     }
   ],
   "probes_attempted": [
