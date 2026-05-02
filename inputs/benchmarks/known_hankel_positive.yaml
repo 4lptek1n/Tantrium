@@ -1,0 +1,4 @@
+problem_id: known_hankel_positive
+statement: "Hankel positivity route remains proven by the AG/LGV and tau certificate stack"
+expected: PROVEN_BY_CERTIFICATE
+certificate: results/conjectures/hankel/proof_certificate.json

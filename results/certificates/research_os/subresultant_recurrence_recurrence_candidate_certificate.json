@@ -1,0 +1,15 @@
+{
+  "artifact": "results\\research_os\\campaigns\\subresultant_recurrence\\recurrence_candidates.json",
+  "artifact_sha256": "583d1005a12c2536f65118097c0327e8d694e7f5168527d28241fe4d5350e48a",
+  "campaign": "subresultant_recurrence",
+  "certificate_type": "recurrence_candidate_certificate",
+  "commit_sha": "1b24e6f6e65165534bcc30dce4b80ed541e1809c",
+  "generated_at": "2026-05-02T01:39:35Z",
+  "notes": [
+    "candidate recurrence verified on finite/normal-form evidence",
+    "true H quotient proof remains pending"
+  ],
+  "proof_promotion": false,
+  "scope": "research_os_v2",
+  "status": "RECURRENCE_VERIFIED_FINITE"
+}

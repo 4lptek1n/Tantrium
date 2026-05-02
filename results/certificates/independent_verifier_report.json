@@ -17,12 +17,12 @@
       "status": "PASS"
     },
     {
-      "detail": "15141",
+      "detail": "15166",
       "name": "artifact.nonempty.README.md",
       "status": "PASS"
     },
     {
-      "detail": "e4766b221234de5c3761d859023f9fc259706946ef2ddb34bebb8e79360221e8",
+      "detail": "28a05b8918a30b749c2103f5fdf47416b319dd8a5b72cc9fbc7418866b4a48db",
       "name": "hash.README.md",
       "status": "PASS"
     },
@@ -127,7 +127,7 @@
       "status": "PASS"
     },
     {
-      "detail": "27fa1fe1f811a03f05825c235df164c2f014643ace7998432527cdac1974f615",
+      "detail": "775d73460b0a87dea938426b3088ace4b91a27d0ee137db118a260dd6ee664d0",
       "name": "hash.docs/TANTRIUM_CLOSURE_RESULT.md",
       "status": "PASS"
     },
@@ -272,12 +272,12 @@
       "status": "PASS"
     },
     {
-      "detail": "6710",
+      "detail": "6675",
       "name": "artifact.nonempty.results/certificates/certificate_registry.json",
       "status": "PASS"
     },
     {
-      "detail": "c6426af4f74da3ab9de02099c17fecc2b3cfd7858598827871d01db45f36ef44",
+      "detail": "c53e04e62105d6045a8d6d8ddbb2613a68bb4861502e8bfd77acadc44b60da89",
       "name": "hash.results/certificates/certificate_registry.json",
       "status": "PASS"
     },
@@ -292,7 +292,7 @@
       "status": "PASS"
     },
     {
-      "detail": "3e180d194495b20bce61329cc090d859cbf9b5605f941a1a63fb0b91b57694e0",
+      "detail": "786a7c4c28a9709c0918a1ab596b056277809c51aee8540d5cedaf3beb4d4630",
       "name": "hash.results/certificates/rh_symbolic_closure_certificate.json",
       "status": "PASS"
     },
@@ -307,7 +307,7 @@
       "status": "PASS"
     },
     {
-      "detail": "6d24f7548c446905453fa4acc65afe6fd2059dd0cf2056d795c74ce2d9062c7d",
+      "detail": "29d871f761028b8ec1a2fc31a218167d73a61c4a60003723566ffc74710d6514",
       "name": "hash.results/certificates/rh_proof_attempt_dag.json",
       "status": "PASS"
     },
@@ -322,7 +322,7 @@
       "status": "PASS"
     },
     {
-      "detail": "fdf3db9bec0efd3ffe335ec1f5e4d88878ca752152044cfc3bedd2beb5530114",
+      "detail": "7c288ab29ea05c0768f2f16c051fda8ad3c089a6160e1e9b12c1e7c226964da3",
       "name": "hash.results/certificates/rh_gap_report.md",
       "status": "PASS"
     },
@@ -337,7 +337,7 @@
       "status": "PASS"
     },
     {
-      "detail": "b2907b31bf8bdd6428e744c9b3b46c5319ce6074ec9974680e0f2827b655f854",
+      "detail": "19db911845074082944686f232dc1e61960157d369cf42abfaf2692c8b372475",
       "name": "hash.results/certificates/tantrium_rh_machine_latest.json",
       "status": "PASS"
     },
@@ -347,7 +347,7 @@
       "status": "PASS"
     },
     {
-      "detail": "37175",
+      "detail": "48366",
       "name": "artifact.nonempty.results/certificates/independent_verifier_report.json",
       "status": "PASS"
     },
@@ -367,7 +367,7 @@
       "status": "PASS"
     },
     {
-      "detail": "d9ce3c23bdb9ce08fb5ba283e09402f539143898ae86fb3b2e4ebe137256a1e4",
+      "detail": "a2c1582109d9323bc90d6c0d8472e03974573835ddd5085b0732719542da7958",
       "name": "hash.results/atlas/manifest.json",
       "status": "PASS"
     },
@@ -382,7 +382,7 @@
       "status": "PASS"
     },
     {
-      "detail": "dc191f3ef009978622e5d3fe68cca75f4f874c19d1198b948db6e7faedb14efc",
+      "detail": "d6ad23f7c17716888db20e117cb18445c08bc1dcfe336174e4dd973d8cf6feb8",
       "name": "hash.results/atlas/status.md",
       "status": "PASS"
     },
@@ -392,12 +392,12 @@
       "status": "PASS"
     },
     {
-      "detail": "45677",
+      "detail": "47448",
       "name": "artifact.nonempty.tantrium/theorem_graph/theorem_graph.yaml",
       "status": "PASS"
     },
     {
-      "detail": "688540c936d7ee68fb612c309eee14d8675eb2c255c02c3debd31f29a0e0ad20",
+      "detail": "34b2232656a9e2112b2361112bfb8e4299b53bfc0c85fe0330f51a9a47d2d441",
       "name": "hash.tantrium/theorem_graph/theorem_graph.yaml",
       "status": "PASS"
     },
@@ -542,12 +542,12 @@
       "status": "PASS"
     },
     {
-      "detail": "1284",
+      "detail": "1461",
       "name": "artifact.nonempty.tools/tantrium_research_os.py",
       "status": "PASS"
     },
     {
-      "detail": "2f5b9492e4f1e85162111c2245adaf2f6cb5fe09af83ce9b04b6a29477bed57e",
+      "detail": "d21343cc8c74112d435b25ece83141c9776d0e6e7523ff5eb261f370a3246307",
       "name": "hash.tools/tantrium_research_os.py",
       "status": "PASS"
     },
@@ -557,12 +557,12 @@
       "status": "PASS"
     },
     {
-      "detail": "1201",
+      "detail": "1228",
       "name": "artifact.nonempty.tools/tantrium_research_loop.py",
       "status": "PASS"
     },
     {
-      "detail": "4f4be0f69bf3e3e7b474c1c3607e34da8a6132f59f3f8019be1b6108a9679a74",
+      "detail": "1c9a246482e112d3e34ca08158c31fd961d148716778654f73ab21b8347c15e1",
       "name": "hash.tools/tantrium_research_loop.py",
       "status": "PASS"
     },
@@ -654,6 +654,111 @@
     {
       "detail": "006ddeb7b463d8a95d06e3f3671370a2703f521637f2f0eb9e2ef9071cf7b9df",
       "name": "hash.tools/tantrium_formalization_bridge.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_subresultant_recurrence_miner.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1063",
+      "name": "artifact.nonempty.tools/tantrium_subresultant_recurrence_miner.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "c47b00a72b1f12385d0fecc1cfc3035023ff186e4f29e841b32fc7f564e0a773",
+      "name": "hash.tools/tantrium_subresultant_recurrence_miner.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_qjr_extractor.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "973",
+      "name": "artifact.nonempty.tools/tantrium_qjr_extractor.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "2be8a9a9bdaf50b1e046cfbb09bd63d1888f003164a24e300851c7e451cdde22",
+      "name": "hash.tools/tantrium_qjr_extractor.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_recurrence_verifier.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1275",
+      "name": "artifact.nonempty.tools/tantrium_recurrence_verifier.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "6cfe1a4000df707025f59b8da82407e36c612a19e895b017e2879fcac229205f",
+      "name": "hash.tools/tantrium_recurrence_verifier.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_theorem_factory.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "974",
+      "name": "artifact.nonempty.tools/tantrium_theorem_factory.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "bbfc75ae9d3b533121737cd4bf5c8376f398db8ea7ac1776406b2139bae6feb0",
+      "name": "hash.tools/tantrium_theorem_factory.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_proof_strategy_engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "963",
+      "name": "artifact.nonempty.tools/tantrium_proof_strategy_engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "6c054af70886bc21f1b4bdff3f52f6f304319151f7712b85b0dec609753d0d2a",
+      "name": "hash.tools/tantrium_proof_strategy_engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_counterexample_engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1207",
+      "name": "artifact.nonempty.tools/tantrium_counterexample_engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1b18cbd5b51eae55d7cf7f070b8a840334f174629957df6d93d230c31da6af57",
+      "name": "hash.tools/tantrium_counterexample_engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.tools/tantrium_certificate_builder_v2.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "1221",
+      "name": "artifact.nonempty.tools/tantrium_certificate_builder_v2.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "ef5213fa5453a19b0c5078c47b250ef296d9e928e9cfac97108653b63dca5001",
+      "name": "hash.tools/tantrium_certificate_builder_v2.py",
       "status": "PASS"
     },
     {
@@ -763,6 +868,126 @@
     },
     {
       "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_RESEARCH_OS_V2_ARCHITECTURE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "2073",
+      "name": "artifact.nonempty.docs/TANTRIUM_RESEARCH_OS_V2_ARCHITECTURE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "bbd224cf9d4676cda98ac2c9b0af9f47b2478c9ac924e64f7424312ae0a4ed42",
+      "name": "hash.docs/TANTRIUM_RESEARCH_OS_V2_ARCHITECTURE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/SUBRESULTANT_RECURRENCE_CAMPAIGN_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "1823",
+      "name": "artifact.nonempty.docs/SUBRESULTANT_RECURRENCE_CAMPAIGN_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "c94331f9ea50fdee755cd488fff2f99fa5ce94376723343e7751ce041287a4d2",
+      "name": "hash.docs/SUBRESULTANT_RECURRENCE_CAMPAIGN_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/GATE_AB_THEOREM_SYNTHESIS_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "1522",
+      "name": "artifact.nonempty.docs/GATE_AB_THEOREM_SYNTHESIS_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "eb976a842e3dc138405659ad85a31f4dd560d1910af8ccfdc28e8d20ba62d5d0",
+      "name": "hash.docs/GATE_AB_THEOREM_SYNTHESIS_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_COUNTEREXAMPLE_ENGINE_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "1767",
+      "name": "artifact.nonempty.docs/TANTRIUM_COUNTEREXAMPLE_ENGINE_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "daba4bbab53e22c9c01989a7655bf35129a3a1c45dc415a80ddb6ea0a8cf0dc5",
+      "name": "hash.docs/TANTRIUM_COUNTEREXAMPLE_ENGINE_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_CERTIFICATE_BUILDER_V2_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "1542",
+      "name": "artifact.nonempty.docs/TANTRIUM_CERTIFICATE_BUILDER_V2_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "243985cfff6f3f39eb8456afa9d2dc0e2d58a6426b3a816c1e226573a517c3ec",
+      "name": "hash.docs/TANTRIUM_CERTIFICATE_BUILDER_V2_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/TANTRIUM_RESEARCH_OS_V2_MASTER_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "2830",
+      "name": "artifact.nonempty.docs/TANTRIUM_RESEARCH_OS_V2_MASTER_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "87280f39132725a0db36ce03c9cbd2ca4ab9c83d83419883d251914fe40592f1",
+      "name": "hash.docs/TANTRIUM_RESEARCH_OS_V2_MASTER_REPORT.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/K7_SHARPNESS_STRUCTURE_ANALYSIS.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "412",
+      "name": "artifact.nonempty.docs/K7_SHARPNESS_STRUCTURE_ANALYSIS.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "c4b1d9234455bd8a559d7e94f372e8b787fe8ac8421c0cba105bdd3f5a58b9ad",
+      "name": "hash.docs/K7_SHARPNESS_STRUCTURE_ANALYSIS.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.docs/LEAN_GATE_AB_FORMALIZATION_PLAN.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "1583",
+      "name": "artifact.nonempty.docs/LEAN_GATE_AB_FORMALIZATION_PLAN.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "e196003c971072670761ccb182ec194b9ff0dc218a62fe52f92ec633c3c6265f",
+      "name": "hash.docs/LEAN_GATE_AB_FORMALIZATION_PLAN.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
       "name": "artifact.exists.results/conjectures/rh/status.json",
       "status": "PASS"
     },
@@ -772,7 +997,7 @@
       "status": "PASS"
     },
     {
-      "detail": "996b2725be6018e8da9b9e7f97f1cb4b72885f3dd5a9d2de6695be5da0c79887",
+      "detail": "24d65ebe2f7e595be24e3c1a1c2a79049e181d599f9b68a79e51d2c096af220a",
       "name": "hash.results/conjectures/rh/status.json",
       "status": "PASS"
     },
@@ -787,7 +1012,7 @@
       "status": "PASS"
     },
     {
-      "detail": "c5c290ad3ad13df8e04462b8dad580fb06b12fbd24e04f887e65b3734c15358d",
+      "detail": "ca2338fa313b5898b8238f79f7d66c907a7cb05516033c55349c3069937b9950",
       "name": "hash.results/conjectures/rh/solve_report.json",
       "status": "PASS"
     },
@@ -832,7 +1057,7 @@
       "status": "PASS"
     },
     {
-      "detail": "1b39b2d83593c3ac364759b939d288ee48c2973be4d0527718ba95ccaba55dab",
+      "detail": "ec84bc88967a9d501076bb578a692cf4f2e11bf67829910b78cd9f6f4e3c0d52",
       "name": "hash.results/conjectures/lah/status.json",
       "status": "PASS"
     },
@@ -847,7 +1072,7 @@
       "status": "PASS"
     },
     {
-      "detail": "578b17f80bb95a5b9a5805a4c2e6eca4de38251b7513522ea6463405c562005a",
+      "detail": "f37a1bca847fde674b53e2c01af1c9b5159db88eab940b6da12b3bca512fab93",
       "name": "hash.results/conjectures/lah/blocker_certificate.json",
       "status": "PASS"
     },
@@ -932,12 +1157,12 @@
       "status": "PASS"
     },
     {
-      "detail": "86359",
+      "detail": "226655",
       "name": "artifact.nonempty.results/research_os/blackboard.jsonl",
       "status": "PASS"
     },
     {
-      "detail": "b75c933d1efc75034d39aa663bc7f7bc8f4afcae419474525037459f10ed799f",
+      "detail": "a121c263b4d472fd60e04d647227a388f94ab97c388e67ac92ce5e1b24b62673",
       "name": "hash.results/research_os/blackboard.jsonl",
       "status": "PASS"
     },
@@ -947,12 +1172,12 @@
       "status": "PASS"
     },
     {
-      "detail": "1721",
+      "detail": "2248",
       "name": "artifact.nonempty.results/research_os/current_campaigns.json",
       "status": "PASS"
     },
     {
-      "detail": "ecf2f9dda136c11bf062a4ca62e40fa34aa9d30f2c4e2d17b15a2778618e24e3",
+      "detail": "1d3e925de4fca25f904a6d6064cf7db9239b4d894d33b9fd3b02a6b54588426c",
       "name": "hash.results/research_os/current_campaigns.json",
       "status": "PASS"
     },
@@ -1027,8 +1252,113 @@
       "status": "PASS"
     },
     {
-      "detail": "870582c8a5d5b4a2eceed97bf4175d3067456e082b377a72b21f922de6c4c91f",
+      "detail": "1aa3d554067b5db96f522ad8b236a5406578ea13c96e843f13c984c483f0387e",
       "name": "hash.results/benchmarks/benchmark_report.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/campaigns/subresultant_recurrence/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "329",
+      "name": "artifact.nonempty.results/research_os/campaigns/subresultant_recurrence/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "ff12161f59a1bd3c2498ed1268e8d87b3fd874bf91e4b2d4dd8a6cac111e4025",
+      "name": "hash.results/research_os/campaigns/subresultant_recurrence/synthesis_status.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "2117",
+      "name": "artifact.nonempty.results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "583d1005a12c2536f65118097c0327e8d694e7f5168527d28241fe4d5350e48a",
+      "name": "hash.results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/campaigns/subresultant_recurrence/finite_verification.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "9463",
+      "name": "artifact.nonempty.results/research_os/campaigns/subresultant_recurrence/finite_verification.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "270bc5b12d94df640f198f1970839144a4bb1a1515126314a3296bd51533e689",
+      "name": "hash.results/research_os/campaigns/subresultant_recurrence/finite_verification.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/candidates/gate_ab_candidate_catalog.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "11071",
+      "name": "artifact.nonempty.results/research_os/candidates/gate_ab_candidate_catalog.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "fab9cd6f70e90c9e9eb536538eaa8b45de6cf0ecfb484b71b10a2f4383734780",
+      "name": "hash.results/research_os/candidates/gate_ab_candidate_catalog.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/proof_attempts/subresultant_recurrence_strategy_summary.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "4007",
+      "name": "artifact.nonempty.results/research_os/proof_attempts/subresultant_recurrence_strategy_summary.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "6b31ddd83f5dc963cec41e9a02dbf9235c2aeb126e2a3cc165f31feab7c7f0a3",
+      "name": "hash.results/research_os/proof_attempts/subresultant_recurrence_strategy_summary.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/research_os/counterexamples/subresultant_recurrence_counterexample_search.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "1291",
+      "name": "artifact.nonempty.results/research_os/counterexamples/subresultant_recurrence_counterexample_search.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "71018a6b1c262157e65c492c006b8963b8410ac2d2645b52a250f7a1f5a5fe9d",
+      "name": "hash.results/research_os/counterexamples/subresultant_recurrence_counterexample_search.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "exists",
+      "name": "artifact.exists.results/certificates/research_os/subresultant_recurrence_recurrence_candidate_certificate.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "639",
+      "name": "artifact.nonempty.results/certificates/research_os/subresultant_recurrence_recurrence_candidate_certificate.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "00a7697d59b4b398c309853e147dcdeee9de356741ff884a91be6eba61cef16e",
+      "name": "hash.results/certificates/research_os/subresultant_recurrence_recurrence_candidate_certificate.json",
       "status": "PASS"
     },
     {

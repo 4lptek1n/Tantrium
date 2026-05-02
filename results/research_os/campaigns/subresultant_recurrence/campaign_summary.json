@@ -1,0 +1,12 @@
+{
+  "campaign": "subresultant_recurrence",
+  "candidate_count": 7,
+  "certificate_count": 4,
+  "counterexample_result": "NO_COUNTEREXAMPLE_IN_SEARCH_WINDOW",
+  "proof_attempt_count": 56,
+  "public_name": "subresultant_recurrence",
+  "recurrence_candidate_count": 5,
+  "refined_subgap": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+  "result_dir": "results\\research_os\\campaigns\\subresultant_recurrence",
+  "status": "RECURRENCE_VERIFIED_FINITE"
+}

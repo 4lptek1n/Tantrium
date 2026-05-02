@@ -1,0 +1,62 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "QJR_DEGREE_J_SHIFT",
+      "evidence_scope": "symbolic_degree_law",
+      "proof_obligation": "Connect degree recurrence to the original hidden H quotient Q_{j,r}(n).",
+      "statement": "D(j+1,r)-D(j,r)=r for D(j,r)=r(2j-r-1)/2.",
+      "type": "degree_recurrence",
+      "variables": [
+        "j",
+        "r"
+      ]
+    },
+    {
+      "candidate_id": "QJR_DEGREE_R_STEP",
+      "evidence_scope": "symbolic_degree_law",
+      "proof_obligation": "Derive the r-step from subresultant cross-ratio normalization.",
+      "statement": "D(j,r)-D(j,r-1)=j-r for 1<=r<=j.",
+      "type": "degree_recurrence",
+      "variables": [
+        "j",
+        "r"
+      ]
+    },
+    {
+      "candidate_id": "QJR_NORMAL_FORM_R_RECURRENCE",
+      "evidence_scope": "finite_normal_form_table",
+      "proof_obligation": "Prove the normal form equals the true Gate B staircase quotient.",
+      "statement": "Q(j,r;n)=Q(j,r-1;n)*prod_{a=D(j,r-1)+1}^{D(j,r)}(n+a) in the documented normal form.",
+      "type": "normal_form_recurrence",
+      "variables": [
+        "j",
+        "r",
+        "n"
+      ]
+    },
+    {
+      "candidate_id": "TOP_RAMP_J_RECURRENCE",
+      "evidence_scope": "symbolic_top_ramp_law",
+      "proof_obligation": "Reconcile fixed-n recurrence with n=d-(j+1) indexing in H_{d,j}.",
+      "statement": "A_j(n)/A_{j-1}(n)=2^j(n+j)^j for fixed n under the top-ramp normal form.",
+      "type": "top_ramp_recurrence",
+      "variables": [
+        "j",
+        "n"
+      ]
+    },
+    {
+      "candidate_id": "SUBRESULTANT_CROSS_RATIO_RECURRENCE_SCHEMA",
+      "evidence_scope": "cross_ratio_identity_schema",
+      "proof_obligation": "Compute the exact extracted quotient factors and certify cancellation.",
+      "statement": "rho_{d,j}(t)=C_{d,j} t^{k_{d,j}} H_{d,j-2}H_{d,j}/H_{d,j-1}^2 should induce an r-step quotient recurrence after staircase divisor extraction.",
+      "type": "subresultant_schema",
+      "variables": [
+        "d",
+        "j",
+        "r",
+        "t"
+      ]
+    }
+  ]
+}

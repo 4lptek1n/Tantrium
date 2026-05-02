@@ -1,6 +1,6 @@
 TANTRIUM RH MACHINE
 repo_root: C:\Users\omerm\Desktop\Tantrium
-commit: 7e51cf7
+commit: 1b24e6f
 mode: --strict --prove
 
 raw_target: PASS  [repo_root OK, inputs/rh_raw_hypothesis.yaml found]

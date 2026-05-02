@@ -52,3 +52,6 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Lean build output
+formal/lean/.lake/

@@ -1,0 +1,15 @@
+{
+  "artifact": "results\\research_os\\campaigns\\subresultant_recurrence\\qjr_tables.json",
+  "artifact_sha256": "3bae77303ff3822471b84cfb3a98238e34fdc019671c2922af29f9587cd99a19",
+  "campaign": "subresultant_recurrence",
+  "certificate_type": "finite_evidence_certificate",
+  "commit_sha": "1b24e6f6e65165534bcc30dce4b80ed541e1809c",
+  "generated_at": "2026-05-02T01:39:35Z",
+  "notes": [
+    "finite evidence only",
+    "not a proof promotion"
+  ],
+  "proof_promotion": false,
+  "scope": "research_os_v2",
+  "status": "FINITE_EVIDENCE_RECORDED"
+}

@@ -1,0 +1,316 @@
+{
+  "blocker": "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
+  "candidate_count": 7,
+  "candidates": [
+    {
+      "candidate_id": "GENERAL_STAIRCASE_DIVISOR_THEOREM",
+      "conclusion": "The Gate B H-factor family admits a uniform staircase divisor compatible with all extracted Q_{j,r}(n).",
+      "dependencies": [
+        "GATE_A_PERTURBATION",
+        "GATE_A_CROSS_RATIO",
+        "GATE_B_STAIRCASE_QUOTIENT"
+      ],
+      "expected_blocker_if_proof_fails": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+      "hypotheses": [
+        "Gate A perturbation",
+        "Gate B finite data",
+        "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR"
+      ],
+      "known_evidence": [
+        "math/gate_a.py",
+        "math/gate_a_verify.py",
+        "theorems/GATE_B_FINDINGS.md",
+        "results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json"
+      ],
+      "lean_skeleton_target": "formal/lean/Tantrium/GeneralStaircaseDivisorTheorem.lean",
+      "possible_proof_strategies": [
+        "induction",
+        "generating_function_extraction",
+        "subresultant_chain",
+        "bezoutian_block_structure",
+        "lgv_path_model",
+        "positivity_basis"
+      ],
+      "precise_statement": "The Gate B H-factor family admits a uniform staircase divisor compatible with all extracted Q_{j,r}(n).",
+      "risks": [
+        "finite evidence may not identify the true hidden H quotient",
+        "K7 sharpness may force a narrower safe window"
+      ],
+      "score": 0.8,
+      "variables": [
+        "d",
+        "j",
+        "r",
+        "n",
+        "t"
+      ]
+    },
+    {
+      "candidate_id": "GENERAL_QUOTIENT_DEGREE_THEOREM",
+      "conclusion": "For all admissible j,r, deg_n Q_{j,r}(n)=r(2j-r-1)/2.",
+      "dependencies": [
+        "GATE_A_PERTURBATION",
+        "GATE_A_CROSS_RATIO",
+        "GATE_B_STAIRCASE_QUOTIENT"
+      ],
+      "expected_blocker_if_proof_fails": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+      "hypotheses": [
+        "Gate A perturbation",
+        "Gate B finite data",
+        "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR"
+      ],
+      "known_evidence": [
+        "math/gate_a.py",
+        "math/gate_a_verify.py",
+        "theorems/GATE_B_FINDINGS.md",
+        "results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json"
+      ],
+      "lean_skeleton_target": "formal/lean/Tantrium/GeneralQuotientDegreeTheorem.lean",
+      "possible_proof_strategies": [
+        "induction",
+        "generating_function_extraction",
+        "subresultant_chain",
+        "bezoutian_block_structure",
+        "lgv_path_model",
+        "positivity_basis"
+      ],
+      "precise_statement": "For all admissible j,r, deg_n Q_{j,r}(n)=r(2j-r-1)/2.",
+      "risks": [
+        "finite evidence may not identify the true hidden H quotient",
+        "K7 sharpness may force a narrower safe window"
+      ],
+      "score": 0.9,
+      "variables": [
+        "d",
+        "j",
+        "r",
+        "n",
+        "t"
+      ]
+    },
+    {
+      "candidate_id": "SUBRESULTANT_QJR_RECURRENCE_THEOREM",
+      "conclusion": "The extracted QJR family satisfies the recurrence represented by QJR_DEGREE_R_STEP.",
+      "dependencies": [
+        "GATE_A_PERTURBATION",
+        "GATE_A_CROSS_RATIO",
+        "GATE_B_STAIRCASE_QUOTIENT",
+        "TAU_SUBDISCRIMINANT"
+      ],
+      "expected_blocker_if_proof_fails": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+      "hypotheses": [
+        "Gate A perturbation",
+        "Gate B finite data",
+        "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
+        "subresultant cross-ratio normalization is fixed"
+      ],
+      "known_evidence": [
+        "math/gate_a.py",
+        "math/gate_a_verify.py",
+        "theorems/GATE_B_FINDINGS.md",
+        "results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json"
+      ],
+      "lean_skeleton_target": "formal/lean/Tantrium/SubresultantQjrRecurrenceTheorem.lean",
+      "possible_proof_strategies": [
+        "induction",
+        "generating_function_extraction",
+        "subresultant_chain",
+        "bezoutian_block_structure",
+        "lgv_path_model",
+        "positivity_basis"
+      ],
+      "precise_statement": "The extracted QJR family satisfies the recurrence represented by QJR_DEGREE_R_STEP.",
+      "risks": [
+        "finite evidence may not identify the true hidden H quotient",
+        "K7 sharpness may force a narrower safe window"
+      ],
+      "score": 0.86,
+      "variables": [
+        "d",
+        "j",
+        "r",
+        "n",
+        "t"
+      ]
+    },
+    {
+      "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM",
+      "conclusion": "Inside the first-five pivot safe window, the Gate B quotient factors preserve positivity.",
+      "dependencies": [
+        "GATE_A_PERTURBATION",
+        "GATE_A_CROSS_RATIO",
+        "GATE_B_STAIRCASE_QUOTIENT",
+        "FIRST_FIVE_PIVOTS",
+        "D_POSITIVITY"
+      ],
+      "expected_blocker_if_proof_fails": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+      "hypotheses": [
+        "Gate A perturbation",
+        "Gate B finite data",
+        "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
+        "j,r remain inside the first-five pivot safe window"
+      ],
+      "known_evidence": [
+        "math/gate_a.py",
+        "math/gate_a_verify.py",
+        "theorems/GATE_B_FINDINGS.md",
+        "results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json"
+      ],
+      "lean_skeleton_target": "formal/lean/Tantrium/SafeWindowPositivityTheorem.lean",
+      "possible_proof_strategies": [
+        "induction",
+        "generating_function_extraction",
+        "subresultant_chain",
+        "bezoutian_block_structure",
+        "lgv_path_model",
+        "positivity_basis"
+      ],
+      "precise_statement": "Inside the first-five pivot safe window, the Gate B quotient factors preserve positivity.",
+      "risks": [
+        "finite evidence may not identify the true hidden H quotient",
+        "K7 sharpness may force a narrower safe window"
+      ],
+      "score": 0.76,
+      "variables": [
+        "d",
+        "j",
+        "r",
+        "n",
+        "t"
+      ]
+    },
+    {
+      "candidate_id": "K7_SHARPNESS_STRUCTURE_THEOREM",
+      "conclusion": "The K7 boundary is the first structural sharpness boundary of the safe window.",
+      "dependencies": [
+        "GATE_A_PERTURBATION",
+        "GATE_A_CROSS_RATIO",
+        "GATE_B_STAIRCASE_QUOTIENT",
+        "K7_SHARPNESS"
+      ],
+      "expected_blocker_if_proof_fails": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+      "hypotheses": [
+        "Gate A perturbation",
+        "Gate B finite data",
+        "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
+        "K7 sharpness artifact is retained as boundary evidence"
+      ],
+      "known_evidence": [
+        "math/gate_a.py",
+        "math/gate_a_verify.py",
+        "theorems/GATE_B_FINDINGS.md",
+        "results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json"
+      ],
+      "lean_skeleton_target": "formal/lean/Tantrium/K7SharpnessStructureTheorem.lean",
+      "possible_proof_strategies": [
+        "induction",
+        "generating_function_extraction",
+        "subresultant_chain",
+        "bezoutian_block_structure",
+        "lgv_path_model",
+        "positivity_basis"
+      ],
+      "precise_statement": "The K7 boundary is the first structural sharpness boundary of the safe window.",
+      "risks": [
+        "finite evidence may not identify the true hidden H quotient",
+        "K7 sharpness may force a narrower safe window"
+      ],
+      "score": 0.74,
+      "variables": [
+        "d",
+        "j",
+        "r",
+        "n",
+        "t"
+      ]
+    },
+    {
+      "candidate_id": "LAH_REFINEMENT_POSITIVITY_THEOREM",
+      "conclusion": "The Lah refinement induced by Gate A perturbation preserves positivity under the staircase quotient hypotheses.",
+      "dependencies": [
+        "GATE_A_PERTURBATION",
+        "GATE_A_CROSS_RATIO",
+        "GATE_B_STAIRCASE_QUOTIENT",
+        "FIRST_FIVE_PIVOTS",
+        "D_POSITIVITY"
+      ],
+      "expected_blocker_if_proof_fails": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+      "hypotheses": [
+        "Gate A perturbation",
+        "Gate B finite data",
+        "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR"
+      ],
+      "known_evidence": [
+        "math/gate_a.py",
+        "math/gate_a_verify.py",
+        "theorems/GATE_B_FINDINGS.md",
+        "results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json"
+      ],
+      "lean_skeleton_target": "formal/lean/Tantrium/LahRefinementPositivityTheorem.lean",
+      "possible_proof_strategies": [
+        "induction",
+        "generating_function_extraction",
+        "subresultant_chain",
+        "bezoutian_block_structure",
+        "lgv_path_model",
+        "positivity_basis"
+      ],
+      "precise_statement": "The Lah refinement induced by Gate A perturbation preserves positivity under the staircase quotient hypotheses.",
+      "risks": [
+        "finite evidence may not identify the true hidden H quotient",
+        "K7 sharpness may force a narrower safe window"
+      ],
+      "score": 0.68,
+      "variables": [
+        "d",
+        "j",
+        "r",
+        "n",
+        "t"
+      ]
+    },
+    {
+      "candidate_id": "GATE_A_TO_GATE_B_TRANSFER_THEOREM",
+      "conclusion": "The Gate A lambda^{-2} perturbation transfers to the Gate B staircase quotient structure.",
+      "dependencies": [
+        "GATE_A_PERTURBATION",
+        "GATE_A_CROSS_RATIO",
+        "GATE_B_STAIRCASE_QUOTIENT"
+      ],
+      "expected_blocker_if_proof_fails": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+      "hypotheses": [
+        "Gate A perturbation",
+        "Gate B finite data",
+        "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR"
+      ],
+      "known_evidence": [
+        "math/gate_a.py",
+        "math/gate_a_verify.py",
+        "theorems/GATE_B_FINDINGS.md",
+        "results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json"
+      ],
+      "lean_skeleton_target": "formal/lean/Tantrium/GateAToGateBTransferTheorem.lean",
+      "possible_proof_strategies": [
+        "induction",
+        "generating_function_extraction",
+        "subresultant_chain",
+        "bezoutian_block_structure",
+        "lgv_path_model",
+        "positivity_basis"
+      ],
+      "precise_statement": "The Gate A lambda^{-2} perturbation transfers to the Gate B staircase quotient structure.",
+      "risks": [
+        "finite evidence may not identify the true hidden H quotient",
+        "K7 sharpness may force a narrower safe window"
+      ],
+      "score": 0.7,
+      "variables": [
+        "d",
+        "j",
+        "r",
+        "n",
+        "t"
+      ]
+    }
+  ]
+}

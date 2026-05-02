@@ -4,7 +4,7 @@
   "counterexample_found": false,
   "formalization_items": 3,
   "proof_attempt_count": 3,
-  "public_name": "lah",
+  "public_name": "lah_gate_ab",
   "refined_subgap": "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
   "result_dir": "results\\research_os\\campaigns\\lah_gate_ab",
   "status": "REFINED_SUBGAP"

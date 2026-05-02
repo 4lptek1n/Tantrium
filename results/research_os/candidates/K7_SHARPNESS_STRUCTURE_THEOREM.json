@@ -1,0 +1,45 @@
+{
+  "candidate_id": "K7_SHARPNESS_STRUCTURE_THEOREM",
+  "conclusion": "The K7 boundary is the first structural sharpness boundary of the safe window.",
+  "dependencies": [
+    "GATE_A_PERTURBATION",
+    "GATE_A_CROSS_RATIO",
+    "GATE_B_STAIRCASE_QUOTIENT",
+    "K7_SHARPNESS"
+  ],
+  "expected_blocker_if_proof_fails": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+  "hypotheses": [
+    "Gate A perturbation",
+    "Gate B finite data",
+    "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
+    "K7 sharpness artifact is retained as boundary evidence"
+  ],
+  "known_evidence": [
+    "math/gate_a.py",
+    "math/gate_a_verify.py",
+    "theorems/GATE_B_FINDINGS.md",
+    "results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json"
+  ],
+  "lean_skeleton_target": "formal/lean/Tantrium/K7SharpnessStructureTheorem.lean",
+  "possible_proof_strategies": [
+    "induction",
+    "generating_function_extraction",
+    "subresultant_chain",
+    "bezoutian_block_structure",
+    "lgv_path_model",
+    "positivity_basis"
+  ],
+  "precise_statement": "The K7 boundary is the first structural sharpness boundary of the safe window.",
+  "risks": [
+    "finite evidence may not identify the true hidden H quotient",
+    "K7 sharpness may force a narrower safe window"
+  ],
+  "score": 0.74,
+  "variables": [
+    "d",
+    "j",
+    "r",
+    "n",
+    "t"
+  ]
+}

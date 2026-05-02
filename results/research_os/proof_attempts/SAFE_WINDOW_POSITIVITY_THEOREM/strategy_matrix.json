@@ -1,0 +1,85 @@
+{
+  "attempts": [
+    {
+      "base_cases": [
+        "j=1",
+        "r=0",
+        "r=j"
+      ],
+      "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM",
+      "failed_step": "true H quotient identification is not certified",
+      "induction_hypothesis": "Assume SAFE_WINDOW_POSITIVITY_THEOREM for all smaller (j,r) in lexicographic order.",
+      "instantiated_variables": {
+        "j": "positive natural",
+        "n": "integer parameter",
+        "r": "0 <= r <= j"
+      },
+      "refined_subgap": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+      "status": "FAILED_WITH_REFINED_SUBGAP",
+      "step_obligation": "derive the quotient recurrence after extracting the true H-factor staircase divisor",
+      "strategy": "induction"
+    },
+    {
+      "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM",
+      "failed_step": "closed generating function for extracted H quotient is not available",
+      "generating_series": "sum_{j,r} Q_{j,r}(n) u^j v^r",
+      "known_inputs": [
+        "Gate A lambda^{-2} perturbation",
+        "Lah shadow leading term"
+      ],
+      "refined_subgap": "MISSING_GENERATING_FUNCTION_FOR_EXTRACTED_QJR",
+      "status": "FAILED_WITH_REFINED_SUBGAP",
+      "strategy": "generating_function"
+    },
+    {
+      "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM",
+      "cross_ratio": "rho_{d,j}(t)=C_{d,j} t^{k_{d,j}} H_{d,j-2}H_{d,j}/H_{d,j-1}^2",
+      "failed_step": "explicit cancellation certificate for staircase divisor extraction is missing",
+      "refined_subgap": "MISSING_STAIRCASE_DIVISOR_CANCELLATION_CERTIFICATE",
+      "status": "PARTIAL",
+      "strategy": "subresultant_chain"
+    },
+    {
+      "block_model": "hidden Sturm factors as Bezoutian block minors",
+      "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM",
+      "failed_step": "block minor indexing is not mapped to Q_{j,r}",
+      "refined_subgap": "MISSING_BEZOUTIAN_BLOCK_INDEX_MAP",
+      "status": "FAILED_WITH_REFINED_SUBGAP",
+      "strategy": "bezoutian_block_structure"
+    },
+    {
+      "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM",
+      "failed_step": "path weights for the Gate B quotient are not constructed",
+      "path_model": "staircase Young diagram nonintersecting paths",
+      "refined_subgap": "MISSING_STAIRCASE_PATH_WEIGHT_MODEL",
+      "status": "FAILED_WITH_REFINED_SUBGAP",
+      "strategy": "lgv_path_model"
+    },
+    {
+      "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM",
+      "failed_step": "no certified QJR positivity model exists yet",
+      "refined_subgap": "MISSING_QJR_POSITIVITY_MODEL",
+      "status": "NOT_APPLICABLE_UNTIL_QJR_POSITIVITY_MODEL",
+      "strategy": "dyadic_transport",
+      "transport_route": "try to push QJR positivity through D-seed dyadic transport"
+    },
+    {
+      "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM",
+      "failed_step": "factorization is verified for normal-form evidence, not for true H quotient",
+      "normal_form_factorization": "product_{a=1}^{D(j,r)}(n+a)",
+      "refined_subgap": "MISSING_TRUE_H_FACTOR_FACTORIZATION",
+      "status": "FINITE_NORMAL_FORM_ONLY",
+      "strategy": "factorization"
+    },
+    {
+      "basis": "binomial/falling-factorial positive basis over n>=0",
+      "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM",
+      "failed_step": "positive basis expansion for original QJR is not certified",
+      "refined_subgap": "MISSING_POSITIVE_BASIS_EXPANSION_FOR_TRUE_QJR",
+      "status": "FAILED_WITH_REFINED_SUBGAP",
+      "strategy": "positivity_basis"
+    }
+  ],
+  "campaign": "subresultant_recurrence",
+  "candidate_id": "SAFE_WINDOW_POSITIVITY_THEOREM"
+}

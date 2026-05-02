@@ -1,0 +1,4 @@
+problem_id: false_staircase_positivity
+statement: "n^2 - 5n + 4 is strictly positive for every integer n >= 0"
+expected: COUNTEREXAMPLE_FOUND
+counterexample: "n=1 gives 0, so strict positivity fails"

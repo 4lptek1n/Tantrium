@@ -21,6 +21,11 @@ from .registry_updater import update_registry
 from .scheduler import Campaign, expand_campaigns
 from .strategy_engine import rank_and_attempt
 from .theorem_synthesizer import synthesize_candidates
+from .certificates import build_research_os_certificates
+from .counterexample import run_counterexample_engine
+from .proof_strategies import run_strategy_matrix
+from .recurrence import mine_subresultant_recurrences
+from .theorem_factory import generate_theorem_candidates
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -39,6 +44,8 @@ def write_json(path: Path, data: dict[str, Any]) -> None:
 
 
 def run_campaign(campaign: Campaign, deep: bool = False) -> dict[str, Any]:
+    if campaign.campaign_id == "subresultant_recurrence":
+        return run_subresultant_recurrence_campaign(campaign, deep=deep)
     out_dir = campaign_dir(campaign)
     out_dir.mkdir(parents=True, exist_ok=True)
     problem_path = write_problem_ir(campaign.campaign_id)
@@ -86,6 +93,43 @@ def run_campaign(campaign: Campaign, deep: bool = False) -> dict[str, Any]:
             next_actions=[attempts["attempts"][0]["next_action"] if attempts["attempts"] else "human review"],
         )
     )
+    return summary
+
+
+def run_subresultant_recurrence_campaign(campaign: Campaign, deep: bool = False) -> dict[str, Any]:
+    out_dir = campaign_dir(campaign)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    problem_path = write_problem_ir(campaign.campaign_id)
+    append_event(ResearchEvent(campaign.campaign_id, "Repository Cartographer", "problem_ir_written", "EVIDENCE_MINED", outputs=[str(problem_path.relative_to(REPO_ROOT))]))
+    recurrence = mine_subresultant_recurrences(deep=deep, out_dir=out_dir)
+    append_event(ResearchEvent(campaign.campaign_id, "Recurrence Miner", "recurrence_candidates_generated", recurrence["synthesis"]["status"], outputs=[str((out_dir / "recurrence_candidates.json").relative_to(REPO_ROOT))]))
+    catalog = generate_theorem_candidates(campaign.blocker)
+    append_event(ResearchEvent(campaign.campaign_id, "Theorem Factory", "theorem_candidates_generated", "CANDIDATE_THEOREMS_GENERATED", outputs=["results/research_os/candidates/gate_ab_candidate_catalog.json"]))
+    attempts = run_strategy_matrix(campaign.campaign_id)
+    append_event(ResearchEvent(campaign.campaign_id, "Proof Strategy Engine v2", "proof_attempted", "PROOF_ATTEMPTED", outputs=[f"results/research_os/proof_attempts/{campaign.campaign_id}_strategy_summary.json"]))
+    counterexamples = run_counterexample_engine(campaign.campaign_id, deep=deep)
+    append_event(ResearchEvent(campaign.campaign_id, "Counterexample Engine v2", "counterexample_search_completed", "COUNTEREXAMPLE_SEARCH_COMPLETED", outputs=[f"results/research_os/counterexamples/{campaign.campaign_id}_counterexample_search.json"]))
+    certs = build_research_os_certificates(campaign.campaign_id)
+    append_event(ResearchEvent(campaign.campaign_id, "Certificate Builder v2", "certificates_generated", "CERTIFICATE_ATTEMPTED", outputs=certs["certificates"]))
+    synthesis = recurrence["synthesis"]
+    assert_terminal_status(synthesis["status"])
+    summary = {
+        "campaign": campaign.campaign_id,
+        "public_name": campaign.public_name,
+        "status": synthesis["status"],
+        "refined_subgap": synthesis["refined_subgap"],
+        "candidate_count": catalog["candidate_count"],
+        "recurrence_candidate_count": len(recurrence["candidates"]),
+        "proof_attempt_count": sum(item["attempt_count"] for item in attempts["proof_attempts"]),
+        "counterexample_result": counterexamples["counterexample_result"],
+        "certificate_count": certs["certificate_count"],
+        "result_dir": str(out_dir.relative_to(REPO_ROOT)),
+    }
+    write_json(out_dir / "campaign_summary.json", summary)
+    update_current_campaign(campaign.campaign_id, summary)
+    update_registry(campaign.campaign_id, synthesis, out_dir)
+    write_atlas_event(campaign.campaign_id, synthesis)
+    append_event(ResearchEvent(campaign.campaign_id, "Research Director", "campaign_completed", synthesis["status"], outputs=[str((out_dir / "campaign_summary.json").relative_to(REPO_ROOT))], next_actions=[synthesis["refined_subgap"]]))
     return summary
 
 

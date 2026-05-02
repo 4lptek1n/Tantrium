@@ -1,0 +1,8 @@
+{
+  "best_candidate": "QJR_DEGREE_R_STEP",
+  "campaign": "subresultant_recurrence",
+  "proof_promoted": false,
+  "refined_subgap": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+  "status": "RECURRENCE_VERIFIED_FINITE",
+  "warning": "Finite recurrence verification is not a proof of the original hidden H quotient."
+}

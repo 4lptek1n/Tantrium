@@ -1,0 +1,333 @@
+{
+  "engine_csv_files": [
+    {
+      "exists": true,
+      "path": "results\\engine\\ell1_atom_to_Rj_map_auto.csv",
+      "rows": 4,
+      "size_bytes": 63
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell1_cumulant_kernel_terms.csv",
+      "rows": 2,
+      "size_bytes": 106
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell1_delta_seed_decomposition.csv",
+      "rows": 2,
+      "size_bytes": 170
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell1_kernel_qd.csv",
+      "rows": 27,
+      "size_bytes": 621
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell1_kernel_Rj_specialized.csv",
+      "rows": 8,
+      "size_bytes": 132
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell1_mixed_depth_kernel.csv",
+      "rows": 31,
+      "size_bytes": 958
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell1_mixed_depth_summary.csv",
+      "rows": 12,
+      "size_bytes": 510
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell2_atom_to_Rj_map_auto.csv",
+      "rows": 8,
+      "size_bytes": 111
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell2_cumulant_kernel_terms.csv",
+      "rows": 5,
+      "size_bytes": 189
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell2_delta_seed_decomposition.csv",
+      "rows": 42,
+      "size_bytes": 2320
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell2_kernel_qd.csv",
+      "rows": 155,
+      "size_bytes": 4296
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell2_kernel_Rj_specialized.csv",
+      "rows": 64,
+      "size_bytes": 1089
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell2_mixed_depth_kernel.csv",
+      "rows": 184,
+      "size_bytes": 6756
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell2_mixed_depth_summary.csv",
+      "rows": 38,
+      "size_bytes": 1444
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell3_atom_to_Rj_map_auto.csv",
+      "rows": 12,
+      "size_bytes": 159
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell3_cumulant_kernel_terms.csv",
+      "rows": 11,
+      "size_bytes": 382
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell3_delta_seed_decomposition.csv",
+      "rows": 80,
+      "size_bytes": 4865
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell3_kernel_qd.csv",
+      "rows": 458,
+      "size_bytes": 15478
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell3_kernel_Rj_specialized.csv",
+      "rows": 374,
+      "size_bytes": 7885
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell3_mixed_depth_kernel.csv",
+      "rows": 548,
+      "size_bytes": 24268
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell3_mixed_depth_summary.csv",
+      "rows": 78,
+      "size_bytes": 3276
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell4_atom_to_Rj_map_auto.csv",
+      "rows": 16,
+      "size_bytes": 209
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell4_cumulant_kernel_terms.csv",
+      "rows": 22,
+      "size_bytes": 796
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell4_delta_seed_decomposition.csv",
+      "rows": 110,
+      "size_bytes": 7315
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell4_kernel_qd.csv",
+      "rows": 1010,
+      "size_bytes": 39511
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell4_kernel_Rj_specialized.csv",
+      "rows": 1742,
+      "size_bytes": 44048
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell4_mixed_depth_kernel.csv",
+      "rows": 1213,
+      "size_bytes": 61206
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell4_mixed_depth_summary.csv",
+      "rows": 132,
+      "size_bytes": 6073
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell5_atom_to_Rj_map_auto.csv",
+      "rows": 20,
+      "size_bytes": 268
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell5_cumulant_kernel_terms.csv",
+      "rows": 42,
+      "size_bytes": 1662
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell5_delta_seed_decomposition.csv",
+      "rows": 140,
+      "size_bytes": 10431
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell5_kernel_qd.csv",
+      "rows": 1885,
+      "size_bytes": 85542
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell5_kernel_Rj_specialized.csv",
+      "rows": 6886,
+      "size_bytes": 203223
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell5_mixed_depth_kernel.csv",
+      "rows": 2269,
+      "size_bytes": 132110
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell5_mixed_depth_summary.csv",
+      "rows": 200,
+      "size_bytes": 10339
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell6_atom_to_Rj_map_auto.csv",
+      "rows": 24,
+      "size_bytes": 328
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell6_cumulant_kernel_terms.csv",
+      "rows": 77,
+      "size_bytes": 3261
+    },
+    {
+      "exists": true,
+      "path": "results\\engine\\ell_atom_to_Rj_map.csv",
+      "rows": 12,
+      "size_bytes": 159
+    }
+  ],
+  "h_data_status": "FINITE_AND_ARTIFACT_INVENTORY",
+  "notes": [
+    "No proof is inferred from inventory alone.",
+    "If raw H_{d,j}(t) caches are absent, QJR mining uses the documented degree/top-ramp normal form as finite evidence."
+  ],
+  "pickle_caches": [],
+  "sources": {
+    "source_records": [
+      {
+        "exists": true,
+        "path": "math\\SUMMARY.md",
+        "size_bytes": 6560
+      },
+      {
+        "exists": true,
+        "path": "math\\README.md",
+        "size_bytes": 4426
+      },
+      {
+        "exists": true,
+        "path": "math\\gate_a.py",
+        "size_bytes": 4178
+      },
+      {
+        "exists": true,
+        "path": "math\\gate_a_verify.py",
+        "size_bytes": 8279
+      },
+      {
+        "exists": true,
+        "path": "theorems\\GATE_B_FINDINGS.md",
+        "size_bytes": 2999
+      },
+      {
+        "exists": true,
+        "path": "theorems\\FIRST_FIVE_PIVOTS.md",
+        "size_bytes": 2917
+      },
+      {
+        "exists": true,
+        "path": "theorems\\K5_J4_RESULT.md",
+        "size_bytes": 1235
+      },
+      {
+        "exists": true,
+        "path": "theorems\\K6_J5_RESULT.md",
+        "size_bytes": 2345
+      },
+      {
+        "exists": true,
+        "path": "theorems\\K7_SHARPNESS.md",
+        "size_bytes": 1479
+      },
+      {
+        "exists": true,
+        "path": "results\\research_os\\campaigns\\lah_gate_ab\\synthesis_status.json",
+        "size_bytes": 383
+      }
+    ],
+    "text_hits": {
+      "math/README.md": [
+        "Q_",
+        "H_{d,j}",
+        "Lah"
+      ],
+      "math/SUMMARY.md": [
+        "Q_",
+        "H_{d,j}",
+        "subresultant",
+        "Lah"
+      ],
+      "math/gate_a.py": [
+        "Q_",
+        "Lah"
+      ],
+      "math/gate_a_verify.py": [
+        "H_{d,j}"
+      ],
+      "theorems/FIRST_FIVE_PIVOTS.md": [
+        "H_{d,j}",
+        "subresultant",
+        "K7"
+      ],
+      "theorems/GATE_B_FINDINGS.md": [
+        "Q_",
+        "Q_{j,r}",
+        "H_{d,j}",
+        "staircase",
+        "subresultant",
+        "K7",
+        "Lah"
+      ],
+      "theorems/K5_J4_RESULT.md": [],
+      "theorems/K6_J5_RESULT.md": [
+        "staircase"
+      ],
+      "theorems/K7_SHARPNESS.md": [
+        "K7"
+      ]
+    }
+  }
+}

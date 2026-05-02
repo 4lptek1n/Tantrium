@@ -1,0 +1,15 @@
+{
+  "counterexample": null,
+  "search_window": {
+    "j": [
+      1,
+      10
+    ],
+    "n": [
+      0,
+      10
+    ],
+    "r": "0..j"
+  },
+  "status": "NO_COUNTEREXAMPLE_IN_SEARCH_WINDOW"
+}

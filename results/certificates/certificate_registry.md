@@ -1,6 +1,6 @@
 # Certificate Registry
-**Generated:** 2026-05-02T00:29:30Z
-**Commit:** `7e51cf71740da28d7114bcab0ff72c7fae243240`
+**Generated:** 2026-05-02T01:38:02Z
+**Commit:** `1b24e6f6e65165534bcc30dce4b80ed541e1809c`
 **Gap status:** `NO_STRUCTURAL_GAP`
 **Machine entrypoint:** `python tools/tantrium_rh_machine.py --full`
 
@@ -12,3 +12,12 @@
 | `tau_sturm_parametric` | `tau_sturm_parametric` | `PROVEN_BY_CERTIFICATE` | ag_lgv_parametric | `theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md` | `tantrium/positivity_machine.py` |
 | `d_positivity_parametric` | `d_positivity_parametric` | `PROVEN_BY_CERTIFICATE` | — | `theorems/D_POSITIVITY_THEOREM.md` | `tantrium/positivity_machine.py` |
 | `rh_proof_attempt_dag` | `proof_attempt_dag` | `NO_STRUCTURAL_GAP` | ag_lgv_parametric, tau_sturm_parametric, d_positivity_parametric, rh_symbolic_closure | `—` | `tools/rh_proof_attempt.py` |
+
+## Research OS v2 Certificates
+
+- `subresultant_recurrence`: 4 certificates generated at 2026-05-02T01:38:13Z
+- `subresultant_recurrence`: 4 certificates generated at 2026-05-02T01:38:17Z
+- `subresultant_recurrence`: 4 certificates generated at 2026-05-02T01:38:42Z
+- `subresultant_recurrence`: 4 certificates generated at 2026-05-02T01:38:46Z
+- `subresultant_recurrence`: 4 certificates generated at 2026-05-02T01:39:31Z
+- `subresultant_recurrence`: 4 certificates generated at 2026-05-02T01:39:35Z

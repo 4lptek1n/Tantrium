@@ -1,0 +1,12 @@
+{
+  "benchmark": "false_staircase_positivity",
+  "counterexample": {
+    "found": true,
+    "n": 1,
+    "polynomial": "n**2 - 5*n + 4",
+    "strict_positive": false,
+    "value": 0
+  },
+  "statement": "n^2 - 5n + 4 is strictly positive for every integer n>=0",
+  "status": "COUNTEREXAMPLE_FOUND"
+}

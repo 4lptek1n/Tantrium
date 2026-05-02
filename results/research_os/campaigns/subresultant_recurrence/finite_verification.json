@@ -1,0 +1,536 @@
+{
+  "all_finite_checks_passed": true,
+  "candidate_count": 5,
+  "checks": [
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 2,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 2,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 2,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 2,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 3,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 3,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 3,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 3,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 3,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 3,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 4,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 4,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 4,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 4,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 4,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 4,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 4,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 4,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 5,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 5,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 5,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 5,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 5,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 5,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 5,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 5,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 5,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 5,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 6,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 6,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 6,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 6,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 6,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 6,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 6,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 6,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 6,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 6,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 6,
+      "passed": true,
+      "r": 6
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 6,
+      "passed": true,
+      "r": 6
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 7,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 7,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 7,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 7,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 7,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 7,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 7,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 7,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 7,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 7,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 7,
+      "passed": true,
+      "r": 6
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 7,
+      "passed": true,
+      "r": 6
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 7,
+      "passed": true,
+      "r": 7
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 7,
+      "passed": true,
+      "r": 7
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 8,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 8,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 8,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 8,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 8,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 8,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 8,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 8,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 8,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 8,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 8,
+      "passed": true,
+      "r": 6
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 8,
+      "passed": true,
+      "r": 6
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 8,
+      "passed": true,
+      "r": 7
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 8,
+      "passed": true,
+      "r": 7
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 8,
+      "passed": true,
+      "r": 8
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 8,
+      "passed": true,
+      "r": 8
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 9,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 9,
+      "passed": true,
+      "r": 1
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 9,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 9,
+      "passed": true,
+      "r": 2
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 9,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 9,
+      "passed": true,
+      "r": 3
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 9,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 9,
+      "passed": true,
+      "r": 4
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 9,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 9,
+      "passed": true,
+      "r": 5
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 9,
+      "passed": true,
+      "r": 6
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 9,
+      "passed": true,
+      "r": 6
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 9,
+      "passed": true,
+      "r": 7
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 9,
+      "passed": true,
+      "r": 7
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 9,
+      "passed": true,
+      "r": 8
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 9,
+      "passed": true,
+      "r": 8
+    },
+    {
+      "check": "QJR_DEGREE_J_SHIFT",
+      "j": 9,
+      "passed": true,
+      "r": 9
+    },
+    {
+      "check": "QJR_DEGREE_R_STEP",
+      "j": 9,
+      "passed": true,
+      "r": 9
+    }
+  ],
+  "held_out_policy": "j=max_j degree checks are held out from ranking but included in verification summary",
+  "verification_scope": "finite_degree_law_and_normal_form_samples"
+}

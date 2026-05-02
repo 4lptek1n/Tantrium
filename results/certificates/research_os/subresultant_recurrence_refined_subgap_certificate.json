@@ -1,0 +1,14 @@
+{
+  "artifact": "results\\research_os\\campaigns\\subresultant_recurrence\\synthesis_status.json",
+  "artifact_sha256": "ff12161f59a1bd3c2498ed1268e8d87b3fd874bf91e4b2d4dd8a6cac111e4025",
+  "campaign": "subresultant_recurrence",
+  "certificate_type": "refined_subgap_certificate",
+  "commit_sha": "1b24e6f6e65165534bcc30dce4b80ed541e1809c",
+  "generated_at": "2026-05-02T01:39:35Z",
+  "notes": [
+    "blocker sharpened by Research OS v2"
+  ],
+  "proof_promotion": false,
+  "scope": "research_os_v2",
+  "status": "REFINED_SUBGAP"
+}

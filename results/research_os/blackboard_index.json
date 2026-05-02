@@ -1,27 +1,33 @@
 {
   "by_agent": {
-    "Atlas Writer": 20,
-    "Certificate Builder": 20,
-    "Counterexample Hunter": 20,
-    "Evidence Miner": 20,
-    "Formalization Bridge": 20,
-    "Manuscript Builder": 20,
-    "Registry Updater": 20,
-    "Repository Cartographer": 20,
-    "Research Director": 21,
-    "Strategy Engine": 20,
-    "Theorem Synthesizer": 20,
-    "Verifier": 1
+    "Atlas Writer": 55,
+    "Certificate Builder": 43,
+    "Certificate Builder v2": 12,
+    "Counterexample Engine v2": 12,
+    "Counterexample Hunter": 43,
+    "Evidence Miner": 43,
+    "Formalization Bridge": 43,
+    "Manuscript Builder": 43,
+    "Proof Strategy Engine v2": 12,
+    "Recurrence Miner": 12,
+    "Registry Updater": 55,
+    "Repository Cartographer": 55,
+    "Research Director": 56,
+    "Strategy Engine": 43,
+    "Theorem Factory": 12,
+    "Theorem Synthesizer": 43,
+    "Verifier": 2
   },
   "by_campaign": {
     "all": 1,
-    "coefficient_frontier_parametric_lift": 55,
-    "goldbach_minor_arc_bound": 55,
-    "lah_gate_ab_generalization": 55,
-    "proof_machine_benchmark": 1,
-    "rh_formalization_bootstrap": 55
+    "coefficient_frontier_parametric_lift": 110,
+    "goldbach_minor_arc_bound": 110,
+    "lah_gate_ab_generalization": 143,
+    "proof_machine_benchmark": 2,
+    "rh_formalization_bootstrap": 110,
+    "subresultant_recurrence": 108
   },
-  "event_count": 222,
+  "event_count": 584,
   "latest_by_campaign": {
     "all": {
       "agent": "Research Director",
@@ -41,7 +47,7 @@
       "agent": "Research Director",
       "campaign": "coefficient_frontier_parametric_lift",
       "confidence": "mechanical",
-      "event_id": "9ae6641fce2c4902b65c46dd1289df2a",
+      "event_id": "122dc42d1b9c46cf9fe4a208a59ee616",
       "event_type": "campaign_completed",
       "inputs": [],
       "next_actions": [
@@ -51,13 +57,13 @@
         "results\\research_os\\campaigns\\coefficient_frontier\\campaign_summary.json"
       ],
       "status": "REFINED_SUBGAP",
-      "timestamp": "2026-05-02T00:31:08Z"
+      "timestamp": "2026-05-02T01:35:58Z"
     },
     "goldbach_minor_arc_bound": {
       "agent": "Research Director",
       "campaign": "goldbach_minor_arc_bound",
       "confidence": "mechanical",
-      "event_id": "c6964c3638b7430db12911cb9282a497",
+      "event_id": "6df3c0a0503a41ba94c74263e8cef4ee",
       "event_type": "campaign_completed",
       "inputs": [],
       "next_actions": [
@@ -67,13 +73,13 @@
         "results\\research_os\\campaigns\\goldbach_minor_arc\\campaign_summary.json"
       ],
       "status": "REFINED_SUBGAP",
-      "timestamp": "2026-05-02T00:31:08Z"
+      "timestamp": "2026-05-02T01:35:58Z"
     },
     "lah_gate_ab_generalization": {
       "agent": "Research Director",
       "campaign": "lah_gate_ab_generalization",
       "confidence": "mechanical",
-      "event_id": "0fe6de1ece464149abfcc5d879faf3dc",
+      "event_id": "76884969dce842c0b5f24ba92af124ec",
       "event_type": "campaign_completed",
       "inputs": [],
       "next_actions": [
@@ -83,13 +89,13 @@
         "results\\research_os\\campaigns\\lah_gate_ab\\campaign_summary.json"
       ],
       "status": "REFINED_SUBGAP",
-      "timestamp": "2026-05-02T00:31:08Z"
+      "timestamp": "2026-05-02T01:38:13Z"
     },
     "proof_machine_benchmark": {
       "agent": "Verifier",
       "campaign": "proof_machine_benchmark",
       "confidence": "mechanical",
-      "event_id": "95d54a899c574c9c9ce9bb41dd76aac5",
+      "event_id": "80220a516f3643f6a4fe1a1b7405ae84",
       "event_type": "benchmarks_completed",
       "inputs": [],
       "next_actions": [],
@@ -97,13 +103,13 @@
         "results/benchmarks/benchmark_report.json"
       ],
       "status": "COUNTEREXAMPLE_SEARCH_COMPLETED",
-      "timestamp": "2026-05-02T00:31:26Z"
+      "timestamp": "2026-05-02T01:35:12Z"
     },
     "rh_formalization_bootstrap": {
       "agent": "Research Director",
       "campaign": "rh_formalization_bootstrap",
       "confidence": "mechanical",
-      "event_id": "2cab12e59ecd463abc818e1f879b73e3",
+      "event_id": "f1842e35f17a4101b59cab9027b0a53e",
       "event_type": "campaign_completed",
       "inputs": [],
       "next_actions": [
@@ -113,7 +119,23 @@
         "results\\research_os\\campaigns\\rh_formalization\\campaign_summary.json"
       ],
       "status": "FORMALIZATION_BOOTSTRAP_READY",
-      "timestamp": "2026-05-02T00:31:08Z"
+      "timestamp": "2026-05-02T01:35:58Z"
+    },
+    "subresultant_recurrence": {
+      "agent": "Research Director",
+      "campaign": "subresultant_recurrence",
+      "confidence": "mechanical",
+      "event_id": "169135f745264568939be5c2650a2b30",
+      "event_type": "campaign_completed",
+      "inputs": [],
+      "next_actions": [
+        "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR"
+      ],
+      "outputs": [
+        "results\\research_os\\campaigns\\subresultant_recurrence\\campaign_summary.json"
+      ],
+      "status": "RECURRENCE_VERIFIED_FINITE",
+      "timestamp": "2026-05-02T01:39:35Z"
     }
   }
 }

@@ -6,3 +6,8 @@ import Tantrium.DyadicTransport
 import Tantrium.DPositivity
 import Tantrium.AGLGV
 import Tantrium.RHChain
+import Tantrium.GateA
+import Tantrium.GateB
+import Tantrium.SubresultantRecurrence
+import Tantrium.StaircaseQuotient
+import Tantrium.ResearchOS

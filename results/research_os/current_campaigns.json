@@ -27,7 +27,7 @@
     "counterexample_found": false,
     "formalization_items": 3,
     "proof_attempt_count": 3,
-    "public_name": "lah",
+    "public_name": "lah_gate_ab",
     "refined_subgap": "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
     "result_dir": "results\\research_os\\campaigns\\lah_gate_ab",
     "status": "REFINED_SUBGAP"
@@ -42,5 +42,17 @@
     "refined_subgap": "LEAN_MATHLIB_LGV_BRIDGE_NOT_COMPLETED",
     "result_dir": "results\\research_os\\campaigns\\rh_formalization",
     "status": "FORMALIZATION_BOOTSTRAP_READY"
+  },
+  "subresultant_recurrence": {
+    "campaign": "subresultant_recurrence",
+    "candidate_count": 7,
+    "certificate_count": 4,
+    "counterexample_result": "NO_COUNTEREXAMPLE_IN_SEARCH_WINDOW",
+    "proof_attempt_count": 56,
+    "public_name": "subresultant_recurrence",
+    "recurrence_candidate_count": 5,
+    "refined_subgap": "MISSING_TRUE_H_QUOTIENT_IDENTIFICATION_FOR_QJR",
+    "result_dir": "results\\research_os\\campaigns\\subresultant_recurrence",
+    "status": "RECURRENCE_VERIFIED_FINITE"
   }
 }

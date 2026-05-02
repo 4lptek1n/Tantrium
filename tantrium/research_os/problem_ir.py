@@ -27,6 +27,17 @@ class ProblemIR:
 
 
 PROBLEMS: dict[str, ProblemIR] = {
+    "subresultant_recurrence": ProblemIR(
+        problem_id="subresultant_recurrence",
+        statement="Discover finite-verifiable recurrence candidates for Q_{j,r}(n) and the hidden H-factor subresultant chain.",
+        objects=["Q_{j,r}(n)", "H_{d,j}(t)", "subresultant cross-ratio", "staircase divisor"],
+        parameters=["d", "j", "r", "n", "t"],
+        known_reductions=["Gate A perturbation", "Gate B staircase quotient", "K7 sharpness boundary"],
+        known_certificates=["results/research_os/campaigns/subresultant_recurrence/finite_verification.json"],
+        known_blockers=["MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR"],
+        target_status="RECURRENCE_VERIFIED_FINITE",
+        campaign_priority=100,
+    ),
     "lah_gate_ab_generalization": ProblemIR(
         problem_id="lah_gate_ab_generalization",
         statement="Refine or prove the general Gate B staircase quotient theorem behind the Lah/Gate A blocker.",

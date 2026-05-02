@@ -1,0 +1,4 @@
+problem_id: missing_dependency
+statement: "A theorem candidate depends on a theorem graph node that is not registered"
+expected: MISSING_DEPENDENCY
+missing_node: UNREGISTERED_GATE_B_RECURRENCE_NODE

@@ -1,0 +1,44 @@
+{
+  "campaign": "subresultant_recurrence",
+  "counterexample_result": "NO_COUNTEREXAMPLE_IN_SEARCH_WINDOW",
+  "false_benchmark": {
+    "benchmark": "false_staircase_positivity",
+    "counterexample": {
+      "found": true,
+      "n": 1,
+      "polynomial": "n**2 - 5*n + 4",
+      "strict_positive": false,
+      "value": 0
+    },
+    "statement": "n^2 - 5n + 4 is strictly positive for every integer n>=0",
+    "status": "COUNTEREXAMPLE_FOUND"
+  },
+  "real_candidate_search": {
+    "reason": "normal-form QJR factors are products of n+a over n>=0",
+    "status": "NO_COUNTEREXAMPLE_IN_SEARCH_WINDOW"
+  },
+  "refined_subgap": "K7_SHARPNESS_BOUNDARY_REQUIRES_CLASSIFICATION",
+  "search_window": {
+    "boundary_cases": [
+      "r=0",
+      "r=j",
+      "j=7 K7 boundary"
+    ],
+    "j": [
+      1,
+      10
+    ],
+    "n": [
+      0,
+      12
+    ],
+    "r": "0..j"
+  },
+  "sharpness": {
+    "boundary": "K7_SHARPNESS",
+    "interpretation": "K7 is retained as a structural boundary; safe-window positivity cannot be generalized without an additional boundary classification lemma.",
+    "refined_subgap": "K7_SHARPNESS_BOUNDARY_REQUIRES_CLASSIFICATION",
+    "status": "SHARPNESS_BOUNDARY_DETECTED"
+  },
+  "status": "SHARPNESS_BOUNDARY_DETECTED"
+}

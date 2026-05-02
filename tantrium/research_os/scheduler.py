@@ -13,6 +13,12 @@ class Campaign:
 
 
 CAMPAIGNS: dict[str, Campaign] = {
+    "subresultant_recurrence": Campaign(
+        "subresultant_recurrence",
+        "subresultant_recurrence",
+        "subresultant_recurrence",
+        "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR",
+    ),
     "lah": Campaign("lah", "lah_gate_ab_generalization", "lah_gate_ab", "GENERAL_J_STAIRCASE_QUOTIENT_PROOF"),
     "lah_gate_ab": Campaign("lah_gate_ab", "lah_gate_ab_generalization", "lah_gate_ab", "GENERAL_J_STAIRCASE_QUOTIENT_PROOF"),
     "coefficient_frontier": Campaign(
@@ -35,7 +41,7 @@ CAMPAIGNS: dict[str, Campaign] = {
     ),
 }
 
-ORDER = ["lah", "coefficient_frontier", "goldbach_minor_arc", "rh_formalization"]
+ORDER = ["subresultant_recurrence", "lah", "coefficient_frontier", "goldbach_minor_arc", "rh_formalization"]
 
 
 def resolve_campaign(name: str) -> Campaign:

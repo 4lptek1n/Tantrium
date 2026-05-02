@@ -1,6 +1,6 @@
 # Tantrium Theorem Graph Audit
 
-Generated: 2026-05-02T00:31:12Z
+Generated: 2026-05-02T01:38:40Z
 
 The theorem graph records internal certificate status separately from external formalization.
 
@@ -23,12 +23,14 @@ The theorem graph records internal certificate status separately from external f
 | `RESEARCH_OS_GOLDBACH_MINOR_ARC` | `REFINED_SUBGAP` | `internal_certificate_system` | GOLDBACH_CONTROL | `results/research_os/campaigns/goldbach_minor_arc/human_review_packet.md` |
 | `RESEARCH_OS_LAH_GATE_AB` | `REFINED_SUBGAP` | `internal_certificate_system` | GATE_B_STAIRCASE_QUOTIENT, K7_SHARPNESS | `results/research_os/campaigns/lah_gate_ab/human_review_packet.md` |
 | `RESEARCH_OS_RH_FORMALIZATION` | `FORMALIZATION_BOOTSTRAP_READY` | `external_formalization` | RH_CLOSURE | `docs/LEAN_FORMALIZATION_WORK_QUEUE.md` |
+| `RESEARCH_OS_SUBRESULTANT_RECURRENCE` | `RECURRENCE_VERIFIED_FINITE` | `internal_certificate_system` | SUBRESULTANT_QJR_RECURRENCE_CANDIDATE, K7_SHARPNESS | `results/research_os/campaigns/subresultant_recurrence/recurrence_report.md` |
 | `RH_CLOSURE` | `PROVEN_BY_CERTIFICATE` | `internal_certificate_system` | DYADIC_TRANSPORT | `paper/TANTRIUM_RH_MAIN_THEOREM.md` |
 | `RH_GAP_FINDER` | `NO_STRUCTURAL_GAP` | `internal_certificate_system` | RH_PROOF_ATTEMPT | `results/certificates/rh_gap_report.md` |
 | `RH_PROOF_ATTEMPT` | `NO_STRUCTURAL_GAP` | `internal_certificate_system` | RH_CLOSURE | `results/certificates/rh_proof_attempt_dag.json` |
 | `RH_RAW_TARGET` | `PROVEN_BY_CERTIFICATE` | `internal_certificate_system` |  | `inputs/rh_raw_hypothesis.yaml` |
 | `RH_SYMBOLIC_CLOSURE` | `certified_local` | `` |  | `` |
 | `STURM_PIVOT_POSITIVITY` | `PROVEN_BY_CERTIFICATE` | `parametric_schema` | JENSEN_HYPERBOLICITY | `theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md` |
+| `SUBRESULTANT_QJR_RECURRENCE_CANDIDATE` | `RECURRENCE_VERIFIED_FINITE` | `finite_window` | GATE_B_STAIRCASE_QUOTIENT, TAU_SUBDISCRIMINANT | `theorems/SUBRESULTANT_QJR_RECURRENCE_CONJECTURE.md` |
 | `TAU_SUBDISCRIMINANT` | `PROVEN_BY_CERTIFICATE` | `parametric_schema` | STURM_PIVOT_POSITIVITY | `theorems/TAU_STURM_JENSEN_POLYA_THEOREMS.md` |
 | `XI_REAL_FORM` | `PROVEN_BY_CERTIFICATE` | `external_formalization` | RH_RAW_TARGET | `inputs/rh_raw_hypothesis.yaml` |
 | `cross_ratio_identity` | `proven` | `` |  | `` |

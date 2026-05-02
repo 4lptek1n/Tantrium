@@ -1,0 +1,26 @@
+{
+  "external_formalization": "PENDING",
+  "items": [
+    {
+      "candidate_id": "GENERAL_STAIRCASE_DIVISOR_THEOREM",
+      "lean_file": "formal/lean/Tantrium/GateB.lean",
+      "status": "SKELETON_WITH_SORRY"
+    },
+    {
+      "candidate_id": "GENERAL_QUOTIENT_DEGREE_THEOREM",
+      "lean_file": "formal/lean/Tantrium/StaircaseQuotient.lean",
+      "status": "SKELETON_WITH_SORRY"
+    },
+    {
+      "candidate_id": "SUBRESULTANT_QJR_RECURRENCE_THEOREM",
+      "lean_file": "formal/lean/Tantrium/SubresultantRecurrence.lean",
+      "status": "SKELETON_WITH_SORRY"
+    },
+    {
+      "candidate_id": "GATE_A_TO_GATE_B_TRANSFER_THEOREM",
+      "lean_file": "formal/lean/Tantrium/ResearchOS.lean",
+      "status": "SKELETON_WITH_SORRY"
+    }
+  ],
+  "lean_status": "BUILDS_WITH_SORRY_IF_LAKE_AVAILABLE"
+}

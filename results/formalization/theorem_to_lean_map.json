@@ -1,53 +1,29 @@
 {
-  "campaign": "rh_formalization_bootstrap",
+  "campaign": "lah_gate_ab_generalization",
   "items": [
     {
       "difficulty": "medium",
-      "lean_file": "formal/lean/Tantrium/Tau.lean",
-      "mathlib_anchor": "Matrix.det / Cauchy-Binet",
-      "source_campaign": "rh_formalization_bootstrap",
+      "lean_file": "formal/lean/Tantrium/GeneralStaircaseDivisorTheorem.lean",
+      "mathlib_anchor": "new lemma skeleton",
+      "source_campaign": "lah_gate_ab_generalization",
       "status": "SKELETON_OR_QUEUE",
-      "work_item_id": "rh_formalization_bootstrap:TauCauchyBinet"
+      "work_item_id": "lah_gate_ab_generalization:GENERAL_STAIRCASE_DIVISOR_THEOREM"
     },
     {
       "difficulty": "medium",
-      "lean_file": "formal/lean/Tantrium/Subdiscriminant.lean",
-      "mathlib_anchor": "ordered ring normalization",
-      "source_campaign": "rh_formalization_bootstrap",
+      "lean_file": "formal/lean/Tantrium/GeneralQuotientDegreeTheorem.lean",
+      "mathlib_anchor": "new lemma skeleton",
+      "source_campaign": "lah_gate_ab_generalization",
       "status": "SKELETON_OR_QUEUE",
-      "work_item_id": "rh_formalization_bootstrap:PositiveNormalization"
+      "work_item_id": "lah_gate_ab_generalization:GENERAL_QUOTIENT_DEGREE_THEOREM"
     },
     {
       "difficulty": "high",
-      "lean_file": "formal/lean/Tantrium/AGLGV.lean",
-      "mathlib_anchor": "Finset path enumeration",
-      "source_campaign": "rh_formalization_bootstrap",
+      "lean_file": "formal/lean/Tantrium/K7SharpnessStructureTheorem.lean",
+      "mathlib_anchor": "new lemma skeleton",
+      "source_campaign": "lah_gate_ab_generalization",
       "status": "SKELETON_OR_QUEUE",
-      "work_item_id": "rh_formalization_bootstrap:AGLGVTransfer"
-    },
-    {
-      "difficulty": "high",
-      "lean_file": "formal/lean/Tantrium/DyadicTransport.lean",
-      "mathlib_anchor": "finite injections",
-      "source_campaign": "rh_formalization_bootstrap",
-      "status": "SKELETON_OR_QUEUE",
-      "work_item_id": "rh_formalization_bootstrap:CellSupportInjection"
-    },
-    {
-      "difficulty": "high",
-      "lean_file": "formal/lean/Tantrium/DyadicTransport.lean",
-      "mathlib_anchor": "finite inequality",
-      "source_campaign": "rh_formalization_bootstrap",
-      "status": "SKELETON_OR_QUEUE",
-      "work_item_id": "rh_formalization_bootstrap:DyadicCapacity"
-    },
-    {
-      "difficulty": "high",
-      "lean_file": "formal/lean/Tantrium/DPositivity.lean",
-      "mathlib_anchor": "induction and positivity",
-      "source_campaign": "rh_formalization_bootstrap",
-      "status": "SKELETON_OR_QUEUE",
-      "work_item_id": "rh_formalization_bootstrap:DPositivityInduction"
+      "work_item_id": "lah_gate_ab_generalization:K7_SHARPNESS_STRUCTURE_THEOREM"
     }
   ]
 }

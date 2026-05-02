@@ -10,11 +10,11 @@
     "results/certificates/certificate_registry.json"
   ],
   "closure_status": "PASS",
-  "commit_sha": "7e51cf71740da28d7114bcab0ff72c7fae243240",
+  "commit_sha": "1b24e6f6e65165534bcc30dce4b80ed541e1809c",
   "external_formalization": "PENDING",
   "gap_report": "results/certificates/rh_gap_report.md",
   "gap_status": "NO_STRUCTURAL_GAP",
-  "generated_at": "2026-05-02T00:29:30Z",
+  "generated_at": "2026-05-02T01:38:02Z",
   "internal_tantrium_closure": "CLOSED",
   "manuscript": "paper/TANTRIUM_RH_PROOF_v1.md",
   "mode": "--full",

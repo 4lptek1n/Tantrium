@@ -1,12 +1,9 @@
 # Lean Gap Report
 
-Campaign: `rh_formalization_bootstrap`
+Campaign: `lah_gate_ab_generalization`
 
-- `rh_formalization_bootstrap:TauCauchyBinet` -> `formal/lean/Tantrium/Tau.lean` (medium)
-- `rh_formalization_bootstrap:PositiveNormalization` -> `formal/lean/Tantrium/Subdiscriminant.lean` (medium)
-- `rh_formalization_bootstrap:AGLGVTransfer` -> `formal/lean/Tantrium/AGLGV.lean` (high)
-- `rh_formalization_bootstrap:CellSupportInjection` -> `formal/lean/Tantrium/DyadicTransport.lean` (high)
-- `rh_formalization_bootstrap:DyadicCapacity` -> `formal/lean/Tantrium/DyadicTransport.lean` (high)
-- `rh_formalization_bootstrap:DPositivityInduction` -> `formal/lean/Tantrium/DPositivity.lean` (high)
+- `lah_gate_ab_generalization:GENERAL_STAIRCASE_DIVISOR_THEOREM` -> `formal/lean/Tantrium/GeneralStaircaseDivisorTheorem.lean` (medium)
+- `lah_gate_ab_generalization:GENERAL_QUOTIENT_DEGREE_THEOREM` -> `formal/lean/Tantrium/GeneralQuotientDegreeTheorem.lean` (medium)
+- `lah_gate_ab_generalization:K7_SHARPNESS_STRUCTURE_THEOREM` -> `formal/lean/Tantrium/K7SharpnessStructureTheorem.lean` (high)
 
 External formalization remains `PENDING`; this queue is a scaffold and work plan.

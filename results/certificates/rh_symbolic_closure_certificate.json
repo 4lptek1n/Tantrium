@@ -1,5 +1,5 @@
 {
-  "certificate_id": "tantrium-rh-closure-7e51cf7",
+  "certificate_id": "tantrium-rh-closure-1b24e6f",
   "certificates": [
     "results/certificates/parametric_closure_certificate.json"
   ],
@@ -17,7 +17,7 @@
     "closure"
   ],
   "closure_status": "PASS",
-  "current_commit_sha": "7e51cf71740da28d7114bcab0ff72c7fae243240",
+  "current_commit_sha": "1b24e6f6e65165534bcc30dce4b80ed541e1809c",
   "executable_checks": {
     "ag_lgv_transfer_checker.py": "PASS",
     "parametric_certificate_generator.py": "PASS",
@@ -26,7 +26,7 @@
     "tau_sturm_identity_checker.py": "PASS"
   },
   "external_formalization": "PENDING",
-  "generated_at": "2026-05-02T00:29:30Z",
+  "generated_at": "2026-05-02T01:38:01Z",
   "internal_tantrium_closure": "CLOSED",
   "pipeline": "tools/tantrium_rh_machine.py",
   "proof_attempt_status": "NO_STRUCTURAL_GAP",

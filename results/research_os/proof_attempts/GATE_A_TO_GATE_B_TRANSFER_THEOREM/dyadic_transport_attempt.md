@@ -1,0 +1,7 @@
+# dyadic_transport Attempt: GATE_A_TO_GATE_B_TRANSFER_THEOREM
+
+Status: `NOT_APPLICABLE_UNTIL_QJR_POSITIVITY_MODEL`
+Failed step: `no certified QJR positivity model exists yet`
+Refined subgap: `MISSING_QJR_POSITIVITY_MODEL`
+
+This is a recorded proof strategy attempt, not a proof promotion.

@@ -6,8 +6,8 @@
       "path": "README.md",
       "required": true,
       "role": "overview",
-      "sha256": "e4766b221234de5c3761d859023f9fc259706946ef2ddb34bebb8e79360221e8",
-      "size_bytes": 15141,
+      "sha256": "28a05b8918a30b749c2103f5fdf47416b319dd8a5b72cc9fbc7418866b4a48db",
+      "size_bytes": 15166,
       "theorem_node": null
     },
     {
@@ -76,7 +76,7 @@
       "path": "docs/TANTRIUM_CLOSURE_RESULT.md",
       "required": true,
       "role": "closure_result",
-      "sha256": "27fa1fe1f811a03f05825c235df164c2f014643ace7998432527cdac1974f615",
+      "sha256": "775d73460b0a87dea938426b3088ace4b91a27d0ee137db118a260dd6ee664d0",
       "size_bytes": 3325,
       "theorem_node": "RH_CLOSURE"
     },
@@ -176,8 +176,8 @@
       "path": "results/certificates/certificate_registry.json",
       "required": true,
       "role": "certificate_registry",
-      "sha256": "c6426af4f74da3ab9de02099c17fecc2b3cfd7858598827871d01db45f36ef44",
-      "size_bytes": 6710,
+      "sha256": "c53e04e62105d6045a8d6d8ddbb2613a68bb4861502e8bfd77acadc44b60da89",
+      "size_bytes": 6675,
       "theorem_node": null
     },
     {
@@ -186,7 +186,7 @@
       "path": "results/certificates/rh_symbolic_closure_certificate.json",
       "required": true,
       "role": "closure_certificate",
-      "sha256": "3e180d194495b20bce61329cc090d859cbf9b5605f941a1a63fb0b91b57694e0",
+      "sha256": "786a7c4c28a9709c0918a1ab596b056277809c51aee8540d5cedaf3beb4d4630",
       "size_bytes": 1781,
       "theorem_node": "RH_CLOSURE"
     },
@@ -196,7 +196,7 @@
       "path": "results/certificates/rh_proof_attempt_dag.json",
       "required": true,
       "role": "proof_attempt_dag",
-      "sha256": "6d24f7548c446905453fa4acc65afe6fd2059dd0cf2056d795c74ce2d9062c7d",
+      "sha256": "29d871f761028b8ec1a2fc31a218167d73a61c4a60003723566ffc74710d6514",
       "size_bytes": 4503,
       "theorem_node": "RH_PROOF_ATTEMPT"
     },
@@ -206,7 +206,7 @@
       "path": "results/certificates/rh_gap_report.md",
       "required": true,
       "role": "gap_report",
-      "sha256": "fdf3db9bec0efd3ffe335ec1f5e4d88878ca752152044cfc3bedd2beb5530114",
+      "sha256": "7c288ab29ea05c0768f2f16c051fda8ad3c089a6160e1e9b12c1e7c226964da3",
       "size_bytes": 897,
       "theorem_node": "RH_GAP_FINDER"
     },
@@ -216,7 +216,7 @@
       "path": "results/certificates/tantrium_rh_machine_latest.json",
       "required": true,
       "role": "latest_machine_run",
-      "sha256": "b2907b31bf8bdd6428e744c9b3b46c5319ce6074ec9974680e0f2827b655f854",
+      "sha256": "19db911845074082944686f232dc1e61960157d369cf42abfaf2692c8b372475",
       "size_bytes": 1092,
       "theorem_node": "RH_CLOSURE"
     },
@@ -226,8 +226,8 @@
       "path": "results/certificates/independent_verifier_report.json",
       "required": true,
       "role": "independent_verifier_report",
-      "sha256": "dde4324c35ac5927834b10227336dbf0545f548b5ba9c46bac14c4af0ac6948e",
-      "size_bytes": 37175,
+      "sha256": "3878a59d02af3514d24f923df667a6dfc04d1dcb64b5f7378eed5fbffacc2808",
+      "size_bytes": 48366,
       "theorem_node": null
     },
     {
@@ -236,7 +236,7 @@
       "path": "results/atlas/manifest.json",
       "required": true,
       "role": "atlas_manifest",
-      "sha256": "d9ce3c23bdb9ce08fb5ba283e09402f539143898ae86fb3b2e4ebe137256a1e4",
+      "sha256": "a2c1582109d9323bc90d6c0d8472e03974573835ddd5085b0732719542da7958",
       "size_bytes": 46762,
       "theorem_node": null
     },
@@ -246,7 +246,7 @@
       "path": "results/atlas/status.md",
       "required": true,
       "role": "atlas_status",
-      "sha256": "dc191f3ef009978622e5d3fe68cca75f4f874c19d1198b948db6e7faedb14efc",
+      "sha256": "d6ad23f7c17716888db20e117cb18445c08bc1dcfe336174e4dd973d8cf6feb8",
       "size_bytes": 1174,
       "theorem_node": null
     },
@@ -256,8 +256,8 @@
       "path": "tantrium/theorem_graph/theorem_graph.yaml",
       "required": true,
       "role": "theorem_graph",
-      "sha256": "688540c936d7ee68fb612c309eee14d8675eb2c255c02c3debd31f29a0e0ad20",
-      "size_bytes": 45677,
+      "sha256": "34b2232656a9e2112b2361112bfb8e4299b53bfc0c85fe0330f51a9a47d2d441",
+      "size_bytes": 47448,
       "theorem_node": null
     },
     {
@@ -356,8 +356,8 @@
       "path": "tools/tantrium_research_os.py",
       "required": true,
       "role": "research_os_entrypoint",
-      "sha256": "2f5b9492e4f1e85162111c2245adaf2f6cb5fe09af83ce9b04b6a29477bed57e",
-      "size_bytes": 1284,
+      "sha256": "d21343cc8c74112d435b25ece83141c9776d0e6e7523ff5eb261f370a3246307",
+      "size_bytes": 1461,
       "theorem_node": null
     },
     {
@@ -366,8 +366,8 @@
       "path": "tools/tantrium_research_loop.py",
       "required": true,
       "role": "research_os_loop",
-      "sha256": "4f4be0f69bf3e3e7b474c1c3607e34da8a6132f59f3f8019be1b6108a9679a74",
-      "size_bytes": 1201,
+      "sha256": "1c9a246482e112d3e34ca08158c31fd961d148716778654f73ab21b8347c15e1",
+      "size_bytes": 1228,
       "theorem_node": null
     },
     {
@@ -428,6 +428,76 @@
       "role": "research_os_agent_tool",
       "sha256": "006ddeb7b463d8a95d06e3f3671370a2703f521637f2f0eb9e2ef9071cf7b9df",
       "size_bytes": 1662,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "tools/tantrium_subresultant_recurrence_miner.py",
+      "required": false,
+      "role": "research_os_v2_recurrence_miner",
+      "sha256": "c47b00a72b1f12385d0fecc1cfc3035023ff186e4f29e841b32fc7f564e0a773",
+      "size_bytes": 1063,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "tools/tantrium_qjr_extractor.py",
+      "required": false,
+      "role": "research_os_v2_qjr_extractor",
+      "sha256": "2be8a9a9bdaf50b1e046cfbb09bd63d1888f003164a24e300851c7e451cdde22",
+      "size_bytes": 973,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "tools/tantrium_recurrence_verifier.py",
+      "required": false,
+      "role": "research_os_v2_recurrence_verifier",
+      "sha256": "6cfe1a4000df707025f59b8da82407e36c612a19e895b017e2879fcac229205f",
+      "size_bytes": 1275,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "tools/tantrium_theorem_factory.py",
+      "required": false,
+      "role": "research_os_v2_theorem_factory",
+      "sha256": "bbfc75ae9d3b533121737cd4bf5c8376f398db8ea7ac1776406b2139bae6feb0",
+      "size_bytes": 974,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "tools/tantrium_proof_strategy_engine.py",
+      "required": false,
+      "role": "research_os_v2_strategy_engine",
+      "sha256": "6c054af70886bc21f1b4bdff3f52f6f304319151f7712b85b0dec609753d0d2a",
+      "size_bytes": 963,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "tools/tantrium_counterexample_engine.py",
+      "required": false,
+      "role": "research_os_v2_counterexample_engine",
+      "sha256": "1b18cbd5b51eae55d7cf7f070b8a840334f174629957df6d93d230c31da6af57",
+      "size_bytes": 1207,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "tools/tantrium_certificate_builder_v2.py",
+      "required": false,
+      "role": "research_os_v2_certificate_builder",
+      "sha256": "ef5213fa5453a19b0c5078c47b250ef296d9e928e9cfac97108653b63dca5001",
+      "size_bytes": 1221,
       "theorem_node": null
     },
     {
@@ -501,12 +571,92 @@
       "theorem_node": null
     },
     {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/TANTRIUM_RESEARCH_OS_V2_ARCHITECTURE.md",
+      "required": false,
+      "role": "research_os_v2_architecture",
+      "sha256": "bbd224cf9d4676cda98ac2c9b0af9f47b2478c9ac924e64f7424312ae0a4ed42",
+      "size_bytes": 2073,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/SUBRESULTANT_RECURRENCE_CAMPAIGN_REPORT.md",
+      "required": false,
+      "role": "subresultant_recurrence_report",
+      "sha256": "c94331f9ea50fdee755cd488fff2f99fa5ce94376723343e7751ce041287a4d2",
+      "size_bytes": 1823,
+      "theorem_node": "GATE_B_STAIRCASE_QUOTIENT"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/GATE_AB_THEOREM_SYNTHESIS_REPORT.md",
+      "required": false,
+      "role": "gate_ab_synthesis_report",
+      "sha256": "eb976a842e3dc138405659ad85a31f4dd560d1910af8ccfdc28e8d20ba62d5d0",
+      "size_bytes": 1522,
+      "theorem_node": "GATE_B_STAIRCASE_QUOTIENT"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/TANTRIUM_COUNTEREXAMPLE_ENGINE_REPORT.md",
+      "required": false,
+      "role": "counterexample_engine_report",
+      "sha256": "daba4bbab53e22c9c01989a7655bf35129a3a1c45dc415a80ddb6ea0a8cf0dc5",
+      "size_bytes": 1767,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/TANTRIUM_CERTIFICATE_BUILDER_V2_REPORT.md",
+      "required": false,
+      "role": "certificate_builder_v2_report",
+      "sha256": "243985cfff6f3f39eb8456afa9d2dc0e2d58a6426b3a816c1e226573a517c3ec",
+      "size_bytes": 1542,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/TANTRIUM_RESEARCH_OS_V2_MASTER_REPORT.md",
+      "required": false,
+      "role": "research_os_v2_master_report",
+      "sha256": "87280f39132725a0db36ce03c9cbd2ca4ab9c83d83419883d251914fe40592f1",
+      "size_bytes": 2830,
+      "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/K7_SHARPNESS_STRUCTURE_ANALYSIS.md",
+      "required": false,
+      "role": "k7_sharpness_analysis",
+      "sha256": "c4b1d9234455bd8a559d7e94f372e8b787fe8ac8421c0cba105bdd3f5a58b9ad",
+      "size_bytes": 412,
+      "theorem_node": "K7_SHARPNESS"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "docs/LEAN_GATE_AB_FORMALIZATION_PLAN.md",
+      "required": false,
+      "role": "lean_gate_ab_plan",
+      "sha256": "e196003c971072670761ccb182ec194b9ff0dc218a62fe52f92ec633c3c6265f",
+      "size_bytes": 1583,
+      "theorem_node": null
+    },
+    {
       "certificate_id": "rh_symbolic_closure",
       "exists": true,
       "path": "results/conjectures/rh/status.json",
       "required": false,
       "role": "solve_status",
-      "sha256": "996b2725be6018e8da9b9e7f97f1cb4b72885f3dd5a9d2de6695be5da0c79887",
+      "sha256": "24d65ebe2f7e595be24e3c1a1c2a79049e181d599f9b68a79e51d2c096af220a",
       "size_bytes": 752,
       "theorem_node": "RH_CLOSURE"
     },
@@ -516,7 +666,7 @@
       "path": "results/conjectures/rh/solve_report.json",
       "required": false,
       "role": "solve_report",
-      "sha256": "c5c290ad3ad13df8e04462b8dad580fb06b12fbd24e04f887e65b3734c15358d",
+      "sha256": "ca2338fa313b5898b8238f79f7d66c907a7cb05516033c55349c3069937b9950",
       "size_bytes": 1504,
       "theorem_node": "RH_CLOSURE"
     },
@@ -546,7 +696,7 @@
       "path": "results/conjectures/lah/status.json",
       "required": false,
       "role": "solve_status",
-      "sha256": "1b39b2d83593c3ac364759b939d288ee48c2973be4d0527718ba95ccaba55dab",
+      "sha256": "ec84bc88967a9d501076bb578a692cf4f2e11bf67829910b78cd9f6f4e3c0d52",
       "size_bytes": 776,
       "theorem_node": "GATE_A_PERTURBATION"
     },
@@ -556,7 +706,7 @@
       "path": "results/conjectures/lah/blocker_certificate.json",
       "required": false,
       "role": "named_blocker",
-      "sha256": "578b17f80bb95a5b9a5805a4c2e6eca4de38251b7513522ea6463405c562005a",
+      "sha256": "f37a1bca847fde674b53e2c01af1c9b5159db88eab940b6da12b3bca512fab93",
       "size_bytes": 2359,
       "theorem_node": "GATE_B_STAIRCASE_QUOTIENT"
     },
@@ -616,8 +766,8 @@
       "path": "results/research_os/blackboard.jsonl",
       "required": false,
       "role": "research_blackboard",
-      "sha256": "b75c933d1efc75034d39aa663bc7f7bc8f4afcae419474525037459f10ed799f",
-      "size_bytes": 86359,
+      "sha256": "a121c263b4d472fd60e04d647227a388f94ab97c388e67ac92ce5e1b24b62673",
+      "size_bytes": 226655,
       "theorem_node": null
     },
     {
@@ -626,8 +776,8 @@
       "path": "results/research_os/current_campaigns.json",
       "required": false,
       "role": "research_campaign_index",
-      "sha256": "ecf2f9dda136c11bf062a4ca62e40fa34aa9d30f2c4e2d17b15a2778618e24e3",
-      "size_bytes": 1721,
+      "sha256": "1d3e925de4fca25f904a6d6064cf7db9239b4d894d33b9fd3b02a6b54588426c",
+      "size_bytes": 2248,
       "theorem_node": null
     },
     {
@@ -676,20 +826,90 @@
       "path": "results/benchmarks/benchmark_report.json",
       "required": false,
       "role": "research_os_benchmark",
-      "sha256": "870582c8a5d5b4a2eceed97bf4175d3067456e082b377a72b21f922de6c4c91f",
+      "sha256": "1aa3d554067b5db96f522ad8b236a5406578ea13c96e843f13c984c483f0387e",
       "size_bytes": 1166,
       "theorem_node": null
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/research_os/campaigns/subresultant_recurrence/synthesis_status.json",
+      "required": false,
+      "role": "research_os_v2_campaign_status",
+      "sha256": "ff12161f59a1bd3c2498ed1268e8d87b3fd874bf91e4b2d4dd8a6cac111e4025",
+      "size_bytes": 329,
+      "theorem_node": "GATE_B_STAIRCASE_QUOTIENT"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/research_os/campaigns/subresultant_recurrence/recurrence_candidates.json",
+      "required": false,
+      "role": "research_os_v2_recurrence_candidates",
+      "sha256": "583d1005a12c2536f65118097c0327e8d694e7f5168527d28241fe4d5350e48a",
+      "size_bytes": 2117,
+      "theorem_node": "GATE_B_STAIRCASE_QUOTIENT"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/research_os/campaigns/subresultant_recurrence/finite_verification.json",
+      "required": false,
+      "role": "research_os_v2_finite_verification",
+      "sha256": "270bc5b12d94df640f198f1970839144a4bb1a1515126314a3296bd51533e689",
+      "size_bytes": 9463,
+      "theorem_node": "GATE_B_STAIRCASE_QUOTIENT"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/research_os/candidates/gate_ab_candidate_catalog.json",
+      "required": false,
+      "role": "research_os_v2_theorem_candidate_catalog",
+      "sha256": "fab9cd6f70e90c9e9eb536538eaa8b45de6cf0ecfb484b71b10a2f4383734780",
+      "size_bytes": 11071,
+      "theorem_node": "GATE_B_STAIRCASE_QUOTIENT"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/research_os/proof_attempts/subresultant_recurrence_strategy_summary.json",
+      "required": false,
+      "role": "research_os_v2_proof_attempt_summary",
+      "sha256": "6b31ddd83f5dc963cec41e9a02dbf9235c2aeb126e2a3cc165f31feab7c7f0a3",
+      "size_bytes": 4007,
+      "theorem_node": "GATE_B_STAIRCASE_QUOTIENT"
+    },
+    {
+      "certificate_id": null,
+      "exists": true,
+      "path": "results/research_os/counterexamples/subresultant_recurrence_counterexample_search.json",
+      "required": false,
+      "role": "research_os_v2_counterexample_search",
+      "sha256": "71018a6b1c262157e65c492c006b8963b8410ac2d2645b52a250f7a1f5a5fe9d",
+      "size_bytes": 1291,
+      "theorem_node": "K7_SHARPNESS"
+    },
+    {
+      "certificate_id": "subresultant_recurrence_recurrence_candidate",
+      "exists": true,
+      "path": "results/certificates/research_os/subresultant_recurrence_recurrence_candidate_certificate.json",
+      "required": false,
+      "role": "research_os_v2_certificate",
+      "sha256": "00a7697d59b4b398c309853e147dcdeee9de356741ff884a91be6eba61cef16e",
+      "size_bytes": 639,
+      "theorem_node": "GATE_B_STAIRCASE_QUOTIENT"
     }
   ],
-  "command_used": "research OS final seal",
+  "command_used": "python tools/tantrium_certificate_builder_v2.py --campaign subresultant_recurrence",
   "dirty_working_tree": true,
-  "generated_at": "2026-05-02T00:33:28Z",
-  "git_head": "7e51cf71740da28d7114bcab0ff72c7fae243240",
+  "generated_at": "2026-05-02T01:39:31Z",
+  "git_head": "1b24e6f6e65165534bcc30dce4b80ed541e1809c",
   "latest_verified_local_run": {
     "closure_status": "PASS",
-    "commit": "7e51cf71740da28d7114bcab0ff72c7fae243240",
+    "commit": "1b24e6f6e65165534bcc30dce4b80ed541e1809c",
     "external_formalization": "PENDING",
-    "generated_at": "2026-05-02T00:29:30Z",
+    "generated_at": "2026-05-02T01:38:02Z",
     "goldbach_control": "CONDITIONAL_GAP",
     "internal_tantrium_closure": "CLOSED",
     "proof_attempt_status": "NO_STRUCTURAL_GAP",

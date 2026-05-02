@@ -1022,7 +1022,7 @@
     }
   },
   "closure_status": "PASS",
-  "commit_sha": "7e51cf71740da28d7114bcab0ff72c7fae243240",
+  "commit_sha": "1b24e6f6e65165534bcc30dce4b80ed541e1809c",
   "kernels": {
     "ell1_mixed_depth": {
       "created_at": "2026-05-02T00:17:17.711177+00:00",
@@ -1069,8 +1069,8 @@
   "latest_gap_report": "results/certificates/rh_gap_report.md",
   "latest_parametric_certificate": "results/certificates/parametric_closure_certificate.json",
   "latest_rh_closure_certificate": "results/certificates/rh_symbolic_closure_certificate.json",
-  "latest_rh_closure_run": "2026-05-02T00:29:30Z",
-  "latest_rh_proof_attempt": "2026-05-02T00:29:30Z",
+  "latest_rh_closure_run": "2026-05-02T01:38:01Z",
+  "latest_rh_proof_attempt": "2026-05-02T01:38:02Z",
   "proof_attempt_status": "NO_STRUCTURAL_GAP",
   "structure_reports": {
     "ell1_structure": {

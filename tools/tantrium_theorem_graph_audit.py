@@ -231,6 +231,24 @@ NODES: list[dict[str, Any]] = [
         "certificate_path": "results/formalization/lean_work_queue.json",
         "verification_scope": "external_formalization",
     },
+    {
+        "node_id": "SUBRESULTANT_QJR_RECURRENCE_CANDIDATE",
+        "statement": "Research OS v2 generated finite-verified recurrence candidates for Q_{j,r}(n).",
+        "status": "RECURRENCE_VERIFIED_FINITE",
+        "dependencies": ["GATE_B_STAIRCASE_QUOTIENT", "TAU_SUBDISCRIMINANT"],
+        "theorem_file": "theorems/SUBRESULTANT_QJR_RECURRENCE_CONJECTURE.md",
+        "certificate_path": "results/certificates/research_os/subresultant_recurrence_recurrence_candidate_certificate.json",
+        "verification_scope": "finite_window",
+    },
+    {
+        "node_id": "RESEARCH_OS_SUBRESULTANT_RECURRENCE",
+        "statement": "Research OS v2 attacks MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR and refines it to true H quotient identification.",
+        "status": "RECURRENCE_VERIFIED_FINITE",
+        "dependencies": ["SUBRESULTANT_QJR_RECURRENCE_CANDIDATE", "K7_SHARPNESS"],
+        "theorem_file": "results/research_os/campaigns/subresultant_recurrence/recurrence_report.md",
+        "certificate_path": "results/research_os/campaigns/subresultant_recurrence/synthesis_status.json",
+        "verification_scope": "internal_certificate_system",
+    },
 ]
 
 

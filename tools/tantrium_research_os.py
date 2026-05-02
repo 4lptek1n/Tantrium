@@ -15,11 +15,14 @@ from tantrium.research_os.research_director import run_campaigns
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Tantrium autonomous mathematical research OS")
-    parser.add_argument("--campaign", required=True, choices=["lah", "coefficient_frontier", "goldbach_minor_arc", "rh_formalization", "all"])
+    parser.add_argument("--campaign", required=True, choices=["subresultant_recurrence", "lah", "lah_gate_ab", "coefficient_frontier", "goldbach_minor_arc", "rh_formalization", "all"])
     parser.add_argument("--deep", action="store_true")
+    parser.add_argument("--iterations", type=int, default=1)
     args = parser.parse_args()
 
-    summaries = run_campaigns(args.campaign, deep=args.deep)
+    summaries = []
+    for _ in range(max(args.iterations, 1)):
+        summaries.extend(run_campaigns(args.campaign, deep=args.deep))
     print("TANTRIUM RESEARCH OS")
     print(f"CAMPAIGN: {args.campaign}")
     print(f"CAMPAIGNS_RUN: {len(summaries)}")

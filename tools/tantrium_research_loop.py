@@ -15,7 +15,7 @@ from tantrium.research_os.research_director import run_loop
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Tantrium recursive research loop")
-    parser.add_argument("--campaign", required=True, choices=["lah_gate_ab", "lah", "coefficient_frontier", "goldbach_minor_arc", "rh_formalization", "all"])
+    parser.add_argument("--campaign", required=True, choices=["subresultant_recurrence", "lah_gate_ab", "lah", "coefficient_frontier", "goldbach_minor_arc", "rh_formalization", "all"])
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--deep", action="store_true")
     args = parser.parse_args()

@@ -1,0 +1,272 @@
+
+
+>>> git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   formal/lean/Tantrium.lean
+	modified:   tantrium/research_os/problem_ir.py
+	modified:   tantrium/research_os/proof_state.py
+	modified:   tantrium/research_os/research_director.py
+	modified:   tantrium/research_os/scheduler.py
+	modified:   tools/tantrium_research_loop.py
+	modified:   tools/tantrium_research_os.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	docs/GATE_AB_THEOREM_SYNTHESIS_REPORT.md
+	docs/K7_SHARPNESS_STRUCTURE_ANALYSIS.md
+	docs/LEAN_GATE_AB_FORMALIZATION_PLAN.md
+	docs/SUBRESULTANT_RECURRENCE_CAMPAIGN_REPORT.md
+	docs/TANTRIUM_CERTIFICATE_BUILDER_V2_REPORT.md
+	docs/TANTRIUM_COUNTEREXAMPLE_ENGINE_REPORT.md
+	docs/TANTRIUM_RESEARCH_OS_V2_ARCHITECTURE.md
+	docs/TANTRIUM_RESEARCH_OS_V2_MASTER_REPORT.md
+	formal/lean/Tantrium/GateA.lean
+	formal/lean/Tantrium/GateB.lean
+	formal/lean/Tantrium/ResearchOS.lean
+	formal/lean/Tantrium/StaircaseQuotient.lean
+	formal/lean/Tantrium/SubresultantRecurrence.lean
+	results/research_os/v2/
+	tantrium/research_os/certificates/
+	tantrium/research_os/counterexample/
+	tantrium/research_os/proof_strategies/
+	tantrium/research_os/recurrence/
+	tantrium/research_os/theorem_factory/
+	tests/test_certificate_builder_v2.py
+	tests/test_counterexample_engine.py
+	tests/test_false_conjecture_counterexample.py
+	tests/test_gate_ab_campaign_outputs.py
+	tests/test_proof_strategy_engine.py
+	tests/test_research_loop_v2.py
+	tests/test_subresultant_recurrence_miner.py
+	tests/test_theorem_factory.py
+	tools/tantrium_certificate_builder_v2.py
+	tools/tantrium_counterexample_engine.py
+	tools/tantrium_proof_strategy_engine.py
+	tools/tantrium_qjr_extractor.py
+	tools/tantrium_recurrence_verifier.py
+	tools/tantrium_subresultant_recurrence_miner.py
+	tools/tantrium_theorem_factory.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
+EXIT_CODE=0
+
+>>> git rev-parse HEAD
+1b24e6f6e65165534bcc30dce4b80ed541e1809c
+EXIT_CODE=0
+
+>>> git log --oneline -10
+1b24e6f Build Tantrium autonomous mathematical research OS
+7e51cf7 Upgrade Tantrium into solve-or-certify-gap proof machine
+2357a44 Harden Tantrium proof machine into reproducible formalization-ready system
+dd73547 Refresh verifier artifacts after governance update
+9421192 Document Tantrium artifact governance and latest local run
+b99ce32 Refresh independent verifier artifacts
+6433d1b Add independent artifact verifier for local proof run
+aa1efbf Fix Windows UTF-8 certificate writing and record local RH machine run
+38ccc84 Add Goldbach conjecture proof attempt machine
+EXIT_CODE=0
+
+>>> python --version
+Python 3.14.2
+EXIT_CODE=0
+
+>>> python -m pytest tests -q
+F..F.....F....FFF............                                            [100%]
+================================== FAILURES ===================================
+____________ test_manifest_hashes_match_non_self_report_artifacts _____________
+
+    def test_manifest_hashes_match_non_self_report_artifacts():
+        manifest = json.loads((ROOT / "results/certificates/artifact_manifest.json").read_text(encoding="utf-8"))
+        artifacts = manifest.get("artifacts", manifest.get("critical_artifacts", []))
+        assert artifacts
+        for artifact in artifacts:
+            rel = artifact["path"]
+            path = ROOT / rel
+            assert path.exists(), rel
+            assert path.stat().st_size > 0, rel
+            if rel.startswith("results/certificates/independent_verifier_report"):
+                continue
+>           assert sha256(path) == artifact["sha256"], rel
+E           AssertionError: tools/tantrium_research_os.py
+E           assert 'd21343cc8c74...1f370a3246307' == '2f5b9492e4f1...6a29477bed57e'
+E             
+E             - 2f5b9492e4f1e85162111c2245adaf2f6cb5fe09af83ce9b04b6a29477bed57e
+E             + d21343cc8c74112d435b25ece83141c9776d0e6e7523ff5eb261f370a3246307
+
+tests\test_artifact_manifest.py:28: AssertionError
+__________ test_certificate_builder_v2_creates_research_certificates __________
+
+    def test_certificate_builder_v2_creates_research_certificates():
+        result = subprocess.run(
+            [sys.executable, "tools/tantrium_certificate_builder_v2.py", "--campaign", "subresultant_recurrence"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+>       cert = json.loads((ROOT / "results/certificates/research_os/subresultant_recurrence_recurrence_candidate_certificate.json").read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_certificate_builder_v2.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/omerm/Desktop/Tantrium/results/certificates/research_os/subresultant_recurrence_recurrence_candidate_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\omerm\\Desktop\\Tantrium\\results\\certificates\\research_os\\subresultant_recurrence_recurrence_candidate_certificate.json'
+
+..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:771: FileNotFoundError
+________________ test_false_staircase_counterexample_artifact _________________
+
+    def test_false_staircase_counterexample_artifact():
+        path = ROOT / "results/research_os/counterexamples/false_staircase_counterexample.json"
+        assert path.exists()
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        assert payload["status"] == "COUNTEREXAMPLE_FOUND"
+>       assert payload["counterexample"]["strict_positive"] is False
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'strict_positive'
+
+tests\test_false_conjecture_counterexample.py:13: KeyError
+________________________ test_gate_ab_v2_outputs_exist ________________________
+
+    def test_gate_ab_v2_outputs_exist():
+        required = [
+            "results/research_os/campaigns/subresultant_recurrence/qjr_tables.json",
+            "results/research_os/campaigns/subresultant_recurrence/h_factor_inventory.json",
+            "results/research_os/campaigns/subresultant_recurrence/recurrence_report.md",
+            "theorems/SUBRESULTANT_QJR_RECURRENCE_CONJECTURE.md",
+            "docs/TANTRIUM_THEOREM_CANDIDATE_CATALOG.md",
+        ]
+        for rel in required:
+>           assert (ROOT / rel).exists(), rel
+E           AssertionError: results/research_os/campaigns/subresultant_recurrence/qjr_tables.json
+E           assert False
+E            +  where False = exists()
+E            +    where exists = (WindowsPath('C:/Users/omerm/Desktop/Tantrium') / 'results/research_os/campaigns/subresultant_recurrence/qjr_tables.json').exists
+
+tests\test_gate_ab_campaign_outputs.py:16: AssertionError
+_____________________ test_independent_verifier_verified ______________________
+
+    def test_independent_verifier_verified():
+        result = subprocess.run(
+            [sys.executable, "tools/independent_verifier.py"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stdout + result.stderr
+E       AssertionError: TANTRIUM INDEPENDENT VERIFIER
+E         RH_CLOSURE: FAILED
+E         GOLDBACH_CONTROL: BLOCKED_BY_NAMED_GAP_AT_MINOR_ARC
+E         LAH_STATUS: BLOCKED_BY_NAMED_GAP
+E         HANKEL_STATUS: PROVEN_BY_CERTIFICATE
+E         COEFFICIENT_POSITIVITY_STATUS: BLOCKED_BY_NAMED_GAP
+E         ARTIFACT_HASHES: FAILED
+E         RESULT: FAILED
+E         FIRST_FAILURE: hash.results/certificates/certificate_registry.json: 1c5f93a7571862cfbac38ec096fb17be96308369bd2c1e2b5da96cd608eea949
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['C:\\Users\\omerm\\AppData\\Local\\Programs\\Python\\Python314\\python.exe', 'tools/independent...certificates/certificate_registry.json: 1c5f93a7571862cfbac38ec096fb17be96308369bd2c1e2b5da96cd608eea949\n', stderr='').returncode
+
+tests\test_independent_verifier.py:18: AssertionError
+_______________ test_proof_strategy_engine_records_failed_steps _______________
+
+    def test_proof_strategy_engine_records_failed_steps():
+        result = subprocess.run(
+            [sys.executable, "tools/tantrium_proof_strategy_engine.py", "--campaign", "subresultant_recurrence"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        summary = json.loads((ROOT / "results/research_os/proof_attempts/subresultant_recurrence_strategy_summary.json").read_text(encoding="utf-8"))
+>       assert summary["candidate_count"] >= 7
+E       assert 0 >= 7
+
+tests\test_proof_strategy_engine.py:21: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_artifact_manifest.py::test_manifest_hashes_match_non_self_report_artifacts
+FAILED tests/test_certificate_builder_v2.py::test_certificate_builder_v2_creates_research_certificates
+FAILED tests/test_false_conjecture_counterexample.py::test_false_staircase_counterexample_artifact
+FAILED tests/test_gate_ab_campaign_outputs.py::test_gate_ab_v2_outputs_exist
+FAILED tests/test_independent_verifier.py::test_independent_verifier_verified
+FAILED tests/test_proof_strategy_engine.py::test_proof_strategy_engine_records_failed_steps
+6 failed, 23 passed in 7.31s
+EXIT_CODE=1
+
+>>> python tools/independent_verifier.py
+TANTRIUM INDEPENDENT VERIFIER
+RH_CLOSURE: FAILED
+GOLDBACH_CONTROL: BLOCKED_BY_NAMED_GAP_AT_MINOR_ARC
+LAH_STATUS: BLOCKED_BY_NAMED_GAP
+HANKEL_STATUS: PROVEN_BY_CERTIFICATE
+COEFFICIENT_POSITIVITY_STATUS: BLOCKED_BY_NAMED_GAP
+ARTIFACT_HASHES: FAILED
+RESULT: FAILED
+FIRST_FAILURE: hash.results/certificates/certificate_registry.json: c9797f774da8c9d3dab8a7d055186e0513f1256b9631d1cf072564d0b3e7fc8d
+EXIT_CODE=1
+
+>>> python tools/tantrium_conjecture_machine.py --problem rh --solve --full
+TANTRIUM CONJECTURE MACHINE
+PROBLEM: rh
+STATUS: INTERNAL_CLOSED
+FINAL_STATUS: INTERNAL_CLOSED
+FIRST_GAP: None
+EXTERNAL_FORMALIZATION: PENDING
+RESULT: GENERATED
+EXIT_CODE=0
+
+>>> python tools/tantrium_conjecture_machine.py --problem lah --solve --full
+TANTRIUM CONJECTURE MACHINE
+PROBLEM: lah
+STATUS: BLOCKED_BY_NAMED_GAP
+FINAL_STATUS: BLOCKED_BY_NAMED_GAP
+FIRST_GAP: GENERAL_J_STAIRCASE_QUOTIENT_PROOF
+EXTERNAL_FORMALIZATION: PENDING
+RESULT: GENERATED
+EXIT_CODE=0
+
+>>> python tools/tantrium_research_os.py --campaign lah --deep
+TANTRIUM RESEARCH OS
+CAMPAIGN: lah
+CAMPAIGNS_RUN: 1
+LAH_STATUS: REFINED_SUBGAP
+LAH_SUBGAP: MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR
+RESULT: RESEARCH_OS_COMPLETED
+EXIT_CODE=0
+
+>>> python tools/tantrium_research_evaluator.py
+TANTRIUM ARTIFACT MANIFEST
+ARTIFACTS: 68
+MISSING: 0
+RESULT: GENERATED
+TANTRIUM RESEARCH EVALUATOR
+BENCHMARKS: 7
+RESULT: PASS
+EXIT_CODE=0
