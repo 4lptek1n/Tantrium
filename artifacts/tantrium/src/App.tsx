@@ -6,6 +6,8 @@ import { Layout } from "@/components/layout";
 import { Home } from "@/pages/home";
 import { Demo } from "@/pages/demo";
 import { Pricing } from "@/pages/pricing";
+import { DatasetsPage } from "@/pages/datasets";
+import { AnalyzePage } from "@/pages/analyze";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -15,6 +17,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/demo" component={Demo} />
+      <Route path="/datasets" component={DatasetsPage} />
+      <Route path="/analyze" component={AnalyzePage} />
       <Route path="/pricing" component={Pricing} />
       <Route component={NotFound} />
     </Switch>

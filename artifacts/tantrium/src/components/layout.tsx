@@ -17,6 +17,12 @@ export function Layout({ children }: { children: ReactNode }) {
             <Link href="/" className={`transition-colors hover:text-foreground ${location === "/" ? "text-foreground" : ""}`}>
               Home
             </Link>
+            <Link href="/datasets" className={`transition-colors hover:text-foreground ${location === "/datasets" ? "text-foreground" : ""}`}>
+              Datasets
+            </Link>
+            <Link href="/analyze" className={`transition-colors hover:text-foreground ${location === "/analyze" ? "text-foreground" : ""}`}>
+              Analyze
+            </Link>
             <Link href="/demo" className={`transition-colors hover:text-foreground ${location === "/demo" ? "text-foreground" : ""}`}>
               Demo
             </Link>
