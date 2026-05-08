@@ -55,7 +55,7 @@ export function DatasetsPage() {
                       <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider">
                         {dataset.id}
                       </Badge>
-                      {dataset.corsReliable ? (
+                      {dataset.difficulty === "auto-fetch" ? (
                         <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 flex gap-1 items-center">
                           <CheckCircle2 className="w-3 h-3" /> Auto-Fetch
                         </Badge>

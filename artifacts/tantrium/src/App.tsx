@@ -8,6 +8,9 @@ import { Demo } from "@/pages/demo";
 import { Pricing } from "@/pages/pricing";
 import { DatasetsPage } from "@/pages/datasets";
 import { AnalyzePage } from "@/pages/analyze";
+import { HuntPage } from "@/pages/hunt";
+import { CorePage } from "@/pages/core";
+import { ReportsPage } from "@/pages/reports";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -16,6 +19,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/hunt" component={HuntPage} />
+      <Route path="/core" component={CorePage} />
+      <Route path="/reports" component={ReportsPage} />
       <Route path="/demo" component={Demo} />
       <Route path="/datasets" component={DatasetsPage} />
       <Route path="/analyze" component={AnalyzePage} />

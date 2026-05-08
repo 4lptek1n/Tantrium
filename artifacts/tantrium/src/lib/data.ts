@@ -1,197 +1,187 @@
 export const SECTORS = [
   {
     id: "data-centers",
-    name: "Data Centers & Hosting",
+    name: "DATA CENTERS & HOSTING",
     tagline: "When your uptime SLA keeps slipping and you can't find the cause.",
     datasets: [
       {
-        id: "dc-a",
-        name: "Hyperscale rack thermal failure (cooling cascade scenarios)",
-        envelope: "System remains stable when server utilization stays below 78% and thermal load is within acceptable range.",
-        boundary: "Thermal cascade initiates when rack density exceeds 14.2 kW/rack combined with cooling response lag above 8 minutes.",
+        id: "server-temp",
+        name: "Server Thermal Failure Boundary",
+        envelope: "System remains stable when server temperature stays below 85°C.",
+        boundary: "Thermal failure imminent when temperature exceed 85°C.",
         drivers: [
-          { name: "Cooling Response Lag", explanation: "HVAC ramp-up delay during utilization spikes", impact: 85 },
-          { name: "Rack Density", explanation: "Concentration of high-compute nodes in specific zones", impact: 70 },
-          { name: "Power Draw Spikes", explanation: "Transient surges overwhelming PDU capacity", impact: 45 }
+          { name: "CPU Load", explanation: "High computation cycles generating heat", impact: 85 },
+          { name: "Cooling Fan RPM", explanation: "Insufficient airflow for current load", impact: 70 },
+          { name: "Ambient Temperature", explanation: "External heat load on rack", impact: 45 }
         ],
         path: [
-          "Reduce rack utilization below 72% during peak hours",
-          "Implement staggered maintenance windows to avoid compounding thermal load",
-          "Pre-cool zones dynamically based on predictive compute schedules"
-        ]
-      },
-      {
-        id: "dc-b",
-        name: "Network edge node instability (latency spike clusters)",
-        envelope: "Node routing remains optimal when packet ingress stays under 4.2M pps with buffer occupancy below 60%.",
-        boundary: "Queue drops accelerate exponentially when burst traffic exceeds 1.5GB/s and routing table updates coincide.",
-        drivers: [
-          { name: "Burst Traffic", explanation: "Sudden ingress overwhelming port buffers", impact: 90 },
-          { name: "Routing Table Updates", explanation: "CPU contention during BGP convergence", impact: 65 },
-          { name: "Buffer Occupancy", explanation: "Sustained high watermarks leading to tail drops", impact: 50 }
-        ],
-        path: [
-          "Increase port buffer allocation for critical edge uplinks",
-          "Schedule BGP maintenance off-peak relative to local timezone",
-          "Implement stricter rate limiting on non-priority ingress flows"
+          "Reduce CPU utilization when temp hits 82°C",
+          "Increase rack airflow via perforated tiles",
+          "Recalibrate cooling response lag"
         ]
       }
     ]
   },
   {
     id: "plastics",
-    name: "Plastics & Polymer Manufacturing",
+    name: "PLASTICS / POLYMER / MANUFACTURING",
     tagline: "When your process keeps drifting out of spec and rejects pile up.",
     datasets: [
       {
-        id: "poly-a",
-        name: "Injection molding reject rate surge",
-        envelope: "Process yields 99.8% acceptable parts when melt temperature holds at 240°C ±2°C and holding pressure is >800 bar.",
-        boundary: "Short shots occur when melt temperature drops below 237°C while mold cooling time is less than 12 seconds.",
+        id: "wine-quality",
+        name: "Process Quality Degradation Boundary",
+        envelope: "Quality remains high when physicochemical parameters stay within verified ranges.",
+        boundary: "Quality degrades when alcohol content drops below a specific threshold combined with high acidity.",
         drivers: [
-          { name: "Melt Temperature Variance", explanation: "Heater band cycling inconsistency", impact: 80 },
-          { name: "Cooling Time", explanation: "Aggressive cycle time reduction", impact: 60 },
-          { name: "Material Moisture", explanation: "Inadequate pre-drying of resin", impact: 40 }
+          { name: "Alcohol", explanation: "Primary driver of batch quality score", impact: 90 },
+          { name: "Volatile Acidity", explanation: "Acidity level impacting taste profile", impact: 65 },
+          { name: "Sulphates", explanation: "Preservation agent concentration", impact: 50 }
         ],
         path: [
-          "Recalibrate heater band PID loops for tighter temperature control",
-          "Increase minimum cooling time interlock to 13.5 seconds",
-          "Implement inline moisture sensing before feed throat"
-        ]
-      },
-      {
-        id: "poly-b",
-        name: "Polymer extrusion viscosity drift",
-        envelope: "Extrusion is stable when screw RPM is below 120 and feed throat temp is < 45°C.",
-        boundary: "Viscosity drops sharply when screw RPM exceeds 125 leading to shear heating beyond material limits.",
-        drivers: [
-          { name: "Screw RPM Surge", explanation: "Aggressive speed settings to meet throughput targets", impact: 75 },
-          { name: "Shear Heating", explanation: "Frictional heat generation exceeding barrel cooling capacity", impact: 65 },
-          { name: "Resin Batch Variance", explanation: "Inconsistent melt flow index in raw material", impact: 50 }
-        ],
-        path: [
-          "Cap max screw RPM at 118 for high-viscosity resins",
-          "Increase barrel cooling zone capacity in zone 3",
-          "Implement tighter MFI incoming inspection"
+          "Tighten fermentation temperature control",
+          "Implement inline alcohol sensing",
+          "Standardize sulphate addition timing"
         ]
       }
     ]
   },
   {
     id: "manufacturing",
-    name: "General Manufacturing & OEE",
+    name: "GENERAL MANUFACTURING & OEE",
     tagline: "When downtime keeps happening and the root cause keeps shifting.",
     datasets: [
       {
-        id: "mfg-a",
-        name: "Assembly line OEE degradation",
-        envelope: "OEE remains above 85% when shift handovers are under 10 mins and micro-stops are < 5 per hour.",
-        boundary: "OEE collapses below 70% when micro-stops exceed 8 per hour combined with upstream parts starvation.",
+        id: "predictive-maintenance",
+        name: "Machine Failure Boundary (AI4I)",
+        envelope: "Machine remains stable when torque and tool wear are within standard limits.",
+        boundary: "Failure risk spikes when torque exceeds 50Nm or tool wear crosses 200 min.",
         drivers: [
-          { name: "Micro-stops", explanation: "Brief unrecorded jams in automated fastening stations", impact: 85 },
-          { name: "Parts Starvation", explanation: "AGV delivery delays from warehouse to line", impact: 60 },
-          { name: "Shift Handover Delay", explanation: "Communication gaps leading to delayed start", impact: 40 }
+          { name: "Torque", explanation: "Mechanical stress on the spindle", impact: 85 },
+          { name: "Tool Wear", explanation: "Cumulative usage of the cutting edge", impact: 70 },
+          { name: "Air Temperature", explanation: "Environmental heat affecting tolerances", impact: 40 }
         ],
         path: [
-          "Implement predictive maintenance on fastening station actuators",
-          "Increase buffer stock at line-side points by 15%",
-          "Standardize digital shift handover checklist"
-        ]
-      },
-      {
-        id: "mfg-b",
-        name: "CNC machining dimensional drift",
-        envelope: "Tolerances held within ±0.005mm when coolant temp is < 22°C and tool wear is < 30%.",
-        boundary: "Scrap rate spikes when coolant temp exceeds 25°C and spindle load indicates >40% tool wear.",
-        drivers: [
-          { name: "Coolant Temperature", explanation: "Inadequate chiller capacity during extended runs", impact: 75 },
-          { name: "Tool Wear", explanation: "Aggressive feed rates accelerating edge degradation", impact: 70 },
-          { name: "Spindle Vibration", explanation: "Harmonics at specific RPM ranges", impact: 45 }
-        ],
-        path: [
-          "Upgrade coolant chiller system for high-load machines",
-          "Implement automated tool change at 35% wear limit",
-          "Optimize toolpaths to avoid resonant frequency RPMs"
+          "Automate tool change at 180 min wear",
+          "Cap torque at 48Nm for high-precision runs",
+          "Improve spindle chiller performance"
         ]
       }
     ]
   },
   {
     id: "pharma",
-    name: "Pharma & Biotech",
+    name: "PHARMA / BIOTECH / TOXICITY",
     tagline: "When batch failures and out-of-spec results threaten your regulatory standing.",
     datasets: [
       {
-        id: "pharma-a",
-        name: "Bioreactor batch failure clustering",
-        envelope: "Cell viability is optimal when pH stays between 7.2-7.4 and dissolved oxygen > 40%.",
-        boundary: "Apoptosis triggers when pH drops below 7.15 for > 20 minutes simultaneously with DO dipping below 35%.",
+        id: "water-potability",
+        name: "Water Safety Parameter Boundary",
+        envelope: "Water remains potable when chemical parameters stay within safety windows.",
+        boundary: "Safety threshold breached when pH or hardness deviates from regulatory limits.",
         drivers: [
-          { name: "pH Excursion", explanation: "Delayed base addition response", impact: 85 },
-          { name: "Dissolved Oxygen Dip", explanation: "Inadequate sparging rate during exponential growth", impact: 65 },
-          { name: "Agitation Shear", explanation: "Excessive impeller speed damaging cells", impact: 40 }
+          { name: "ph", explanation: "Acidity/Alkalinity balance", impact: 80 },
+          { name: "Hardness", explanation: "Mineral concentration levels", impact: 60 },
+          { name: "Chloramines", explanation: "Disinfection byproduct levels", impact: 45 }
         ],
         path: [
-          "Retune pH control loop for faster base addition response",
-          "Implement cascade DO control linking agitation and sparging",
-          "Cap max agitation speed during peak growth phase"
-        ]
-      },
-      {
-        id: "pharma-b",
-        name: "Formulation out-of-spec excursions",
-        envelope: "Content uniformity is achieved when mixing time is > 45 mins at 20 RPM.",
-        boundary: "Segregation occurs when mixing time exceeds 60 mins leading to over-blending, or drops below 40 mins.",
-        drivers: [
-          { name: "Over-blending", explanation: "Extended mixing times causing particle segregation", impact: 80 },
-          { name: "Fill Level", explanation: "Blender loaded beyond optimal working volume", impact: 60 },
-          { name: "Material Flow", explanation: "Poor flowability of active pharmaceutical ingredient", impact: 50 }
-        ],
-        path: [
-          "Strictly enforce 50-minute maximum mixing time",
-          "Limit blender fill volume to 65% of total capacity",
-          "Pre-mill API to ensure tighter particle size distribution"
+          "Install real-time pH monitoring and dosing",
+          "Upgrade reverse osmosis filtration membranes",
+          "Optimize chloramine neutralizing schedule"
         ]
       }
     ]
   },
   {
     id: "finance",
-    name: "Finance & Insurance Risk",
+    name: "FINANCE & INSURANCE RISK",
     tagline: "When your risk models keep underperforming in specific market conditions.",
     datasets: [
       {
-        id: "fin-a",
-        name: "Credit portfolio stress boundary",
-        envelope: "Portfolio default rate remains < 2% when VIX < 25 and sector concentration < 15%.",
-        boundary: "Defaults cascade when VIX spikes > 30 and specific sector correlations break down.",
+        id: "insurance-claims",
+        name: "Insurance Claims Severity Boundary",
+        envelope: "Claims remain in the low-severity regime for profiles within the safe envelope.",
+        boundary: "Claims severity spikes for policyholders matching high-risk age and BMI profiles.",
         drivers: [
-          { name: "Volatility Spike", explanation: "Macro market stress triggering margin calls", impact: 85 },
-          { name: "Sector Correlation", explanation: "Previously uncorrelated assets moving together", impact: 70 },
-          { name: "Liquidity Drain", explanation: "Inability to exit positions at modeled prices", impact: 55 }
+          { name: "smoker", explanation: "Primary lifestyle risk factor", impact: 90 },
+          { name: "bmi", explanation: "Physical health indicator", impact: 65 },
+          { name: "age", explanation: "Demographic risk variable", impact: 50 }
         ],
         path: [
-          "Implement dynamic concentration limits based on real-time VIX",
-          "Stress test portfolio assuming historical correlations go to 1.0",
-          "Maintain higher cash buffers during elevated volatility regimes"
+          "Adjust premiums for high-risk BMI segments",
+          "Increase reserves for smokers in specific age bands",
+          "Refine underwriting for high-severity clusters"
         ]
-      },
+      }
+    ]
+  },
+  {
+    id: "energy-hvac",
+    name: "ENERGY & HVAC",
+    tagline: "When energy overruns and environmental violations threaten your bottom line.",
+    datasets: [
       {
-        id: "fin-b",
-        name: "Insurance claims clustering at tail events",
-        envelope: "Reserves are adequate for isolated storm events causing < 500 claims/day.",
-        boundary: "Capital depletion accelerates when a secondary event occurs within 14 days of a primary tail event.",
+        id: "energy-demand",
+        name: "Facility Air Quality Boundary",
+        envelope: "Air quality remains within regulatory limits during normal operations.",
+        boundary: "Regulatory breach when pm2.5 levels exceed 100 during low windspeed.",
         drivers: [
-          { name: "Secondary Event Timing", explanation: "Consecutive catastrophes depleting adjuster capacity", impact: 90 },
-          { name: "Reinsurance Attachment", explanation: "Losses falling just short of treaty attachment points", impact: 65 },
-          { name: "Supply Chain Inflation", explanation: "Post-event surge in repair material costs", impact: 50 }
+          { name: "pm2.5", explanation: "Particulate matter concentration", impact: 95 },
+          { name: "Windspeed", explanation: "Atmospheric dispersion factor", impact: 60 },
+          { name: "TEMP", explanation: "Temperature affecting air stagnation", impact: 40 }
         ],
         path: [
-          "Restructure reinsurance to lower aggregate attachment points",
-          "Establish pre-negotiated repair rates with preferred contractor networks",
-          "Build predictive models for adjuster deployment based on early weather tracks"
+          "Activate secondary scrubbers when pm2.5 hits 80",
+          "Schedule high-emission runs during high wind windows",
+          "Install low-level localized air sensors"
+        ]
+      }
+    ]
+  },
+  {
+    id: "logistics",
+    name: "LOGISTICS",
+    tagline: "When your fulfillment SLAs collapse during peak demand.",
+    datasets: [
+      {
+        id: "logistics-demand",
+        name: "Supply Chain Demand Spike Boundary",
+        envelope: "Fulfillment SLAs are met when order volume is within standard capacity.",
+        boundary: "SLA breach occurs when order quantity exceeds 100 units per transaction.",
+        drivers: [
+          { name: "Quantity", explanation: "Order volume per transaction", impact: 85 },
+          { name: "UnitPrice", explanation: "Value density affecting handling care", impact: 40 },
+          { name: "CustomerID", explanation: "Bulk buyer behavior patterns", impact: 30 }
+        ],
+        path: [
+          "Pre-allocate pickers for bulk order windows",
+          "Implement automated sorting for high-quantity SKUs",
+          "Set dynamic SLA buffers for large orders"
+        ]
+      }
+    ]
+  },
+  {
+    id: "cyber-risk",
+    name: "CYBER & SLA RISK",
+    tagline: "When network anomalies and breaches threaten your enterprise security.",
+    datasets: [
+      {
+        id: "network-anomaly",
+        name: "Network SLA Breach Boundary",
+        envelope: "Network remains stable during standard traffic patterns.",
+        boundary: "Anomaly detected when traffic parameter combinations trigger intrusion alerts.",
+        drivers: [
+          { name: "Traffic Volume", explanation: "Total throughput on segment", impact: 80 },
+          { name: "Connection Count", explanation: "Simultaneous sessions per host", impact: 70 },
+          { name: "Error Rate", explanation: "Failed packet transmissions", impact: 50 }
+        ],
+        path: [
+          "Enable rate limiting on edge routers",
+          "Implement zero-trust boundary verification",
+          "Automate isolation for anomalous segments"
         ]
       }
     ]
   }
 ];
+
