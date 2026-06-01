@@ -107,19 +107,30 @@ class TauGraph:
         manifold: "SemanticManifold",
         k: int = 5,
     ) -> int:
-        """Bir node için K yakın certified edge bul ve ekle."""
-        neighbors = manifold.nearest(concept, n=k)
-        edges: list[TauEdge] = []
-        for nbr_name, dist in neighbors:
-            nbr = manifold.concepts.get(nbr_name)
-            if nbr is None:
+        """Bir node için K yakın certified edge — sr-index ile O(√n)."""
+        if self._dirty:
+            self._rebuild_sr_index()
+        q = [float(m) for m in concept.moments]
+        klen = len(q)
+        sr_q = q[-1] if q else 0.0
+        candidates = self._sr_candidates(sr_q, window=min(200, len(self.nodes)))
+        dists: list[tuple[float, str]] = []
+        for cand_name in candidates:
+            if cand_name == concept.name:
                 continue
-            edges.append(TauEdge(
-                source=concept.name,
-                target=nbr_name,
-                distance=float(dist),
-                paradigm="ALEPH",
-            ))
+            cand = manifold.concepts.get(cand_name)
+            if cand is None:
+                continue
+            d = sum(
+                abs(q[i] - (float(cand.moments[i]) if i < len(cand.moments) else 0.0))
+                for i in range(klen)
+            )
+            dists.append((d, cand_name))
+        dists.sort()
+        edges: list[TauEdge] = [
+            TauEdge(source=concept.name, target=name, distance=d, paradigm="ALEPH")
+            for d, name in dists[:k]
+        ]
         self.edges[concept.name] = edges
         return len(edges)
 
