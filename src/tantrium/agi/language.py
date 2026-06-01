@@ -212,11 +212,10 @@ class LanguageBootstrap:
             try:
                 self.engine.manifold.add(concept)
                 result.taught.append(word)
-                # TAU ağına da ekle — topoloji canlı tutuluyor
+                # TAU node ekle — edge'ler toplu öğrenimde sonda hesaplanır
                 tau = getattr(self.engine, "tau", None)
                 if tau is not None:
                     tau.add_node(concept)
-                    tau.add_edges_for(concept, self.engine.manifold, k=5)
             except ValueError:
                 result.rejected.append(word)
 
