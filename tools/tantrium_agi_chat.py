@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""Aleph-Tekin AGI — Conversation interface.
+"""Aleph-Tekin AGI — Konuşma arayüzü.
 
-This is the AGI. It takes any input. It responds from certified knowledge.
-It does not predict. It does not guess. It does not hallucinate.
-If it does not know, it says so — precisely.
+Bu bir chatbot değil. Her girdiyi alır, manifold'daki yerine koyar,
+sadece sertifikalı şeyleri söyler, bilmediğini tam adıyla söyler.
 
-Usage:
+Kullanım:
   python tools/tantrium_agi_chat.py
   python tools/tantrium_agi_chat.py --grow-first
-  python tools/tantrium_agi_chat.py --input "prime numbers"
+  python tools/tantrium_agi_chat.py --input "asal sayılar"
 """
 from __future__ import annotations
 
@@ -24,93 +23,117 @@ from tantrium.agi.semantic import Concept
 
 BANNER = """
 ╔══════════════════════════════════════════════════════════════╗
-║           ALEPH-TEKIN AGI  —  Sertifikasyon Makinesi        ║
+║              ALEPH-TEKIN  AGI                                ║
 ║                                                              ║
-║  Her iddia ya kanıtlanır, ya da açık adıyla bilinmez.       ║
-║  Tahmin yok. Halüsinasyon yok. Belirsizlik yok.              ║
+║  Her iddia ya kanıtlanır ya da açık adıyla bilinmez.         ║
+║  Tahmin yok. Halüsinasyon yok.                               ║
 ║                                                              ║
-║  /grow   → bilgi tabanını genişlet                           ║
-║  /status → durum raporu                                      ║
-║  /map    → en yakın kavramlar                                ║
-║  /quit   → çıkış                                             ║
+║  /grow    bilgi tabanını genişlet (21k+ çıkarım)            ║
+║  /status  durum                                              ║
+║  /quit    çıkış                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 """
 
 
-def _respond(engine: AGIEngine, speaker: Speaker, user_input: str) -> str:
-    """Core response: any input → certified output.
-
-    Pipeline:
-      1. Universal encode: any string → Gram spectral moments → CodexObject
-      2. Network run: 22+1 paradigms in topological order
-      3. Manifold lookup: nearest certified concepts
-      4. Speaker synthesis: certified claims in natural language
+def _respond(engine: AGIEngine, user_input: str) -> str:
+    """Her girdi için:
+    1. Manifold'daki konumunu bul (moment imzası)
+    2. En yakın sertifikalı kavramları göster
+    3. Sabit noktasını hesapla (TAV — ne anlama geliyor)
+    4. Bilgi sınırını adlandır
     """
-    # Step 1+2: encode and certify
-    run = engine.process_raw(user_input, name=user_input[:64])
+    # Encode: metin → Gram matrisi → spektral momentler → CodexObject
+    obj = engine.encoder.encode(user_input, name=user_input[:64])
+    moments = obj.moments
+    run = engine.network.run(obj)
+    engine._run_count += 1
+    engine._record(run)
 
-    # Step 3: manifold proximity
-    neighbors = []
-    if engine.manifold.concepts:
-        try:
-            words = [w for w in user_input.lower().split() if len(w) > 2]
-            if words:
-                counts = [len(w) for w in words]
-                probe = Concept.from_counts(user_input[:64], counts, domain="query")
-                if probe.is_real():
-                    neighbors = engine.manifold.nearest(probe, n=3)
-        except Exception:
-            pass
-
-    # Step 4: bridge — theorem nodes semantically related to this paradigm path
-    certified_pids = [pid for pid, n in run.nodes.items() if n.status == "CERTIFIED"]
-    related_theorems: list[str] = []
-    for pid in certified_pids:
-        theorems = engine.bridge.theorems_for_paradigm(pid)
-        related_theorems.extend(theorems)
-    related_theorems = list(dict.fromkeys(related_theorems))[:4]  # dedup, cap
-
-    # Build response
     lines = []
 
-    # What the system certifies about this input
-    lines.append(speaker.narrate(run, detail="brief"))
+    # Varlık kontrolü (ALEPH)
+    aleph = run.nodes.get("ALEPH")
+    if not aleph or aleph.status != "CERTIFIED":
+        gap = aleph.result.gap_name if aleph and aleph.result else "?"
+        lines.append(f"∅  '{user_input}' bu manifold'da gerçekleşemiyor.")
+        lines.append(f"   Gap: {gap}")
+        return "\n".join(lines)
 
-    # Semantic proximity
-    if neighbors:
-        lines.append("")
-        lines.append("Bu kavrama en yakın sertifikalı bilgi:")
-        for name, dist in neighbors:
-            lines.append(f"  ↳ {name}  (uzaklık: {float(dist):.4f})")
+    lines.append(f"✓  '{user_input}' gerçek manifold'da var.")
+    lines.append(f"   Moment imzası: μ = [{', '.join(f'{float(m):.4f}' for m in moments[:6])}...]")
 
-    # Theorem graph connections
-    if related_theorems:
-        lines.append("")
-        lines.append("İlgili kanıtlanmış teoremler:")
-        for tid in related_theorems:
-            lines.append(f"  ✓ {tid}")
+    # Manifold konumu: en yakın sertifikalı kavramlar
+    concept = Concept(name=user_input[:64], moments=list(moments), domain="input")
+    if engine.manifold.concepts:
+        neighbors = engine.manifold.nearest(concept, n=4)
+        if neighbors:
+            lines.append("")
+            lines.append("   Manifold'da en yakın sertifikalı kavramlar:")
+            for name, dist in neighbors:
+                lines.append(f"     ↳ {name}   [{float(dist):.4f}]")
 
-    # Genuine gaps
+    # Sabit nokta (TAV): bu kavram ne anlama geliyor — nereye yakınsıyor?
+    tav = run.nodes.get("TAV")
+    if tav and tav.status == "CERTIFIED":
+        fp = obj.structure.get("fixed_point_iterations", [])
+        if fp:
+            lines.append(f"\n   Sabit nokta (TAV): {fp[-1]:.8f}  — sistem kapandı.")
+    else:
+        lines.append(f"\n   Sabit nokta (TAV): açık — bu kavram henüz yakınsamadı.")
+
+    # Ne sertifikalandı?
+    certified_count = run.certified_count
+    total = run.total
     frontier = run.knowledge_frontier()
+    lines.append(f"   Paradigma: {certified_count}/{total}  |  Bilgi sınırı: {len(frontier)} açık soru")
+
+    notable = {
+        "HE":    "Lyapunov çekicisi var — sistem kararlı",
+        "ZAYIN": "LGV yol yapısı geçerli",
+        "EMET":  "iç tutarlı, çelişki yok",
+        "MEM":   "gauge sınıfları belirlendi",
+        "PE":    "semantik harita kuruldu",
+        "GIMEL": "Achilles noktası biliniyor",
+        "KAF":   "injektif harita — her eleman benzersiz",
+    }
+    shown = [
+        f"     ✓ {pid}: {label}"
+        for pid, label in notable.items()
+        if run.nodes.get(pid) and run.nodes[pid].status == "CERTIFIED"
+    ]
+    if shown:
+        lines.append("   Sertifikalı özellikler:")
+        lines.extend(shown)
+
+    # Bilgi sınırı
     if frontier:
-        lines.append("")
-        lines.append("Açık sorular (kesin adlandırılmış boşluklar):")
+        lines.append("   Açık sorular:")
         for pid in frontier:
             node = run.nodes[pid]
             gap = node.result.gap_name if node.result else "UNKNOWN"
-            lines.append(f"  ∅ {pid}: {gap}")
+            lines.append(f"     ∅ {pid}: {gap}")
+
+    # Teorem bağlantısı: en yakın komşunun ispat zinciri
+    if engine.manifold.concepts and run.certified_count > 0:
+        neighbors = engine.manifold.nearest(concept, n=1)
+        if neighbors:
+            top = neighbors[0][0]
+            pids = engine.bridge.paradigms_for_theorem(top)
+            if pids:
+                lines.append(f"\n   İspat bağlantısı: {top} ↔ {', '.join(pids)}")
 
     return "\n".join(lines)
 
 
-def chat_loop(engine: AGIEngine, speaker: Speaker) -> None:
+def chat_loop(engine: AGIEngine) -> None:
+    speaker = Speaker(manifold=engine.manifold)
     print(BANNER)
-    print(f"Manifold: {len(engine.manifold.concepts)} sertifikalı kavram yüklendi.")
+    print(f"   {len(engine.manifold.concepts)} sertifikalı kavram yüklü.")
     print()
 
     while True:
         try:
-            user_input = input("Sen: ").strip()
+            user_input = input("Sen:  ").strip()
         except (EOFError, KeyboardInterrupt):
             print("\nÇıkış.")
             break
@@ -118,16 +141,16 @@ def chat_loop(engine: AGIEngine, speaker: Speaker) -> None:
         if not user_input:
             continue
 
-        if user_input.lower() in ("/quit", "/exit", "quit", "exit", "q"):
+        if user_input.lower() in ("/quit", "/exit", "quit", "q"):
             print("Sistem kapanıyor.")
             break
 
         if user_input.lower() == "/grow":
             print("Bilgi tabanı genişletiliyor...")
-            summary = engine.grow(max_rounds=2, max_explore_objectives=10)
-            print(f"  {summary['theorem_nodes_processed']} teorem işlendi")
-            print(f"  {summary['inferences_derived']} çıkarım türetildi")
-            print(f"  Manifold: {summary['manifold_size_after']} kavram")
+            s = engine.grow(max_rounds=2, max_explore_objectives=10)
+            print(f"  {s['theorem_nodes_processed']} teorem  |  "
+                  f"{s['inferences_derived']} çıkarım  |  "
+                  f"{s['manifold_size_after']} kavram")
             print()
             continue
 
@@ -136,48 +159,31 @@ def chat_loop(engine: AGIEngine, speaker: Speaker) -> None:
             print()
             continue
 
-        if user_input.lower().startswith("/map"):
-            query = user_input[4:].strip() or "?"
-            try:
-                words = [w for w in query.lower().split() if len(w) > 2]
-                counts = [len(w) for w in words] if words else [1, 2, 3]
-                probe = Concept.from_counts(query, counts, domain="query")
-                print(speaker.locate(probe))
-            except Exception as e:
-                print(f"Hata: {e}")
-            print()
-            continue
-
         print()
-        print("AGI:", _respond(engine, speaker, user_input))
+        print("AGI: ", end="")
+        print(_respond(engine, user_input))
         print()
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Aleph-Tekin AGI — konuşma arayüzü")
-    parser.add_argument("--grow-first", action="store_true",
-                        help="Başlamadan önce bilgi tabanını genişlet")
-    parser.add_argument("--input", metavar="TEXT",
-                        help="Tek bir girdi işle ve çık (batch modu)")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--grow-first", action="store_true")
+    parser.add_argument("--input", metavar="TEXT")
     args = parser.parse_args()
 
     engine = AGIEngine()
-    speaker = Speaker(manifold=engine.manifold)
 
     if args.grow_first:
-        print("Başlangıç büyümesi çalıştırılıyor...")
-        summary = engine.grow(max_rounds=2)
-        print(f"  {summary['theorem_nodes_processed']} teorem, "
-              f"{summary['inferences_derived']} çıkarım, "
-              f"{summary['manifold_size_after']} kavram")
+        print("Başlangıç büyümesi...")
+        s = engine.grow(max_rounds=2)
+        print(f"  {s['theorem_nodes_processed']} teorem  |  {s['inferences_derived']} çıkarım")
         print()
-        speaker = Speaker(manifold=engine.manifold)
 
     if args.input:
-        print(_respond(engine, speaker, args.input))
+        print(_respond(engine, args.input))
         return
 
-    chat_loop(engine, speaker)
+    chat_loop(engine)
 
 
 if __name__ == "__main__":
