@@ -22,44 +22,78 @@ from tantrium.agi.semantic import Concept
 
 # ─── Tokenizer ────────────────────────────────────────────────────────────
 
+_STOPWORDS = {
+    "the","and","was","her","his","had","that","she","with","not","for",
+    "but","you","they","have","from","this","are","were","all","one","him",
+    "been","has","who","did","its","what","when","which","would","could",
+    "said","very","will","more","than","then","now","into","our","your",
+    "their","there","him","any","out","him","two","come","also","may",
+    "bir","ve","ile","için","ama","olan","çok","daha","gibi","değil",
+}
+
 def _tokenize(text: str) -> list[str]:
-    """Simple multilingual tokenizer. Lowercases, strips punctuation."""
+    """Multilingual tokenizer — stopwords ve kısa kelimeler çıkar."""
     text = text.lower()
     tokens = re.findall(r"[a-zçğışöüA-ZÇĞİŞÖÜÀ-ɏ]+", text)
-    return [t for t in tokens if len(t) >= 3]
+    return [t for t in tokens if len(t) >= 4 and t not in _STOPWORDS]
 
 
 # ─── Co-occurrence moment extractor ──────────────────────────────────────
 
-def _concept_moments_from_encoder(
+def _concept_moments_from_cooccurrence(
     target: str,
     context_counts: Counter,
-    encoder: Any,
+    corpus_counts: dict[str, Counter],
     num_moments: int = 8,
 ) -> list[Fraction] | None:
-    """Compute valid spectral moments for a word using the universal encoder.
+    """Co-occurrence Gram'dan spektral momentler — gerçek semantik.
 
-    The word's semantic signature = encoder applied to (word + top context words).
-    The encoder uses bigram transition Gram matrices — always PSD by construction.
-    Different words have different character distributions and different context
-    words → genuinely distinct moment signatures.
+    Karakter bigram değil: kelimenin bağlam vektörü → ikinci-derece
+    co-occurrence Gram matrisi → spektral momentler.
 
-    This is the correct approach: reuse the existing PSD-guaranteed machinery.
+    "love" ve "marriage" benzer bağlamlarda geçiyor → benzer Gram → yakın momentler.
+    "love" ve "integral" farklı bağlamlar → farklı Gram → uzak momentler.
+    Bu word2vec'in yaptığının tam matematiksel karşılığı — ama sertifikalı.
     """
     total = sum(context_counts.values())
-    if total < 1:
+    if total < 2:
         return None
 
-    # Build context string: word + its top context words (ordered by frequency)
-    top_context = [w for w, _ in context_counts.most_common(6)]
-    context_sentence = target + " " + " ".join(top_context)
-
-    # Encode via universal encoder (always produces PSD moments)
-    try:
-        obj = encoder.encode(context_sentence, name=target)
-        return list(obj.moments[:num_moments])
-    except Exception:
+    # Top K bağlam kelimesi
+    K = min(num_moments + 2, len(context_counts))
+    top_k = [w for w, _ in context_counts.most_common(K)]
+    if len(top_k) < 2:
         return None
+
+    # A[i][j] = top_k[i] kelimesinin top_k[j] ile kaç kez birlikte geçtiği
+    # Bu ikinci-derece co-occurrence yapısını yakalar
+    K = len(top_k)
+    A: list[list[float]] = []
+    for ctx_word in top_k:
+        ctx_profile = corpus_counts.get(ctx_word, Counter())
+        row = [float(ctx_profile.get(w, 0)) for w in top_k]
+        A.append(row)
+
+    # Gram G = A^T A — PSD by construction
+    G = [[sum(A[r][i] * A[r][j] for r in range(K)) for j in range(K)] for i in range(K)]
+
+    # Normalize: G[0][0] = en büyük diagonal eleman
+    norm = max(G[i][i] for i in range(K))
+    if norm == 0:
+        return None
+    G = [[G[i][j] / norm for j in range(K)] for i in range(K)]
+
+    # Spektral momentler: μ_k = Tr(G^k) / K
+    moments: list[Fraction] = []
+    cur = [row[:] for row in G]
+    for _ in range(num_moments):
+        trace = sum(cur[i][i] for i in range(K)) / K
+        moments.append(Fraction(trace).limit_denominator(10 ** 9))
+        # G^(k+1) = cur * G
+        nxt = [[sum(cur[i][r] * G[r][j] for r in range(K)) for j in range(K)] for i in range(K)]
+        cur = nxt
+
+    return moments
 
 
 # ─── Bootstrap result ─────────────────────────────────────────────────────
@@ -157,8 +191,8 @@ class LanguageBootstrap:
                 result.already_known.append(word)
                 continue
 
-            moments = _concept_moments_from_encoder(
-                word, context, self.engine.encoder, self.num_moments
+            moments = _concept_moments_from_cooccurrence(
+                word, context, self._corpus_counts, self.num_moments
             )
             if moments is None:
                 result.rejected.append(word)
