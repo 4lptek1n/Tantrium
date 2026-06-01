@@ -232,50 +232,83 @@ class TauGraph:
     # ─── Persistence ──────────────────────────────────────────────────────────
 
     def save(self, path: str) -> tuple[int, int]:
-        """TAU ağını sparse JSON'a kaydet.
+        """TAU ağını integer-ID formatında kaydet.
 
-        Compact format: node başına sadece domain+sr, edge başına t+d.
-        Separators=(',',':') ile whitespace yok.
+        String isimler yerine sayısal indeks — edge'ler [tgt_id, dist] çifti.
+        Format:
+          "n": [[name, domain_char, sr], ...]   ← node listesi (indeks = ID)
+          "e": [[tgt_id, dist], ...]             ← her node'un edge listesi
         """
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        data = {
-            "nodes": {
-                name: {"d": node.domain, "s": node.source, "r": round(node.sr, 8)}
-                for name, node in self.nodes.items()
-            },
-            "edges": {
-                name: [{"t": e.target, "d": round(e.distance, 6)} for e in edges]
-                for name, edges in self.edges.items()
-                if edges
-            },
-        }
+        names = list(self.nodes.keys())
+        id_map = {name: i for i, name in enumerate(names)}
+
+        # Domain tek harf: g=general, l=language, t=theorem, d=derived, q=query
+        def _d(domain: str) -> str:
+            return domain[0] if domain else "g"
+
+        node_list = [
+            [name, _d(self.nodes[name].domain), round(self.nodes[name].sr, 8)]
+            for name in names
+        ]
+
+        edge_list: list[list] = []
+        total_edges = 0
+        for name in names:
+            edges = self.edges.get(name, [])
+            edge_list.append(
+                [[id_map[e.target], round(e.distance, 5)] for e in edges if e.target in id_map]
+            )
+            total_edges += len(edges)
+
+        data = {"n": node_list, "e": edge_list}
         Path(path).write_text(
             json.dumps(data, ensure_ascii=False, separators=(',', ':')),
             encoding="utf-8",
         )
-        total_edges = sum(len(v) for v in data["edges"].values())
-        return len(data["nodes"]), total_edges
+        return len(names), total_edges
 
     @classmethod
     def load(cls, path: str) -> "TauGraph":
-        """TAU ağını diskten yükle."""
+        """TAU ağını integer-ID formatından yükle. Eski string formatı da desteklenir."""
         p = Path(path)
         if not p.exists():
             return cls()
         data = json.loads(p.read_text(encoding="utf-8"))
         g = cls()
-        for name, v in data["nodes"].items():
-            g.nodes[name] = TauNode(
-                name=name,
-                domain=v.get("d", "general"),
-                source=v.get("s", "saved"),
-                sr=v.get("r", 0.0),
-            )
-        for name, edge_list in data.get("edges", {}).items():
-            g.edges[name] = [
-                TauEdge(source=name, target=e["t"], distance=e["d"])
-                for e in edge_list
-            ]
+
+        # Yeni format: "n" ve "e" listeleri
+        if "n" in data:
+            domain_map = {"g": "general", "l": "language", "t": "theorem",
+                          "d": "derived", "q": "query"}
+            names: list[str] = []
+            for row in data["n"]:
+                name, d_char, sr = row[0], row[1], row[2]
+                domain = domain_map.get(d_char, "general")
+                g.nodes[name] = TauNode(name=name, domain=domain, source="saved", sr=sr)
+                names.append(name)
+            for i, edge_rows in enumerate(data["e"]):
+                src = names[i]
+                g.edges[src] = [
+                    TauEdge(source=src, target=names[tgt_id], distance=dist)
+                    for tgt_id, dist in edge_rows
+                    if tgt_id < len(names)
+                ]
+        # Eski format: "nodes" ve "edges" dict'leri
+        elif "nodes" in data:
+            for name, v in data["nodes"].items():
+                g.nodes[name] = TauNode(
+                    name=name,
+                    domain=v.get("d", "general"),
+                    source=v.get("s", "saved"),
+                    sr=v.get("r", 0.0),
+                )
+            for name, edge_list in data.get("edges", {}).items():
+                g.edges[name] = [
+                    TauEdge(source=name, target=e["t"], distance=e["d"])
+                    for e in edge_list
+                ]
+
         g._rebuild_sr_index()
         return g
 
