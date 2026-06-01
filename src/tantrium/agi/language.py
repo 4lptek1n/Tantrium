@@ -119,11 +119,14 @@ class LanguageBootstrap:
         self._update_corpus(tokens)
         return self._teach_from_corpus()
 
-    def from_file(self, path: str) -> BootstrapResult:
-        """Dosyadan metin oku ve öğren."""
+    def from_file(self, path: str, save_after: bool = True) -> BootstrapResult:
+        """Dosyadan metin oku, öğren, manifold'u kaydet."""
         from pathlib import Path
         text = Path(path).read_text(encoding="utf-8", errors="ignore")
-        return self.from_text(text)
+        result = self.from_text(text)
+        if save_after and result.new_concepts > 0:
+            self.engine.save_manifold()
+        return result
 
     def auto_learn(self, sentence: str) -> BootstrapResult:
         """Tek bir cümleden gerçek zamanlı öğren. Chat döngüsü için."""

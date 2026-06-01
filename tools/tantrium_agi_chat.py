@@ -30,6 +30,8 @@ BANNER = """
 ║  Tahmin yok. Halüsinasyon yok.                               ║
 ║                                                              ║
 ║  /grow    bilgi tabanını genişlet (21k+ çıkarım)            ║
+║  /learn <dosya>  dosyadan öğren                              ║
+║  /save    manifold'u diske kaydet (kalıcı hafıza)            ║
 ║  /status  durum                                              ║
 ║  /quit    çıkış                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -149,23 +151,34 @@ def chat_loop(engine: AGIEngine) -> None:
         if user_input.lower() == "/grow":
             print("Bilgi tabanı genişletiliyor...")
             s = engine.grow(max_rounds=2, max_explore_objectives=10)
+            n = engine.save_manifold()
             print(f"  {s['theorem_nodes_processed']} teorem  |  "
                   f"{s['inferences_derived']} çıkarım  |  "
-                  f"{s['manifold_size_after']} kavram")
+                  f"{s['manifold_size_after']} kavram  |  manifold kaydedildi ({n})")
             print()
             continue
 
         if user_input.lower() == "/status":
             print(engine.status())
             print(bootstrap.status())
+            print(f"Manifold dosyası: {engine._manifold_path} "
+                  f"({'var' if engine._manifold_path.exists() else 'yok'})")
             print()
             continue
 
         if user_input.lower().startswith("/learn "):
             path = user_input[7:].strip()
             print(f"Dosya okunuyor: {path}")
-            r = bootstrap.from_file(path)
+            r = bootstrap.from_file(path, save_after=True)
             print(r.summary())
+            if r.new_concepts > 0:
+                print(f"  Manifold kaydedildi → {engine._manifold_path}")
+            print()
+            continue
+
+        if user_input.lower() == "/save":
+            n = engine.save_manifold()
+            print(f"  Manifold kaydedildi: {n} kavram → {engine._manifold_path}")
             print()
             continue
 

@@ -75,7 +75,9 @@ class AGIEngine:
         self.bridge = SemanticBridge(str(graph_path))
         self._run_count = 0
         self.knowledge_path.parent.mkdir(parents=True, exist_ok=True)
-        # Bootstrap the semantic manifold from the proven theorem graph
+        self._manifold_path = Path("results/agi/manifold.json")
+        # Load persisted manifold first, then bootstrap from theorem graph
+        self._load_manifold()
         self._bootstrap_manifold()
 
     # ─── Core: process any object ──────────────────────────────────────────
@@ -349,6 +351,16 @@ class AGIEngine:
                 except json.JSONDecodeError:
                     pass
         return records
+
+    def _load_manifold(self) -> None:
+        """Persisted manifold'u yükle — varsa JSON'dan, yoksa boş başla."""
+        if self._manifold_path.exists():
+            loaded = SemanticManifold.load(str(self._manifold_path))
+            self.manifold = loaded
+
+    def save_manifold(self) -> int:
+        """Mevcut manifold'u diske kaydet. Kaydedilen kavram sayısını döner."""
+        return self.manifold.save(str(self._manifold_path))
 
     def _bootstrap_manifold(self) -> None:
         """Populate the semantic manifold from proven theorem graph nodes.

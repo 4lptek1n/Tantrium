@@ -191,6 +191,46 @@ class SemanticManifold:
                     return False
         return True
 
+    def save(self, path: str) -> int:
+        """Manifold'u JSON'a kaydet. Her Fraction p/q olarak."""
+        import json
+        from pathlib import Path
+        data = {
+            name: {
+                "moments": [[c.moments[i].numerator, c.moments[i].denominator]
+                            for i in range(len(c.moments))],
+                "domain": c.domain,
+                "source": c.source,
+                "metadata": {k: str(v) for k, v in c.metadata.items()},
+            }
+            for name, c in self.concepts.items()
+        }
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        return len(data)
+
+    @classmethod
+    def load(cls, path: str) -> "SemanticManifold":
+        """JSON'dan manifold yükle."""
+        import json
+        from pathlib import Path
+        p = Path(path)
+        if not p.exists():
+            return cls()
+        data = json.loads(p.read_text(encoding="utf-8"))
+        m = cls()
+        for name, v in data.items():
+            moments = [Fraction(num, den) for num, den in v["moments"]]
+            c = Concept(
+                name=name,
+                moments=moments,
+                domain=v.get("domain", "general"),
+                source=v.get("source", "saved"),
+                metadata=v.get("metadata", {}),
+            )
+            m.concepts[name] = c
+        return m
+
     def summary(self) -> str:
         lines = [
             f"SemanticManifold: {len(self.concepts)} concepts",
