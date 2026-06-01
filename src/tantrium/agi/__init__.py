@@ -5,6 +5,7 @@ Every claim requires a proof. Every gap is named precisely.
 The manifold grows. Nothing is forgotten.
 """
 from tantrium.agi.bridge import SemanticBridge, PARADIGM_TO_THEOREMS, THEOREM_TO_PARADIGMS
+from tantrium.agi.language import LanguageBootstrap, BootstrapResult
 from tantrium.agi.codex import CODEX, CODEX_BY_ID, CodexObject, ParadigmResult
 from tantrium.agi.encoder import UniversalEncoder, encode
 from tantrium.agi.semantic import Concept, SemanticManifold
@@ -36,4 +37,6 @@ __all__ = [
     "ExplorationResult",
     "Speaker",
     "CertifiedStatement",
+    "LanguageBootstrap",
+    "BootstrapResult",
 ]

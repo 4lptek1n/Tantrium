@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine, Speaker
 from tantrium.agi.semantic import Concept
+from tantrium.agi.language import LanguageBootstrap
 
 
 BANNER = """
@@ -126,7 +127,7 @@ def _respond(engine: AGIEngine, user_input: str) -> str:
 
 
 def chat_loop(engine: AGIEngine) -> None:
-    speaker = Speaker(manifold=engine.manifold)
+    bootstrap = LanguageBootstrap(engine, window=3, min_freq=1)
     print(BANNER)
     print(f"   {len(engine.manifold.concepts)} sertifikalı kavram yüklü.")
     print()
@@ -156,8 +157,22 @@ def chat_loop(engine: AGIEngine) -> None:
 
         if user_input.lower() == "/status":
             print(engine.status())
+            print(bootstrap.status())
             print()
             continue
+
+        if user_input.lower().startswith("/learn "):
+            path = user_input[7:].strip()
+            print(f"Dosya okunuyor: {path}")
+            r = bootstrap.from_file(path)
+            print(r.summary())
+            print()
+            continue
+
+        # Her konuşmada otomatik öğren
+        r = bootstrap.auto_learn(user_input)
+        if r.new_concepts > 0:
+            print(f"   [+{r.new_concepts} yeni kavram manifold'a eklendi]")
 
         print()
         print("AGI: ", end="")
