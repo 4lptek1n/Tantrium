@@ -81,6 +81,8 @@ class AGIEngine:
         self._load_manifold()
         self._bootstrap_manifold()
         self._load_tau_graph()
+        from tantrium.agi.speaker import Speaker
+        self.speaker = Speaker(manifold=self.manifold)
 
     # ─── Core: process any object ──────────────────────────────────────────
 

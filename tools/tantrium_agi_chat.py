@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine
+from tantrium.agi.semantic import Concept
 from tantrium.agi.language import LanguageBootstrap
 
 
@@ -28,15 +29,43 @@ BANNER = """
 ║  Her iddia ya kanıtlanır ya da açık adıyla bilinmez.         ║
 ║  Tahmin yok. Halüsinasyon yok.                               ║
 ║                                                              ║
-║  /grow               bilgi tabanını genişlet                 ║
-║  /think <soru>       derin düşünce (3 ell, dyadic transport) ║
+║  /think <soru>       derin düşünce (dyadic transport, ell=3) ║
 ║  /learn <dosya>      dosyadan öğren                          ║
+║  /grow               bilgi tabanını genişlet                 ║
 ║  /save               manifold'u diske kaydet                 ║
 ║  /status             durum                                   ║
 ║  /quit               çıkış                                   ║
 ╚══════════════════════════════════════════════════════════════╝
 """
 
+
+def _speak(engine: AGIEngine, user_input: str) -> str:
+    """Girdiyi encode et, sertifikala, Speaker ile doğal dil üret."""
+    obj = engine.encoder.encode(user_input, name=user_input[:64])
+    run = engine.network.run(obj)
+    engine._run_count += 1
+    engine._record(run)
+
+    lines = []
+
+    # ── Ana cevap: Speaker.explain() ───────────────────────────────────────
+    lines.append(engine.speaker.explain(run))
+
+    # ── Manifold konumu: en yakın sertifikalı kavramlar ─────────────────────
+    concept = Concept(name=user_input[:64], moments=list(obj.moments), domain="input")
+    if engine.manifold.concepts:
+        location = engine.speaker.locate(concept, n=4)
+        lines.append("")
+        lines.append(location)
+
+    # ── Sabit nokta (TAV) ───────────────────────────────────────────────────
+    tav = run.nodes.get("TAV")
+    if tav and tav.status == "CERTIFIED":
+        fp = obj.structure.get("fixed_point_iterations", [])
+        if fp:
+            lines.append(f"\nFixed point (TAV): {fp[-1]:.8f} — sistem kapandı.")
+
+    return "\n".join(lines)
 
 
 def chat_loop(engine: AGIEngine) -> None:
@@ -110,15 +139,14 @@ def chat_loop(engine: AGIEngine) -> None:
             print()
             continue
 
-        # Her konuşmada otomatik öğren — TAU da güncelleniyor
+        # ── Normal konuşma: öğren + Speaker ile yanıt ──────────────────────
         r = bootstrap.auto_learn(user_input)
         if r.new_concepts > 0:
-            print(f"   [+{r.new_concepts} yeni kavram manifold'a eklendi]")
+            print(f"   [+{r.new_concepts} yeni kavram öğrenildi]")
 
         print()
         print("AGI:")
-        result = engine.think(user_input, depth=2)
-        print(result.narrate())
+        print(_speak(engine, user_input))
         print()
 
 
