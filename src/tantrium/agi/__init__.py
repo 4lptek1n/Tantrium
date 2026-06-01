@@ -9,6 +9,9 @@ from tantrium.agi.encoder import UniversalEncoder, encode
 from tantrium.agi.semantic import Concept, SemanticManifold
 from tantrium.agi.network import AlephTekinNetwork, NetworkRun
 from tantrium.agi.engine import AGIEngine
+from tantrium.agi.inference import InferenceChain, InferenceResult
+from tantrium.agi.explorer import Explorer, ExplorationObjective, ExplorationResult
+from tantrium.agi.speaker import Speaker, CertifiedStatement
 
 __all__ = [
     "CODEX",
@@ -22,4 +25,11 @@ __all__ = [
     "AlephTekinNetwork",
     "NetworkRun",
     "AGIEngine",
+    "InferenceChain",
+    "InferenceResult",
+    "Explorer",
+    "ExplorationObjective",
+    "ExplorationResult",
+    "Speaker",
+    "CertifiedStatement",
 ]

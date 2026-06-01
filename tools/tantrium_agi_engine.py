@@ -6,6 +6,9 @@ Usage:
   python tools/tantrium_agi_engine.py --demo
   python tools/tantrium_agi_engine.py --teach "water" --moments "1,2,1,0,1"
   python tools/tantrium_agi_engine.py --certify "rh_zeta" --from-theorem-graph
+  python tools/tantrium_agi_engine.py --infer "obj_a" "obj_b"
+  python tools/tantrium_agi_engine.py --explore
+  python tools/tantrium_agi_engine.py --speak "obj_name"
 """
 from __future__ import annotations
 
@@ -17,7 +20,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine, CodexObject, Concept, AlephTekinNetwork
+from tantrium.agi import (
+    AGIEngine, CodexObject, Concept, AlephTekinNetwork,
+    InferenceChain, Explorer, Speaker,
+)
 
 
 def cmd_status(engine: AGIEngine) -> None:
@@ -175,6 +181,61 @@ def cmd_certify(engine: AGIEngine, name: str) -> None:
         print("Run --demo or provide moments to certify a new object.")
 
 
+def cmd_infer(engine: AGIEngine, name_a: str, name_b: str) -> None:
+    """Run the inference chain between two previously certified objects."""
+    history = engine._load_history()
+
+    def _find(name: str) -> dict | None:
+        matches = [h for h in history if h.get("object", "").lower() == name.lower()]
+        return matches[-1] if matches else None
+
+    rec_a = _find(name_a)
+    rec_b = _find(name_b)
+    if rec_a is None:
+        print(f"No record for '{name_a}' in knowledge store.")
+        return
+    if rec_b is None:
+        print(f"No record for '{name_b}' in knowledge store.")
+        return
+
+    # Reconstruct minimal NetworkRun-compatible objects from history
+    # Re-process via engine.process_raw to get real NetworkRun objects
+    run_a = engine.process_raw(name_a, name=name_a)
+    run_b = engine.process_raw(name_b, name=name_b)
+    chain = InferenceChain()
+    results = chain.infer(run_a, run_b)
+    print(chain.report(results))
+    chain.register(results, engine.knowledge_path)
+    print(f"\n{len(results)} inferences written to {engine.knowledge_path}")
+
+
+def cmd_explore(engine: AGIEngine, max_rounds: int) -> None:
+    """Run the autonomous exploration loop over the knowledge frontier."""
+    explorer = Explorer(engine)
+    objectives = explorer.scan_frontier()
+    if not objectives:
+        print("Knowledge frontier is empty — nothing to explore.")
+        print("All known gaps are already closed or the knowledge store is empty.")
+        return
+    print(f"Found {len(objectives)} gap(s) to explore:")
+    for o in objectives[:5]:
+        print(f"  [{o.priority}] {o.gap_paradigm}: {o.gap_name} (from {o.source_object})")
+    if len(objectives) > 5:
+        print(f"  ... and {len(objectives) - 5} more")
+    print()
+    results = explorer.run_loop(max_rounds=max_rounds)
+    print(explorer.report(results))
+
+
+def cmd_speak(engine: AGIEngine, name: str, detail: str) -> None:
+    """Narrate a certified object in natural language."""
+    run = engine.process_raw(name, name=name)
+    speaker = Speaker()
+    print(speaker.narrate(run, detail=detail))
+    print()
+    print(speaker.explain(run))
+
+
 def cmd_network() -> None:
     """Print the full network structure: nodes, dependencies, topology."""
     net = AlephTekinNetwork()
@@ -199,6 +260,11 @@ def main() -> None:
     parser.add_argument("--moments", metavar="M0,M1,...", default="1,1,1,1")
     parser.add_argument("--domain", default="general")
     parser.add_argument("--certify", metavar="NAME")
+    parser.add_argument("--infer", nargs=2, metavar=("NAME_A", "NAME_B"))
+    parser.add_argument("--explore", action="store_true")
+    parser.add_argument("--explore-rounds", type=int, default=5, metavar="N")
+    parser.add_argument("--speak", metavar="NAME")
+    parser.add_argument("--detail", choices=["line", "brief", "standard", "full"], default="standard")
     args = parser.parse_args()
 
     engine = AGIEngine()
@@ -213,6 +279,12 @@ def main() -> None:
         cmd_teach(engine, args.teach, args.moments, args.domain)
     elif args.certify:
         cmd_certify(engine, args.certify)
+    elif args.infer:
+        cmd_infer(engine, args.infer[0], args.infer[1])
+    elif args.explore:
+        cmd_explore(engine, args.explore_rounds)
+    elif args.speak:
+        cmd_speak(engine, args.speak, args.detail)
     else:
         parser.print_help()
 
