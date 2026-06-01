@@ -12,6 +12,7 @@ export function Layout({ children }: { children: ReactNode }) {
     { href: "/hunt", label: "Problem Hunt", badge: "LIVE" },
     { href: "/reports", label: "Reports", badge: "LIVE", badgeColor: "bg-blue-500/20 text-blue-400" },
     { href: "/core", label: "Tantrium Core" },
+    { href: "/codex", label: "Codex" },
     { href: "/demo", label: "Demo" },
     { href: "/pricing", label: "Pricing" },
   ];
