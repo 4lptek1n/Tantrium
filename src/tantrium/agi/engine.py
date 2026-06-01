@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from tantrium.agi.codex import CodexObject, ParadigmResult
+from tantrium.agi.encoder import UniversalEncoder, encode as universal_encode
 from tantrium.agi.network import AlephTekinNetwork, NetworkRun
 from tantrium.agi.semantic import Concept, SemanticManifold
 
@@ -63,11 +64,13 @@ class AGIEngine:
         self,
         knowledge_path: str | Path = "results/agi/knowledge.jsonl",
         graph_path: str | Path = "tantrium/theorem_graph/theorem_graph.yaml",
+        num_moments: int = 8,
     ) -> None:
         self.network = AlephTekinNetwork()
         self.knowledge_path = Path(knowledge_path)
         self.graph_path = Path(graph_path)
         self.manifold = SemanticManifold()
+        self.encoder = UniversalEncoder(num_moments=num_moments)
         self._run_count = 0
         self.knowledge_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -89,6 +92,22 @@ class AGIEngine:
         Same engine. Same mathematics. Language is not special.
         """
         return self.process(concept.to_codex_object())
+
+    def process_raw(self, input: Any, name: str | None = None) -> NetworkRun:
+        """Process ANY raw input through the universal encoder then the network.
+
+        No domain knowledge required. The encoder computes spectral moments.
+        The network certifies or names its gap.
+
+        This is the universal interface:
+          - text string  → bigram transition spectral moments
+          - number list  → Hankel spectral moments
+          - token list   → co-occurrence spectral moments
+          - dict/struct  → adjacency spectral moments
+          - anything     → string repr → bigram spectral moments
+        """
+        obj = self.encoder.encode(input, name)
+        return self.process(obj)
 
     # ─── Respond: what the system says ─────────────────────────────────────
 
