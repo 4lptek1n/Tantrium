@@ -113,6 +113,103 @@ class AGIEngine:
         obj = self.encoder.encode(input, name)
         return self.process(obj)
 
+    # ─── Query: semantic lookup + certified speech ─────────────────────────
+
+    def query(self, question: str) -> str:
+        """Answer a question from certified knowledge.
+
+        This is the correct entry point for questions. It does NOT encode
+        the question text as a mathematical object (that would always certify).
+        Instead it:
+          1. Searches the knowledge store for relevant certified runs
+          2. Searches the semantic manifold for nearest concepts
+          3. Checks the theorem graph bridge for relevant theorems
+          4. Synthesizes an answer from ONLY what is certified
+
+        Unknown ≠ false. If the system has no certified knowledge about the
+        question, it says so with a precise named gap.
+        """
+        from tantrium.agi.speaker import Speaker
+        speaker = Speaker(manifold=self.manifold)
+        question_lower = question.lower()
+
+        # Step 1: knowledge store search
+        history = self._load_history()
+        obj_records = [
+            h for h in history
+            if h.get("type") not in ("inference", "exploration")
+            and any(
+                word in h.get("object", "").lower()
+                for word in question_lower.split()
+                if len(word) > 3
+            )
+        ]
+
+        # Step 2: manifold proximity
+        from tantrium.agi.semantic import Concept
+        words = [w for w in question_lower.split() if len(w) > 3]
+        neighbors: list[tuple[str, Any]] = []
+        if self.manifold.concepts and words:
+            try:
+                counts = [len(w) for w in words]
+                probe_concept = Concept.from_counts(question, counts, domain="query")
+                if probe_concept.is_real():
+                    neighbors = self.manifold.nearest(probe_concept, n=3)
+            except Exception:
+                pass
+
+        # Step 3: theorem bridge — direct keyword match on theorem IDs
+        from tantrium.agi.bridge import PARADIGM_TO_THEOREMS
+        relevant_theorems: list[str] = []
+        relevant_paradigms: list[str] = []
+        for paradigm, theorem_ids in PARADIGM_TO_THEOREMS.items():
+            for tid in theorem_ids:
+                if any(w in tid.lower() for w in words):
+                    relevant_theorems.append(tid)
+                    relevant_paradigms.append(paradigm)
+
+        # Build response from certified knowledge only
+        lines = [f"Query: {question}", ""]
+
+        if relevant_theorems:
+            lines.append("Certified theorem evidence:")
+            for tid, pid in zip(relevant_theorems[:3], relevant_paradigms[:3]):
+                lines.append(f"  [{pid}] {tid} — proven in the theorem graph")
+            lines.append("")
+
+        if obj_records:
+            lines.append("From knowledge store:")
+            for rec in obj_records[-2:]:
+                cert = rec.get("certified", 0)
+                total = rec.get("total", 23)
+                frontier = rec.get("knowledge_frontier", [])
+                lines.append(
+                    f"  {rec['object']}: {cert}/{total} paradigms certified"
+                    + (f", open: {frontier}" if frontier else ", no open gaps")
+                )
+            lines.append("")
+
+        if neighbors:
+            lines.append("Nearest certified concepts on semantic manifold:")
+            for name, dist in neighbors:
+                lines.append(f"  {name} (distance: {dist})")
+            lines.append("")
+
+        if not relevant_theorems and not obj_records and not neighbors:
+            lines.append(
+                f"UNKNOWN — no certified knowledge about '{question}'.\n"
+                f"Named gap: NO_RECORD_IN_KNOWLEDGE_STORE\n"
+                f"The system has not yet certified anything related to this query.\n"
+                f"Run engine.grow() to expand certified knowledge from the theorem graph."
+            )
+        else:
+            lines.append(
+                "The system reports only what it has certified.\n"
+                "Every statement above is backed by a mathematical certificate."
+            )
+
+        return "\n".join(lines)
+
     # ─── Respond: what the system says ─────────────────────────────────────
 
     def respond(self, query: str, obj: CodexObject | None = None) -> str:

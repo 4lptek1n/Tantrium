@@ -228,12 +228,48 @@ def cmd_explore(engine: AGIEngine, max_rounds: int) -> None:
 
 
 def cmd_speak(engine: AGIEngine, name: str, detail: str) -> None:
-    """Narrate a certified object in natural language."""
-    run = engine.process_raw(name, name=name)
-    speaker = Speaker()
-    print(speaker.narrate(run, detail=detail))
+    """Narrate a certified object — look it up from knowledge store first."""
+    history = engine._load_history()
+    obj_records = [
+        h for h in history
+        if h.get("type") not in ("inference", "exploration")
+        and name.lower() in h.get("object", "").lower()
+    ]
+    if obj_records:
+        rec = obj_records[-1]
+        obj_name = rec["object"]
+        # Reconstruct minimal run for speaking from stored record
+        from fractions import Fraction
+        from tantrium.agi.codex import CodexObject
+        obj = engine.encoder.encode(obj_name, name=obj_name)
+        run = engine.network.run(obj)
+        speaker = Speaker(manifold=engine.manifold)
+        print(speaker.narrate(run, detail=detail))
+        print()
+        print(speaker.explain(run))
+    else:
+        print(engine.query(name))
+
+
+def cmd_query(engine: AGIEngine, question: str) -> None:
+    """Query the system for certified knowledge about a topic."""
+    print(engine.query(question))
+
+
+def cmd_grow(engine: AGIEngine, rounds: int) -> None:
+    """Run the self-directed knowledge expansion loop."""
+    print("═══ GROWING KNOWLEDGE BASE ═══")
+    print(f"Processing theorem graph + running inference chain...")
     print()
-    print(speaker.explain(run))
+    summary = engine.grow(max_rounds=rounds, max_explore_objectives=10)
+    print("═══ GROWTH COMPLETE ═══")
+    print(f"  Theorem nodes processed: {summary['theorem_nodes_processed']}")
+    print(f"  Inferences derived:      {summary['inferences_derived']}")
+    print(f"  Gaps closed:             {summary['gaps_closed']}")
+    print(f"  Gaps persistent:         {summary['gaps_persistent']}")
+    print(f"  Manifold size:           {summary['manifold_size_after']} concepts")
+    print()
+    print(engine.growth_report())
 
 
 def cmd_network() -> None:
@@ -265,6 +301,9 @@ def main() -> None:
     parser.add_argument("--explore-rounds", type=int, default=5, metavar="N")
     parser.add_argument("--speak", metavar="NAME")
     parser.add_argument("--detail", choices=["line", "brief", "standard", "full"], default="standard")
+    parser.add_argument("--query", metavar="QUESTION")
+    parser.add_argument("--grow", action="store_true")
+    parser.add_argument("--grow-rounds", type=int, default=3, metavar="N")
     args = parser.parse_args()
 
     engine = AGIEngine()
@@ -285,6 +324,10 @@ def main() -> None:
         cmd_explore(engine, args.explore_rounds)
     elif args.speak:
         cmd_speak(engine, args.speak, args.detail)
+    elif args.query:
+        cmd_query(engine, args.query)
+    elif args.grow:
+        cmd_grow(engine, args.grow_rounds)
     else:
         parser.print_help()
 
