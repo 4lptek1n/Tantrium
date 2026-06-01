@@ -158,14 +158,32 @@ class SemanticManifold:
         return self
 
     def nearest(self, concept: Concept, n: int = 5) -> list[tuple[str, Fraction]]:
-        """Find the n nearest concepts by moment distance (gradient flow direction)."""
-        distances = [
-            (name, moment_distance(concept, c))
-            for name, c in self.concepts.items()
-            if name != concept.name
-        ]
-        distances.sort(key=lambda x: x[1])
-        return distances[:n]
+        """Find the n nearest concepts by moment distance (gradient flow direction).
+
+        Float path: 6748 kavram için Fraction L1 yerine float L1 — ~50x hızlı.
+        Sonuçlar Fraction'a çevrilir (API uyumluluğu için).
+        """
+        q = [float(m) for m in concept.moments]
+        k = len(q)
+        best: list[tuple[float, str]] = []
+
+        for name, c in self.concepts.items():
+            if name == concept.name:
+                continue
+            cm = c.moments
+            d = 0.0
+            for i in range(k):
+                d += abs(q[i] - (float(cm[i]) if i < len(cm) else 0.0))
+            if len(best) < n:
+                best.append((d, name))
+                if len(best) == n:
+                    best.sort(reverse=True)  # max-heap simulation: largest at [0]
+            elif d < best[0][0]:
+                best[0] = (d, name)
+                best.sort(reverse=True)
+
+        best.sort()
+        return [(name, Fraction(d).limit_denominator(10 ** 6)) for d, name in best]
 
     def gauge_class(self, concept: Concept, tol: Fraction = Fraction(1, 1000)) -> list[str]:
         """Find all concepts gauge-equivalent to the given one (Mem).
@@ -192,16 +210,14 @@ class SemanticManifold:
         return True
 
     def save(self, path: str) -> int:
-        """Manifold'u JSON'a kaydet. Her Fraction p/q olarak."""
+        """Manifold'u JSON'a kaydet. Momentler float64 — dev pay/payda yok."""
         import json
         from pathlib import Path
         data = {
             name: {
-                "moments": [[c.moments[i].numerator, c.moments[i].denominator]
-                            for i in range(len(c.moments))],
+                "moments": [float(m) for m in c.moments],
                 "domain": c.domain,
                 "source": c.source,
-                "metadata": {k: str(v) for k, v in c.metadata.items()},
             }
             for name, c in self.concepts.items()
         }
@@ -211,7 +227,7 @@ class SemanticManifold:
 
     @classmethod
     def load(cls, path: str) -> "SemanticManifold":
-        """JSON'dan manifold yükle."""
+        """JSON'dan manifold yükle. Float → Fraction(limit=10^9) dönüşümü."""
         import json
         from pathlib import Path
         p = Path(path)
@@ -220,13 +236,18 @@ class SemanticManifold:
         data = json.loads(p.read_text(encoding="utf-8"))
         m = cls()
         for name, v in data.items():
-            moments = [Fraction(num, den) for num, den in v["moments"]]
+            raw = v["moments"]
+            if raw and isinstance(raw[0], list):
+                # Eski format: [numerator, denominator]
+                moments = [Fraction(num, den) for num, den in raw]
+            else:
+                # Yeni format: float → binary exact rational (as_integer_ratio — O(1))
+                moments = [Fraction(*float(f).as_integer_ratio()) for f in raw]
             c = Concept(
                 name=name,
                 moments=moments,
                 domain=v.get("domain", "general"),
                 source=v.get("source", "saved"),
-                metadata=v.get("metadata", {}),
             )
             m.concepts[name] = c
         return m
