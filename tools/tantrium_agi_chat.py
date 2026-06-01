@@ -17,8 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine, Speaker
-from tantrium.agi.semantic import Concept
+from tantrium.agi import AGIEngine
 from tantrium.agi.language import LanguageBootstrap
 
 
@@ -38,95 +37,6 @@ BANNER = """
 ╚══════════════════════════════════════════════════════════════╝
 """
 
-
-def _respond(engine: AGIEngine, user_input: str) -> str:
-    """Her girdi için:
-    1. Manifold'daki konumunu bul (moment imzası)
-    2. En yakın sertifikalı kavramları göster
-    3. Sabit noktasını hesapla (TAV — ne anlama geliyor)
-    4. Bilgi sınırını adlandır
-    """
-    # Encode: metin → Gram matrisi → spektral momentler → CodexObject
-    obj = engine.encoder.encode(user_input, name=user_input[:64])
-    moments = obj.moments
-    run = engine.network.run(obj)
-    engine._run_count += 1
-    engine._record(run)
-
-    lines = []
-
-    # Varlık kontrolü (ALEPH)
-    aleph = run.nodes.get("ALEPH")
-    if not aleph or aleph.status != "CERTIFIED":
-        gap = aleph.result.gap_name if aleph and aleph.result else "?"
-        lines.append(f"∅  '{user_input}' bu manifold'da gerçekleşemiyor.")
-        lines.append(f"   Gap: {gap}")
-        return "\n".join(lines)
-
-    lines.append(f"✓  '{user_input}' gerçek manifold'da var.")
-    lines.append(f"   Moment imzası: μ = [{', '.join(f'{float(m):.4f}' for m in moments[:6])}...]")
-
-    # Manifold konumu: en yakın sertifikalı kavramlar
-    concept = Concept(name=user_input[:64], moments=list(moments), domain="input")
-    if engine.manifold.concepts:
-        neighbors = engine.manifold.nearest(concept, n=4)
-        if neighbors:
-            lines.append("")
-            lines.append("   Manifold'da en yakın sertifikalı kavramlar:")
-            for name, dist in neighbors:
-                lines.append(f"     ↳ {name}   [{float(dist):.4f}]")
-
-    # Sabit nokta (TAV): bu kavram ne anlama geliyor — nereye yakınsıyor?
-    tav = run.nodes.get("TAV")
-    if tav and tav.status == "CERTIFIED":
-        fp = obj.structure.get("fixed_point_iterations", [])
-        if fp:
-            lines.append(f"\n   Sabit nokta (TAV): {fp[-1]:.8f}  — sistem kapandı.")
-    else:
-        lines.append(f"\n   Sabit nokta (TAV): açık — bu kavram henüz yakınsamadı.")
-
-    # Ne sertifikalandı?
-    certified_count = run.certified_count
-    total = run.total
-    frontier = run.knowledge_frontier()
-    lines.append(f"   Paradigma: {certified_count}/{total}  |  Bilgi sınırı: {len(frontier)} açık soru")
-
-    notable = {
-        "HE":    "Lyapunov çekicisi var — sistem kararlı",
-        "ZAYIN": "LGV yol yapısı geçerli",
-        "EMET":  "iç tutarlı, çelişki yok",
-        "MEM":   "gauge sınıfları belirlendi",
-        "PE":    "semantik harita kuruldu",
-        "GIMEL": "Achilles noktası biliniyor",
-        "KAF":   "injektif harita — her eleman benzersiz",
-    }
-    shown = [
-        f"     ✓ {pid}: {label}"
-        for pid, label in notable.items()
-        if run.nodes.get(pid) and run.nodes[pid].status == "CERTIFIED"
-    ]
-    if shown:
-        lines.append("   Sertifikalı özellikler:")
-        lines.extend(shown)
-
-    # Bilgi sınırı
-    if frontier:
-        lines.append("   Açık sorular:")
-        for pid in frontier:
-            node = run.nodes[pid]
-            gap = node.result.gap_name if node.result else "UNKNOWN"
-            lines.append(f"     ∅ {pid}: {gap}")
-
-    # Teorem bağlantısı: en yakın komşunun ispat zinciri
-    if engine.manifold.concepts and run.certified_count > 0:
-        neighbors = engine.manifold.nearest(concept, n=1)
-        if neighbors:
-            top = neighbors[0][0]
-            pids = engine.bridge.paradigms_for_theorem(top)
-            if pids:
-                lines.append(f"\n   İspat bağlantısı: {top} ↔ {', '.join(pids)}")
-
-    return "\n".join(lines)
 
 
 def chat_loop(engine: AGIEngine) -> None:
@@ -200,14 +110,15 @@ def chat_loop(engine: AGIEngine) -> None:
             print()
             continue
 
-        # Her konuşmada otomatik öğren
+        # Her konuşmada otomatik öğren — TAU da güncelleniyor
         r = bootstrap.auto_learn(user_input)
         if r.new_concepts > 0:
             print(f"   [+{r.new_concepts} yeni kavram manifold'a eklendi]")
 
         print()
-        print("AGI: ", end="")
-        print(_respond(engine, user_input))
+        print("AGI:")
+        result = engine.think(user_input, depth=2)
+        print(result.narrate())
         print()
 
 
@@ -226,7 +137,8 @@ def main() -> None:
         print()
 
     if args.input:
-        print(_respond(engine, args.input))
+        result = engine.think(args.input, depth=2)
+        print(result.narrate())
         return
 
     chat_loop(engine)

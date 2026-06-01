@@ -147,18 +147,27 @@ class Thinker:
             result.convergent = result.fixed_point_found
             return result
 
-        # ── Level 1: Manifold Walk (Dyadic Transport ell=0→1) ────────────────
-        lv1 = ThinkingLevel(level=1, label="Manifold Walk (Dyadic Transport ell=0→1)")
-        neighbor_list = engine.manifold.nearest(concept_0, n=neighbors)
+        # ── Level 1: TAU Walk (Dyadic Transport ell=0→1) ─────────────────────
+        # TAU'da varsa O(1) lookup, yoksa manifold nearest O(n)
+        lv1 = ThinkingLevel(level=1, label="TAU Walk (Dyadic Transport ell=0→1)")
+        tau = getattr(engine, "tau", None)
+        q_name = question[:64]
 
-        # Transport drift: moment distance from question to neighborhood centroid
+        if tau and q_name in tau.edges and tau.edges[q_name]:
+            raw_neighbors = tau.nearest(q_name)
+            neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d in raw_neighbors]
+        else:
+            neighbor_list = engine.manifold.nearest(concept_0, n=neighbors)
+
         if neighbor_list:
             avg_drift = sum(d for _, d in neighbor_list) / len(neighbor_list)
             lv1.transport_drift = avg_drift
 
         neighbor_concepts: list[tuple[str, Concept]] = []
         for name, dist in neighbor_list:
-            c = engine.manifold.concepts[name]
+            c = engine.manifold.concepts.get(name)
+            if c is None:
+                continue
             neighbor_concepts.append((name, c))
             lv1.concepts.append(name)
             lv1.certified_claims.append(f"'{name}'  [d={float(dist):.4f}]")
