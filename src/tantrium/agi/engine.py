@@ -76,9 +76,11 @@ class AGIEngine:
         self._run_count = 0
         self.knowledge_path.parent.mkdir(parents=True, exist_ok=True)
         self._manifold_path = Path("results/agi/manifold.json")
-        # Load persisted manifold first, then bootstrap from theorem graph
+        self._tau_path = Path("results/agi/tau_graph.json")
+        # Load persisted manifold, then bootstrap, then load/build TAU graph
         self._load_manifold()
         self._bootstrap_manifold()
+        self._load_tau_graph()
 
     # ─── Core: process any object ──────────────────────────────────────────
 
@@ -361,6 +363,30 @@ class AGIEngine:
     def save_manifold(self) -> int:
         """Mevcut manifold'u diske kaydet. Kaydedilen kavram sayısını döner."""
         return self.manifold.save(str(self._manifold_path))
+
+    def _load_tau_graph(self) -> None:
+        """TAU ağını diskten yükle — yoksa manifold'dan inşa et."""
+        from tantrium.agi.tau_graph import TauGraph
+        if self._tau_path.exists():
+            self.tau = TauGraph.load(str(self._tau_path))
+        else:
+            self.tau = TauGraph()
+            if self.manifold.concepts:
+                self.tau = TauGraph.build(self.manifold, k=5, verbose=False)
+                self.tau.save(str(self._tau_path))
+
+    def build_tau(self, k: int = 5) -> str:
+        """TAU ağını manifold'dan (yeniden) inşa et ve kaydet."""
+        from tantrium.agi.tau_graph import TauGraph
+        print(f"TAU ağı inşa ediliyor ({len(self.manifold.concepts)} node, k={k})...")
+        self.tau = TauGraph.build(self.manifold, k=k, verbose=True)
+        nodes, edges = self.tau.save(str(self._tau_path))
+        import os
+        size_kb = os.path.getsize(self._tau_path) / 1024
+        return (
+            f"TAU: {nodes} node  |  {edges} edge  |  "
+            f"{size_kb:.0f} KB  →  {self._tau_path}"
+        )
 
     def _bootstrap_manifold(self) -> None:
         """Populate the semantic manifold from proven theorem graph nodes.

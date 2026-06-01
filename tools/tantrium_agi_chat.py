@@ -188,6 +188,12 @@ def chat_loop(engine: AGIEngine) -> None:
             print()
             continue
 
+        if user_input.lower() == "/tau":
+            print(engine.build_tau(k=5))
+            print(engine.tau.summary())
+            print()
+            continue
+
         if user_input.lower() == "/save":
             n = engine.save_manifold()
             print(f"  Manifold kaydedildi: {n} kavram → {engine._manifold_path}")

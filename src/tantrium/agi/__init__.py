@@ -15,6 +15,7 @@ from tantrium.agi.inference import InferenceChain, InferenceResult
 from tantrium.agi.explorer import Explorer, ExplorationObjective, ExplorationResult
 from tantrium.agi.speaker import Speaker, CertifiedStatement
 from tantrium.agi.thinker import Thinker, ThinkingResult, ThinkingLevel
+from tantrium.agi.tau_graph import TauGraph, TauNode, TauEdge
 
 __all__ = [
     "SemanticBridge",
@@ -43,4 +44,7 @@ __all__ = [
     "Thinker",
     "ThinkingResult",
     "ThinkingLevel",
+    "TauGraph",
+    "TauNode",
+    "TauEdge",
 ]
