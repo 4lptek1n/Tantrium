@@ -106,7 +106,18 @@ class AlephTekinNetwork:
             else:
                 node.result = paradigm.verify(obj)
 
-        return NetworkRun(obj=obj, nodes=dict(self.nodes))
+        # Deep-copy nodes so NetworkRun is truly immutable.
+        # Without this copy, a subsequent net.run() (which calls reset()) would
+        # mutate the shared NetworkNode objects and corrupt all prior NetworkRuns.
+        snapshot = {
+            pid: NetworkNode(
+                paradigm=node.paradigm,
+                result=node.result,
+                blocked_by_dependency=node.blocked_by_dependency,
+            )
+            for pid, node in self.nodes.items()
+        }
+        return NetworkRun(obj=obj, nodes=snapshot)
 
     def certified_paradigms(self) -> list[str]:
         return [pid for pid, node in self.nodes.items()

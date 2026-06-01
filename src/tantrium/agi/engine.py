@@ -23,6 +23,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from tantrium.agi.bridge import SemanticBridge
 from tantrium.agi.codex import CodexObject, ParadigmResult
 from tantrium.agi.encoder import UniversalEncoder, encode as universal_encode
 from tantrium.agi.network import AlephTekinNetwork, NetworkRun
@@ -71,8 +72,11 @@ class AGIEngine:
         self.graph_path = Path(graph_path)
         self.manifold = SemanticManifold()
         self.encoder = UniversalEncoder(num_moments=num_moments)
+        self.bridge = SemanticBridge(str(graph_path))
         self._run_count = 0
         self.knowledge_path.parent.mkdir(parents=True, exist_ok=True)
+        # Bootstrap the semantic manifold from the proven theorem graph
+        self._bootstrap_manifold()
 
     # ─── Core: process any object ──────────────────────────────────────────
 
@@ -249,12 +253,23 @@ class AGIEngine:
                     pass
         return records
 
-    def _sync_theorem_graph(self, run: NetworkRun) -> None:
-        """Sync certified results and named gaps to the theorem graph.
+    def _bootstrap_manifold(self) -> None:
+        """Populate the semantic manifold from proven theorem graph nodes.
 
-        Certified paradigms become new theorem nodes (status: proven).
-        Named gaps become obstruction nodes (status: blocked).
-        The graph accumulates. Nothing is lost.
+        Called once at engine startup. Every proven theorem becomes a Concept.
+        This means the manifold is never empty — it always reflects the
+        current state of the proof graph.
+        """
+        if self.graph_path.exists():
+            self.bridge.bootstrap_manifold(self.manifold)
+
+    def _sync_theorem_graph(self, run: NetworkRun) -> None:
+        """Semantic sync: AGI certifications annotate existing theorem nodes.
+
+        For paradigms that have known theorem graph correspondences, we
+        annotate the existing nodes with AGI evidence — not create new ones.
+        For paradigms with no theorem correspondence, we create minimal
+        AGI_ nodes as before (structural paradigms need a record too).
         """
         if not self.graph_path.exists():
             return
@@ -268,8 +283,19 @@ class AGIEngine:
         graph = store.load()
 
         for pid, node in run.nodes.items():
+            is_cert = node.status == "CERTIFIED"
+            is_genuine_gap = node.status == "BLOCKED" and not node.blocked_by_dependency
+
+            # Semantic path: annotate existing theorem nodes
+            theorem_ids = self.bridge.theorems_for_paradigm(pid)
+            if theorem_ids:
+                self.bridge.enrich_sync(pid, is_cert, run.obj.name, store)
+                graph = store.load()
+                continue
+
+            # Structural path: create AGI_ node for paradigms with no theorem mapping
             theorem_id = f"AGI_{pid}_{run.obj.name}".replace(" ", "_").upper()
-            if node.status == "CERTIFIED" and theorem_id not in graph.nodes:
+            if is_cert and theorem_id not in graph.nodes:
                 graph.add(TheoremNode(
                     theorem_id=theorem_id,
                     title=f"[AGI] {pid} certified for {run.obj.name}",
@@ -278,11 +304,12 @@ class AGIEngine:
                         f"AGI_{dep}_{run.obj.name}".replace(" ", "_").upper()
                         for dep in self.network.nodes[pid].paradigm.depends_on
                         if dep in self.network.nodes
+                        and not self.bridge.theorems_for_paradigm(dep)
                     ],
                     artifacts=[str(self.knowledge_path)],
                     notes=[f"auto-certified by AGI engine at {_now()}"],
                 ))
-            elif node.status == "BLOCKED" and not node.blocked_by_dependency:
+            elif is_genuine_gap:
                 gap = node.result.gap_name if node.result else "UNKNOWN_GAP"
                 store.add_obstruction(
                     theorem_id=theorem_id,
@@ -294,6 +321,96 @@ class AGIEngine:
 
         graph = store.propagate(graph)
         store.save(graph)
+
+    # ─── Self-directed growth ───────────────────────────────────────────────
+
+    def certify_theorem_graph(self) -> dict[str, "NetworkRun"]:
+        """Process all proven theorem nodes through the AGI network.
+
+        This is the full vertical integration: the proof graph feeds the
+        AGI network. Every proven theorem becomes a certified CodexObject.
+        The inference chain then runs over all certified pairs.
+
+        Returns: {node_id: NetworkRun} for all processed nodes.
+        """
+        objects = self.bridge.proven_theorem_objects()
+        runs: dict[str, "NetworkRun"] = {}
+        for obj in objects:
+            run = self.process(obj)
+            runs[obj.name] = run
+        return runs
+
+    def grow(
+        self,
+        max_rounds: int = 3,
+        max_explore_objectives: int = 10,
+    ) -> dict:
+        """Self-directed knowledge expansion.
+
+        Full loop:
+          1. Certify all proven theorem nodes (theorem graph → AGI network)
+          2. Run InferenceChain over all certified pairs (deductive closure)
+          3. Explore knowledge frontier (narrow genuine gaps)
+          4. Report what was learned
+
+        This is the engine running itself. The knowledge frontier gets the
+        theorem graph's mathematical results as starting points, then expands
+        from there via sound inference rules.
+
+        Returns summary dict with counts.
+        """
+        from tantrium.agi.inference import InferenceChain
+        from tantrium.agi.explorer import Explorer
+
+        summary: dict = {
+            "theorem_nodes_processed": 0,
+            "inferences_derived": 0,
+            "gaps_closed": 0,
+            "gaps_persistent": 0,
+            "manifold_size_after": 0,
+        }
+
+        # Step 1: certify theorem graph
+        runs = self.certify_theorem_graph()
+        summary["theorem_nodes_processed"] = len(runs)
+
+        # Step 2: deductive closure over all certified pairs
+        chain = InferenceChain()
+        certified_runs = [r for r in runs.values() if r.certified_count == r.total]
+        all_inferences = []
+        seen_pairs: set[tuple[str, str]] = set()
+        for i, run_a in enumerate(certified_runs):
+            for run_b in certified_runs[i + 1:]:
+                pair = (run_a.obj.name, run_b.obj.name)
+                if pair in seen_pairs:
+                    continue
+                seen_pairs.add(pair)
+                infs = chain.infer(run_a, run_b)
+                all_inferences.extend(infs)
+        chain.register(all_inferences, self.knowledge_path)
+        summary["inferences_derived"] = len(all_inferences)
+
+        # Step 3: explore knowledge frontier
+        explorer = Explorer(self, max_attempts_per_gap=2)
+        exploration_results = explorer.run_loop(
+            max_rounds=max_rounds,
+            max_objectives=max_explore_objectives,
+        )
+        summary["gaps_closed"] = sum(1 for r in exploration_results if r.outcome == "CLOSED")
+        summary["gaps_persistent"] = sum(1 for r in exploration_results if r.outcome == "PERSISTENT")
+
+        # Step 4: re-bootstrap manifold with new knowledge
+        self.bridge.invalidate()
+        self._bootstrap_manifold()
+        summary["manifold_size_after"] = len(self.manifold.concepts)
+
+        return summary
+
+    def growth_report(self) -> str:
+        """Full status + bridge coverage."""
+        base = self.status()
+        bridge = self.bridge.paradigm_coverage_report()
+        return f"{base}\n\n{bridge}"
 
     # ─── Status ────────────────────────────────────────────────────────────
 

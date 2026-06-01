@@ -20,6 +20,8 @@ where to look next. It follows the mathematics, not instructions.
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from fractions import Fraction
@@ -32,6 +34,22 @@ from tantrium.agi.codex import CodexObject
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+
+# ─── Gap → Research OS campaign mapping ───────────────────────────────────
+# When a gap is PERSISTENT (probe cannot close it), launch a real research
+# campaign that has a chance of producing new mathematical certificates.
+
+_GAP_TO_CAMPAIGN: dict[str, str] = {
+    "ZAYIN": "lah_gate_ab",         # LGV ↔ LAH transfer
+    "HE": "subresultant_recurrence", # Sturm/Lyapunov recurrence
+    "DALET": "subresultant_recurrence",
+    "ALEPH": "rh_formalization",    # D-positivity formalization
+    "TAV": "rh_formalization",
+    "EMET": "rh_formalization",
+    "SHIN": "coefficient_frontier",  # optimal action = coefficient selection
+    "YOD": "subresultant_recurrence",
+    "GIMEL": "lah_gate_ab",
+}
 
 # ─── Gap priority table ────────────────────────────────────────────────────
 # Foundation paradigms block everything downstream → highest priority
@@ -382,11 +400,16 @@ class Explorer:
 
             round_results = []
             for obj in objectives:
-                for _ in range(self.max_attempts):
+                for attempt in range(self.max_attempts):
                     result = self.explore(obj)
                     round_results.append(result)
                     self._record_result(result)
-                    if result.outcome in ("CLOSED", "PERSISTENT"):
+                    if result.outcome == "CLOSED":
+                        break
+                    if result.outcome == "PERSISTENT":
+                        # Try Research OS on last attempt
+                        if attempt == self.max_attempts - 1:
+                            self._try_research_os(obj)
                         break
 
             all_results.extend(round_results)
@@ -397,6 +420,34 @@ class Explorer:
                 break
 
         return all_results
+
+    def _try_research_os(self, objective: ExplorationObjective) -> str | None:
+        """Launch a Research OS campaign for a persistent gap.
+
+        Maps the gap paradigm to the most relevant mathematical campaign.
+        Runs the campaign script as a subprocess (non-blocking timeout).
+        Returns the campaign name if launched, None if no mapping exists.
+        """
+        campaign = _GAP_TO_CAMPAIGN.get(objective.gap_paradigm)
+        if not campaign:
+            return None
+
+        tools_dir = Path(__file__).resolve().parents[3] / "tools"
+        script = tools_dir / "tantrium_research_os.py"
+        if not script.exists():
+            return None
+
+        try:
+            subprocess.run(
+                [sys.executable, str(script), "--campaign", campaign],
+                timeout=30,
+                capture_output=True,
+                text=True,
+            )
+        except (subprocess.TimeoutExpired, OSError):
+            pass
+
+        return campaign
 
     # ─── Persistence ─────────────────────────────────────────────────────
 
