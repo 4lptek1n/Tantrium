@@ -77,19 +77,24 @@ def _concept_moments_from_cooccurrence(
     # Gram G = A^T A — PSD by construction
     G = [[sum(A[r][i] * A[r][j] for r in range(K)) for j in range(K)] for i in range(K)]
 
-    # Normalize: G[0][0] = en büyük diagonal eleman
-    norm = max(G[i][i] for i in range(K))
-    if norm == 0:
-        return None
-    G = [[G[i][j] / norm for j in range(K)] for i in range(K)]
+    # A satır-stochastic (her satır olasılık dağılımı) → anlamlı spektral yapı
+    A_norm = []
+    for row in A:
+        row_sum = sum(row)
+        A_norm.append([x / row_sum if row_sum > 0 else 1.0 / K for x in row])
+    A = A_norm
+
+    # G = A^T A — PSD by construction
+    G = [[sum(A[r][i] * A[r][j] for r in range(K)) for j in range(K)] for i in range(K)]
 
     # Spektral momentler: μ_k = Tr(G^k) / K
-    moments: list[Fraction] = []
-    cur = [row[:] for row in G]
-    for _ in range(num_moments):
+    # μ_0 = Tr(G^0)/K = Tr(I_K)/K = 1  — her zaman 1, normalizasyon noktası
+    moments: list[Fraction] = [Fraction(1)]  # μ_0 = 1
+
+    cur = [row[:] for row in G]  # G^1
+    for _ in range(num_moments - 1):
         trace = sum(cur[i][i] for i in range(K)) / K
         moments.append(Fraction(trace).limit_denominator(10 ** 9))
-        # G^(k+1) = cur * G
         nxt = [[sum(cur[i][r] * G[r][j] for r in range(K)) for j in range(K)] for i in range(K)]
         cur = nxt
 
