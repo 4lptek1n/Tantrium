@@ -14,6 +14,7 @@ from tantrium.agi.engine import AGIEngine
 from tantrium.agi.inference import InferenceChain, InferenceResult
 from tantrium.agi.explorer import Explorer, ExplorationObjective, ExplorationResult
 from tantrium.agi.speaker import Speaker, CertifiedStatement
+from tantrium.agi.thinker import Thinker, ThinkingResult, ThinkingLevel
 
 __all__ = [
     "SemanticBridge",
@@ -39,4 +40,7 @@ __all__ = [
     "CertifiedStatement",
     "LanguageBootstrap",
     "BootstrapResult",
+    "Thinker",
+    "ThinkingResult",
+    "ThinkingLevel",
 ]

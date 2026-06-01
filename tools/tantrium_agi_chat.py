@@ -29,11 +29,12 @@ BANNER = """
 ║  Her iddia ya kanıtlanır ya da açık adıyla bilinmez.         ║
 ║  Tahmin yok. Halüsinasyon yok.                               ║
 ║                                                              ║
-║  /grow    bilgi tabanını genişlet (21k+ çıkarım)            ║
-║  /learn <dosya>  dosyadan öğren                              ║
-║  /save    manifold'u diske kaydet (kalıcı hafıza)            ║
-║  /status  durum                                              ║
-║  /quit    çıkış                                              ║
+║  /grow               bilgi tabanını genişlet                 ║
+║  /think <soru>       derin düşünce (3 ell, dyadic transport) ║
+║  /learn <dosya>      dosyadan öğren                          ║
+║  /save               manifold'u diske kaydet                 ║
+║  /status             durum                                   ║
+║  /quit               çıkış                                   ║
 ╚══════════════════════════════════════════════════════════════╝
 """
 
@@ -173,6 +174,17 @@ def chat_loop(engine: AGIEngine) -> None:
             print(r.summary())
             if r.new_concepts > 0:
                 print(f"  Manifold kaydedildi → {engine._manifold_path}")
+            print()
+            continue
+
+        if user_input.lower().startswith("/think "):
+            q = user_input[7:].strip()
+            depth = 3
+            if q.endswith(" --depth=1"): q, depth = q[:-10], 1
+            elif q.endswith(" --depth=2"): q, depth = q[:-10], 2
+            print()
+            result = engine.think(q, depth=depth)
+            print(result.narrate())
             print()
             continue
 

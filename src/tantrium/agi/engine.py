@@ -521,6 +521,17 @@ class AGIEngine:
         bridge = self.bridge.paradigm_coverage_report()
         return f"{base}\n\n{bridge}"
 
+    # ─── Deep thinking: dyadic transport multi-level reasoning ────────────────
+
+    def think(self, question: str, depth: int = 3, neighbors: int = 5) -> "ThinkingResult":
+        """Dyadic transport tabanlı derin düşünce.
+
+        Tek geçiş (process) yerine: manifold walk + inference chain + second-order.
+        Context window yok — manifold her şeyi tutuyor.
+        """
+        from tantrium.agi.thinker import Thinker, ThinkingResult  # noqa: F401
+        return Thinker(self).think(question, depth=depth, neighbors=neighbors)
+
     # ─── Status ────────────────────────────────────────────────────────────
 
     def status(self) -> str:
