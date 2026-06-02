@@ -210,24 +210,37 @@ class SemanticManifold:
         return True
 
     def save(self, path: str) -> int:
-        """Manifold'u JSON'a kaydet. Momentler float64 — dev pay/payda yok."""
+        """Manifold'u compact parallel-array formatında kaydet.
+
+        Format v3:
+          "labels": [name, ...]          ← insan etiketi (metadata)
+          "d": [domain_char, ...]        ← tek harf domain
+          "m": [[f0,f1,...,f7], ...]     ← kavramın kendisi (8 float)
+        İsim dict key değil — index = concept ID.
+        """
         import json
         from pathlib import Path
+
+        _DC = {"physics": "p", "math": "a", "cs_ai": "c", "biology": "b",
+               "theorem": "t", "language": "l", "general": "g", "philosophy": "f"}
+
+        names = list(self.concepts.keys())
         data = {
-            name: {
-                "moments": [float(m) for m in c.moments],
-                "domain": c.domain,
-                "source": c.source,
-            }
-            for name, c in self.concepts.items()
+            "v": 3,
+            "labels": names,
+            "d": [_DC.get(self.concepts[n].domain, "g") for n in names],
+            "m": [[float(x) for x in self.concepts[n].moments] for n in names],
         }
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        Path(path).write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-        return len(data)
+        Path(path).write_text(
+            json.dumps(data, ensure_ascii=False, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        return len(names)
 
     @classmethod
     def load(cls, path: str) -> "SemanticManifold":
-        """JSON'dan manifold yükle. Float → Fraction(limit=10^9) dönüşümü."""
+        """JSON'dan manifold yükle. v3 (parallel arrays) ve eski formatları destekler."""
         import json
         from pathlib import Path
         p = Path(path)
@@ -235,21 +248,39 @@ class SemanticManifold:
             return cls()
         data = json.loads(p.read_text(encoding="utf-8"))
         m = cls()
-        for name, v in data.items():
-            raw = v["moments"]
-            if raw and isinstance(raw[0], list):
-                # Eski format: [numerator, denominator]
-                moments = [Fraction(num, den) for num, den in raw]
-            else:
-                # Yeni format: float → binary exact rational (as_integer_ratio — O(1))
+
+        _DC_REV = {"p": "physics", "a": "math", "c": "cs_ai", "b": "biology",
+                   "t": "theorem", "l": "language", "g": "general", "f": "philosophy"}
+
+        if data.get("v") == 3:
+            # v3: parallel arrays
+            labels = data["labels"]
+            domains = data.get("d", ["g"] * len(labels))
+            moments_list = data["m"]
+            for name, d_char, raw in zip(labels, domains, moments_list):
                 moments = [Fraction(*float(f).as_integer_ratio()) for f in raw]
-            c = Concept(
-                name=name,
-                moments=moments,
-                domain=v.get("domain", "general"),
-                source=v.get("source", "saved"),
-            )
-            m.concepts[name] = c
+                m.concepts[name] = Concept(
+                    name=name,
+                    moments=moments,
+                    domain=_DC_REV.get(d_char, "general"),
+                    source="saved",
+                )
+        else:
+            # Eski format: {name: {moments, domain, source}}
+            for name, v in data.items():
+                if not isinstance(v, dict):
+                    continue
+                raw = v["moments"]
+                if raw and isinstance(raw[0], list):
+                    moments = [Fraction(num, den) for num, den in raw]
+                else:
+                    moments = [Fraction(*float(f).as_integer_ratio()) for f in raw]
+                m.concepts[name] = Concept(
+                    name=name,
+                    moments=moments,
+                    domain=v.get("domain", "general"),
+                    source=v.get("source", "saved"),
+                )
         return m
 
     def summary(self) -> str:

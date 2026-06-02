@@ -102,25 +102,38 @@ class Thinker:
     def think(self, question: str, depth: int = 3, neighbors: int = 5) -> ThinkingResult:
         """Soruyu dyadic transport ile derinlemesine düşün.
 
-        depth=1: sadece manifold pozisyonu
-        depth=2: + inference chain
-        depth=3: + second-order walk (varsayılan)
+        Soruyu önce kelimelere böler, manifold'da bulunanları alır.
+        Bulunan kelimeler yoksa tüm soruyu encode eder (fallback).
         """
+        from tantrium.agi.language import _tokenize
         result = ThinkingResult(question=question, depth=depth)
         engine = self.engine
 
-        # ── Level 0: Encode + Certify ────────────────────────────────────────
-        obj = engine.encoder.encode(question, name=question[:64])
+        # ── Level 0: Kelime bazlı arama — Pe (Σ* → P) ────────────────────────
+        # Soruyu kelimelere böl, manifold'da olan kelimeleri bul
+        words = _tokenize(question)
+        known_words = [w for w in words if w in engine.manifold.concepts]
+
+        if known_words:
+            # Bilinen kelimelerin moment ortalaması = sorgu vektörü
+            all_moments = [engine.manifold.concepts[w].moments for w in known_words]
+            k = len(all_moments[0])
+            avg = [sum(float(m[i]) for m in all_moments) / len(all_moments) for i in range(k)]
+            from fractions import Fraction as _F
+            avg_moments = [_F(*float(x).as_integer_ratio()) for x in avg]
+            q_name = f"query:{'+'.join(known_words[:3])}"
+            concept_0 = Concept(name=q_name, moments=avg_moments, domain="query", source="thinker")
+            obj = engine.encoder.encode([float(m) for m in avg_moments], name=q_name)
+        else:
+            # Fallback: tam soruyu encode et
+            obj = engine.encoder.encode(question, name=question[:64])
+            q_name = question[:64]
+            concept_0 = Concept(name=q_name, moments=list(obj.moments), domain="query", source="thinker")
+
         run0 = engine.network.run(obj)
-        concept_0 = Concept(
-            name=question[:64],
-            moments=list(obj.moments),
-            domain="query",
-            source="thinker",
-        )
 
         lv0 = ThinkingLevel(level=0, label="Encode & Certify (ALEPH)")
-        lv0.concepts = [question[:64]]
+        lv0.concepts = known_words if known_words else [question[:64]]
 
         aleph = run0.nodes.get("ALEPH")
         if aleph and aleph.status == "CERTIFIED":
@@ -148,12 +161,21 @@ class Thinker:
             return result
 
         # ── Level 1: TAU Walk (Dyadic Transport ell=0→1) ─────────────────────
-        # TAU'da varsa O(1) lookup, yoksa manifold nearest O(n)
         lv1 = ThinkingLevel(level=1, label="TAU Walk (Dyadic Transport ell=0→1)")
         tau = getattr(engine, "tau", None)
-        q_name = question[:64]
 
-        if tau and q_name in tau.edges and tau.edges[q_name]:
+        if known_words and tau:
+            # Bilinen kelimelerin TAU komşularını birleştir
+            seen: dict[str, float] = {}
+            for w in known_words[:neighbors]:
+                for edge in tau.edges.get(w, []):
+                    if edge.target not in seen:
+                        seen[edge.target] = edge.distance
+                    else:
+                        seen[edge.target] = min(seen[edge.target], edge.distance)
+            neighbor_list = sorted(seen.items(), key=lambda x: x[1])[:neighbors]
+            neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d in neighbor_list]
+        elif tau and q_name in tau.edges and tau.edges[q_name]:
             raw_neighbors = tau.nearest(q_name)
             neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d in raw_neighbors]
         else:
