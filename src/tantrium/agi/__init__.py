@@ -48,6 +48,7 @@ from tantrium.agi.anchors import (
 )
 from tantrium.agi.autonomous import AutonomousObserver, Observation
 from tantrium.agi.researcher import AutonomousResearcher, ResearchCycle, ResearchReport
+from tantrium.agi.reasoner import TauReasoner, ReasoningResult, ChainStep
 
 __all__ = [
     "SemanticBridge",
@@ -118,4 +119,7 @@ __all__ = [
     "AutonomousResearcher",
     "ResearchCycle",
     "ResearchReport",
+    "TauReasoner",
+    "ReasoningResult",
+    "ChainStep",
 ]

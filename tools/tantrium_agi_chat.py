@@ -35,6 +35,8 @@ BANNER = """
 ║  Tahmin yok. Halüsinasyon yok. Moment uzayı gerçektir.       ║
 ║                                                              ║
 ║  /think <soru>       derin düşünce (dyadic transport, ell=3) ║
+║  /reason <kavram>    TAU zinciri — certified akıl yürütme    ║
+║  /compose <A> <B>    iki kavramı manifoldda birleştir         ║
 ║  /map                moment uzayı haritası (μ₁×μ₂)          ║
 ║  /frontier           keşfedilebilir boş bölgeler             ║
 ║  /derive <A> <B>     iki kavramdan Hankel interpolasyon      ║
@@ -297,6 +299,47 @@ def chat_loop(engine: AGIEngine) -> None:
             print(r.summary())
             if r.new_concepts > 0:
                 print(f"  Manifold kaydedildi → {engine._manifold_path}")
+            print()
+            continue
+
+        if user_input.lower().startswith("/reason "):
+            from tantrium.agi.reasoner import TauReasoner
+            concept = user_input[8:].strip()
+            if not concept:
+                print("  Kullanım: /reason <kavram>")
+            else:
+                reasoner = TauReasoner(engine)
+                result = reasoner.query(concept, depth=3)
+                print()
+                print(result.summary())
+                print()
+                if result.certified_answer:
+                    print(result.certified_answer)
+                if result.new_edges:
+                    print(f"\n  ✓ {result.new_edges} yeni certified kenar TAU'ya eklendi.")
+                    mem = engine.note_new_concepts([], relations_added=result.new_edges)
+                    if mem["persisted"]:
+                        print("  ✓ TAU kaydedildi.")
+            print()
+            continue
+
+        if user_input.lower().startswith("/compose "):
+            from tantrium.agi.reasoner import TauReasoner
+            parts = user_input[9:].strip().split()
+            if len(parts) < 2:
+                print("  Kullanım: /compose <kavram_A> <kavram_B> [alpha=0.5]")
+            else:
+                name_a, name_b = parts[0], parts[1]
+                alpha = float(parts[2]) if len(parts) > 2 else 0.5
+                reasoner = TauReasoner(engine)
+                result = reasoner.compose(name_a, name_b, alpha)
+                print()
+                print(result)
+                comp_name = f"{name_a}⊕{name_b}"
+                if comp_name in engine.manifold.concepts:
+                    mem = engine.note_new_concepts([comp_name])
+                    if mem["persisted"]:
+                        print("  ✓ Manifold kaydedildi.")
             print()
             continue
 
