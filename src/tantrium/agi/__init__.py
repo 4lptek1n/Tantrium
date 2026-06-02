@@ -29,6 +29,15 @@ from tantrium.agi.actor import Actor, Action, ActionResult
 from tantrium.agi.generalization import HankelGeneralizer, DerivedConcept
 from tantrium.agi.topology import MomentTopology, MathRegion
 from tantrium.agi.meta import MetaParadigm, UniversalRule, ParadigmMoment, SelfCertResult
+from tantrium.agi.spectral import (
+    SpectralMeasure,
+    gram_spectrum,
+    dna_measure,
+    dna_window_measures,
+    spectral_distance,
+    spectral_window_diff,
+    mutation_hotspots,
+)
 
 __all__ = [
     "SemanticBridge",
@@ -81,4 +90,11 @@ __all__ = [
     "UniversalRule",
     "ParadigmMoment",
     "SelfCertResult",
+    "SpectralMeasure",
+    "gram_spectrum",
+    "dna_measure",
+    "dna_window_measures",
+    "spectral_distance",
+    "spectral_window_diff",
+    "mutation_hotspots",
 ]

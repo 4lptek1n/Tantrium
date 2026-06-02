@@ -30,6 +30,13 @@ from tantrium.agi import AGIEngine
 from tantrium.agi.generalization import HankelGeneralizer
 from tantrium.agi.topology import MomentTopology
 from tantrium.agi.semantic import Concept
+from tantrium.agi.spectral import (
+    dna_measure,
+    dna_window_measures,
+    spectral_distance,
+    spectral_window_diff,
+    mutation_hotspots,
+)
 from fractions import Fraction
 
 
@@ -403,6 +410,77 @@ def main() -> None:
 
         print(f"      {label}  cert={run.certified_count:2}/23  ALEPH={aleph}  "
               f"kanser_dist={d_to_cancer:.5f}  μ₂={float(concept.moments[1]):.5f}")
+
+    # ── 7b. Operatör Uzayı: Gerçek Spektral Analiz ───────────────────────────
+    print("\n  [7b] Operatör Uzayı — G = AᵀA Özdeğer Spektrumu...")
+    print("       8 moment değil, TAM spektrum. G atılmıyor artık.")
+
+    n_spec = dna_measure(normal_seq, "TP53_NORMAL")
+    c_spec = dna_measure(cancer_seq, "TP53_CANCER")
+
+    print(f"\n       {'Büyüklük':<28}  {'Normal':<14}  {'Kanserli':<14}  Δ")
+    print("       " + "─" * 66)
+
+    n_eigs = n_spec.eigenvalues
+    c_eigs = c_spec.eigenvalues
+
+    for i, (ne, ce) in enumerate(zip(n_eigs, c_eigs)):
+        eig_d = ce - ne
+        arrow = "↑" if eig_d > 1e-8 else ("↓" if eig_d < -1e-8 else "=")
+        print(f"       λ_{i+1:<2} (özdeğer {i+1})        {ne:.8f}  {ce:.8f}  {arrow}{abs(eig_d):.2e}")
+
+    w_dist = spectral_distance(n_spec, c_spec)
+    print(f"\n       Wasserstein-2 mesafesi: {w_dist:.2e}  "
+          f"(moment mesafesi: {dist:.2e})")
+
+    print(f"\n       TAV sabit nokta (Hamburger):")
+    print(f"         Normal  → fixed_point={n_spec.tav_fixed_point()}  "
+          f"Carleman={n_spec.carleman_sum(10):.2f}")
+    print(f"         Kanserli→ fixed_point={c_spec.tav_fixed_point()}  "
+          f"Carleman={c_spec.carleman_sum(10):.2f}")
+
+    print(f"\n       Entropi (Von Neumann benzeri):")
+    print(f"         Normal  : S={n_spec.entropy():.6f}  "
+          f"ρ(G)={n_spec.spectral_radius():.6f}  "
+          f"etkin_rütbe={n_spec.effective_rank():.3f}")
+    print(f"         Kanserli: S={c_spec.entropy():.6f}  "
+          f"ρ(G)={c_spec.spectral_radius():.6f}  "
+          f"etkin_rütbe={c_spec.effective_rank():.3f}")
+    print(f"         ΔS={c_spec.entropy()-n_spec.entropy():+.8f}  "
+          f"('kanser entropi değişimi')")
+
+    # ── 7c. Pozisyonel Mutasyon Lokalizasyonu ─────────────────────────────────
+    print("\n  [7c] Pozisyonel Spektral Analiz — Mutasyon Lokalizasyonu...")
+    print("       Kayan pencere (128 bp, stride 32): her pencere kendi G'sini hesaplar.")
+    print("       Biyoloji bilmeden: mutasyon penceresi spektral kayma olarak görünür.")
+
+    WINDOW, STRIDE = 128, 32
+    n_wins = dna_window_measures(normal_seq, WINDOW, STRIDE)
+    c_wins = dna_window_measures(cancer_seq, WINDOW, STRIDE)
+    diff_map = spectral_window_diff(n_wins, c_wins)
+    hotspots = mutation_hotspots(diff_map, top_n=8)
+
+    # Gerçek mutasyon pozisyonları
+    mut_positions = {pos for pos, _, _ in diffs}
+
+    print(f"\n       En büyük spektral kayma noktaları (top-8):")
+    print(f"       {'Pencere_Başı':>12}  {'Pencere_Sonu':>12}  {'W₂ Mesafe':>12}  Gerçek Mutasyon?")
+    print("       " + "─" * 58)
+    for pos, w2d in hotspots:
+        end = pos + WINDOW
+        # Bu pencere gerçek bir mutasyonu içeriyor mu?
+        has_mut = any(pos <= mp < end for mp in mut_positions)
+        marker = "← MUTASYON ✓" if has_mut else ""
+        print(f"       {pos:>12}  {end:>12}  {w2d:>12.2e}  {marker}")
+
+    # Mutasyon pozisyonlarının sıralaması
+    print(f"\n       Gerçek mutasyon pozisyonları: {sorted(mut_positions)}")
+    found = sum(
+        1 for pos, w2d in diff_map
+        if any(pos <= mp < pos + WINDOW for mp in mut_positions)
+        and w2d >= hotspots[-1][1]
+    )
+    print(f"       Hotspot'larda bulunan mutasyon penceresi: {found}/{len(mut_positions)}")
 
     # ── 8. Moment Topoloji Haritasında Konum ──────────────────────────────────
     print("\n  [8] Moment Topoloji Haritasında DNA Konumu...")

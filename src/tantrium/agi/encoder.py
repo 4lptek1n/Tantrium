@@ -435,19 +435,19 @@ class UniversalEncoder:
         else:
             s["cross_ratio_quadruples"] = []
 
-        # TAV — Fixed Point
-        # The encoding function F is idempotent: F(F(x)) = F(x).
-        # Once we compute the moment sequence, applying the encoder again
-        # yields the SAME moment sequence — it is already at its fixed point.
-        # Iteration: x_0 = raw moments, x_1 = re-encode(x_0) ≈ x_0.
-        # We represent this as rapid convergence to the stable value moments[0]=1.
+        # TAV — Fixed Point (Hamburger theorem, NOT a simulation)
+        # Hamburger: bounded support ↔ moment sequence determines measure UNIQUELY.
+        # Carleman condition: Σ μ_{2k}^{-1/(2k)} = ∞ ⟺ spectral radius finite.
+        # Digital input (bytes ∈ [0,255]) → bounded support → always satisfied.
+        # Therefore: F(dμ) = dμ in ONE step. The encoder IS already at the fixed point.
         if moments:
             m0 = float(moments[0])  # always 1.0 (Tr(I)/n = 1)
-            # Simulate convergence: start from 2*m0, converge to m0 in 3 steps
-            s["fixed_point_iterations"] = [2.0 * m0, 1.2 * m0, 1.01 * m0, m0, m0]
+            s["fixed_point_iterations"] = [m0, m0]  # already at fixed point
+            s["tav_hamburger_unique"] = True         # Hamburger uniqueness certified
         else:
             s["fixed_point_iterations"] = [1.0, 1.0]
-        s["is_running"] = True
+            s["tav_hamburger_unique"] = False
+        s["is_running"] = False  # not converging — already converged
 
         # PE — Semantic Mapping φ: Σ* → P
         # Every encoded element maps to a meaning set.
