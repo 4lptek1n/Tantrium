@@ -455,7 +455,7 @@ def chat_loop(engine: AGIEngine) -> None:
                     except ValueError: pass
             print(f"\n  Hedef: '{target_name}'  |  PubChem: {'açık' if auto_fetch else 'kapalı'}  |  top_k={top_k}")
             certifier = MolecularCertifier(engine)
-            report = certifier.certify_for_target(
+            report = certifier.generate_3d(
                 target_name, auto_fetch=auto_fetch, top_k=top_k
             )
             print(report.summary())

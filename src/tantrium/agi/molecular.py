@@ -1,21 +1,17 @@
-"""Molecular Certification Engine — SMILES → Certified Candidate.
+"""Molecular Certification Engine — SMILES → Certified 3D Structure.
 
 Pipeline:
-  Hedef protein → moment encode → TAU walk →
-  Aday SMILES listesi (dışarıdan veya manifolddan) →
+  Hedef protein → moment encode →
+  Aday SMILES listesi (PubChem veya harici) →
   Her aday certify (Aleph, D-positivity, paradigma skoru) →
-  Hedefe en yakın certified aday → rapor
-
-Decoder gerekmez:
-  - Generation: biotek repo veya harici kaynak (SMILES listesi)
-  - Certification: Tantrium (matematiksel kanıt)
-  - Ranking: moment_distance(hedef, aday) → en yakın certified
+  En yakın certified aday → SMILES → RDKit 3D → SDF dosyası
 """
 from __future__ import annotations
 
 import time
 import urllib.request
 import json
+import pathlib
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -59,6 +55,7 @@ class CertificationReport:
     candidates: list[MoleculeReport]
     best: MoleculeReport | None
     duration_s: float
+    sdf_path: str = ""   # 3D yapı dosyası (varsa)
 
     def summary(self) -> str:
         lines = [
@@ -92,6 +89,8 @@ class CertificationReport:
             lines.append(f"  EN İYİ ADAY: {self.best.name}")
             lines.append(f"  SMILES: {self.best.smiles[:80]}{'...' if len(self.best.smiles) > 80 else ''}")
             lines.append(f"  Sertifika: {self.best.certified_count}/23 paradigma")
+            if self.sdf_path:
+                lines.append(f"  3D yapı: {self.sdf_path}")
             lines.append(f"  ══════════════════════════════════════════════════")
 
         return "\n".join(lines)
@@ -293,3 +292,81 @@ class MolecularCertifier:
             if concept.domain == "drug_candidate" or concept.source == "pubchem":
                 candidates.append((name, ""))  # SMILES yoksa boş
         return candidates[:20]
+
+    # ── 3D ─────────────────────────────────────────────────────────────────
+
+    def generate_3d(
+        self,
+        target_name: str,
+        smiles_list: list[tuple[str, str]] | None = None,
+        auto_fetch: bool = True,
+        top_k: int = 10,
+        out_dir: str = "results/molecules",
+    ) -> CertificationReport:
+        """Certify + en iyi adayı 3D SDF dosyasına dönüştür.
+
+        Döndürülen CertificationReport.sdf_path dolu olur.
+        """
+        report = self.certify_for_target(
+            target_name,
+            smiles_list=smiles_list,
+            auto_fetch=auto_fetch,
+            top_k=top_k,
+        )
+
+        if report.best and report.best.smiles:
+            sdf_path = self._smiles_to_sdf(
+                smiles=report.best.smiles,
+                name=report.best.name,
+                target=target_name,
+                out_dir=out_dir,
+            )
+            report.sdf_path = sdf_path
+
+        return report
+
+    def _smiles_to_sdf(
+        self,
+        smiles: str,
+        name: str,
+        target: str,
+        out_dir: str,
+    ) -> str:
+        """SMILES → RDKit ETKDGv3 + MMFF94 → SDF dosyası.
+
+        Başarısız olursa boş string döner.
+        """
+        try:
+            from rdkit import Chem
+            from rdkit.Chem import AllChem
+
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is None:
+                return ""
+
+            mol = Chem.AddHs(mol)
+            params = AllChem.ETKDGv3()
+            params.randomSeed = 42
+            if AllChem.EmbedMolecule(mol, params) == -1:
+                # ETKDGv3 başarısız → random coordinates
+                AllChem.EmbedMolecule(mol, AllChem.ETKDG())
+
+            AllChem.MMFFOptimizeMolecule(mol)
+
+            mol.SetProp("_Name", name[:64])
+            mol.SetProp("Target", target)
+            mol.SetProp("Source", "Tantrium_MolecularCertifier")
+
+            out = pathlib.Path(out_dir)
+            out.mkdir(parents=True, exist_ok=True)
+            safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)[:40]
+            path = out / f"{target}_{safe_name}.sdf"
+
+            writer = Chem.SDWriter(str(path))
+            writer.write(mol)
+            writer.close()
+
+            return str(path)
+
+        except Exception:
+            return ""
