@@ -37,6 +37,14 @@ from tantrium.agi.spectral import (
     spectral_distance,
     spectral_window_diff,
     mutation_hotspots,
+    moments_to_spectral,
+)
+from tantrium.agi.anchors import (
+    build_anchor_concepts,
+    add_anchors_to_manifold,
+    nearest_anchor,
+    anchor_descriptions,
+    is_anchor,
 )
 
 __all__ = [
@@ -97,4 +105,10 @@ __all__ = [
     "spectral_distance",
     "spectral_window_diff",
     "mutation_hotspots",
+    "moments_to_spectral",
+    "build_anchor_concepts",
+    "add_anchors_to_manifold",
+    "nearest_anchor",
+    "anchor_descriptions",
+    "is_anchor",
 ]

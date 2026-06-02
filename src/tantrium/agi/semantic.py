@@ -197,27 +197,27 @@ class SemanticManifold:
         Sonuç: byte-ortalaması yerine operatör yapısına göre komşuluk.
 
         DNA'nın komşusu "kühn" değil, gerçek spektral komşu çıkar.
-        İlk çağrıda yavaş (27k × Jacobi), sonrasında cache'den anlık.
+        Cache diskten yüklenebilir (build_spectral_cache + save_spectral_cache);
+        yüklü değilse ilk çağrıda hesaplanır ve bellekte tutulur.
         """
         from tantrium.agi.spectral import moments_to_spectral, spectral_distance
 
-        # Sorgu kavramının spektral ölçüsü
         q_mu = [float(m) for m in concept.moments]
         q_spec = moments_to_spectral(q_mu, name=concept.name)
 
-        # Cache: manifold için hesaplanan spektral ölçüler
         if not hasattr(self, "_spec_cache"):
-            object.__setattr__(self, "_spec_cache", {}) if hasattr(self, "__dataclass_fields__") else None
-            self._spec_cache: dict = {}
+            self._spec_cache = {}
 
         best: list[tuple[float, str]] = []
         for cname, c in self.concepts.items():
             if cname == concept.name:
                 continue
-            if cname not in self._spec_cache:
+            spec = self._spec_cache.get(cname)
+            if spec is None:
                 c_mu = [float(m) for m in c.moments]
-                self._spec_cache[cname] = moments_to_spectral(c_mu, name=cname)
-            d = spectral_distance(q_spec, self._spec_cache[cname])
+                spec = moments_to_spectral(c_mu, name=cname)
+                self._spec_cache[cname] = spec
+            d = spectral_distance(q_spec, spec)
             if len(best) < n:
                 best.append((d, cname))
                 if len(best) == n:
@@ -228,6 +228,74 @@ class SemanticManifold:
 
         best.sort()
         return [(cname, d) for d, cname in best]
+
+    def build_spectral_cache(self, verbose: bool = False) -> int:
+        """Tüm kavramlar için spektral ölçüleri önceden hesapla.
+
+        Bir kez çalışır (27k × Jacobi ≈ 5s), sonuç save_spectral_cache()
+        ile diske yazılabilir. Döner: cache'lenen kavram sayısı.
+        """
+        from tantrium.agi.spectral import moments_to_spectral
+
+        self._spec_cache = {}
+        total = len(self.concepts)
+        for i, (cname, c) in enumerate(self.concepts.items()):
+            c_mu = [float(m) for m in c.moments]
+            self._spec_cache[cname] = moments_to_spectral(c_mu, name=cname)
+            if verbose and i % 5000 == 0:
+                print(f"    spektral cache: {i}/{total}")
+        return len(self._spec_cache)
+
+    def save_spectral_cache(self, path: str) -> int:
+        """Spektral ölçü cache'ini diske yaz (kompakt özdeğer dizileri).
+
+        Format: {"v": 1, "labels": [...], "e": [[λ₁,λ₂,λ₃,λ₄], ...]}
+        Döner: kaydedilen ölçü sayısı.
+        """
+        import json
+        from pathlib import Path
+
+        if not getattr(self, "_spec_cache", None):
+            self.build_spectral_cache()
+
+        labels = list(self._spec_cache.keys())
+        data = {
+            "v": 1,
+            "labels": labels,
+            "e": [self._spec_cache[name].to_list() for name in labels],
+        }
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_text(
+            json.dumps(data, ensure_ascii=False, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        return len(labels)
+
+    def load_spectral_cache(self, path: str) -> int:
+        """Spektral ölçü cache'ini diskten yükle. Döner: yüklenen ölçü sayısı.
+
+        Manifold ile uyuşmayan (silinmiş) etiketler atlanır; eksik olanlar
+        ilk nearest_spectral çağrısında tembel hesaplanır.
+        """
+        import json
+        from pathlib import Path
+        from tantrium.agi.spectral import SpectralMeasure
+
+        p = Path(path)
+        if not p.exists():
+            return 0
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return 0
+        if data.get("v") != 1:
+            return 0
+
+        self._spec_cache = {}
+        for name, eigs in zip(data["labels"], data["e"]):
+            if name in self.concepts:
+                self._spec_cache[name] = SpectralMeasure.from_list(eigs, name=name)
+        return len(self._spec_cache)
 
     def clear_spectral_cache(self) -> None:
         """Spektral ölçü cache'ini temizle (manifold güncellemesinden sonra)."""

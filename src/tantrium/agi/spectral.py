@@ -169,6 +169,20 @@ class SpectralMeasure:
                 total += mu_2k ** (-1.0 / (2 * k))
         return total
 
+    # ── Serileştirme (kalıcılık) ────────────────────────────────────────────
+
+    def to_list(self) -> list[float]:
+        """Özdeğerleri float listesi olarak döndür (kompakt kalıcılık).
+
+        Ağırlıklar uniform varsayılır (1/n) — __post_init__ yeniden kurar.
+        """
+        return [float(x) for x in self.eigenvalues]
+
+    @classmethod
+    def from_list(cls, eigenvalues: list[float], name: str = "") -> "SpectralMeasure":
+        """Float listesinden SpectralMeasure kur (uniform ağırlık)."""
+        return cls(eigenvalues=list(eigenvalues), name=name)
+
 
 # ─── Fraction matris → SpectralMeasure ───────────────────────────────────────
 

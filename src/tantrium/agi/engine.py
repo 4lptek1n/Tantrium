@@ -77,6 +77,7 @@ class AGIEngine:
         self.knowledge_path.parent.mkdir(parents=True, exist_ok=True)
         self._manifold_path = Path("results/agi/manifold.json")
         self._tau_path = Path("results/agi/tau_graph.json")
+        self._spectral_path = Path("results/agi/spectral_cache.json")
         # Kalıcı bellek: hibrit persist + her-turn mini-Tav
         self._dirty_count = 0      # son ağır save'den beri yeni kavram sayısı
         self._persist_every = 10   # ağır manifold+TAU diske yazma eşiği
@@ -84,7 +85,9 @@ class AGIEngine:
         # Load persisted manifold, then bootstrap, then load/build TAU graph
         self._load_manifold()
         self._bootstrap_manifold()
+        self._ensure_anchors()
         self._load_tau_graph()
+        self._load_spectral_cache()
         from tantrium.agi.speaker import Speaker
         self.speaker = Speaker(manifold=self.manifold)
 
@@ -370,6 +373,26 @@ class AGIEngine:
         """Mevcut manifold'u diske kaydet. Kaydedilen kavram sayısını döner."""
         return self.manifold.save(str(self._manifold_path))
 
+    # ─── Spektral cache: operatör uzayı kalıcılığı ──────────────────────────
+
+    def _load_spectral_cache(self) -> int:
+        """Diskteki spektral ölçü cache'ini yükle (varsa). Döner: yüklenen sayı."""
+        if self._spectral_path.exists():
+            return self.manifold.load_spectral_cache(str(self._spectral_path))
+        return 0
+
+    def build_spectral_cache(self, verbose: bool = True) -> int:
+        """Tüm manifold için spektral ölçüleri hesapla ve diske yaz.
+
+        Bir kez çalışır (27k × Jacobi ≈ 5s); sonraki oturumlar diskten yükler.
+        nearest_spectral() artık anlık çalışır. Döner: cache'lenen kavram sayısı.
+        """
+        if verbose:
+            print(f"Spektral cache inşa ediliyor ({len(self.manifold.concepts)} kavram)...")
+        n = self.manifold.build_spectral_cache(verbose=verbose)
+        self.manifold.save_spectral_cache(str(self._spectral_path))
+        return n
+
     # ─── Kalıcı bellek: hibrit persist + her-turn mini-Tav ──────────────────
 
     def attach_session(self, session) -> None:
@@ -404,10 +427,14 @@ class AGIEngine:
     def auto_persist(self) -> tuple[int, int]:
         """Ağır manifold + TAU dosyalarını diske yaz, dirty sayacı sıfırla.
 
-        Döner: (kavram_sayısı, edge_sayısı).
+        Spektral cache zaten kuruluysa o da güncellenir (yeni kavramlar
+        bir sonraki build'de eklenir). Döner: (kavram_sayısı, edge_sayısı).
         """
         n_concepts = self.save_manifold()
         n_nodes, n_edges = self.tau.save(str(self._tau_path))
+        # Spektral cache kuruluysa diske yaz (yeni kavramlar tembel eklenir)
+        if getattr(self.manifold, "_spec_cache", None):
+            self.manifold.save_spectral_cache(str(self._spectral_path))
         self._dirty_count = 0
         return n_concepts, n_edges
 
@@ -458,6 +485,28 @@ class AGIEngine:
             f"TAU: {nodes} node  |  {edges} edge  |  "
             f"{size_kb:.0f} KB  →  {self._tau_path}"
         )
+
+    def _ensure_anchors(self) -> int:
+        """Matematiksel çapa kavramlarını manifolda garantile (idempotent).
+
+        GUE, Poisson, üstel, periyodik, asal aralık, ζ sıfırı gibi kanonik
+        yapılar yorumlanabilir spektral referans noktaları sağlar.
+        Döner: yeni eklenen çapa sayısı.
+        """
+        from tantrium.agi.anchors import add_anchors_to_manifold
+        added = add_anchors_to_manifold(self.manifold)
+        if added > 0:
+            # Yeni çapalar dirty → eşik mantığı bunları diske yazar
+            self._dirty_count += added
+        return added
+
+    def nearest_anchor(self, concept: Concept, top_n: int = 3) -> list[tuple[str, float]]:
+        """Bir kavramın en yakın matematiksel çapaları (yorumlanabilir komşuluk).
+
+        "Bu şey hangi matematiksel aileye benziyor?" — GUE? Poisson? Üstel?
+        """
+        from tantrium.agi.anchors import nearest_anchor
+        return nearest_anchor(self.manifold, concept, top_n=top_n)
 
     def _bootstrap_manifold(self) -> None:
         """Populate the semantic manifold from proven theorem graph nodes.
