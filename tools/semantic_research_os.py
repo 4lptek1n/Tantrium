@@ -18,7 +18,6 @@ Paradigma etiketleri (TAU edge):
 """
 from __future__ import annotations
 
-import re
 import sys
 import time
 from collections import defaultdict
@@ -27,179 +26,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine
-from tantrium.agi.language import LanguageBootstrap, _tokenize
-from tantrium.agi.tau_graph import TauEdge
-
-
-# ─── Semantic Extraction Patterns ─────────────────────────────────────────────
-
-# Each entry: (paradigm_label, [compiled_regex_patterns])
-# Group 1 = subject concept, Group 2 = object concept
-_RAW_PATTERNS: dict[str, list[str]] = {
-    "IS_A": [
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+is\s+(?:a|an)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+are\s+(?:a|an)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+,\s+(?:a|an)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\s*[,.]",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+\((?:a|an)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\)",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+is\s+(?:called|known\s+as|termed)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-    ],
-    "DEFINES": [
-        r"\b(?:we\s+)?(?:define|introduce|propose)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\s+as\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+is\s+defined\s+(?:as|by)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:refers?|corresponds?)\s+to\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+denotes?\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-    ],
-    "USES": [
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:uses?|employs?|utilizes?|leverages?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+based\s+on\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b(?:using|applying|via)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:to|for)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:applied|trained|evaluated)\s+on\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\bapply\s+([a-z]{4,}(?:\s[a-z]{4,})?)\s+to\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-    ],
-    "ACHIEVES": [
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:achieves?|obtains?|yields?|produces?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:improves?|enhances?|boosts?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:outperforms?|surpasses?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:reduces?|minimizes?|maximizes?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:shows?|demonstrates?|proves?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-    ],
-    "REQUIRES": [
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:requires?|demands?|needs?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+depends?\s+on\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:enables?|allows?|permits?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:ensures?|guarantees?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-    ],
-    "COMPOSED": [
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+consists?\s+of\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:composed?|comprised?)\s+of\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+contains?\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:includes?|incorporates?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
-    ],
-}
-
-# Compile all patterns
-PATTERNS: dict[str, list[re.Pattern]] = {
-    label: [re.compile(p, re.IGNORECASE) for p in pats]
-    for label, pats in _RAW_PATTERNS.items()
-}
-
-# Reject pairs where either side is a stopword or too generic/abstract
-_REJECT = {
-    # Conjunctions / subordinators (should never be concept endpoints)
-    "rather", "however", "although", "whereas", "therefore", "hence",
-    "thus", "since", "whether", "whenever", "wherever", "whatever",
-    # Common pronouns / articles / prepositions
-    "that", "this", "which", "where", "when", "what", "with", "from",
-    "also", "both", "each", "such", "some", "many", "most", "used",
-    "based", "given", "shown", "able", "well", "case", "data", "time",
-    "work", "type", "form", "thus", "then", "here", "only", "while",
-    "since", "these", "those", "have", "been", "will", "more", "than",
-    "into", "over", "they", "same", "very", "much", "long", "high",
-    "large", "small", "good", "best", "true", "real", "full", "like",
-    "need", "make", "know", "show", "give", "take", "find", "ways",
-    # Generic academic/discourse words
-    "problem", "result", "results", "method", "approach", "paper",
-    "model", "models", "system", "systems", "task", "tasks",
-    "idea", "ideas", "notion", "notions", "concept", "concepts",
-    "thing", "things", "way", "ways", "fact", "facts", "step", "steps",
-    "part", "parts", "level", "levels", "order", "orders", "term",
-    # Generic verbs nominalized
-    "process", "analysis", "study", "test", "tests", "review",
-    "change", "changes", "choice", "output", "input", "using",
-    # Adverbial / vague
-    "nothing", "something", "anything", "everything", "often",
-    "always", "never", "every", "further", "however", "therefore",
-    "first", "second", "third", "finally", "generally", "specifically",
-    "evolving", "gradually", "directly", "recently", "exactly",
-    "strongly", "easily", "simply", "mainly", "clearly", "fully",
-    "generally", "broadly", "highly", "widely", "partly", "nearly",
-    "future", "recent", "previous", "existing", "various", "certain",
-    "several", "different", "similar", "common", "current", "specific",
-    "general", "global", "local", "single", "multiple", "important",
-    "effective", "efficient", "novel", "strong", "weak", "finite",
-    "viable", "formal", "simple", "complex", "abstract", "concrete",
-    # Generic nouns too broad to be useful as semantic endpoints
-    "information", "question", "problem", "solution", "knowledge",
-    "performance", "accuracy", "quality", "structure", "relation",
-    "property", "setting", "context", "detail", "feature", "aspect",
-    "example", "instance", "sample", "point", "value", "space",
-    "series", "class", "classes", "dimension", "conditions",
-    "framework", "baseline", "baselines", "analyses", "evaluation",
-    # Too generic ML/CS terms (implementation artefacts, not concepts)
-    "layer", "layers", "block", "blocks", "unit", "units",
-    "score", "scores", "label", "labels", "sample", "samples",
-    "weight", "weights", "epoch", "batch", "loss", "losses",
-    "baseline", "baselines", "benchmark", "metric", "metrics",
-    "dataset", "evaluation", "analyses",
-}
-
-_ACCEPT_MIN_LEN = 4
-_ACCEPT_MAX_LEN = 32
-
-
-def _clean(s: str) -> str:
-    """Normalize extracted span."""
-    return s.strip().lower()
-
-
-def _valid_token(tok: str) -> bool:
-    if len(tok) < _ACCEPT_MIN_LEN or len(tok) > _ACCEPT_MAX_LEN:
-        return False
-    if tok in _REJECT:
-        return False
-    # Must contain at least one actual letter sequence
-    if not re.search(r"[a-z]{3,}", tok):
-        return False
-    return True
-
-
-def extract_relations(
-    text: str,
-    known: set[str],
-) -> list[tuple[str, str, str]]:
-    """Extract (subject, paradigm, object) triples from text.
-
-    Both subject and object must be in `known` (manifold vocabulary).
-    Returns a deduplicated list.
-    """
-    sentences = re.split(r"[.!?]\s+", text.lower())
-    seen: set[tuple[str, str, str]] = set()
-    results: list[tuple[str, str, str]] = []
-
-    for sent in sentences:
-        for label, pats in PATTERNS.items():
-            for pat in pats:
-                for m in pat.finditer(sent):
-                    subj_raw = _clean(m.group(1))
-                    obj_raw = _clean(m.group(2))
-
-                    # Try single-word first, then first word of bigram
-                    for subj in _candidates(subj_raw, known):
-                        for obj in _candidates(obj_raw, known):
-                            if subj == obj:
-                                continue
-                            if not _valid_token(subj) or not _valid_token(obj):
-                                continue
-                            triple = (subj, label, obj)
-                            if triple not in seen:
-                                seen.add(triple)
-                                results.append(triple)
-
-    return results
-
-
-def _candidates(phrase: str, known: set[str]) -> list[str]:
-    """Return known-concept candidates from a phrase (bigram or single word)."""
-    result = []
-    # Exact phrase match first
-    if phrase in known:
-        result.append(phrase)
-    # Individual words of bigram
-    words = phrase.split()
-    for w in words:
-        if w in known and _valid_token(w):
-            result.append(w)
-    return result
+from tantrium.agi.language import LanguageBootstrap
+from tantrium.agi.relations import (
+    SEMANTIC_PARADIGMS,
+    certify_and_add_edge,
+    extract_relations,
+)
 
 
 # ─── Semantic Research OS ─────────────────────────────────────────────────────
@@ -211,45 +43,11 @@ CORPORA = [
     ("/tmp/arxiv/biology.txt",  "biology",  "arXiv Biology"),
 ]
 
-_TAU_EDGE_PARADIGMS = set(_RAW_PATTERNS.keys())
+_TAU_EDGE_PARADIGMS = SEMANTIC_PARADIGMS
 
 
 def fmt(n: int) -> str:
     return f"{n:,}"
-
-
-def certify_and_add_edge(
-    engine: AGIEngine,
-    subj: str,
-    obj: str,
-    paradigm: str,
-) -> bool:
-    """Kavram çiftini sertifikala, certified ise TAU edge olarak ekle.
-
-    Her iki kavram manifold'da → momentleri al → dyadic transport → certified bağlantı.
-    """
-    c_a = engine.manifold.concepts.get(subj)
-    c_b = engine.manifold.concepts.get(obj)
-    if c_a is None or c_b is None:
-        return False
-
-    from tantrium.agi.semantic import moment_distance
-    d = float(moment_distance(c_a, c_b))
-
-    edge_ab = TauEdge(source=subj, target=obj, distance=d, paradigm=paradigm)
-    edge_ba = TauEdge(source=obj, target=subj, distance=d, paradigm=paradigm)
-
-    existing = engine.tau.edges.setdefault(subj, [])
-    targets = {e.target for e in existing}
-    if obj not in targets:
-        existing.append(edge_ab)
-
-    existing_r = engine.tau.edges.setdefault(obj, [])
-    targets_r = {e.target for e in existing_r}
-    if subj not in targets_r:
-        existing_r.append(edge_ba)
-
-    return True
 
 
 def main() -> None:
@@ -282,9 +80,10 @@ def main() -> None:
         size_kb = len(text) // 1024
         print(f"\n  ► {label}  ({size_kb} KB)")
 
-        # 1. Canonical word learning (new words only)
+        # 1. Canonical word learning (new words only).
+        #    İlişkileri burada çıkarmıyoruz — aşama 2 per-paradigm istatistikle yapıyor.
         bootstrap.domain = domain
-        boot_result = bootstrap.from_text(text)
+        boot_result = bootstrap.from_text(text, extract_relations=False)
         total_new_concepts += boot_result.new_concepts
         if boot_result.new_concepts > 0:
             known_set.update(boot_result.taught)

@@ -16,6 +16,14 @@ from tantrium.agi.explorer import Explorer, ExplorationObjective, ExplorationRes
 from tantrium.agi.speaker import Speaker, CertifiedStatement
 from tantrium.agi.thinker import Thinker, ThinkingResult, ThinkingLevel
 from tantrium.agi.tau_graph import TauGraph, TauNode, TauEdge
+from tantrium.agi.memory import SessionMemory, Turn
+from tantrium.agi.relations import (
+    extract_relations,
+    certify_and_add_edge,
+    add_relations_from_text,
+    propagate_subset,
+    SEMANTIC_PARADIGMS,
+)
 
 __all__ = [
     "SemanticBridge",
@@ -47,4 +55,11 @@ __all__ = [
     "TauGraph",
     "TauNode",
     "TauEdge",
+    "SessionMemory",
+    "Turn",
+    "extract_relations",
+    "certify_and_add_edge",
+    "add_relations_from_text",
+    "propagate_subset",
+    "SEMANTIC_PARADIGMS",
 ]

@@ -54,6 +54,7 @@ class BootstrapResult:
     taught: list[str] = field(default_factory=list)
     rejected: list[str] = field(default_factory=list)
     already_known: list[str] = field(default_factory=list)
+    relations_added: int = 0  # bu metinden çıkarılan certified semantik edge
 
     @property
     def new_concepts(self) -> int:
@@ -64,6 +65,7 @@ class BootstrapResult:
             f"Öğrenildi:      {len(self.taught)}",
             f"Reddedildi:     {len(self.rejected)}  (Aleph filtresini geçemedi)",
             f"Zaten biliniyordu: {len(self.already_known)}",
+            f"Semantik ilişki: {self.relations_added}",
         ]
         if self.taught:
             lines.append(f"Yeni kavramlar: {', '.join(self.taught[:8])}"
@@ -95,12 +97,26 @@ class LanguageBootstrap:
 
     # ─── Core: learn from any text ────────────────────────────────────────
 
-    def from_text(self, text: str) -> BootstrapResult:
-        """Metinden unique kelimeleri çıkar, canonical encode et, manifold'a ekle."""
+    def from_text(self, text: str, extract_relations: bool = True) -> BootstrapResult:
+        """Metinden kavram çıkar, encode et, manifold'a ekle, ilişkileri çıkar.
+
+        İki aşama:
+          1. Kelimeler → canonical byte encoding → manifold (Aleph filtreli)
+          2. Pe (Σ* → P): metinden semantik ilişkiler → certified TAU edge
+
+        İlişki çıkarımı kelimeler öğrenildikten SONRA çalışır ki yeni
+        kavramlar da manifold'da bulunup uç olabilsin.
+        """
         tokens = _tokenize(text)
         if not tokens:
             return BootstrapResult()
-        return self._teach_words(set(tokens))
+        result = self._teach_words(set(tokens))
+
+        if extract_relations:
+            from tantrium.agi.relations import add_relations_from_text
+            result.relations_added = add_relations_from_text(self.engine, text)
+
+        return result
 
     def from_file(self, path: str, save_after: bool = True) -> BootstrapResult:
         """Dosyadan metin oku, öğren, manifold'u kaydet."""

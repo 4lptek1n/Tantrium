@@ -77,6 +77,10 @@ class AGIEngine:
         self.knowledge_path.parent.mkdir(parents=True, exist_ok=True)
         self._manifold_path = Path("results/agi/manifold.json")
         self._tau_path = Path("results/agi/tau_graph.json")
+        # Kalıcı bellek: hibrit persist + her-turn mini-Tav
+        self._dirty_count = 0      # son ağır save'den beri yeni kavram sayısı
+        self._persist_every = 10   # ağır manifold+TAU diske yazma eşiği
+        self.session = None        # attach_session() ile bağlanır
         # Load persisted manifold, then bootstrap, then load/build TAU graph
         self._load_manifold()
         self._bootstrap_manifold()
@@ -365,6 +369,71 @@ class AGIEngine:
     def save_manifold(self) -> int:
         """Mevcut manifold'u diske kaydet. Kaydedilen kavram sayısını döner."""
         return self.manifold.save(str(self._manifold_path))
+
+    # ─── Kalıcı bellek: hibrit persist + her-turn mini-Tav ──────────────────
+
+    def attach_session(self, session) -> None:
+        """Çalışma belleği oturumunu bağla (chat döngüsü çağırır)."""
+        self.session = session
+
+    def note_new_concepts(self, names: list[str], relations_added: int = 0) -> dict:
+        """Yeni öğrenilen kavramları (ve eklenen ilişkileri) işle.
+
+        Her turn:
+          1. mini_tav(names) — yeni kavramları semantik komşularına hizala (hızlı)
+          2. _dirty_count artır (yeni kavram + ilişki); eşik aşılırsa auto_persist()
+
+        İlişkiler de dirty sayılır ki sadece-ilişki eklenen oturumlarda da
+        TAU eşikte checkpoint'lensin (kayıp riski azalır).
+
+        Döner: {"tav_updated": int, "persisted": bool}
+        """
+        result = {"tav_updated": 0, "persisted": False}
+
+        # 1. Mini-Tav: sadece yeni kavramlar (küçük alt-küme → hızlı)
+        if names:
+            result["tav_updated"] = self.mini_tav(names)
+
+        # 2. Hibrit persist: ağır dosyalar sadece eşikte
+        self._dirty_count += len(names) + relations_added
+        if self._dirty_count > 0 and self._dirty_count >= self._persist_every:
+            self.auto_persist()
+            result["persisted"] = True
+        return result
+
+    def auto_persist(self) -> tuple[int, int]:
+        """Ağır manifold + TAU dosyalarını diske yaz, dirty sayacı sıfırla.
+
+        Döner: (kavram_sayısı, edge_sayısı).
+        """
+        n_concepts = self.save_manifold()
+        n_nodes, n_edges = self.tau.save(str(self._tau_path))
+        self._dirty_count = 0
+        return n_concepts, n_edges
+
+    def mini_tav(self, new_names: list[str]) -> int:
+        """Sadece new_names kavramlarının momentlerini semantik komşulara hizala.
+
+        PSD-koruyan konveks kombinasyon (Aleph sertifikası korunur).
+        Yeni kavramın semantik komşusu yoksa no-op — hızlı geçer.
+        Döner: güncellenen kavram sayısı.
+        """
+        from tantrium.agi.relations import propagate_subset
+        updated = propagate_subset(
+            self.manifold.concepts,
+            self.tau.edges,
+            new_names,
+            alpha=0.4,
+            iterations=4,
+        )
+        # Momentler değiştiyse TAU node spektral yarıçaplarını güncelle
+        if updated:
+            for name in new_names:
+                c = self.manifold.concepts.get(name)
+                if c is not None and name in self.tau.nodes:
+                    self.tau.nodes[name].sr = float(c.moments[-1]) if c.moments else 0.0
+            self.tau._dirty = True
+        return updated
 
     def _load_tau_graph(self) -> None:
         """TAU ağını diskten yükle — yoksa manifold'dan inşa et."""
