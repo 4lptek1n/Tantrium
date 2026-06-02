@@ -32,6 +32,7 @@ class MoleculeReport:
     target_distance: float
     gaps: list[str]
     anchor: str = ""
+    dyadic_score: float = 0.0   # D-pozitiflik derinliği — dyadic transport stabilitesi
 
     @property
     def certified(self) -> bool:
@@ -43,7 +44,7 @@ class MoleculeReport:
         return (
             f"  {self.name:<20} [{bar}] {self.certified_count}/{self.total_paradigms}\n"
             f"    μ₁={self.mu1:.4f}  μ₂={self.mu2:.4f}  μ₃={self.mu3:.4f}\n"
-            f"    Hedefe mesafe: {self.target_distance:.4f}  |  Gap: {gap_str}\n"
+            f"    Dyadic-skor: {self.dyadic_score:.6f}  |  Gap: {gap_str}\n"
             f"    Anchor: {self.anchor or 'belirsiz'}"
         )
 
@@ -74,10 +75,10 @@ class CertificationReport:
             lines.append("  Aday molekül bulunamadı.")
             return "\n".join(lines)
 
-        # Sırala: en yakın certified en üstte
-        sorted_c = sorted(self.candidates, key=lambda x: x.target_distance)
+        # Sırala: dyadic transport stabilitesi en yüksek en üstte
+        sorted_c = sorted(self.candidates, key=lambda x: -x.dyadic_score)
 
-        lines.append("  Sıralama (hedefe en yakın certified):")
+        lines.append("  Sıralama (dyadic transport stabilitesi — yüksek = sonsuz D-pozitif):")
         lines.append("")
         for i, mol in enumerate(sorted_c[:8], 1):
             cert_icon = "✓" if mol.certified else "✗"
@@ -190,9 +191,9 @@ class MolecularCertifier:
             except Exception:
                 continue
 
-        # 4. En iyi certified adayı seç
+        # 4. En iyi certified adayı seç — dyadic transport stabilitesi en yüksek
         certified = [r for r in reports if r.certified]
-        best = min(certified, key=lambda x: x.target_distance) if certified else None
+        best = max(certified, key=lambda x: x.dyadic_score) if certified else None
 
         # 5. Kaydet
         self.engine.auto_persist()
@@ -238,6 +239,8 @@ class MolecularCertifier:
         except Exception:
             anchor = ""
 
+        dyadic_score = self._dyadic_transport_score(raw.moments)
+
         return MoleculeReport(
             name=name,
             smiles=smiles,
@@ -249,6 +252,7 @@ class MolecularCertifier:
             target_distance=dist,
             gaps=gaps,
             anchor=anchor,
+            dyadic_score=dyadic_score,
         )
 
     def _fetch_candidates(self, query: str, max_results: int = 10) -> list[tuple[str, str]]:
@@ -292,6 +296,51 @@ class MolecularCertifier:
             if concept.domain == "drug_candidate" or concept.source == "pubchem":
                 candidates.append((name, ""))  # SMILES yoksa boş
         return candidates[:20]
+
+    def _dyadic_transport_score(self, moments, max_steps: int = 20) -> float:
+        """D-pozitiflik dyadic transport stabilitesi.
+
+        T_{1/2}^k: μⱼ → μⱼ · (1/2)^{j·k}  (ölçeği her adımda yarıya indir)
+
+        Her adımda Hankel matrisinin Sylvester minörlerini hesapla.
+        Skor = Σₖ min_minor / (max_minor + ε) — PSD konusundaki derinlik toplamı.
+        Yüksek skor = sonsuz dyadic transport altında daha derin D-pozitif.
+        """
+        n = min(len(moments), 5)  # 3x3 Hankel için en az 5 moment lazım
+        if n < 3:
+            return 0.0
+
+        m = [float(moments[j]) for j in range(n)]
+        score = 0.0
+
+        for step in range(max_steps + 1):
+            # T_{1/2}^step uygula: μⱼ → μⱼ · (1/2)^{j·step}
+            if step == 0:
+                t = m[:]
+            else:
+                t = [m[j] * (0.5 ** (j * step)) for j in range(n)]
+
+            # 3×3 Hankel matrisi: H_{ij} = t[i+j]
+            def h(i, j):
+                idx = i + j
+                return t[idx] if idx < n else 0.0
+
+            # Sylvester minörleri (leading principal minors)
+            m1 = h(0, 0)
+            m2 = h(0, 0) * h(1, 1) - h(0, 1) * h(1, 0)
+            m3 = (h(0,0) * (h(1,1)*h(2,2) - h(1,2)*h(2,1))
+                  - h(0,1) * (h(1,0)*h(2,2) - h(1,2)*h(2,0))
+                  + h(0,2) * (h(1,0)*h(2,1) - h(1,1)*h(2,0)))
+
+            minors = [m1, m2, m3]
+            if any(v < -1e-12 for v in minors):
+                break  # D-pozitiflik bu adımda bozuldu
+
+            max_m = max(abs(v) for v in minors) + 1e-15
+            min_m = min(v for v in minors)
+            score += min_m / max_m  # PSD konusundaki derinlik
+
+        return score
 
     # ── 3D ─────────────────────────────────────────────────────────────────
 
