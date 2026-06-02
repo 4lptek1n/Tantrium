@@ -85,8 +85,8 @@ class AGIEngine:
         # Load persisted manifold, then bootstrap, then load/build TAU graph
         self._load_manifold()
         self._bootstrap_manifold()
-        self._ensure_anchors()
         self._load_tau_graph()
+        self._ensure_anchors()       # çapaları hem manifold'a hem TAU'ya ekler
         self._load_spectral_cache()
         from tantrium.agi.speaker import Speaker
         self.speaker = Speaker(manifold=self.manifold)
@@ -493,11 +493,18 @@ class AGIEngine:
         yapılar yorumlanabilir spektral referans noktaları sağlar.
         Döner: yeni eklenen çapa sayısı.
         """
-        from tantrium.agi.anchors import add_anchors_to_manifold
+        from tantrium.agi.anchors import add_anchors_to_manifold, is_anchor
         added = add_anchors_to_manifold(self.manifold)
-        if added > 0:
+        # Çapaları TAU node'u olarak da garantile (köprü hedefi olabilmeleri için)
+        tau_added = 0
+        if hasattr(self, "tau"):
+            for name, concept in self.manifold.concepts.items():
+                if is_anchor(name) and name not in self.tau.nodes:
+                    self.tau.add_node(concept)
+                    tau_added += 1
+        if added > 0 or tau_added > 0:
             # Yeni çapalar dirty → eşik mantığı bunları diske yazar
-            self._dirty_count += added
+            self._dirty_count += added + tau_added
         return added
 
     def nearest_anchor(self, concept: Concept, top_n: int = 3) -> list[tuple[str, float]]:

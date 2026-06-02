@@ -220,19 +220,88 @@ def _dict_to_adjacency_matrix(
     return matrix
 
 
+# Hankel matris kenar uzunluğu üst sınırı. Üssü O(n³) Fraction aritmetiği
+# olduğundan uzun diziler (DNA, sinyaller) burada downsample edilir.
+_MAX_HANKEL_DIM = 32
+
+
+def _downsample(seq: list[Fraction], target_len: int) -> list[Fraction]:
+    """Diziyi target_len elemanlık bucket ortalamalarına indirge.
+
+    Spektral dağılımı korur (bucket ortalaması = yerel ölçü yoğunluğu),
+    matris boyutunu sınırlar. O(n³) Fraction üssü patlamasını önler.
+    """
+    n = len(seq)
+    if n <= target_len:
+        return seq
+    out: list[Fraction] = []
+    for i in range(target_len):
+        lo = (i * n) // target_len
+        hi = max(lo + 1, ((i + 1) * n) // target_len)
+        chunk = seq[lo:hi]
+        out.append(sum(chunk) / len(chunk))
+    return out
+
+
 def _numbers_to_matrix(seq: Sequence[float | int | Fraction]) -> list[list[Fraction]]:
     """Numeric sequence → normalized Hankel matrix.
 
     The sequence is already a moment sequence — we just normalize it
     so μ_0 = 1 (probability normalization) and convert to Fraction.
     If all values are zero, returns identity.
+
+    Uzun diziler downsample edilir: Hankel kenarı ≤ _MAX_HANKEL_DIM
+    (matris üssü O(n³) Fraction → büyük n'de saatlerce sürerdi).
     """
     fracs = [Fraction(v).limit_denominator(10 ** 9) for v in seq]
     total = sum(abs(f) for f in fracs)
     if total == 0:
         return [[Fraction(1)]]
     normalized = [f / total for f in fracs]
+    # Hankel kenarı = (len+1)//2 → sınırı aşıyorsa diziyi indirge
+    max_seq_len = 2 * _MAX_HANKEL_DIM - 1
+    if len(normalized) > max_seq_len:
+        normalized = _downsample(normalized, max_seq_len)
+        # downsample sonrası yeniden normalize (toplam = 1 korunsun)
+        s2 = sum(abs(f) for f in normalized)
+        if s2 != 0:
+            normalized = [f / s2 for f in normalized]
     return _sequence_to_hankel_matrix(normalized)
+
+
+# ─── Hızlı power-moment yolu (uzun sayısal diziler) ──────────────────────────
+
+# Bu uzunluğun üzerindeki sayısal diziler exact matris üssü yerine doğrudan
+# güç momenti ile kodlanır (Fraction payda patlamasını önler).
+_POWER_MOMENT_THRESHOLD = 16
+
+
+def _try_power_moments(input: Any, num_moments: int) -> "list[Fraction] | None":
+    """Uzun sayısal dizi ise μ_k = ort(x^k) doğrudan hesapla, yoksa None.
+
+    Normalleştirme: dizi [0,1]'e ölçeklenir → μ₀=1 sabit, μ_k ∈ [0,1].
+    Bu DNA/zeta analizindeki kodlama ile birebir tutarlıdır.
+    PSD garantisi: x∈[0,1] için {μ_k = ort(x^k)} geçerli Hausdorff moment
+    dizisidir → Hankel PSD → Aleph geçer.
+    """
+    if not isinstance(input, (list, tuple)) or len(input) <= _POWER_MOMENT_THRESHOLD:
+        return None
+    if not all(isinstance(x, (int, float, Fraction)) for x in input):
+        return None
+
+    vals = [float(x) for x in input]
+    mn, mx = min(vals), max(vals)
+    span = mx - mn
+    if span > 0:
+        data = [(x - mn) / span for x in vals]
+    else:
+        data = [0.5] * len(vals)
+
+    n = len(data)
+    moments_raw = [1.0]  # μ₀
+    for k in range(1, num_moments):
+        moments_raw.append(sum(x ** k for x in data) / n)
+    return [Fraction(m).limit_denominator(10 ** 9) for m in moments_raw]
 
 
 # ─── The universal encoder ───────────────────────────────────────────────────
@@ -256,8 +325,31 @@ class UniversalEncoder:
         Computes spectral moments AND auto-populates structure fields
         for as many paradigms as possible from the raw input alone.
         No domain knowledge required.
+
+        Uzun sayısal diziler için hızlı yol: μ_k = ort(x^k) doğrudan float'ta
+        hesaplanır, rasyonelleştirilir. Exact matris üssü (G^k) uzun dizilerde
+        Fraction paydalarını patlatır (yüzlerce basamak) — bu yol onu atlar.
+        Yapı çıkarımı için küçük temsilî matris kullanılır.
         """
         obj_name = name or _infer_name(input)
+
+        fast_moments = _try_power_moments(input, self.num_moments)
+        if fast_moments is not None:
+            moments = fast_moments
+            # Yapı çıkarımı için momentlerden küçük Hankel matrisi (tam diziyi
+            # yeniden işleme — payda patlamasını ve O(n³)'ü tamamen atla)
+            A = _sequence_to_hankel_matrix(moments)
+            G = _gram(A)
+            structure = self._extract_structure(input, A, G, moments)
+            structure.update({
+                "encoder": "universal_spectral",
+                "matrix_size": len(A),
+                "input_type": type(input).__name__,
+                "num_moments": self.num_moments,
+                "moment_path": "power_moments_fast",
+            })
+            return CodexObject(name=obj_name, moments=moments, structure=structure)
+
         A = self._to_matrix(input)
         G = _gram(A)
         moments = _spectral_moments(A, self.num_moments)

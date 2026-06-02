@@ -46,6 +46,7 @@ from tantrium.agi.anchors import (
     anchor_descriptions,
     is_anchor,
 )
+from tantrium.agi.autonomous import AutonomousObserver, Observation
 
 __all__ = [
     "SemanticBridge",
@@ -111,4 +112,6 @@ __all__ = [
     "nearest_anchor",
     "anchor_descriptions",
     "is_anchor",
+    "AutonomousObserver",
+    "Observation",
 ]

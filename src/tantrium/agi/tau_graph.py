@@ -266,10 +266,12 @@ class TauGraph:
         # ALEPH: moment-distance certified (L2 Hankel kernel) — k=10, distance sorted
         # Semantic: pattern-extracted logical relationships (IS_A, USES, ACHIEVES, etc.)
         # L0 statistical (sentence co-occurrence, PPMI) is excluded.
-        _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
+        _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
+                     "SPECTRAL_BRIDGE"}
         # Paradigm → single-char code for compact storage
         _P = {"ALEPH": "A", "IS_A": "I", "USES": "U", "DEFINES": "D",
-              "ACHIEVES": "V", "REQUIRES": "R", "COMPOSED": "C"}
+              "ACHIEVES": "V", "REQUIRES": "R", "COMPOSED": "C",
+              "SPECTRAL_BRIDGE": "S"}
         edge_list: list[list] = []
         total_edges = 0
         for name in names:
@@ -314,7 +316,8 @@ class TauGraph:
                 g.nodes[name] = TauNode(name=name, domain=domain, source="saved", sr=sr)
                 names.append(name)
             _P_REV = {"A": "ALEPH", "I": "IS_A", "U": "USES", "D": "DEFINES",
-                      "V": "ACHIEVES", "R": "REQUIRES", "C": "COMPOSED"}
+                      "V": "ACHIEVES", "R": "REQUIRES", "C": "COMPOSED",
+                      "S": "SPECTRAL_BRIDGE"}
             for i, edge_rows in enumerate(data["e"]):
                 src = names[i]
                 g.edges[src] = [
