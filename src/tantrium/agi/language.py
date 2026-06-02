@@ -11,6 +11,8 @@ Bu istatistik değil — moment geometrisi.
 """
 from __future__ import annotations
 
+import hashlib
+import math
 import re
 from collections import Counter
 from dataclasses import dataclass, field
@@ -38,6 +40,33 @@ def _tokenize(text: str) -> list[str]:
     return [t for t in tokens if len(t) >= 4 and t not in _STOPWORDS]
 
 
+# ─── Global PPMI basis ────────────────────────────────────────────────────
+
+class _PPMIBasis:
+    """Precomputed global PPMI basis — bir kez hesapla, herkese ver."""
+    __slots__ = ("vocab", "p_v", "total_pairs")
+
+    def __init__(self, corpus_counts: dict[str, Counter], top_n: int = 400) -> None:
+        # Tüm context frekanslarını topla
+        ctx_freq: Counter = Counter()
+        for cc in corpus_counts.values():
+            ctx_freq.update(cc)
+        self.total_pairs: float = float(sum(ctx_freq.values())) or 1.0
+        # Top-N vocab
+        self.vocab: list[str] = [w for w, _ in ctx_freq.most_common(top_n)]
+        # P(v) = global context probability — precomputed
+        self.p_v: dict[str, float] = {
+            v: ctx_freq[v] / self.total_pairs for v in self.vocab
+        }
+
+
+def _build_global_vocab(corpus_counts: dict[str, Counter], top_n: int = 400) -> list[str]:
+    freq: Counter = Counter()
+    for ctx in corpus_counts.values():
+        freq.update(ctx)
+    return [w for w, _ in freq.most_common(top_n)]
+
+
 # ─── Co-occurrence moment extractor ──────────────────────────────────────
 
 def _concept_moments_from_cooccurrence(
@@ -45,58 +74,65 @@ def _concept_moments_from_cooccurrence(
     context_counts: Counter,
     corpus_counts: dict[str, Counter],
     num_moments: int = 8,
+    global_vocab: list[str] | None = None,
+    basis: "_PPMIBasis | None" = None,
 ) -> list[Fraction] | None:
-    """Co-occurrence Gram'dan spektral momentler — gerçek semantik.
+    """PPMI Hausdorff momentleri — semantik + sertifikalı.
 
-    Karakter bigram değil: kelimenin bağlam vektörü → ikinci-derece
-    co-occurrence Gram matrisi → spektral momentler.
-
-    "love" ve "marriage" benzer bağlamlarda geçiyor → benzer Gram → yakın momentler.
-    "love" ve "integral" farklı bağlamlar → farklı Gram → uzak momentler.
-    Bu word2vec'in yaptığının tam matematiksel karşılığı — ama sertifikalı.
+    PPMI(w,v) = max(0, log P(w,v)/P(w)P(v)) → ayırt edici bağlamlar öne çıkar.
+    'quantum'+'entanglement' yüksek PPMI, 'quantum'+'said' sıfır.
+    PPMI vektörü → normalize → Hausdorff momentler → Hankel PSD garantili.
+    Precomputed basis ile O(V) per word — hızlı.
     """
-    total = sum(context_counts.values())
-    if total < 2:
+    if basis is not None:
+        vocab = basis.vocab
+        p_v = basis.p_v
+        total_pairs = basis.total_pairs
+    elif global_vocab is not None:
+        vocab = global_vocab
+        total_pairs = sum(sum(c.values()) for c in corpus_counts.values()) or 1.0
+        ctx_freq: Counter = Counter()
+        for cc in corpus_counts.values():
+            ctx_freq.update(cc)
+        p_v = {v: ctx_freq.get(v, 0) / total_pairs for v in vocab}
+    else:
+        vocab = [w for w, _ in context_counts.most_common(num_moments * 4)]
+        total_pairs = 1.0
+        p_v = {}
+
+    if len(vocab) < 2:
         return None
 
-    # Top K bağlam kelimesi
-    K = min(num_moments + 2, len(context_counts))
-    top_k = [w for w, _ in context_counts.most_common(K)]
-    if len(top_k) < 2:
-        return None
+    N = len(vocab)
+    p_w = sum(context_counts.values()) / total_pairs
 
-    # A[i][j] = top_k[i] kelimesinin top_k[j] ile kaç kez birlikte geçtiği
-    # Bu ikinci-derece co-occurrence yapısını yakalar
-    K = len(top_k)
-    A: list[list[float]] = []
-    for ctx_word in top_k:
-        ctx_profile = corpus_counts.get(ctx_word, Counter())
-        row = [float(ctx_profile.get(w, 0)) for w in top_k]
-        A.append(row)
+    # PPMI(w, v) — precomputed p_v sayesinde O(V) per word
+    ppmi: list[float] = []
+    for v in vocab:
+        p_wv = float(context_counts.get(v, 0)) / total_pairs
+        pv = p_v.get(v, 1e-12)
+        denom = p_w * pv
+        ppmi.append(max(0.0, math.log(p_wv / denom)) if denom > 0 and p_wv > 0 else 0.0)
 
-    # Gram G = A^T A — PSD by construction
-    G = [[sum(A[r][i] * A[r][j] for r in range(K)) for j in range(K)] for i in range(K)]
+    total_ppmi = sum(ppmi)
+    if total_ppmi < 1e-12:
+        # Fallback: raw frekans dağılımı
+        ppmi = [float(context_counts.get(v, 0)) for v in vocab]
+        total_ppmi = sum(ppmi) or 1.0
 
-    # A satır-stochastic (her satır olasılık dağılımı) → anlamlı spektral yapı
-    A_norm = []
-    for row in A:
-        row_sum = sum(row)
-        A_norm.append([x / row_sum if row_sum > 0 else 1.0 / K for x in row])
-    A = A_norm
+    probs = [x / total_ppmi for x in ppmi]
+    # Hash-based canonical positions — word identity, not frequency rank.
+    # Shared context words → identical positions → similar moments for semantically close words.
+    positions = [
+        int(hashlib.md5(v.encode()).hexdigest()[:8], 16) / 0xFFFFFFFF
+        for v in vocab
+    ]
 
-    # G = A^T A — PSD by construction
-    G = [[sum(A[r][i] * A[r][j] for r in range(K)) for j in range(K)] for i in range(K)]
-
-    # Spektral momentler: μ_k = Tr(G^k) / K
-    # μ_0 = Tr(G^0)/K = Tr(I_K)/K = 1  — her zaman 1, normalizasyon noktası
-    moments: list[Fraction] = [Fraction(1)]  # μ_0 = 1
-
-    cur = [row[:] for row in G]  # G^1
-    for _ in range(num_moments - 1):
-        trace = sum(cur[i][i] for i in range(K)) / K
-        moments.append(Fraction(trace).limit_denominator(10 ** 9))
-        nxt = [[sum(cur[i][r] * G[r][j] for r in range(K)) for j in range(K)] for i in range(K)]
-        cur = nxt
+    # Hausdorff momentleri: μ_k = Σ p_i * x_i^k, μ_0 = 1
+    moments: list[Fraction] = [Fraction(1)]
+    for k in range(1, num_moments):
+        mu_k = sum(probs[i] * (positions[i] ** k) for i in range(N))
+        moments.append(Fraction(mu_k).limit_denominator(10 ** 9))
 
     return moments
 
@@ -187,6 +223,8 @@ class LanguageBootstrap:
     def _teach_from_corpus(self) -> BootstrapResult:
         """Korpustaki tüm kelimeleri manifold'a öğretmeyi dene."""
         result = BootstrapResult()
+        # PPMI basis — bir kez hesapla, tüm kelimeler için kullan O(V) per word
+        basis = _PPMIBasis(self._corpus_counts, top_n=400)
 
         for word, context in self._corpus_counts.items():
             if sum(context.values()) < self.min_freq:
@@ -197,7 +235,7 @@ class LanguageBootstrap:
                 continue
 
             moments = _concept_moments_from_cooccurrence(
-                word, context, self._corpus_counts, self.num_moments
+                word, context, self._corpus_counts, self.num_moments, basis=basis
             )
             if moments is None:
                 result.rejected.append(word)
