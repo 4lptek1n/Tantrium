@@ -26,6 +26,9 @@ from tantrium.agi.relations import (
 )
 from tantrium.agi.goal import Goal, GoalManifold, encode_goal
 from tantrium.agi.actor import Actor, Action, ActionResult
+from tantrium.agi.generalization import HankelGeneralizer, DerivedConcept
+from tantrium.agi.topology import MomentTopology, MathRegion
+from tantrium.agi.meta import MetaParadigm, UniversalRule, ParadigmMoment, SelfCertResult
 
 __all__ = [
     "SemanticBridge",
@@ -70,4 +73,12 @@ __all__ = [
     "Actor",
     "Action",
     "ActionResult",
+    "HankelGeneralizer",
+    "DerivedConcept",
+    "MomentTopology",
+    "MathRegion",
+    "MetaParadigm",
+    "UniversalRule",
+    "ParadigmMoment",
+    "SelfCertResult",
 ]

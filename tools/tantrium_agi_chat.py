@@ -20,6 +20,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from tantrium.agi import AGIEngine, SessionMemory, Turn
 from tantrium.agi.goal import GoalManifold, encode_goal
 from tantrium.agi.actor import Actor
+from tantrium.agi.generalization import HankelGeneralizer
+from tantrium.agi.topology import MomentTopology
+from tantrium.agi.meta import MetaParadigm
 from tantrium.agi.semantic import Concept
 from tantrium.agi.language import LanguageBootstrap
 
@@ -29,9 +32,13 @@ BANNER = """
 ║              ALEPH-TEKIN  AGI                                ║
 ║                                                              ║
 ║  Her iddia ya kanıtlanır ya da açık adıyla bilinmez.         ║
-║  Tahmin yok. Halüsinasyon yok.                               ║
+║  Tahmin yok. Halüsinasyon yok. Moment uzayı gerçektir.       ║
 ║                                                              ║
 ║  /think <soru>       derin düşünce (dyadic transport, ell=3) ║
+║  /map                moment uzayı haritası (μ₁×μ₂)          ║
+║  /frontier           keşfedilebilir boş bölgeler             ║
+║  /derive <A> <B>     iki kavramdan Hankel interpolasyon      ║
+║  /meta               22+1 paradigma meta-analizi             ║
 ║  /goal <hedef>       yeni hedef kaydet (Aleph sertifikalı)   ║
 ║  /goals              aktif hedefler + ilerleme               ║
 ║  /pursue [hedef]     hedef peşinde döngü çalıştır            ║
@@ -115,9 +122,12 @@ def chat_loop(engine: AGIEngine) -> None:
     session = SessionMemory.latest() or SessionMemory.new()
     engine.attach_session(session)
 
-    # Hedef manifoldu ve actor yükle
+    # Hedef manifoldu, actor ve matematik araçları yükle
     goal_manifold = GoalManifold.load()
     actor = Actor(engine)
+    generalizer = HankelGeneralizer(engine)
+    topology = MomentTopology(engine)
+    meta = MetaParadigm(engine)
 
     print(BANNER)
     print(f"   {len(engine.manifold.concepts)} sertifikalı kavram yüklü.")
@@ -156,6 +166,48 @@ def chat_loop(engine: AGIEngine) -> None:
         if user_input.lower() == "/forget":
             session.clear_working()
             print("  Çalışma belleği temizlendi (manifold korundu).")
+            print()
+            continue
+
+        if user_input.lower() == "/map":
+            print(topology.summary_map())
+            print()
+            continue
+
+        if user_input.lower() == "/frontier":
+            print(topology.gap_report())
+            print()
+            continue
+
+        if user_input.lower().startswith("/derive "):
+            parts = user_input[8:].strip().split()
+            if len(parts) < 2:
+                print("  Kullanım: /derive <kavram_A> <kavram_B> [alpha=0.5]")
+            else:
+                name_a, name_b = parts[0], parts[1]
+                alpha = float(parts[2]) if len(parts) > 2 else 0.5
+                # Tek kavram → derive
+                if name_b == "--midpoints":
+                    results = generalizer.explore_midpoints(name_a, parts[2] if len(parts) > 2 else "", steps=5)
+                    for dc in results:
+                        print(dc.summary())
+                else:
+                    dc = generalizer.interpolate(name_a, name_b, alpha)
+                    if dc is None:
+                        not_found = [n for n in [name_a, name_b] if n not in engine.manifold.concepts]
+                        print(f"  Kavram bulunamadı: {not_found}")
+                    else:
+                        print(dc.summary())
+                        if dc.certified:
+                            mem = engine.note_new_concepts([dc.concept.name])
+                            if mem["persisted"]:
+                                print("  ✓ Manifold kaydedildi")
+            print()
+            continue
+
+        if user_input.lower() == "/meta":
+            print("Meta-paradigma hesaplanıyor...")
+            print(meta.paradigm_map())
             print()
             continue
 
