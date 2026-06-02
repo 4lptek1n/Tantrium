@@ -290,3 +290,84 @@ def mutation_hotspots(
     Bunlar potansiyel mutasyon lokalizasyonlarıdır — biyoloji bilmeden.
     """
     return sorted(diff_map, key=lambda x: -x[1])[:top_n]
+
+
+# ─── Momentlerden spektral ölçü geri çıkarımı (Golub-Welsch) ─────────────────
+
+def _stieltjes(mu: list[float], n: int) -> tuple[list[float], list[float]]:
+    """Stieltjes üç-terim tekrarlayıcısı: 2n moment → (alpha, beta).
+
+    alpha[k] = Jacobi matrisinin k. diyagonal elemanı
+    beta[k]  = Jacobi matrisinin k. alt-diyagonal elemanının karesi
+    beta[0]  = toplam kütle = μ₀
+
+    Kaynak: Gautschi (2004), "Orthogonal Polynomials: Computation and Approximation"
+    σ_k[l] = σ_{k-1}[l+1] - α_{k-1}·σ_{k-1}[l] - β_{k-1}·σ_{k-2}[l]
+    """
+    sz = 2 * n
+    s_m2 = [0.0] * sz                                          # sigma_{k-2} = 0
+    s_m1 = [(mu[l] if l < len(mu) else 0.0) for l in range(sz)]  # sigma_0 = moments
+
+    alpha = [0.0] * n
+    beta = [0.0] * n
+
+    if abs(s_m1[0]) < 1e-15:
+        return alpha, beta
+
+    alpha[0] = s_m1[1] / s_m1[0]
+    beta[0] = s_m1[0]
+
+    for k in range(1, n):
+        s_cur = [0.0] * sz
+        for l in range(k, sz - k):
+            nxt = s_m1[l + 1] if l + 1 < sz else 0.0
+            s_cur[l] = nxt - alpha[k - 1] * s_m1[l] - beta[k - 1] * s_m2[l]
+
+        if abs(s_cur[k]) < 1e-15 or abs(s_m1[k - 1]) < 1e-15:
+            break
+
+        nxt_val = s_cur[k + 1] if k + 1 < sz else 0.0
+        alpha[k] = nxt_val / s_cur[k] - s_m1[k] / s_m1[k - 1]
+        beta[k] = s_cur[k] / s_m1[k - 1]
+
+        s_m2 = s_m1
+        s_m1 = s_cur
+
+    return alpha, beta
+
+
+def moments_to_spectral(
+    moments: list[float],
+    n_nodes: int = 4,
+    name: str = "",
+) -> SpectralMeasure:
+    """Güç momentleri μ_k → n-noktalı Gauss kuadratura spektral yaklaşımı.
+
+    Golub-Welsch algoritması:
+    1. Stieltjes: 2n moment → n×n tridiagonal Jacobi matrisi J
+    2. J'nin özdeğerleri = Gauss kuadratura noktaları ≈ G'nin özdeğerleri
+    3. Ağırlıklar: β₀/n (basitleştirilmiş)
+
+    Doğruluk: 8 momentten 4 özdeğer — iyi bir yaklaşım.
+    Garanti: noktalar [μ_min, μ_max] içinde, PSD ölçü için ≥ 0.
+
+    Bu, μ_k = Tr(Gᵏ)/n'nin TERSI:
+    {μ_k}'den G'nin yaklaşık özdeğerleri kurtarılır.
+    """
+    n = n_nodes
+    mu = [float(m) for m in moments]
+
+    alpha, beta = _stieltjes(mu, n)
+
+    # Jacobi matrisi: tridiagonal simetrik
+    J = [[0.0] * n for _ in range(n)]
+    for i in range(n):
+        J[i][i] = alpha[i]
+    for i in range(n - 1):
+        b = beta[i + 1]
+        if b > 0.0:
+            J[i][i + 1] = J[i + 1][i] = math.sqrt(b)
+
+    nodes = _jacobi_eigvals(J)
+    w = max(0.0, beta[0]) / n if n > 0 else 0.0
+    return SpectralMeasure(eigenvalues=nodes, weights=[w] * n, name=name)

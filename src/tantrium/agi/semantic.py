@@ -185,6 +185,54 @@ class SemanticManifold:
         best.sort()
         return [(name, Fraction(d).limit_denominator(10 ** 6)) for d, name in best]
 
+    def nearest_spectral(
+        self,
+        concept: "Concept",
+        n: int = 5,
+    ) -> list[tuple[str, float]]:
+        """Wasserstein-2 spektral mesafesiyle n en yakın kavram.
+
+        moments_to_spectral() ile her kavramın güç momentlerinden
+        Golub-Welsch özdeğer geri çıkarımı yapılır.
+        Sonuç: byte-ortalaması yerine operatör yapısına göre komşuluk.
+
+        DNA'nın komşusu "kühn" değil, gerçek spektral komşu çıkar.
+        İlk çağrıda yavaş (27k × Jacobi), sonrasında cache'den anlık.
+        """
+        from tantrium.agi.spectral import moments_to_spectral, spectral_distance
+
+        # Sorgu kavramının spektral ölçüsü
+        q_mu = [float(m) for m in concept.moments]
+        q_spec = moments_to_spectral(q_mu, name=concept.name)
+
+        # Cache: manifold için hesaplanan spektral ölçüler
+        if not hasattr(self, "_spec_cache"):
+            object.__setattr__(self, "_spec_cache", {}) if hasattr(self, "__dataclass_fields__") else None
+            self._spec_cache: dict = {}
+
+        best: list[tuple[float, str]] = []
+        for cname, c in self.concepts.items():
+            if cname == concept.name:
+                continue
+            if cname not in self._spec_cache:
+                c_mu = [float(m) for m in c.moments]
+                self._spec_cache[cname] = moments_to_spectral(c_mu, name=cname)
+            d = spectral_distance(q_spec, self._spec_cache[cname])
+            if len(best) < n:
+                best.append((d, cname))
+                if len(best) == n:
+                    best.sort(reverse=True)
+            elif d < best[0][0]:
+                best[0] = (d, cname)
+                best.sort(reverse=True)
+
+        best.sort()
+        return [(cname, d) for d, cname in best]
+
+    def clear_spectral_cache(self) -> None:
+        """Spektral ölçü cache'ini temizle (manifold güncellemesinden sonra)."""
+        self._spec_cache = {}
+
     def gauge_class(self, concept: Concept, tol: Fraction = Fraction(1, 1000)) -> list[str]:
         """Find all concepts gauge-equivalent to the given one (Mem).
         These are synonyms — different names, same referent.
