@@ -37,6 +37,8 @@ BANNER = """
 ║  /think <soru>       derin düşünce (dyadic transport, ell=3) ║
 ║  /reason <kavram>    TAU zinciri — certified akıl yürütme    ║
 ║  /compose <A> <B>    iki kavramı manifoldda birleştir         ║
+║  /plan <hedef>       hedefe giden adım planı üret            ║
+║  /chain              TAU transitif kapatma (tüm çıkarımlar)  ║
 ║  /map                moment uzayı haritası (μ₁×μ₂)          ║
 ║  /frontier           keşfedilebilir boş bölgeler             ║
 ║  /derive <A> <B>     iki kavramdan Hankel interpolasyon      ║
@@ -340,6 +342,67 @@ def chat_loop(engine: AGIEngine) -> None:
                     mem = engine.note_new_concepts([comp_name])
                     if mem["persisted"]:
                         print("  ✓ Manifold kaydedildi.")
+            print()
+            continue
+
+        if user_input.lower().startswith("/plan "):
+            from tantrium.agi.planner import Planner
+            desc = user_input[6:].strip()
+            if not desc:
+                print("  Kullanım: /plan <hedef açıklaması>")
+                print()
+                continue
+            # Hedefi bul ya da yeni oluştur
+            goal = goal_manifold.get(desc)
+            if goal is None:
+                for g in goal_manifold.active_goals():
+                    if desc.lower() in g.name.lower():
+                        goal = g
+                        break
+            if goal is None:
+                print(f"  Hedef '{desc}' kayıtlı değil, encode ediliyor...")
+                goal = encode_goal(engine, desc)
+                if goal is None:
+                    print("  BLOKE — Aleph filtresi geçilemedi.")
+                    print()
+                    continue
+                goal_manifold.add(goal)
+                goal_manifold.save()
+                print(f"  ✓ Hedef oluşturuldu: '{goal.name}'")
+            # Mevcut bilgiden planla
+            session_local = getattr(engine, "session", None)
+            known = list(session_local.active_concepts.keys())[:20] if session_local else []
+            planner = Planner(engine)
+            plan = planner.plan(goal, known_concepts=known or None, max_steps=6)
+            print()
+            print(plan.summary())
+            print()
+            # Planı uygula mı?
+            if plan.steps:
+                print("  Planı uygula? [e/h]", end=" ")
+                try:
+                    ans = input().strip().lower()
+                except EOFError:
+                    ans = "h"
+                if ans == "e":
+                    print("  Plan uygulanıyor...")
+                    results = planner.execute_plan(plan, goal)
+                    for r in results:
+                        print(f"    {r}")
+                    goal_manifold.save()
+            print()
+            continue
+
+        if user_input.lower() == "/chain":
+            from tantrium.agi.reasoner import TauReasoner
+            print("TAU transitif kapatma hesaplanıyor (max 200 kavram)...")
+            reasoner = TauReasoner(engine)
+            total = reasoner.chain_all(max_concepts=200)
+            print(f"  → {total} yeni certified kenar türetildi.")
+            if total:
+                mem = engine.note_new_concepts([], relations_added=total)
+                if mem["persisted"]:
+                    print("  ✓ TAU kaydedildi.")
             print()
             continue
 

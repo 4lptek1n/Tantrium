@@ -385,6 +385,53 @@ class Speaker:
             parts.append(f"  {name} (distance: {dist})")
         return "\n".join(parts)
 
+    # ─── Synthesize TAU facts into fluent Turkish paragraph ───────────────
+
+    _TR_VERB: dict[str, str] = {
+        "IS_A":     "bir {t} türüdür",
+        "USES":     "{t} kullanır",
+        "ACHIEVES": "{t} elde eder",
+        "REQUIRES": "{t} gerektirir",
+        "DEFINES":  "{t} tanımlar",
+        "COMPOSED": "bileşenlerinden biri {t}",
+    }
+
+    def synthesize(
+        self,
+        concept_name: str,
+        facts: dict[str, list[str]],
+        max_per_paradigm: int = 3,
+    ) -> str:
+        """TAU kenarlarından akıcı Türkçe paragraf üret.
+
+        facts: {"IS_A": ["tool", "method"], "ACHIEVES": ["stability"], ...}
+        Döner: certified Türkçe paragraf (her cümle TAU'da kenar).
+        """
+        if not facts:
+            return f"'{concept_name}' hakkında TAU'da yeterli bilgi yok."
+
+        sentences: list[str] = []
+        for paradigm, targets in facts.items():
+            tops = targets[:max_per_paradigm]
+            if not tops:
+                continue
+            tmpl = self._TR_VERB.get(paradigm)
+            if tmpl is None:
+                continue
+            if len(tops) == 1:
+                phrase = tmpl.format(t=tops[0])
+            elif len(tops) == 2:
+                phrase = tmpl.format(t=f"{tops[0]} ve {tops[1]}")
+            else:
+                joined = ", ".join(tops[:-1]) + " ve " + tops[-1]
+                phrase = tmpl.format(t=joined)
+            sentences.append(f"'{concept_name}' {phrase}.")
+
+        if not sentences:
+            return f"'{concept_name}' için TAU paradigmaları tanımsız."
+
+        return " ".join(sentences)
+
     # ─── Express a single named gap ───────────────────────────────────────
 
     def name_gap(self, paradigm_id: str, gap_name: str, obj_name: str) -> str:
