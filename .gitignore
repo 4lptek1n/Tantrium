@@ -56,3 +56,4 @@ __pycache__/
 # Lean build output
 formal/lean/.lake/
 results/agi/sessions/
+results/agi/goals/
