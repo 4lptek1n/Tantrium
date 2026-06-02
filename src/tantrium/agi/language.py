@@ -1,23 +1,19 @@
-"""Dil Topolojisi Öğrenimi — LanguageBootstrap.
+"""Dil Topolojisi — LanguageBootstrap.
 
-Her metin → kelime eş-oluşum matrisi → Gram → spektral momentler → Aleph filtresi.
-Geçen kavramlar manifold'a girer. Geçmeyenler reddedilir — tam adıyla.
+Her kelime → UTF-8 bytes → Hankel matris → spektral momentler → Aleph filtresi.
+Corpus yok. İstatistik yok. Her kelime kendi yapısını taşır.
 
-Bu eğitim değil. Parametre güncellemesi yok.
-Manifold, kelimelerin birbirleriyle olan geometrik ilişkisini tutar.
-"Ölüm" ve "yaşam" birlikte geçiyorsa → manifold'da yakınlar.
-"Ölüm" ve "integral" birlikte geçmiyorsa → manifold'da uzaklar.
-Bu istatistik değil — moment geometrisi.
+Kaf:  injektif — farklı kelime → farklı byte dizisi → farklı momentler.
+Bet:  bilgi kayıpsız — byte dizisi kelimeden deterministik türer.
+TAU:  edge'ler cümle bazlı certified co-occurrence'dan gelir.
+      "neural ve gradient aynı cümlede geçti" → TAU edge (provenanced).
+      İstatistik değil — spesifik, izlenebilir bağlantı.
 """
 from __future__ import annotations
 
-import hashlib
-import math
 import re
-from collections import Counter
 from dataclasses import dataclass, field
 from fractions import Fraction
-from typing import Any
 
 from tantrium.agi.semantic import Concept
 
@@ -25,13 +21,28 @@ from tantrium.agi.semantic import Concept
 # ─── Tokenizer ────────────────────────────────────────────────────────────
 
 _STOPWORDS = {
+    # İngilizce temel
     "the","and","was","her","his","had","that","she","with","not","for",
     "but","you","they","have","from","this","are","were","all","one","him",
     "been","has","who","did","its","what","when","which","would","could",
     "said","very","will","more","than","then","now","into","our","your",
     "their","there","him","any","out","him","two","come","also","may",
+    # Akademik boilerplate
+    "using","these","results","suggest","such","here","show","thus",
+    "while","where","when","also","note","that","both","many","each",
+    "since","given","often","shown","paper","work","method","approach",
+    "provide","consider","propose","present","discuss","study","used",
+    "based","related","large","small","first","second","third","able",
+    "make","made","well","case","form","type","only","main","most","some",
+    "across","direct","terms","products","source","content","simple",
+    "problem","however","therefore","because","although","through","under",
+    "against","between","without","during","within","after","before",
+    # Türkçe
     "bir","ve","ile","için","ama","olan","çok","daha","gibi","değil",
+    "olarak","ancak","ayrıca","sadece","olan","kadar","sonra","önce",
 }
+
+_SENT_SPLIT = re.compile(r'[.!?;]\s+')
 
 def _tokenize(text: str) -> list[str]:
     """Multilingual tokenizer — stopwords ve kısa kelimeler çıkar."""
@@ -39,102 +50,9 @@ def _tokenize(text: str) -> list[str]:
     tokens = re.findall(r"[a-zçğışöüA-ZÇĞİŞÖÜÀ-ɏ]+", text)
     return [t for t in tokens if len(t) >= 4 and t not in _STOPWORDS]
 
-
-# ─── Global PPMI basis ────────────────────────────────────────────────────
-
-class _PPMIBasis:
-    """Precomputed global PPMI basis — bir kez hesapla, herkese ver."""
-    __slots__ = ("vocab", "p_v", "total_pairs")
-
-    def __init__(self, corpus_counts: dict[str, Counter], top_n: int = 400) -> None:
-        # Tüm context frekanslarını topla
-        ctx_freq: Counter = Counter()
-        for cc in corpus_counts.values():
-            ctx_freq.update(cc)
-        self.total_pairs: float = float(sum(ctx_freq.values())) or 1.0
-        # Top-N vocab
-        self.vocab: list[str] = [w for w, _ in ctx_freq.most_common(top_n)]
-        # P(v) = global context probability — precomputed
-        self.p_v: dict[str, float] = {
-            v: ctx_freq[v] / self.total_pairs for v in self.vocab
-        }
-
-
-def _build_global_vocab(corpus_counts: dict[str, Counter], top_n: int = 400) -> list[str]:
-    freq: Counter = Counter()
-    for ctx in corpus_counts.values():
-        freq.update(ctx)
-    return [w for w, _ in freq.most_common(top_n)]
-
-
-# ─── Co-occurrence moment extractor ──────────────────────────────────────
-
-def _concept_moments_from_cooccurrence(
-    target: str,
-    context_counts: Counter,
-    corpus_counts: dict[str, Counter],
-    num_moments: int = 8,
-    global_vocab: list[str] | None = None,
-    basis: "_PPMIBasis | None" = None,
-) -> list[Fraction] | None:
-    """PPMI Hausdorff momentleri — semantik + sertifikalı.
-
-    PPMI(w,v) = max(0, log P(w,v)/P(w)P(v)) → ayırt edici bağlamlar öne çıkar.
-    'quantum'+'entanglement' yüksek PPMI, 'quantum'+'said' sıfır.
-    PPMI vektörü → normalize → Hausdorff momentler → Hankel PSD garantili.
-    Precomputed basis ile O(V) per word — hızlı.
-    """
-    if basis is not None:
-        vocab = basis.vocab
-        p_v = basis.p_v
-        total_pairs = basis.total_pairs
-    elif global_vocab is not None:
-        vocab = global_vocab
-        total_pairs = sum(sum(c.values()) for c in corpus_counts.values()) or 1.0
-        ctx_freq: Counter = Counter()
-        for cc in corpus_counts.values():
-            ctx_freq.update(cc)
-        p_v = {v: ctx_freq.get(v, 0) / total_pairs for v in vocab}
-    else:
-        vocab = [w for w, _ in context_counts.most_common(num_moments * 4)]
-        total_pairs = 1.0
-        p_v = {}
-
-    if len(vocab) < 2:
-        return None
-
-    N = len(vocab)
-    p_w = sum(context_counts.values()) / total_pairs
-
-    # PPMI(w, v) — precomputed p_v sayesinde O(V) per word
-    ppmi: list[float] = []
-    for v in vocab:
-        p_wv = float(context_counts.get(v, 0)) / total_pairs
-        pv = p_v.get(v, 1e-12)
-        denom = p_w * pv
-        ppmi.append(max(0.0, math.log(p_wv / denom)) if denom > 0 and p_wv > 0 else 0.0)
-
-    total_ppmi = sum(ppmi)
-    if total_ppmi < 1e-12:
-        # Fallback: raw frekans dağılımı
-        ppmi = [float(context_counts.get(v, 0)) for v in vocab]
-        total_ppmi = sum(ppmi) or 1.0
-
-    probs = [x / total_ppmi for x in ppmi]
-    # Hash-based canonical positions — word identity, not frequency rank.
-    # Shared context words → identical positions → similar moments for semantically close words.
-    positions = [
-        int(hashlib.md5(v.encode()).hexdigest()[:8], 16) / 0xFFFFFFFF
-        for v in vocab
-    ]
-
-    # Hausdorff momentleri: μ_k = Σ p_i * x_i^k, μ_0 = 1
-    moments: list[Fraction] = [Fraction(1)]
-    for k in range(1, num_moments):
-        mu_k = sum(probs[i] * (positions[i] ** k) for i in range(N))
-        moments.append(Fraction(mu_k).limit_denominator(10 ** 9))
-
-    return moments
+def _sentences(text: str) -> list[list[str]]:
+    """Metni cümlelere böl, her cümleyi tokenize et."""
+    return [_tokenize(s) for s in _SENT_SPLIT.split(text) if s.strip()]
 
 
 # ─── Bootstrap result ─────────────────────────────────────────────────────
@@ -144,6 +62,7 @@ class BootstrapResult:
     taught: list[str] = field(default_factory=list)
     rejected: list[str] = field(default_factory=list)
     already_known: list[str] = field(default_factory=list)
+    edges_added: int = 0
 
     @property
     def new_concepts(self) -> int:
@@ -154,6 +73,7 @@ class BootstrapResult:
             f"Öğrenildi:      {len(self.taught)}",
             f"Reddedildi:     {len(self.rejected)}  (Aleph filtresini geçemedi)",
             f"Zaten biliniyordu: {len(self.already_known)}",
+            f"TAU edge:       {self.edges_added}",
         ]
         if self.taught:
             lines.append(f"Yeni kavramlar: {', '.join(self.taught[:8])}"
@@ -164,35 +84,41 @@ class BootstrapResult:
 # ─── Language Bootstrap ───────────────────────────────────────────────────
 
 class LanguageBootstrap:
-    """Her metinden kavram çıkar ve manifold'a öğret.
+    """Metinden kavram çıkar, canonical byte encoding ile manifold'a öğret.
 
-    Konuşurken öğrenir. Dosyadan okurken de öğrenir. Aynı pipeline.
+    Her kelime: UTF-8 bytes → UniversalEncoder → spektral momentler → Aleph filtresi.
+    Her cümle: cümledeki kelimeler arası TAU edge — certified sentence co-occurrence.
     """
 
     def __init__(
         self,
         engine: "AGIEngine",  # type: ignore[name-defined]
-        window: int = 3,
-        min_freq: int = 2,
-        num_moments: int = 8,
         domain: str = "language",
+        window: int = 5,        # cümle içi TAU edge penceresi
+        **kwargs,
     ) -> None:
         self.engine = engine
-        self.window = window
-        self.min_freq = min_freq
-        self.num_moments = num_moments
         self.domain = domain
-        self._corpus_counts: dict[str, Counter] = {}  # word → context counter
+        self.window = window
 
     # ─── Core: learn from any text ────────────────────────────────────────
 
     def from_text(self, text: str) -> BootstrapResult:
-        """Metinden kavram çıkar, Aleph filtrele, manifold'a öğret."""
+        """Metni öğren: unique kelimeleri encode et, cümle bazlı TAU edge kur."""
         tokens = _tokenize(text)
         if not tokens:
             return BootstrapResult()
-        self._update_corpus(tokens)
-        return self._teach_from_corpus()
+
+        # 1. Tüm unique kelimeleri canonical encode et
+        result = self._teach_words(set(tokens))
+
+        # 2. Cümle bazlı TAU edge'leri kur
+        tau = getattr(self.engine, "tau", None)
+        if tau is not None:
+            sents = _sentences(text)
+            result.edges_added = self._wire_sentences(sents, tau)
+
+        return result
 
     def from_file(self, path: str, save_after: bool = True) -> BootstrapResult:
         """Dosyadan metin oku, öğren, manifold'u kaydet."""
@@ -209,48 +135,27 @@ class LanguageBootstrap:
 
     # ─── Internal ─────────────────────────────────────────────────────────
 
-    def _update_corpus(self, tokens: list[str]) -> None:
-        """Sliding window ile eş-oluşum sayaçlarını güncelle."""
-        for i, word in enumerate(tokens):
-            if word not in self._corpus_counts:
-                self._corpus_counts[word] = Counter()
-            start = max(0, i - self.window)
-            end = min(len(tokens), i + self.window + 1)
-            for j in range(start, end):
-                if j != i:
-                    self._corpus_counts[word][tokens[j]] += 1
-
-    def _teach_from_corpus(self) -> BootstrapResult:
-        """Korpustaki tüm kelimeleri manifold'a öğretmeyi dene."""
+    def _teach_words(self, words: set[str]) -> BootstrapResult:
+        """Kelime kümesini canonical byte encoding ile manifold'a öğret."""
         result = BootstrapResult()
-        # PPMI basis — bir kez hesapla, tüm kelimeler için kullan O(V) per word
-        basis = _PPMIBasis(self._corpus_counts, top_n=400)
 
-        for word, context in self._corpus_counts.items():
-            if sum(context.values()) < self.min_freq:
-                continue
-
+        for word in words:
             if word in self.engine.manifold.concepts:
                 result.already_known.append(word)
                 continue
 
-            moments = _concept_moments_from_cooccurrence(
-                word, context, self._corpus_counts, self.num_moments, basis=basis
-            )
-            if moments is None:
-                result.rejected.append(word)
-                continue
-
+            # Canonical encoding: UTF-8 bytes [0,1] → Hankel matris → spektral momentler.
+            byte_seq = [b / 255.0 for b in word.encode("utf-8")]
+            codex_obj = self.engine.encoder.encode(byte_seq, name=word)
             concept = Concept(
                 name=word,
-                moments=moments,
+                moments=codex_obj.moments,
                 domain=self.domain,
-                source="co_occurrence",
+                source="canonical_text",
             )
             try:
                 self.engine.manifold.add(concept)
                 result.taught.append(word)
-                # TAU node ekle — edge'ler toplu öğrenimde sonda hesaplanır
                 tau = getattr(self.engine, "tau", None)
                 if tau is not None:
                     tau.add_node(concept)
@@ -259,16 +164,75 @@ class LanguageBootstrap:
 
         return result
 
+    def _wire_sentences(self, sentences: list[list[str]], tau: "TauGraph") -> int:  # type: ignore[name-defined]
+        """Cümle bazlı TAU edge'leri kur — certified sentence co-occurrence.
+
+        Her cümledeki kelimeler arası TAU edge: "bu cümlede birlikte geçtiler."
+        İstatistik yok — her edge'in kaynağı belirli bir cümle.
+        """
+        from tantrium.agi.tau_graph import TauEdge
+
+        concepts = self.engine.manifold.concepts
+        edge_count = 0
+
+        for sent_tokens in sentences:
+            # Cümledeki geçerli kavramları al
+            sent_concepts = [t for t in sent_tokens if t in concepts]
+            if len(sent_concepts) < 2:
+                continue
+
+            # Window içindeki tüm çiftleri bağla
+            n = len(sent_concepts)
+            for i in range(n):
+                a_name = sent_concepts[i]
+                ca = concepts[a_name]
+                a_moments = [float(m) for m in ca.moments]
+                k = len(a_moments)
+
+                for j in range(i + 1, min(i + self.window + 1, n)):
+                    b_name = sent_concepts[j]
+                    if a_name == b_name:
+                        continue
+                    cb = concepts[b_name]
+                    b_moments = [float(m) for m in cb.moments]
+
+                    # L1 moment mesafesi — certified
+                    d = sum(abs(a_moments[idx] - (float(cb.moments[idx]) if idx < len(cb.moments) else 0.0))
+                            for idx in range(k))
+
+                    edge = TauEdge(
+                        source=a_name,
+                        target=b_name,
+                        distance=d,
+                        paradigm="SENTENCE_CO",
+                    )
+                    # Her iki yönde ekle
+                    if a_name not in tau.edges:
+                        tau.edges[a_name] = []
+                    if b_name not in tau.edges:
+                        tau.edges[b_name] = []
+                    tau.edges[a_name].append(edge)
+                    tau.edges[b_name].append(
+                        TauEdge(source=b_name, target=a_name, distance=d, paradigm="SENTENCE_CO")
+                    )
+                    edge_count += 2
+
+        return edge_count
+
     def corpus_size(self) -> int:
-        return len(self._corpus_counts)
+        return sum(
+            1 for c in self.engine.manifold.concepts.values()
+            if getattr(c, "source", "") == "canonical_text"
+        )
 
     def status(self) -> str:
-        known = sum(
-            1 for w in self._corpus_counts
-            if w in self.engine.manifold.concepts
-        )
+        total = len(self.engine.manifold.concepts)
+        canonical = self.corpus_size()
+        tau = getattr(self.engine, "tau", None)
+        tau_edges = sum(len(v) for v in tau.edges.values()) if tau else 0
         return (
-            f"Korpus: {self.corpus_size()} benzersiz kelime  |  "
-            f"Manifold'da: {known}  |  "
-            f"Pencere: {self.window}  |  Min frekans: {self.min_freq}"
+            f"Manifold: {total} kavram  |  "
+            f"Canonical text: {canonical}  |  "
+            f"TAU edge: {tau_edges}  |  "
+            f"Domain: {self.domain}"
         )
