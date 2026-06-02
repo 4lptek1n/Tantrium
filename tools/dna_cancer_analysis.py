@@ -167,35 +167,29 @@ def dna_to_floats(seq: str) -> list[float]:
     return [_DNA_BYTE.get(c, 0.3) for c in seq.upper() if c in _DNA_BYTE]
 
 
-def encode_dna_windows(
-    engine: AGIEngine,
-    seq: str,
-    name: str,
-    window: int = 256,
-    stride: int = 128,
-) -> Concept:
-    """Sliding window encoding — uzun sekans için.
+def encode_dna_moments(seq: str, name: str) -> Concept:
+    """DNA sekansı → 8 Hankel-uyumlu spektral moment.
 
-    Her pencere → momentler → tüm pencerelerin ortalaması.
-    Bu, sekansın global spektral imzasını verir.
+    Encoder'ın büyük input için O(n²) yavaşlığını atlayarak doğrudan
+    güç momentlerini hesaplar: μ_k = (1/N) Σ xᵢᵏ  (k=1..8).
+    Bu, Hankel matrisin H_{ij} = μ_{i+j} yapısını korur.
+
+    Normalleştirme: μ₁ = 1.0 sabit (sistem geneli ile tutarlı).
     """
     floats = dna_to_floats(seq)
-    if len(floats) < window:
-        obj = engine.encoder.encode(floats, name=name)
-        return Concept(name=name, moments=list(obj.moments), domain="dna", source="genome")
+    if not floats:
+        return Concept(name=name, moments=[Fraction(1)] * 8, domain="dna", source="genome")
 
-    window_moments: list[list[float]] = []
-    for start in range(0, len(floats) - window + 1, stride):
-        chunk = floats[start:start + window]
-        obj = engine.encoder.encode(chunk, name=f"{name}_w{start}")
-        window_moments.append([float(m) for m in obj.moments])
+    n = len(floats)
+    # Güç momentleri: μ_k = ortalama(x^k) — Hankel H_{ij}=μ_{i+j} için doğru yapı
+    # k=0: μ₀=1 (normalize), k=1..7: güç momentleri
+    moments_raw = [1.0]  # μ₀ = 1.0 her zaman
+    for k in range(1, 8):
+        mu_k = sum(x ** k for x in floats) / n
+        moments_raw.append(mu_k)
 
-    k = len(window_moments[0])
-    n = len(window_moments)
-    avg = [sum(wm[i] for wm in window_moments) / n for i in range(k)]
-    avg_frac = [Fraction(v).limit_denominator(10 ** 9) for v in avg]
-
-    return Concept(name=name, moments=avg_frac, domain="dna", source="genome")
+    moments_frac = [Fraction(v).limit_denominator(10 ** 9) for v in moments_raw]
+    return Concept(name=name, moments=moments_frac, domain="dna", source="genome")
 
 
 # ─── Sertifikasyon ────────────────────────────────────────────────────────────
@@ -282,8 +276,8 @@ def main() -> None:
     print("\n  [4] DNA → Hankel Moment Uzayı Kodlaması...")
     print("      Encoding: A=0.255  C=0.263  G=0.278  T=0.329  (ASCII/255)")
 
-    normal_concept = encode_dna_windows(engine, normal_seq, "TP53_NORMAL", window=256, stride=64)
-    cancer_concept = encode_dna_windows(engine, cancer_seq, "TP53_CANCER", window=256, stride=64)
+    normal_concept = encode_dna_moments(normal_seq, "TP53_NORMAL")
+    cancer_concept = encode_dna_moments(cancer_seq, "TP53_CANCER")
 
     print(f"      Normal  μ: {[round(float(m), 5) for m in normal_concept.moments]}")
     print(f"      Kanserli μ: {[round(float(m), 5) for m in cancer_concept.moments]}")
@@ -417,13 +411,13 @@ def main() -> None:
     # Normal ve kanserli TP53'ün manifold'daki en yakın komşuları
     print("      Manifold'da normal TP53'e en yakın kavramlar:")
     nn_normal = engine.manifold.nearest(normal_concept, n=5)
-    for name, dist in nn_normal:
-        print(f"         {name:<30}  mesafe={float(dist):.4f}")
+    for nm, nd in nn_normal:
+        print(f"         {nm:<30}  mesafe={float(nd):.4f}")
 
     print("      Manifold'da kanserli TP53'e en yakın kavramlar:")
     nn_cancer = engine.manifold.nearest(cancer_concept, n=5)
-    for name, dist in nn_cancer:
-        print(f"         {name:<30}  mesafe={float(dist):.4f}")
+    for nm, nd in nn_cancer:
+        print(f"         {nm:<30}  mesafe={float(nd):.4f}")
 
     # Aynı komşular var mı?
     normal_names = {n for n, _ in nn_normal}
