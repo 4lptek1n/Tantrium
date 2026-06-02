@@ -263,14 +263,21 @@ class TauGraph:
             for name in names
         ]
 
+        # Sadece ALEPH (moment-distance certified) edge'leri kaydet.
+        # Sentence co-occurrence ve diğer L0 edge'leri TAU'ya dahil değil —
+        # bunlar L2 Hankel kernel'ının dışında, istatistiksel yapılar.
         edge_list: list[list] = []
         total_edges = 0
         for name in names:
-            edges = self.edges.get(name, [])
+            all_edges = self.edges.get(name, [])
+            aleph = [e for e in all_edges if e.paradigm == "ALEPH"]
+            # k=10 ile sınırla, mesafeye göre sırala
+            aleph.sort(key=lambda e: e.distance)
+            aleph = aleph[:10]
             edge_list.append(
-                [[id_map[e.target], round(e.distance, 5)] for e in edges if e.target in id_map]
+                [[id_map[e.target], round(e.distance, 6)] for e in aleph if e.target in id_map]
             )
-            total_edges += len(edges)
+            total_edges += len(aleph)
 
         data = {"n": node_list, "e": edge_list}
         Path(path).write_text(
