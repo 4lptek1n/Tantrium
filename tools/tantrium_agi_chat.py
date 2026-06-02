@@ -18,6 +18,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine, SessionMemory, Turn
+from tantrium.agi.goal import GoalManifold, encode_goal
+from tantrium.agi.actor import Actor
 from tantrium.agi.semantic import Concept
 from tantrium.agi.language import LanguageBootstrap
 
@@ -30,6 +32,9 @@ BANNER = """
 ║  Tahmin yok. Halüsinasyon yok.                               ║
 ║                                                              ║
 ║  /think <soru>       derin düşünce (dyadic transport, ell=3) ║
+║  /goal <hedef>       yeni hedef kaydet (Aleph sertifikalı)   ║
+║  /goals              aktif hedefler + ilerleme               ║
+║  /pursue [hedef]     hedef peşinde döngü çalıştır            ║
 ║  /learn <dosya>      dosyadan öğren                          ║
 ║  /grow               bilgi tabanını genişlet                 ║
 ║  /forget             çalışma belleğini temizle               ║
@@ -110,6 +115,10 @@ def chat_loop(engine: AGIEngine) -> None:
     session = SessionMemory.latest() or SessionMemory.new()
     engine.attach_session(session)
 
+    # Hedef manifoldu ve actor yükle
+    goal_manifold = GoalManifold.load()
+    actor = Actor(engine)
+
     print(BANNER)
     print(f"   {len(engine.manifold.concepts)} sertifikalı kavram yüklü.")
     if session.turns:
@@ -117,6 +126,10 @@ def chat_loop(engine: AGIEngine) -> None:
               f"({len(session.turns)} önceki turn)")
     else:
         print(f"   Yeni oturum: {session.session_id}")
+    active_goals = goal_manifold.active_goals()
+    if active_goals:
+        print(f"   Aktif hedefler: {len(active_goals)}  "
+              f"({', '.join(g.name[:30] for g in active_goals[:3])})")
     print()
 
     while True:
@@ -134,6 +147,7 @@ def chat_loop(engine: AGIEngine) -> None:
             print("Kalıcı bellek kaydediliyor...")
             n_concepts, n_edges = engine.auto_persist()
             session.save()
+            goal_manifold.save()
             print(f"  Manifold: {n_concepts} kavram | TAU: {n_edges} edge | "
                   f"Oturum: {session.session_id}")
             print("Sistem kapanıyor.")
@@ -142,6 +156,65 @@ def chat_loop(engine: AGIEngine) -> None:
         if user_input.lower() == "/forget":
             session.clear_working()
             print("  Çalışma belleği temizlendi (manifold korundu).")
+            print()
+            continue
+
+        if user_input.lower().startswith("/goal "):
+            desc = user_input[6:].strip()
+            if not desc:
+                print("  Kullanım: /goal <hedef açıklaması>")
+            else:
+                print(f"  Hedef encode ediliyor: '{desc}'")
+                g = encode_goal(engine, desc)
+                if g is None:
+                    print("  BLOKE — Aleph filtresi geçilemedi (bu hedef manifold'da yok).")
+                else:
+                    added = goal_manifold.add(g)
+                    if added:
+                        goal_manifold.save()
+                        print(f"  ✓ Hedef eklendi: '{g.name}'")
+                        print(f"    moment[0:4]: {[f'{m:.4f}' for m in g.moments[:4]]}")
+                    else:
+                        print(f"  Hedef zaten kayıtlı: '{g.name}'")
+            print()
+            continue
+
+        if user_input.lower() == "/goals":
+            print(goal_manifold.summary())
+            print()
+            continue
+
+        if user_input.lower().startswith("/pursue"):
+            # /pursue         → ilk aktif hedef
+            # /pursue <isim>  → isimle eşleşen hedef
+            rest = user_input[7:].strip()
+            if rest:
+                goal = goal_manifold.get(rest)
+                if goal is None:
+                    # partial match
+                    for g in goal_manifold.active_goals():
+                        if rest.lower() in g.name.lower():
+                            goal = g
+                            break
+                if goal is None:
+                    print(f"  Hedef bulunamadı: '{rest}'")
+                    print()
+                    continue
+            else:
+                actives = goal_manifold.active_goals()
+                goal = actives[0] if actives else None
+
+            if goal is None:
+                print("  Aktif hedef yok. Önce /goal <hedef> ile hedef ekle.")
+                print()
+                continue
+
+            print(f"  Hedef peşinde: '{goal.name}'  (ilerleme: {goal.progress:.0%})")
+            results = actor.pursue_goal(goal, goal_manifold)
+            for r in results:
+                icon = "✓" if r.success else "✗"
+                print(f"    {icon} [{r.action.action_type}] {r.summary}")
+            print(f"  İlerleme → {goal.progress:.0%}")
             print()
             continue
 
