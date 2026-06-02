@@ -165,16 +165,38 @@ class Thinker:
         tau = getattr(engine, "tau", None)
 
         if known_words and tau:
-            # Bilinen kelimelerin TAU komşularını birleştir
-            seen: dict[str, float] = {}
+            # Semantic edges (IS_A, USES, ACHIEVES, ...) > ALEPH (byte-geometric)
+            # Collect both, prefer semantic when available
+            _SEMANTIC_PARADIGMS = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
+            sem_seen: dict[str, tuple[float, str]] = {}   # name → (dist, paradigm)
+            aleph_seen: dict[str, float] = {}
             for w in known_words[:neighbors]:
                 for edge in tau.edges.get(w, []):
-                    if edge.target not in seen:
-                        seen[edge.target] = edge.distance
+                    if edge.paradigm in _SEMANTIC_PARADIGMS:
+                        if edge.target not in sem_seen or edge.distance < sem_seen[edge.target][0]:
+                            sem_seen[edge.target] = (edge.distance, edge.paradigm)
                     else:
-                        seen[edge.target] = min(seen[edge.target], edge.distance)
-            neighbor_list = sorted(seen.items(), key=lambda x: x[1])[:neighbors]
-            neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d in neighbor_list]
+                        if edge.target not in aleph_seen or edge.distance < aleph_seen[edge.target]:
+                            aleph_seen[edge.target] = edge.distance
+
+            sem_list = sorted(sem_seen.items(), key=lambda x: x[1][0])
+            aleph_list = sorted(aleph_seen.items(), key=lambda x: x[1])
+
+            # Fill up to `neighbors` slots: semantic first, then ALEPH for remainder
+            combined: list[tuple[str, float, str]] = []
+            for name, (d, paradigm) in sem_list:
+                if len(combined) >= neighbors:
+                    break
+                combined.append((name, d, paradigm))
+            for name, d in aleph_list:
+                if len(combined) >= neighbors:
+                    break
+                if name not in sem_seen:
+                    combined.append((name, d, "ALEPH"))
+
+            neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d, _ in combined]
+            # Tag semantic edges in certified_claims later via paradigm info
+            _neighbor_paradigms = {n: p for n, _, p in combined}
         elif tau and q_name in tau.edges and tau.edges[q_name]:
             raw_neighbors = tau.nearest(q_name)
             neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d in raw_neighbors]
@@ -186,13 +208,15 @@ class Thinker:
             lv1.transport_drift = avg_drift
 
         neighbor_concepts: list[tuple[str, Concept]] = []
+        _neighbor_paradigms = locals().get("_neighbor_paradigms", {})
         for name, dist in neighbor_list:
             c = engine.manifold.concepts.get(name)
             if c is None:
                 continue
             neighbor_concepts.append((name, c))
             lv1.concepts.append(name)
-            lv1.certified_claims.append(f"'{name}'  [d={float(dist):.4f}]")
+            paradigm_tag = _neighbor_paradigms.get(name, "ALEPH")
+            lv1.certified_claims.append(f"'{name}'  [{paradigm_tag}  d={float(dist):.4f}]")
 
         result.levels.append(lv1)
         if depth < 2 or len(neighbor_concepts) < 2:

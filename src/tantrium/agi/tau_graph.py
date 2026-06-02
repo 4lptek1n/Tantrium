@@ -263,21 +263,29 @@ class TauGraph:
             for name in names
         ]
 
-        # Sadece ALEPH (moment-distance certified) edge'leri kaydet.
-        # Sentence co-occurrence ve diğer L0 edge'leri TAU'ya dahil değil —
-        # bunlar L2 Hankel kernel'ının dışında, istatistiksel yapılar.
+        # ALEPH: moment-distance certified (L2 Hankel kernel) — k=10, distance sorted
+        # Semantic: pattern-extracted logical relationships (IS_A, USES, ACHIEVES, etc.)
+        # L0 statistical (sentence co-occurrence, PPMI) is excluded.
+        _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
+        # Paradigm → single-char code for compact storage
+        _P = {"ALEPH": "A", "IS_A": "I", "USES": "U", "DEFINES": "D",
+              "ACHIEVES": "V", "REQUIRES": "R", "COMPOSED": "C"}
         edge_list: list[list] = []
         total_edges = 0
         for name in names:
             all_edges = self.edges.get(name, [])
+            # ALEPH edges: geometric certified, keep k=10 closest
             aleph = [e for e in all_edges if e.paradigm == "ALEPH"]
-            # k=10 ile sınırla, mesafeye göre sırala
             aleph.sort(key=lambda e: e.distance)
             aleph = aleph[:10]
+            # Semantic edges: logically certified relationships
+            semantic = [e for e in all_edges if e.paradigm in _SEMANTIC]
+            combined = aleph + semantic
             edge_list.append(
-                [[id_map[e.target], round(e.distance, 6)] for e in aleph if e.target in id_map]
+                [[id_map[e.target], round(e.distance, 6), _P.get(e.paradigm, "A")]
+                 for e in combined if e.target in id_map]
             )
-            total_edges += len(aleph)
+            total_edges += len(combined)
 
         data = {"n": node_list, "e": edge_list}
         Path(path).write_text(
@@ -305,12 +313,19 @@ class TauGraph:
                 domain = domain_map.get(d_char, "general")
                 g.nodes[name] = TauNode(name=name, domain=domain, source="saved", sr=sr)
                 names.append(name)
+            _P_REV = {"A": "ALEPH", "I": "IS_A", "U": "USES", "D": "DEFINES",
+                      "V": "ACHIEVES", "R": "REQUIRES", "C": "COMPOSED"}
             for i, edge_rows in enumerate(data["e"]):
                 src = names[i]
                 g.edges[src] = [
-                    TauEdge(source=src, target=names[tgt_id], distance=dist)
-                    for tgt_id, dist in edge_rows
-                    if tgt_id < len(names)
+                    TauEdge(
+                        source=src,
+                        target=names[row[0]],
+                        distance=row[1],
+                        paradigm=_P_REV.get(row[2] if len(row) > 2 else "A", "ALEPH"),
+                    )
+                    for row in edge_rows
+                    if row[0] < len(names)
                 ]
         # Eski format: "nodes" ve "edges" dict'leri
         elif "nodes" in data:
