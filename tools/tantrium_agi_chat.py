@@ -41,6 +41,7 @@ BANNER = """
 ║  /generate-en <kav>  İngilizce certified üretim              ║
 ║  /inject-english     İngilizce dil topolojisini yükle        ║
 ║  /plan <hedef>       hedefe giden adım planı üret            ║
+║  /certify <hedef>    moleküler sertifika (PubChem + kanıt)    ║
 ║  /chain              TAU transitif kapatma (tüm çıkarımlar)  ║
 ║  /map                moment uzayı haritası (μ₁×μ₂)          ║
 ║  /frontier           keşfedilebilir boş bölgeler             ║
@@ -430,6 +431,34 @@ def chat_loop(engine: AGIEngine) -> None:
                     for r in results:
                         print(f"    {r}")
                     goal_manifold.save()
+            print()
+            continue
+
+        if user_input.lower().startswith("/certify "):
+            from tantrium.agi.molecular import MolecularCertifier
+            rest = user_input[9:].strip()
+            if not rest:
+                print("  Kullanım: /certify <hedef>  (örn: /certify EGFR)")
+                print("            /certify EGFR --no-fetch  (sadece manifold)")
+                print("            /certify EGFR --top=5")
+                print()
+                continue
+            parts = rest.split()
+            target_name = parts[0]
+            auto_fetch = True
+            top_k = 10
+            for p in parts[1:]:
+                if p == "--no-fetch":
+                    auto_fetch = False
+                elif p.startswith("--top="):
+                    try: top_k = int(p[6:])
+                    except ValueError: pass
+            print(f"\n  Hedef: '{target_name}'  |  PubChem: {'açık' if auto_fetch else 'kapalı'}  |  top_k={top_k}")
+            certifier = MolecularCertifier(engine)
+            report = certifier.certify_for_target(
+                target_name, auto_fetch=auto_fetch, top_k=top_k
+            )
+            print(report.summary())
             print()
             continue
 
