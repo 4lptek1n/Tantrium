@@ -50,6 +50,8 @@ from tantrium.agi.autonomous import AutonomousObserver, Observation
 from tantrium.agi.researcher import AutonomousResearcher, ResearchCycle, ResearchReport
 from tantrium.agi.reasoner import TauReasoner, ReasoningResult, ChainStep
 from tantrium.agi.planner import Planner, Plan, PlanStep
+from tantrium.agi.generator import CertifiedGenerator, GenerationResult, GeneratedStep
+from tantrium.agi.lang_topology import EnglishTopology, InjectionResult
 
 __all__ = [
     "SemanticBridge",
@@ -126,4 +128,9 @@ __all__ = [
     "Planner",
     "Plan",
     "PlanStep",
+    "CertifiedGenerator",
+    "GenerationResult",
+    "GeneratedStep",
+    "EnglishTopology",
+    "InjectionResult",
 ]

@@ -37,6 +37,9 @@ BANNER = """
 ║  /think <soru>       derin düşünce (dyadic transport, ell=3) ║
 ║  /reason <kavram>    TAU zinciri — certified akıl yürütme    ║
 ║  /compose <A> <B>    iki kavramı manifoldda birleştir         ║
+║  /generate <kavram>  certified yörünge üretimi (Sturm)       ║
+║  /generate-en <kav>  İngilizce certified üretim              ║
+║  /inject-english     İngilizce dil topolojisini yükle        ║
 ║  /plan <hedef>       hedefe giden adım planı üret            ║
 ║  /chain              TAU transitif kapatma (tüm çıkarımlar)  ║
 ║  /map                moment uzayı haritası (μ₁×μ₂)          ║
@@ -342,6 +345,43 @@ def chat_loop(engine: AGIEngine) -> None:
                     mem = engine.note_new_concepts([comp_name])
                     if mem["persisted"]:
                         print("  ✓ Manifold kaydedildi.")
+            print()
+            continue
+
+        if user_input.lower().startswith("/inject-english"):
+            from tantrium.agi.lang_topology import EnglishTopology
+            print("İngilizce dil topolojisi yükleniyor...")
+            inj = EnglishTopology(engine)
+            result = inj.inject(run_bootstrap=True, run_reasoner=True)
+            print(result.summary())
+            print()
+            continue
+
+        if user_input.lower().startswith("/generate-en ") or user_input.lower().startswith("/generate "):
+            from tantrium.agi.generator import CertifiedGenerator
+            is_en = user_input.lower().startswith("/generate-en ")
+            prefix_len = 13 if is_en else 10
+            rest = user_input[prefix_len:].strip()
+            if not rest:
+                print("  Kullanım: /generate <kavram> [--steps=N] [--goal=kavram]")
+                print()
+                continue
+            # Parse args
+            parts = rest.split()
+            seed = parts[0]
+            max_steps = 8
+            goal_name = None
+            for p in parts[1:]:
+                if p.startswith("--steps="):
+                    try: max_steps = int(p[8:])
+                    except ValueError: pass
+                elif p.startswith("--goal="):
+                    goal_name = p[7:]
+            lang = "en" if is_en else "tr"
+            gen = CertifiedGenerator(engine, lang=lang)
+            result = gen.generate(seed, max_steps=max_steps, goal_name=goal_name)
+            print()
+            print(result.summary())
             print()
             continue
 
