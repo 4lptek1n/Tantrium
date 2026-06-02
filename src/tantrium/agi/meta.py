@@ -293,17 +293,53 @@ class MetaParadigm:
 
     # ─── Gap analizi: kör nokta tespiti ───────────────────────────────────────
 
-    def blind_spots(self) -> list[str]:
-        """Hangi paradigmalar manifold'da hiç temsil edilmiyor?
+    def blind_spots(self, threshold: int = 5) -> list[dict]:
+        """Hangi matematiksel alanlar manifoldda zayıf temsil ediliyor?
 
-        Manifold'da ismi geçmeyen paradigma = sistemin matematiksel kör noktası.
+        Çapa tabanlı analiz: her matematiksel ailenin kaç SPECTRAL_BRIDGE
+        komşusu var? threshold'dan az olan = boşluk.
+
+        Döner: [{"anchor": str, "count": int, "keywords": list[str]}, ...]
+        Önce en az komşusu olanlar (araştırma önceliği).
         """
-        pm = self.compute_all()
-        blind = [
-            p.name for p in pm.values()
-            if p.source == "canonical" and not p.certified
-        ]
-        return blind
+        _ANCHOR_KEYWORDS: dict[str, list[str]] = {
+            "GUE_RANDOM_MATRIX":  ["random matrix", "GUE"],
+            "POISSON_PROCESS":    ["Poisson process"],
+            "UNIFORM_MEASURE":    ["equidistributed", "uniform"],
+            "EXPONENTIAL_DECAY":  ["exponential decay"],
+            "PERIODIC_LATTICE":   ["periodic", "lattice"],
+            "GAUSSIAN_BELL":      ["Gaussian", "normal distribution"],
+            "LINEAR_RAMP":        ["arithmetic progression"],
+            "GEOMETRIC_GROWTH":   ["geometric", "Fibonacci"],
+            "PRIME_GAPS":         ["prime gaps"],
+            "ZETA_ZEROS":         ["Riemann zeta", "L-function zeros"],
+        }
+        _PREFIX = "⊕ANCHOR:"
+
+        gaps: list[dict] = []
+        tau_edges = self.engine.tau.edges
+
+        for anchor_short, keywords in _ANCHOR_KEYWORDS.items():
+            full_name = f"{_PREFIX}{anchor_short}"
+            bridges = [
+                e for e in tau_edges.get(full_name, [])
+                if e.paradigm == "SPECTRAL_BRIDGE"
+                and not e.target.startswith(_PREFIX)
+            ]
+            count = len(bridges)
+            if count < threshold:
+                gaps.append({"anchor": anchor_short, "count": count, "keywords": keywords})
+
+        # Çapa boşluğu yoksa paradigma sertifika kontrolü (fallback)
+        if not gaps:
+            pm = self.compute_all()
+            for p in pm.values():
+                if p.source == "canonical" and not p.certified:
+                    gaps.append({
+                        "anchor": p.name, "count": 0, "keywords": [p.name.lower()]
+                    })
+
+        return sorted(gaps, key=lambda x: x["count"])
 
     # ─── Tam rapor ────────────────────────────────────────────────────────────
 
@@ -331,7 +367,9 @@ class MetaParadigm:
 
         blind = self.blind_spots()
         if blind:
-            lines.append(f"\n  KÖR NOKTA: {len(blind)} paradigma manifold'da yok: {blind}")
+            lines.append(f"\n  KÖR NOKTA: {len(blind)} alan zayıf temsil ediliyor:")
+            for gap in blind[:5]:
+                lines.append(f"    {gap['anchor']:<22}: {gap['count']} komşu")
 
         lines.append("")
         lines.append(ur.summary())
