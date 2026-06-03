@@ -240,7 +240,7 @@ class AI:
         lang: str = "tr",
     ) -> GenResult:
         """TAU walk → Sturm-garantili certified metin üretimi."""
-        from tantrium.agi.language.bootstrap.generator import CertifiedGenerator
+        from tantrium.agi.language.generator import CertifiedGenerator
         gen = CertifiedGenerator(self._engine, lang=lang)
         result = gen.generate(seed, max_steps=steps, goal_name=goal)
         return GenResult(

@@ -21,7 +21,7 @@ from tantrium.agi import AGIEngine, SessionMemory, Turn
 from tantrium.agi.research.goal import GoalManifold, encode_goal
 from tantrium.agi.research.actor import Actor
 from tantrium.agi.reasoning.generalization import HankelGeneralizer
-from tantrium.agi.meta.paradigm.topology import MomentTopology
+from tantrium.agi.meta.topology import MomentTopology
 from tantrium.agi.meta.paradigm import MetaParadigm
 from tantrium.agi.core.semantic import Concept
 from tantrium.agi.language.bootstrap import LanguageBootstrap
@@ -351,7 +351,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower().startswith("/inject-english"):
-            from tantrium.agi.language.bootstrap.lang_topology import EnglishTopology
+            from tantrium.agi.language.lang_topology import EnglishTopology
             print("İngilizce dil topolojisi yükleniyor...")
             inj = EnglishTopology(engine)
             result = inj.inject(run_bootstrap=True, run_reasoner=True)
@@ -360,7 +360,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower().startswith("/generate-en ") or user_input.lower().startswith("/generate "):
-            from tantrium.agi.language.bootstrap.generator import CertifiedGenerator
+            from tantrium.agi.language.generator import CertifiedGenerator
             is_en = user_input.lower().startswith("/generate-en ")
             prefix_len = 13 if is_en else 10
             rest = user_input[prefix_len:].strip()

@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine
 from tantrium.agi.reasoning.generalization import HankelGeneralizer
-from tantrium.agi.meta.paradigm.topology import MomentTopology
+from tantrium.agi.meta.topology import MomentTopology
 from tantrium.agi.core.semantic import Concept
 from tantrium.agi.domains.spectral import (
     dna_measure,
