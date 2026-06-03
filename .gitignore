@@ -58,3 +58,31 @@ formal/lean/.lake/
 results/agi/sessions/
 results/agi/goals/
 *.egg-info/
+
+# Generated outputs — never commit
+results/molecules/
+results/agi/
+results/benchmarks/
+results/certificates/
+results/conjectures/
+results/engine/
+results/formalization/
+results/research_os/
+
+# Node.js / web artifacts
+node_modules/
+dist/
+.npmrc
+package.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+tsconfig*.json
+infra/
+
+# Replit
+.replit
+.replitignore
+replit.md
+
+# Session notes
+archive/
