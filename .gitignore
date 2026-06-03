@@ -57,3 +57,4 @@ __pycache__/
 formal/lean/.lake/
 results/agi/sessions/
 results/agi/goals/
+*.egg-info/
