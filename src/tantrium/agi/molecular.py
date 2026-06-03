@@ -778,13 +778,19 @@ class MoleculeGenerator:
         top_scaffolds = ranked[:4]
 
         # 3. Aday SMILES üret
-        #    a) Her scaffold tek başına
-        #    b) Top-2 scaffold kombinasyonları
         candidate_smiles: list[tuple[str, str]] = []
 
+        # a) Hedefin bilinen ilaçlarını direkt aday yap
+        known = self._TARGET_SMILES_MAP.get(target_name.upper().split()[0], [])
+        known_names = ["known_binder_1", "known_binder_2", "known_binder_3", "known_binder_4"]
+        for i, smi in enumerate(known[:4]):
+            candidate_smiles.append((known_names[i], smi))
+
+        # b) Hedef momentine en yakın scaffold'lar
         for name, smiles, _ in top_scaffolds:
             candidate_smiles.append((name, smiles))
 
+        # c) Top-2 scaffold kombinasyonları
         if len(top_scaffolds) >= 2:
             n1, s1, _ = top_scaffolds[0]
             n2, s2, _ = top_scaffolds[1]
