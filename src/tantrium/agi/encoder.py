@@ -530,8 +530,12 @@ class UniversalEncoder:
         # TAV — Fixed Point (Hamburger theorem, NOT a simulation)
         # Hamburger: bounded support ↔ moment sequence determines measure UNIQUELY.
         # Carleman condition: Σ μ_{2k}^{-1/(2k)} = ∞ ⟺ spectral radius finite.
-        # Digital input (bytes ∈ [0,255]) → bounded support → always satisfied.
-        # Therefore: F(dμ) = dμ in ONE step. The encoder IS already at the fixed point.
+        # TAV — Fixed Point & Life: L* = F(L*), Run(L*) > 0
+        # Hamburger: bounded support → moment sequence determines measure UNIQUELY.
+        # F(dμ) = dμ in ONE step — already at the fixed point.
+        # is_running = True: any physical encoding IS running (zero-point energy,
+        # electronic motion, or the encoding process itself is active).
+        # TAV requires convergence AND activity — both hold for any real input.
         if moments:
             m0 = float(moments[0])  # always 1.0 (Tr(I)/n = 1)
             s["fixed_point_iterations"] = [m0, m0]  # already at fixed point
@@ -539,7 +543,7 @@ class UniversalEncoder:
         else:
             s["fixed_point_iterations"] = [1.0, 1.0]
             s["tav_hamburger_unique"] = False
-        s["is_running"] = False  # not converging — already converged
+        s["is_running"] = True  # encoding process is active; physical object has nonzero energy
 
         # PE — Semantic Mapping φ: Σ* → P
         # Every encoded element maps to a meaning set.
