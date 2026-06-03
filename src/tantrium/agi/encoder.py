@@ -615,13 +615,13 @@ def _smiles_to_morgan_matrix(smiles: str, n_bits: int = 64) -> list[list[Fractio
     """
     try:
         from rdkit import Chem
-        from rdkit.Chem import AllChem
+        from rdkit.Chem import rdMolDescriptors
 
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             return _text_to_bigram_matrix(smiles)
 
-        fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=n_bits)
+        fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=n_bits)
         bits = [float(b) for b in fp]
         return _numbers_to_matrix(bits)
     except Exception:

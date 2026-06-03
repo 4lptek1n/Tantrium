@@ -1,3 +1,5 @@
 """Tantrium: structure-first discovery tools."""
 
-__all__ = ["core", "algebra", "discovery"]
+from tantrium.ai import AI
+
+__all__ = ["AI", "core", "algebra", "discovery"]

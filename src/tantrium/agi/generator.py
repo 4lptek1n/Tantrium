@@ -118,7 +118,9 @@ class CertifiedGenerator:
         # 1. Seed kavramını bul ya da encode et
         seed_concept = manifold.concepts.get(seed)
         if seed_concept is None:
-            seed_concept = self.engine.encoder.encode(seed, name=seed[:64])
+            from tantrium.agi.semantic import Concept
+            raw = self.engine.encoder.encode(seed, name=seed[:64])
+            seed_concept = Concept(name=seed[:64], moments=list(raw.moments), domain="input")
             if not seed_concept.is_real():
                 return GenerationResult(
                     seed=seed, steps=[],

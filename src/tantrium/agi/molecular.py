@@ -12,8 +12,19 @@ import time
 import urllib.request
 import json
 import pathlib
+import warnings
+import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
+
+logging.getLogger("rdkit").setLevel(logging.CRITICAL)
+warnings.filterwarnings("ignore")
+
+try:
+    from rdkit import RDLogger
+    RDLogger.DisableLog("rdApp.*")
+except Exception:
+    pass
 
 if TYPE_CHECKING:
     from tantrium.agi.engine import AGIEngine
