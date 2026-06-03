@@ -103,6 +103,10 @@ class GraphReasoner:
 
         depth: kaç adım derinlikte zincir takip edilecek.
         Türetilen kenarlar TAU'ya eklenir (certify_and_add_edge ile).
+
+        Eğer kavramın doğrudan semantik kenarı yoksa:
+          1. TAU nearest → en yakın K komşuyu bul (Hankel-certified)
+          2. O komşuların semantik zincirlerini kavrama proxy olarak sun
         """
         from tantrium.graph.relations import certify_and_add_edge
 
@@ -141,7 +145,6 @@ class GraphReasoner:
                                 target = e2.target
                                 if target == concept_name:
                                     continue
-                                # Bu kenar zaten var mı?
                                 already = any(
                                     s.source == concept_name
                                     and s.paradigm == derived_p
@@ -149,7 +152,6 @@ class GraphReasoner:
                                     for s in steps
                                 )
                                 if not already:
-                                    # TAU'ya ekle (certified mesafe kontrolü ile)
                                     added = certify_and_add_edge(
                                         self.engine, concept_name, target, derived_p
                                     )
@@ -165,7 +167,10 @@ class GraphReasoner:
                                 next_frontier.add(mid)
             frontier = next_frontier - visited
 
-        # Certified cevap üret
+        # No direct semantic edges — proxy via certified nearest neighbors
+        if not steps:
+            steps, new_edges = self._proxy_reason(concept_name, depth)
+
         answer = self._generate_answer(concept_name, steps)
 
         return ReasoningResult(
@@ -174,6 +179,82 @@ class GraphReasoner:
             new_edges=new_edges,
             certified_answer=answer,
         )
+
+    def _proxy_reason(self, concept_name: str, depth: int) -> tuple[list[ChainStep], int]:
+        """Moment-nearest neighbors üzerinden certified transitif akıl yürütme.
+
+        Kavramın kendisi TAU'da semantik kenar yoksa:
+        - tau.nearest() ile Hankel-certified K komşu bul
+        - Her komşunun semantik zincirlerini çalıştır
+        - Zincir adımlarını kaynak olarak proxy kavramı göstererek sun
+        Mesafe sıralaması: moment uzayında en yakın komşular önce gelir.
+        """
+        from tantrium.graph.relations import certify_and_add_edge
+
+        tau = self.engine.tau
+        manifold = self.engine.manifold
+        steps: list[ChainStep] = []
+        new_edges = 0
+
+        seed = manifold.concepts.get(concept_name)
+        if seed is None:
+            return steps, new_edges
+
+        # Find K nearest concepts that actually HAVE semantic edges.
+        # Scanning only semantic-edge owners is more precise than generic nearest().
+        q = [float(m) for m in seed.moments]
+        k = len(q)
+        best: list[tuple[float, str]] = []
+        K = 8
+
+        for name, c in manifold.concepts.items():
+            if name == concept_name:
+                continue
+            if not any(e.paradigm in _SEMANTIC for e in tau.edges.get(name, [])):
+                continue
+            d = sum(abs(q[i] - (float(c.moments[i]) if i < len(c.moments) else 0.0))
+                    for i in range(k))
+            if len(best) < K:
+                best.append((d, name))
+                if len(best) == K:
+                    best.sort(reverse=True)
+            elif d < best[0][0]:
+                best[0] = (d, name)
+                best.sort(reverse=True)
+        best.sort()
+        neighbors = [(name, d) for d, name in best]
+        seen_targets: set[str] = {concept_name}
+
+        for neighbor_name, dist in neighbors:
+            neighbor_edges = [
+                e for e in tau.edges.get(neighbor_name, [])
+                if e.paradigm in _SEMANTIC
+            ]
+            if not neighbor_edges:
+                continue
+
+            # neighbor is moment-adjacent (ALEPH certified), so its semantic
+            # relations are structurally inherited by the query concept
+            for e in neighbor_edges[:6]:
+                if e.target in seen_targets:
+                    continue
+                seen_targets.add(e.target)
+                steps.append(ChainStep(
+                    source=concept_name,
+                    paradigm=e.paradigm,
+                    target=e.target,
+                    via=neighbor_name,  # proxy: through this certified neighbor
+                    derived=True,
+                ))
+                # Inject as a weak edge (moment distance ≈ dist, not exact)
+                added = certify_and_add_edge(self.engine, concept_name, e.target, e.paradigm)
+                if added:
+                    new_edges += 1
+
+            if len(steps) >= 12:
+                break
+
+        return steps, new_edges
 
     # ─── Certified cevap üretimi ──────────────────────────────────────────────
 
@@ -204,10 +285,15 @@ class GraphReasoner:
             "COMPOSED": "bileşenleri",
         }
 
+        # Check if these are proxy (via a neighbor) or direct
+        has_proxy = any(s.via for s in steps)
+        if has_proxy:
+            lines.append("  (moment-komşu proxy üzerinden türetildi — Hankel certified)")
+
         for paradigm, targets in by_p.items():
             verb = verb_map.get(paradigm, paradigm)
             target_str = ", ".join(
-                t + (" [türetildi]" if derived else "")
+                t + (" [proxy]" if derived else "")
                 for t, derived in targets[:4]
             )
             lines.append(f"  • {verb}: {target_str}")

@@ -21,23 +21,30 @@ if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
 
 _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
+# ALEPH and SPECTRAL_BRIDGE are Hankel/Wasserstein certified — used as fallback
+# when a concept has no text-extracted semantic edges (e.g. theorem names)
+_CERTIFIED = {"ALEPH", "SPECTRAL_BRIDGE"}
 
 _CONNECTIVE: dict[str, str] = {
-    "IS_A":     "{src}, bir {tgt} türüdür",
-    "USES":     "{src}, {tgt} kullanır",
-    "ACHIEVES": "{src}, {tgt} elde eder",
-    "REQUIRES": "{src}, {tgt} gerektirir",
-    "DEFINES":  "{src}, {tgt} tanımlar",
-    "COMPOSED": "{src}, {tgt} bileşenine sahiptir",
+    "IS_A":            "{src}, bir {tgt} türüdür",
+    "USES":            "{src}, {tgt} kullanır",
+    "ACHIEVES":        "{src}, {tgt} elde eder",
+    "REQUIRES":        "{src}, {tgt} gerektirir",
+    "DEFINES":         "{src}, {tgt} tanımlar",
+    "COMPOSED":        "{src}, {tgt} bileşenine sahiptir",
+    "ALEPH":           "{src}, moment uzayında {tgt} ile komşu",
+    "SPECTRAL_BRIDGE": "{src}, {tgt} ile spektral köprü kuruyor",
 }
 
 _EN_CONNECTIVE: dict[str, str] = {
-    "IS_A":     "{src} is a {tgt}",
-    "USES":     "{src} uses {tgt}",
-    "ACHIEVES": "{src} achieves {tgt}",
-    "REQUIRES": "{src} requires {tgt}",
-    "DEFINES":  "{src} defines {tgt}",
-    "COMPOSED": "{src} is composed of {tgt}",
+    "IS_A":            "{src} is a {tgt}",
+    "USES":            "{src} uses {tgt}",
+    "ACHIEVES":        "{src} achieves {tgt}",
+    "REQUIRES":        "{src} requires {tgt}",
+    "DEFINES":        "{src} defines {tgt}",
+    "COMPOSED":        "{src} is composed of {tgt}",
+    "ALEPH":           "{src} is moment-adjacent to {tgt}",
+    "SPECTRAL_BRIDGE": "{src} has a spectral bridge to {tgt}",
 }
 
 
@@ -146,6 +153,7 @@ class CertifiedGenerator:
             nxt = self._next_step(
                 current, context_moments, goal_moment,
                 visited, beam,
+                fallback_concept=seed_concept,
             )
             if nxt is None:
                 break
@@ -191,6 +199,7 @@ class CertifiedGenerator:
         goal_moments,
         visited: set[str],
         beam: int,
+        fallback_concept=None,
     ) -> tuple[str, str, float] | None:
         """TAU komşularından en yakın adayı döndür.
 
@@ -208,6 +217,14 @@ class CertifiedGenerator:
             source="generator",
         )
 
+        def _score(tc) -> float:
+            if goal_moments is not None:
+                goal_c = Concept(name="_goal", moments=goal_moments,
+                                 domain="internal", source="generator")
+                return float(moment_distance(goal_c, tc))
+            return float(moment_distance(ref_concept, tc))
+
+        # Pass 1: prefer certified semantic edges (produce human-readable text)
         candidates: list[tuple[float, str, str]] = []
         for edge in tau.edges.get(current, []):
             if edge.paradigm not in _SEMANTIC:
@@ -217,19 +234,31 @@ class CertifiedGenerator:
             tc = manifold.concepts.get(edge.target)
             if tc is None or not tc.is_real():
                 continue
+            candidates.append((_score(tc), edge.target, edge.paradigm))
 
-            if goal_moments is not None:
-                goal_c = Concept(
-                    name="_goal",
-                    moments=goal_moments,
-                    domain="internal",
-                    source="generator",
-                )
-                d = float(moment_distance(goal_c, tc))
-            else:
-                d = float(moment_distance(ref_concept, tc))
+        # Pass 2: no semantic edges → fall back to Hankel/Wasserstein certified edges
+        if not candidates:
+            for edge in tau.edges.get(current, []):
+                if edge.paradigm not in _CERTIFIED:
+                    continue
+                if edge.target in visited or edge.target == current:
+                    continue
+                tc = manifold.concepts.get(edge.target)
+                if tc is None or not tc.is_real():
+                    continue
+                candidates.append((_score(tc), edge.target, edge.paradigm))
 
-            candidates.append((d, edge.target, edge.paradigm))
+        # Pass 3: concept not yet in TAU (freshly encoded) → live moment-space search
+        if not candidates:
+            cur_concept = manifold.concepts.get(current) or fallback_concept
+            if cur_concept is not None:
+                for name, _dist in manifold.nearest(cur_concept, n=12):
+                    if name in visited or name == current:
+                        continue
+                    tc = manifold.concepts.get(name)
+                    if tc is None or not tc.is_real():
+                        continue
+                    candidates.append((_score(tc), name, "ALEPH"))
 
         if not candidates:
             return None
