@@ -597,6 +597,33 @@ def _infer_name(input: Any) -> str:
     return f"{type(input).__name__}_{id(input) % 10000}"
 
 
+# ─── SMILES Morgan fingerprint encoding ─────────────────────────────────────
+
+def _smiles_to_morgan_matrix(smiles: str, n_bits: int = 64) -> list[list[Fraction]]:
+    """SMILES → RDKit Morgan fingerprint (radius=2) → count vector → Hankel matrix.
+
+    Morgan fingerprints encode chemical topology:
+      - Atom + local neighborhood (radius=2 = ECFP4)
+      - n_bits=64 → 64-dimensional chemical feature space
+      - Similar molecules → similar fingerprints → similar moments
+
+    Bu sayede moment uzayı kimyasal yapıyı taşır (bigram değil, topoloji).
+    """
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
+
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return _text_to_bigram_matrix(smiles)
+
+        fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=n_bits)
+        bits = [float(b) for b in fp]
+        return _numbers_to_matrix(bits)
+    except Exception:
+        return _text_to_bigram_matrix(smiles)
+
+
 # ─── Convenience ────────────────────────────────────────────────────────────
 
 _DEFAULT_ENCODER = UniversalEncoder()
@@ -607,3 +634,23 @@ def encode(input: Any, name: str | None = None, num_moments: int = 8) -> CodexOb
     if num_moments != 8:
         return UniversalEncoder(num_moments).encode(input, name)
     return _DEFAULT_ENCODER.encode(input, name)
+
+
+def encode_smiles(smiles: str, name: str | None = None, num_moments: int = 8) -> CodexObject:
+    """SMILES → Morgan fingerprint → Gram → moment dizisi.
+
+    Kimyasal topoloji korunur: text bigram değil, ECFP4 fingerprint kullanılır.
+    Benzer moleküller → benzer fingerprint → benzer moment → manifoldda komşu.
+    """
+    encoder = _DEFAULT_ENCODER if num_moments == 8 else UniversalEncoder(num_moments)
+    A = _smiles_to_morgan_matrix(smiles)
+    G = _gram(A)
+    moments = _spectral_moments(A, encoder.num_moments)
+    structure = encoder._extract_structure(smiles, A, G, moments)
+    structure.update({
+        "encoder":    "morgan_ecfp4",
+        "smiles":     smiles[:100],
+        "input_type": "smiles",
+        "n_bits":     64,
+    })
+    return CodexObject(name=name or smiles[:40], moments=moments, structure=structure)

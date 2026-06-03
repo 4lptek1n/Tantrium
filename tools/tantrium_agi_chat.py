@@ -41,6 +41,7 @@ BANNER = """
 ║  /generate-en <kav>  İngilizce certified üretim              ║
 ║  /inject-english     İngilizce dil topolojisini yükle        ║
 ║  /plan <hedef>       hedefe giden adım planı üret            ║
+║  /mol-gen <hedef>    de novo molekül üret (matematikten)       ║
 ║  /certify <hedef>    moleküler sertifika (PubChem + kanıt)    ║
 ║  /chain              TAU transitif kapatma (tüm çıkarımlar)  ║
 ║  /map                moment uzayı haritası (μ₁×μ₂)          ║
@@ -431,6 +432,21 @@ def chat_loop(engine: AGIEngine) -> None:
                     for r in results:
                         print(f"    {r}")
                     goal_manifold.save()
+            print()
+            continue
+
+        if user_input.lower().startswith("/mol-gen "):
+            from tantrium.agi.molecular import MoleculeGenerator
+            target = user_input[9:].strip()
+            if not target:
+                print("  Kullanım: /mol-gen <hedef>  (örn: /mol-gen EGFR)")
+                print()
+                continue
+            print(f"\n  De novo molekül üretimi: '{target}'")
+            print("  Morgan ECFP4 moment uzayında fragment kombinasyonu...")
+            gen = MoleculeGenerator(engine)
+            report = gen.generate(target)
+            print(report.summary())
             print()
             continue
 

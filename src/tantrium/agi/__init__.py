@@ -52,7 +52,11 @@ from tantrium.agi.reasoner import TauReasoner, ReasoningResult, ChainStep
 from tantrium.agi.planner import Planner, Plan, PlanStep
 from tantrium.agi.generator import CertifiedGenerator, GenerationResult, GeneratedStep
 from tantrium.agi.lang_topology import EnglishTopology, InjectionResult
-from tantrium.agi.molecular import MolecularCertifier, CertificationReport, MoleculeReport
+from tantrium.agi.molecular import (
+    MolecularCertifier, CertificationReport, MoleculeReport,
+    MoleculeGenerator, GenerationReport, GenerationCandidate,
+)
+from tantrium.agi.encoder import encode_smiles
 
 __all__ = [
     "SemanticBridge",
@@ -137,4 +141,8 @@ __all__ = [
     "MolecularCertifier",
     "CertificationReport",
     "MoleculeReport",
+    "MoleculeGenerator",
+    "GenerationReport",
+    "GenerationCandidate",
+    "encode_smiles",
 ]
