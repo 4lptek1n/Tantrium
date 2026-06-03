@@ -17,5 +17,8 @@ dev = [
 testpaths = ["tests"]
 pythonpath = [".", "src"]
 
+[project.scripts]
+tantrium = "tantrium.cli:main"
+
 [tool.ruff]
 line-length = 100
