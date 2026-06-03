@@ -388,6 +388,21 @@ class AI:
             "persisted": mem.get("persisted", False),
         }
 
+    def close(self, domain: str = "math_kernel", inject: bool = True):
+        """Zorunlu gerçekleri türet — TAU geçişli kapanışı + manifold boşlukları.
+
+        Observation mode değil: mevcut sertifikalardan OLMAK ZORUNDA OLAN
+        bağlantıları ve kavram boşluklarını tespit eder.
+
+        Döner: NecessityReport
+        """
+        from tantrium.agi.reasoning.necessity import NecessityEngine
+        ne = NecessityEngine(self._engine)
+        report = ne.run(domain=domain, inject=inject, find_gaps=True)
+        if self._persist and inject and report.edges_injected > 0:
+            self._engine.auto_persist()
+        return report
+
     # ── Sistem ────────────────────────────────────────────────────────────────
 
     def status(self) -> str:
