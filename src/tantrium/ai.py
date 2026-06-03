@@ -167,26 +167,30 @@ class AI:
     # ── Temel: sertifika + akıl yürütme ─────────────────────────────────────
 
     def ask(self, query: str) -> AskResult:
-        """Herhangi bir girdi → certify → doğal dil yanıt."""
+        """Herhangi bir girdi → certify → manifold konumu + doğal dil yanıt."""
         from tantrium.agi.semantic import Concept
 
         obj = self._engine.encoder.encode(query, name=query[:64])
         run = self._engine.network.run(obj)
 
-        answer = self._engine.speaker.explain(run)
-
-        concept = Concept(
-            name=query[:64], moments=list(obj.moments), domain="input"
-        )
+        concept = Concept(name=query[:64], moments=list(obj.moments), domain="input")
         gaps = [pid for pid, node in run.nodes.items() if node.status == "BLOCKED"]
+
+        # Sertifika özeti
+        cert_summary = self._engine.speaker.explain(run)
+
+        # Manifold konumu: en yakın kavramlar
         nearest: list[str] = []
+        location_text = ""
         if self._engine.manifold.concepts:
-            loc = self._engine.speaker.locate(concept, n=3)
-            nearest = [
-                line.strip().lstrip("·").strip()
-                for line in loc.split("\n")
-                if line.strip().startswith("·") or "→" in line
-            ][:3]
+            neighbors = self._engine.manifold.nearest(concept, n=5)
+            nearest = [name for name, _ in neighbors]
+            if nearest:
+                location_text = f"Manifold komşuları: {', '.join(nearest[:3])}"
+
+        answer = cert_summary
+        if location_text:
+            answer = f"{cert_summary}\n{location_text}"
 
         return AskResult(
             query=query,
@@ -198,14 +202,26 @@ class AI:
             nearest=nearest,
         )
 
-    def reason(self, query: str, depth: int = 3) -> ReasonResult:
+    def reason(self, query: str, depth: int = 2) -> ReasonResult:
         """Kavram üzerinde TAU zinciri — certified akıl yürütme."""
         from tantrium.agi.reasoner import TauReasoner
+
+        # Kavram manifoldda yoksa encode edip TAU'ya ekle
+        if query not in self._engine.tau.nodes:
+            from tantrium.agi.semantic import Concept
+            obj = self._engine.encoder.encode(query, name=query[:64])
+            concept = Concept(name=query[:64], moments=list(obj.moments), domain="input")
+            self._engine.manifold.add_unchecked(concept)
+            from tantrium.agi.tau_graph import TauNode
+            self._engine.tau.nodes[query[:64]] = TauNode(
+                name=query[:64], spectral_radius=float(obj.moments[0]) if obj.moments else 1.0
+            )
+
         reasoner = TauReasoner(self._engine)
-        result = reasoner.query(query, depth=depth)
+        result = reasoner.query(query[:64], depth=depth)
         steps = [
-            f"{s.from_concept} →[{s.paradigm}]→ {s.concept}"
-            for s in (result.chains or [])
+            f"{s.source} →[{s.paradigm}]→ {s.target}"
+            for s in (result.chains or [])[:10]
         ]
         conclusion = result.certified_answer or result.summary()
         return ReasonResult(

@@ -131,10 +131,10 @@ class TauReasoner:
                 if node in visited:
                     continue
                 visited.add(node)
-                node_edges = [e for e in tau.edges.get(node, []) if e.paradigm in _SEMANTIC]
+                node_edges = [e for e in tau.edges.get(node, []) if e.paradigm in _SEMANTIC][:20]
                 for e1 in node_edges:
                     mid = e1.target
-                    mid_edges = [e for e in tau.edges.get(mid, []) if e.paradigm in _SEMANTIC]
+                    mid_edges = [e for e in tau.edges.get(mid, []) if e.paradigm in _SEMANTIC][:20]
                     for e2 in mid_edges:
                         for p1, p2, derived_p in _CHAIN_RULES:
                             if e1.paradigm == p1 and e2.paradigm == p2:
