@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 _RATE_LIMIT_S = 0.6  # OEIS rate-limit arası bekleme
 
@@ -174,7 +174,7 @@ class AutonomousResearcher:
         self.bridge_threshold = bridge_threshold
         self.oeis_timeout = oeis_timeout_s
 
-        from tantrium.agi.goal import GoalManifold
+        from tantrium.agi.research.goal import GoalManifold
         self._goals = GoalManifold()
 
     # ─── Boşluk tespiti ────────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ class AutonomousResearcher:
 
         Döner: [{"anchor": str, "count": int, "keywords": list[str]}, ...]
         """
-        from tantrium.agi.meta import MetaParadigm
+        from tantrium.agi.meta.paradigm import MetaParadigm
         return MetaParadigm(self.engine).blind_spots(threshold=threshold)
 
     # ─── OEIS API ─────────────────────────────────────────────────────────────
@@ -250,8 +250,8 @@ class AutonomousResearcher:
 
     def research_cycle(self, gap_threshold: int = 5) -> ResearchCycle:
         """Tek araştırma döngüsü: değerlendirme → hedef → veri → öğren → raporla."""
-        from tantrium.agi.autonomous import AutonomousObserver
-        from tantrium.agi.goal import encode_goal
+        from tantrium.agi.research.autonomous import AutonomousObserver
+        from tantrium.agi.research.goal import encode_goal
 
         t0 = time.monotonic()
 

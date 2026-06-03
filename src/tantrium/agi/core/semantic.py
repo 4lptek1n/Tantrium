@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Sequence
 
-from tantrium.agi.codex import CodexObject, AlephParadigm, ParadigmResult
+from tantrium.agi.core.codex import CodexObject, AlephParadigm, ParadigmResult
 
 
 # ─── A concept in natural language / any domain ────────────────────────────
@@ -200,7 +200,7 @@ class SemanticManifold:
         Cache diskten yüklenebilir (build_spectral_cache + save_spectral_cache);
         yüklü değilse ilk çağrıda hesaplanır ve bellekte tutulur.
         """
-        from tantrium.agi.spectral import moments_to_spectral, spectral_distance
+        from tantrium.agi.domains.spectral import moments_to_spectral, spectral_distance
 
         q_mu = [float(m) for m in concept.moments]
         q_spec = moments_to_spectral(q_mu, name=concept.name)
@@ -235,7 +235,7 @@ class SemanticManifold:
         Bir kez çalışır (27k × Jacobi ≈ 5s), sonuç save_spectral_cache()
         ile diske yazılabilir. Döner: cache'lenen kavram sayısı.
         """
-        from tantrium.agi.spectral import moments_to_spectral
+        from tantrium.agi.domains.spectral import moments_to_spectral
 
         self._spec_cache = {}
         total = len(self.concepts)
@@ -279,7 +279,7 @@ class SemanticManifold:
         """
         import json
         from pathlib import Path
-        from tantrium.agi.spectral import SpectralMeasure
+        from tantrium.agi.domains.spectral import SpectralMeasure
 
         p = Path(path)
         if not p.exists():

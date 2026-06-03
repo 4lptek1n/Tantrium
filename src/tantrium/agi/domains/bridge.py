@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Any
 
-from tantrium.agi.codex import CodexObject
+from tantrium.agi.core.codex import CodexObject
 
 
 # ─── Paradigm → theorem graph node mapping ────────────────────────────────
@@ -450,7 +450,7 @@ class SemanticBridge:
         Converts each proven node to a Concept and adds it to the manifold.
         Returns the number of concepts added.
         """
-        from tantrium.agi.semantic import Concept
+        from tantrium.agi.core.semantic import Concept
         graph = self._load_graph()
         added = 0
         for node_id, node in graph.get("nodes", {}).items():

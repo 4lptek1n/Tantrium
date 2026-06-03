@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine
-from tantrium.agi.language import LanguageBootstrap
+from tantrium.agi.language.bootstrap import LanguageBootstrap
 
 CORPORA = [
     ("/tmp/arxiv/physics.txt",  "physics",  "arXiv Physics"),

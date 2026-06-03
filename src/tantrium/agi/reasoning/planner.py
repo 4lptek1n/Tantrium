@@ -17,8 +17,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
-    from tantrium.agi.goal import Goal
+    from tantrium.agi.core.engine import AGIEngine
+    from tantrium.agi.research.goal import Goal
 
 _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
 
@@ -123,7 +123,7 @@ class Planner:
 
         PSD garantisi: her adım TAU sertifikalı kenar — D-positivity korunur.
         """
-        from tantrium.agi.semantic import moment_distance
+        from tantrium.agi.core.semantic import moment_distance
 
         # Başlangıç kavramları
         if not known_concepts:
@@ -206,7 +206,7 @@ class Planner:
         )
 
     def _goal_distance(self, known: list[str], goal_concept) -> float:
-        from tantrium.agi.semantic import moment_distance
+        from tantrium.agi.core.semantic import moment_distance
         if not known:
             return float("inf")
         dists = []
@@ -230,7 +230,7 @@ class Planner:
 
     def execute_plan(self, plan: Plan, goal: "Goal") -> list[str]:
         """Planı Actor aracılığıyla uygula. Döner: eylem sonuçları."""
-        from tantrium.agi.actor import Actor, Action
+        from tantrium.agi.research.actor import Actor, Action
         actor = Actor(self.engine)
         results = []
         for action_type, payload in plan.action_sequence():

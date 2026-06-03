@@ -25,8 +25,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from tantrium.agi.network import NetworkRun
-from tantrium.agi.semantic import Concept, SemanticManifold
+from tantrium.agi.core.network import NetworkRun
+from tantrium.agi.core.semantic import Concept, SemanticManifold
 
 
 # ─── Paradigm sentence templates ──────────────────────────────────────────

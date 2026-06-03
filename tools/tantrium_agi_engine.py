@@ -240,7 +240,7 @@ def cmd_speak(engine: AGIEngine, name: str, detail: str) -> None:
         obj_name = rec["object"]
         # Reconstruct minimal run for speaking from stored record
         from fractions import Fraction
-        from tantrium.agi.codex import CodexObject
+        from tantrium.agi.core.codex import CodexObject
         obj = engine.encoder.encode(obj_name, name=obj_name)
         run = engine.network.run(obj)
         speaker = Speaker(manifold=engine.manifold)

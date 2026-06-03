@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 
 # ─── Zincirleme kuralları ─────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ class TauReasoner:
         depth: kaç adım derinlikte zincir takip edilecek.
         Türetilen kenarlar TAU'ya eklenir (certify_and_add_edge ile).
         """
-        from tantrium.agi.relations import certify_and_add_edge
+        from tantrium.agi.graph.relations import certify_and_add_edge
 
         tau = self.engine.tau
         steps: list[ChainStep] = []
@@ -224,8 +224,8 @@ class TauReasoner:
         Yeni kavram manifolda eklenir, TAU'ya kaydedilir.
         """
         from fractions import Fraction
-        from tantrium.agi.semantic import Concept
-        from tantrium.agi.relations import certify_and_add_edge
+        from tantrium.agi.core.semantic import Concept
+        from tantrium.agi.graph.relations import certify_and_add_edge
 
         ca = self.engine.manifold.concepts.get(name_a)
         cb = self.engine.manifold.concepts.get(name_b)

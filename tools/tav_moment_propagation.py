@@ -27,7 +27,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine
-from tantrium.agi.tau_graph import TauGraph
+from tantrium.agi.graph.tau_graph import TauGraph
 
 _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
 
@@ -99,7 +99,7 @@ def rebuild_aleph_edges(engine: AGIEngine, k: int = 10) -> int:
     Semantik edge'leri KORUYARAK ALEPH edge'leri değiştirir.
     """
     tau = engine.tau
-    from tantrium.agi.tau_graph import TauEdge
+    from tantrium.agi.graph.tau_graph import TauEdge
 
     # sr_index yeniden oluştur (momentler değişti)
     for name, concept in engine.manifold.concepts.items():

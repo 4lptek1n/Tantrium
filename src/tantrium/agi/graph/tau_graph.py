@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.agi.semantic import Concept, SemanticManifold
+    from tantrium.agi.core.semantic import Concept, SemanticManifold
 
 
 # ─── Node & Edge ──────────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ class TauGraph:
         Her iki kavram zaten ALEPH'ten geçti (manifold'dan geliyorlar).
         Joint PSD → dyadic transport var → edge certified.
         """
-        from tantrium.agi.semantic import moment_distance
+        from tantrium.agi.core.semantic import moment_distance
         d = float(moment_distance(a, b))
         return TauEdge(
             source=a.name,
@@ -166,7 +166,7 @@ class TauGraph:
         candidates = self._sr_candidates(sr_q, window=min(200, len(self.nodes)))
 
         # 2. Aşama: adaylar içinde exact distance
-        from tantrium.agi.semantic import moment_distance
+        from tantrium.agi.core.semantic import moment_distance
         q_m = concept.moments
         k_len = len(q_m)
 

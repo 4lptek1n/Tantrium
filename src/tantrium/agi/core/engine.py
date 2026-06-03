@@ -23,11 +23,11 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-from tantrium.agi.bridge import SemanticBridge
-from tantrium.agi.codex import CodexObject, ParadigmResult
-from tantrium.agi.encoder import UniversalEncoder, encode as universal_encode
-from tantrium.agi.network import AlephTekinNetwork, NetworkRun
-from tantrium.agi.semantic import Concept, SemanticManifold
+from tantrium.agi.domains.bridge import SemanticBridge
+from tantrium.agi.core.codex import CodexObject, ParadigmResult
+from tantrium.agi.core.encoder import UniversalEncoder, encode as universal_encode
+from tantrium.agi.core.network import AlephTekinNetwork, NetworkRun
+from tantrium.agi.core.semantic import Concept, SemanticManifold
 
 
 def _now() -> str:
@@ -88,7 +88,7 @@ class AGIEngine:
         self._load_tau_graph()
         self._ensure_anchors()       # çapaları hem manifold'a hem TAU'ya ekler
         self._load_spectral_cache()
-        from tantrium.agi.speaker import Speaker
+        from tantrium.agi.language.speaker import Speaker
         self.speaker = Speaker(manifold=self.manifold)
 
     # ─── Core: process any object ──────────────────────────────────────────
@@ -142,7 +142,7 @@ class AGIEngine:
         Unknown ≠ false. If the system has no certified knowledge about the
         question, it says so with a precise named gap.
         """
-        from tantrium.agi.speaker import Speaker
+        from tantrium.agi.language.speaker import Speaker
         speaker = Speaker(manifold=self.manifold)
         question_lower = question.lower()
 
@@ -159,7 +159,7 @@ class AGIEngine:
         ]
 
         # Step 2: manifold proximity
-        from tantrium.agi.semantic import Concept
+        from tantrium.agi.core.semantic import Concept
         words = [w for w in question_lower.split() if len(w) > 3]
         neighbors: list[tuple[str, Any]] = []
         if self.manifold.concepts and words:
@@ -172,7 +172,7 @@ class AGIEngine:
                 pass
 
         # Step 3: theorem bridge — direct keyword match on theorem IDs
-        from tantrium.agi.bridge import PARADIGM_TO_THEOREMS
+        from tantrium.agi.domains.bridge import PARADIGM_TO_THEOREMS
         relevant_theorems: list[str] = []
         relevant_paradigms: list[str] = []
         for paradigm, theorem_ids in PARADIGM_TO_THEOREMS.items():
@@ -445,7 +445,7 @@ class AGIEngine:
         Yeni kavramın semantik komşusu yoksa no-op — hızlı geçer.
         Döner: güncellenen kavram sayısı.
         """
-        from tantrium.agi.relations import propagate_subset
+        from tantrium.agi.graph.relations import propagate_subset
         updated = propagate_subset(
             self.manifold.concepts,
             self.tau.edges,
@@ -464,7 +464,7 @@ class AGIEngine:
 
     def _load_tau_graph(self) -> None:
         """TAU ağını diskten yükle — yoksa manifold'dan inşa et."""
-        from tantrium.agi.tau_graph import TauGraph
+        from tantrium.agi.graph.tau_graph import TauGraph
         if self._tau_path.exists():
             self.tau = TauGraph.load(str(self._tau_path))
         else:
@@ -475,7 +475,7 @@ class AGIEngine:
 
     def build_tau(self, k: int = 5) -> str:
         """TAU ağını manifold'dan (yeniden) inşa et ve kaydet."""
-        from tantrium.agi.tau_graph import TauGraph
+        from tantrium.agi.graph.tau_graph import TauGraph
         print(f"TAU ağı inşa ediliyor ({len(self.manifold.concepts)} node, k={k})...")
         self.tau = TauGraph.build(self.manifold, k=k, verbose=True)
         nodes, edges = self.tau.save(str(self._tau_path))
@@ -493,7 +493,7 @@ class AGIEngine:
         yapılar yorumlanabilir spektral referans noktaları sağlar.
         Döner: yeni eklenen çapa sayısı.
         """
-        from tantrium.agi.anchors import add_anchors_to_manifold, is_anchor
+        from tantrium.agi.graph.anchors import add_anchors_to_manifold, is_anchor
         added = add_anchors_to_manifold(self.manifold)
         # Çapaları TAU node'u olarak da garantile (köprü hedefi olabilmeleri için)
         tau_added = 0
@@ -512,7 +512,7 @@ class AGIEngine:
 
         "Bu şey hangi matematiksel aileye benziyor?" — GUE? Poisson? Üstel?
         """
-        from tantrium.agi.anchors import nearest_anchor
+        from tantrium.agi.graph.anchors import nearest_anchor
         return nearest_anchor(self.manifold, concept, top_n=top_n)
 
     def _bootstrap_manifold(self) -> None:
@@ -621,8 +621,8 @@ class AGIEngine:
 
         Returns summary dict with counts.
         """
-        from tantrium.agi.inference import InferenceChain
-        from tantrium.agi.explorer import Explorer
+        from tantrium.agi.reasoning.inference import InferenceChain
+        from tantrium.agi.research.explorer import Explorer
 
         summary: dict = {
             "theorem_nodes_processed": 0,
@@ -682,7 +682,7 @@ class AGIEngine:
         Tek geçiş (process) yerine: manifold walk + inference chain + second-order.
         Context window yok — manifold her şeyi tutuyor.
         """
-        from tantrium.agi.thinker import Thinker, ThinkingResult  # noqa: F401
+        from tantrium.agi.reasoning.thinker import Thinker, ThinkingResult  # noqa: F401
         return Thinker(self).think(question, depth=depth, neighbors=neighbors)
 
     # ─── Status ────────────────────────────────────────────────────────────

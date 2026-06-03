@@ -23,10 +23,10 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import TYPE_CHECKING
 
-from tantrium.agi.semantic import Concept
+from tantrium.agi.core.semantic import Concept
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 
 # 22+1 Aleph-Tekin paradigması — isim + matematiksel öz

@@ -23,10 +23,10 @@ import re
 from fractions import Fraction
 from typing import TYPE_CHECKING
 
-from tantrium.agi.tau_graph import TauEdge
+from tantrium.agi.graph.tau_graph import TauEdge
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 
 # ─── Çıkarma örüntüleri ───────────────────────────────────────────────────────
@@ -208,7 +208,7 @@ def certify_and_add_edge(
     if c_a is None or c_b is None:
         return False
 
-    from tantrium.agi.semantic import moment_distance
+    from tantrium.agi.core.semantic import moment_distance
     d = float(moment_distance(c_a, c_b))
 
     existing = engine.tau.edges.setdefault(subj, [])

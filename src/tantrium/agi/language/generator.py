@@ -18,7 +18,7 @@ from fractions import Fraction
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
 
@@ -110,7 +110,7 @@ class CertifiedGenerator:
         beam:          kaç adayı değerlendir (bellek/kalite dengesi)
         context_decay: context momentum faktörü (α=0.7 → ağırlık mevcut)
         """
-        from tantrium.agi.semantic import moment_distance
+        from tantrium.agi.core.semantic import moment_distance
 
         manifold = self.engine.manifold
         tau = self.engine.tau
@@ -118,7 +118,7 @@ class CertifiedGenerator:
         # 1. Seed kavramını bul ya da encode et
         seed_concept = manifold.concepts.get(seed)
         if seed_concept is None:
-            from tantrium.agi.semantic import Concept
+            from tantrium.agi.core.semantic import Concept
             raw = self.engine.encoder.encode(seed, name=seed[:64])
             seed_concept = Concept(name=seed[:64], moments=list(raw.moments), domain="input")
             if not seed_concept.is_real():
@@ -196,7 +196,7 @@ class CertifiedGenerator:
 
         Deterministic: argmin moment_distance — sampling yok.
         """
-        from tantrium.agi.semantic import moment_distance, Concept
+        from tantrium.agi.core.semantic import moment_distance, Concept
 
         tau = self.engine.tau
         manifold = self.engine.manifold

@@ -27,7 +27,7 @@ except Exception:
     pass
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 
 @dataclass
@@ -139,9 +139,9 @@ class MolecularCertifier:
         auto_fetch: True → PubChem'den otomatik çek
         top_k: kaç aday değerlendirilsin
         """
-        from tantrium.agi.semantic import Concept, moment_distance
-        from tantrium.agi.relations import certify_and_add_edge
-        from tantrium.agi.anchors import nearest_anchor
+        from tantrium.agi.core.semantic import Concept, moment_distance
+        from tantrium.agi.graph.relations import certify_and_add_edge
+        from tantrium.agi.graph.anchors import nearest_anchor
 
         t0 = time.time()
 
@@ -223,8 +223,8 @@ class MolecularCertifier:
         target_concept,
     ) -> MoleculeReport:
         """Tek molekülü certify et."""
-        from tantrium.agi.semantic import Concept, moment_distance
-        from tantrium.agi.anchors import nearest_anchor
+        from tantrium.agi.core.semantic import Concept, moment_distance
+        from tantrium.agi.graph.anchors import nearest_anchor
 
         # SMILES + isim birlikte encode et
         full_input = f"{name} {smiles}"
@@ -653,7 +653,7 @@ class MoleculeGenerator:
 
     def _build_library(self) -> None:
         """Scaffold SMILES'larını Morgan ECFP4 momentleriyle encode et."""
-        from tantrium.agi.encoder import encode_smiles as _enc_smiles
+        from tantrium.agi.core.encoder import encode_smiles as _enc_smiles
 
         self._lib = []
         for name, smiles in self._SCAFFOLDS:
@@ -678,7 +678,7 @@ class MoleculeGenerator:
         Her iki durumda da gerçek Morgan fingerprint momentleri kullanılır.
         """
         import warnings
-        from tantrium.agi.encoder import encode_smiles as _enc
+        from tantrium.agi.core.encoder import encode_smiles as _enc
 
         # 1. Bilinen SMILES haritasından al
         key = target_name.upper().split()[0]
@@ -761,7 +761,7 @@ class MoleculeGenerator:
     ) -> GenerationReport:
         """Hedef → Morgan moment uzayı → fragment kombinasyonu → sertifika → 3D SDF."""
         import time
-        from tantrium.agi.encoder import encode_smiles as _enc_smiles
+        from tantrium.agi.core.encoder import encode_smiles as _enc_smiles
 
         t0 = time.time()
 

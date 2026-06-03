@@ -26,8 +26,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine
-from tantrium.agi.language import LanguageBootstrap
-from tantrium.agi.relations import (
+from tantrium.agi.language.bootstrap import LanguageBootstrap
+from tantrium.agi.graph.relations import (
     SEMANTIC_PARADIGMS,
     certify_and_add_edge,
     extract_relations,

@@ -22,8 +22,8 @@ from datetime import datetime, timezone
 from fractions import Fraction
 from typing import Any
 
-from tantrium.agi.codex import CodexObject, ParadigmResult
-from tantrium.agi.network import NetworkRun
+from tantrium.agi.core.codex import CodexObject, ParadigmResult
+from tantrium.agi.core.network import NetworkRun
 
 
 def _now() -> str:
@@ -464,8 +464,8 @@ class InferenceChain:
         """
         import json
         from pathlib import Path
-        from tantrium.agi.codex import CodexObject
-        from tantrium.agi.network import AlephTekinNetwork
+        from tantrium.agi.core.codex import CodexObject
+        from tantrium.agi.core.network import AlephTekinNetwork
 
         path = Path(knowledge_path)
         if not path.exists():

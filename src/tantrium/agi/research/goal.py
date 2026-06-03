@@ -17,10 +17,10 @@ from fractions import Fraction
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from tantrium.agi.semantic import Concept
+from tantrium.agi.core.semantic import Concept
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 
 def _now() -> str:
@@ -61,7 +61,7 @@ class Goal:
         Mesafe ölçeği: manifold moment_distance (~30-60 arası tipik değer).
         progress = max(0, 1 - min_dist / scale)  scale=35 (ortanca mesafe).
         """
-        from tantrium.agi.semantic import moment_distance
+        from tantrium.agi.core.semantic import moment_distance
         goal_c = self.to_concept()
         distances = []
         for name in concept_names:
@@ -145,7 +145,7 @@ class GoalManifold:
                 tc = engine.manifold.concepts.get(t)
                 if tc is None:
                     continue
-                from tantrium.agi.semantic import moment_distance
+                from tantrium.agi.core.semantic import moment_distance
                 t_dist = float(moment_distance(goal_concept, tc)) * 0.5  # semantic bonus
                 if t not in result or t_dist < result[t][0]:
                     result[t] = (t_dist, edge.paradigm)

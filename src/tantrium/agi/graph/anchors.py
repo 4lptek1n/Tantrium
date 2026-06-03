@@ -30,7 +30,7 @@ import math
 import random
 from fractions import Fraction
 
-from tantrium.agi.semantic import Concept
+from tantrium.agi.core.semantic import Concept
 
 
 _ANCHOR_PREFIX = "⊕ANCHOR:"  # çapa isimlerinin ortak öneki (filtrelenebilir)
@@ -48,7 +48,7 @@ def _gue_spacings(n: int = 400, seed: int = 7) -> list[float]:
     # Rastgele simetrik matris (GOE/GUE yaklaşımı)
     M = [[rng.gauss(0, 1) for _ in range(size)] for _ in range(size)]
     S = [[(M[i][j] + M[j][i]) / 2.0 for j in range(size)] for i in range(size)]
-    from tantrium.agi.spectral import _jacobi_eigvals
+    from tantrium.agi.domains.spectral import _jacobi_eigvals
     eigs = sorted(_jacobi_eigvals(S))
     return [eigs[i + 1] - eigs[i] for i in range(len(eigs) - 1)]
 
@@ -204,7 +204,7 @@ def nearest_anchor(manifold, concept, top_n: int = 3) -> list[tuple[str, float]]
     "Bu şey hangi matematiksel aileye benziyor?" sorusunu yanıtlar.
     Sadece çapalar arasında arar — yorumlanabilir cevap.
     """
-    from tantrium.agi.spectral import moments_to_spectral, spectral_distance
+    from tantrium.agi.domains.spectral import moments_to_spectral, spectral_distance
 
     q_spec = moments_to_spectral([float(m) for m in concept.moments], name=concept.name)
     results = []

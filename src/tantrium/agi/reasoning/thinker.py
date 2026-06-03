@@ -16,10 +16,10 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import TYPE_CHECKING
 
-from tantrium.agi.semantic import Concept, moment_distance
+from tantrium.agi.core.semantic import Concept, moment_distance
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 
 # ─── Data model ───────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ class Thinker:
         Soruyu önce kelimelere böler, manifold'da bulunanları alır.
         Bulunan kelimeler yoksa tüm soruyu encode eder (fallback).
         """
-        from tantrium.agi.language import _tokenize
+        from tantrium.agi.language.bootstrap import _tokenize
         result = ThinkingResult(question=question, depth=depth)
         engine = self.engine
 
@@ -226,7 +226,7 @@ class Thinker:
         # ── Level 2: Inference Chain (Dyadic Transport ell=1→2) ──────────────
         lv2 = ThinkingLevel(level=2, label="Inference Chain (Dyadic Transport ell=1→2)")
 
-        from tantrium.agi.inference import InferenceChain
+        from tantrium.agi.reasoning.inference import InferenceChain
         chain = InferenceChain()
 
         # Run top-4 neighbor concepts through the network

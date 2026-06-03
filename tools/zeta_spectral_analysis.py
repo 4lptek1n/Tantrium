@@ -28,14 +28,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi.spectral import (
+from tantrium.agi.domains.spectral import (
     SpectralMeasure,
     moments_to_spectral,
     spectral_distance,
     dna_bigram_matrix,
 )
 from tantrium.agi import AGIEngine
-from tantrium.agi.semantic import Concept
+from tantrium.agi.core.semantic import Concept
 from fractions import Fraction
 
 

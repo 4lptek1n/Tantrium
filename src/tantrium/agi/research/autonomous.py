@@ -26,7 +26,7 @@ from fractions import Fraction
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 
 def _now() -> str:
@@ -89,7 +89,7 @@ class AutonomousObserver:
         raw_input: metin, sayı listesi, dizi — encoder'ın anladığı her şey
         name: opsiyonel etiket (yoksa encoder türetir)
         """
-        from tantrium.agi.semantic import Concept
+        from tantrium.agi.core.semantic import Concept
 
         # 1. GÖZLEMLE — encode (universal encoder, domain-blind)
         codex_obj = self.engine.encoder.encode(raw_input, name)
@@ -121,7 +121,7 @@ class AutonomousObserver:
                 self.engine.tau.add_node(concept)
                 # Spektral cache'e ekle (yüklüyse)
                 if getattr(self.engine.manifold, "_spec_cache", None) is not None:
-                    from tantrium.agi.spectral import moments_to_spectral
+                    from tantrium.agi.domains.spectral import moments_to_spectral
                     self.engine.manifold._spec_cache[obs_name] = moments_to_spectral(
                         moments_f, name=obs_name
                     )
@@ -167,8 +167,8 @@ class AutonomousObserver:
         Bu, sistemin "DNA ile zeta aynı yapıda" gibi cross-domain bağlantıları
         kendi başına keşfetmesidir.
         """
-        from tantrium.agi.tau_graph import TauEdge
-        from tantrium.agi.anchors import is_anchor
+        from tantrium.agi.graph.tau_graph import TauEdge
+        from tantrium.agi.graph.anchors import is_anchor
 
         neighbors = self.engine.manifold.nearest_spectral(concept, n=8)
         own_domain = concept.domain
@@ -191,7 +191,7 @@ class AutonomousObserver:
 
     def _add_bridge_edge(self, a: str, b: str, distance: float) -> None:
         """TAU'ya çift yönlü SPECTRAL_BRIDGE edge ekle (idempotent)."""
-        from tantrium.agi.tau_graph import TauEdge
+        from tantrium.agi.graph.tau_graph import TauEdge
 
         for src, tgt in ((a, b), (b, a)):
             edges = self.engine.tau.edges.setdefault(src, [])

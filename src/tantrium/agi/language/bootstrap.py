@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from tantrium.agi.semantic import Concept
+from tantrium.agi.core.semantic import Concept
 
 
 # ─── Tokenizer ────────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ class LanguageBootstrap:
         result = self._teach_words(set(tokens))
 
         if extract_relations:
-            from tantrium.agi.relations import add_relations_from_text
+            from tantrium.agi.graph.relations import add_relations_from_text
             result.relations_added = add_relations_from_text(self.engine, text)
 
         return result

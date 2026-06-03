@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine
-from tantrium.agi.researcher import AutonomousResearcher
+from tantrium.agi.research.researcher import AutonomousResearcher
 
 
 def main() -> None:

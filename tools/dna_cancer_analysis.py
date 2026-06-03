@@ -27,10 +27,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tantrium.agi import AGIEngine
-from tantrium.agi.generalization import HankelGeneralizer
-from tantrium.agi.topology import MomentTopology
-from tantrium.agi.semantic import Concept
-from tantrium.agi.spectral import (
+from tantrium.agi.reasoning.generalization import HankelGeneralizer
+from tantrium.agi.meta.paradigm.topology import MomentTopology
+from tantrium.agi.core.semantic import Concept
+from tantrium.agi.domains.spectral import (
     dna_measure,
     dna_window_measures,
     spectral_distance,
@@ -290,7 +290,7 @@ def main() -> None:
     print(f"      Kanserli μ: {[round(float(m), 5) for m in cancer_concept.moments]}")
 
     # Moment farkı
-    from tantrium.agi.semantic import moment_distance
+    from tantrium.agi.core.semantic import moment_distance
     dist = float(moment_distance(normal_concept, cancer_concept))
     delta = [
         round(float(cancer_concept.moments[i]) - float(normal_concept.moments[i]), 6)
@@ -400,7 +400,7 @@ def main() -> None:
                 ).limit_denominator(10 ** 9)
                 for i in range(k)
             ]
-            from tantrium.agi.semantic import Concept as _C
+            from tantrium.agi.core.semantic import Concept as _C
             concept = _C(name=f"TP53_α={alpha:.2f}", moments=blended_m, domain="dna")
             label = f"α={alpha:.2f}     "
 

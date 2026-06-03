@@ -19,8 +19,8 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
-    from tantrium.agi.goal import Goal, GoalManifold
+    from tantrium.agi.core.engine import AGIEngine
+    from tantrium.agi.research.goal import Goal, GoalManifold
 
 
 ActionType = Literal["learn", "relate", "save", "think", "progress"]
@@ -152,7 +152,7 @@ class Actor:
         return not any(unsafe in low for unsafe in self._UNSAFE)
 
     def _learn(self, action: Action) -> ActionResult:
-        from tantrium.agi.language import LanguageBootstrap
+        from tantrium.agi.language.bootstrap import LanguageBootstrap
         r = LanguageBootstrap(self.engine, domain="goal_learning").auto_learn(action.payload)
         action.certified = True
         return ActionResult(
@@ -164,7 +164,7 @@ class Actor:
         )
 
     def _relate(self, action: Action) -> ActionResult:
-        from tantrium.agi.relations import add_relations_from_text
+        from tantrium.agi.graph.relations import add_relations_from_text
         n = add_relations_from_text(self.engine, action.payload)
         action.certified = True
         return ActionResult(
@@ -193,7 +193,7 @@ class Actor:
         # Derin düşünce kavramlarını session'a ekle
         session = getattr(self.engine, "session", None)
         if session is not None:
-            from tantrium.agi.memory import Turn
+            from tantrium.agi.graph.memory import Turn
             thought_concepts = [
                 c
                 for lv in result.levels

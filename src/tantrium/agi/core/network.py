@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterator
 
-from tantrium.agi.codex import CODEX, CODEX_BY_ID, CodexObject, Paradigm, ParadigmResult
+from tantrium.agi.core.codex import CODEX, CODEX_BY_ID, CodexObject, Paradigm, ParadigmResult
 
 
 # ─── Network node ─────────────────────────────────────────────────────────

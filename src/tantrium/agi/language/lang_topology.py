@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.agi.engine import AGIEngine
+    from tantrium.agi.core.engine import AGIEngine
 
 
 # ─── Temel İngilizce semantik ilişkiler ────────────────────────────────────
@@ -275,9 +275,9 @@ class EnglishTopology:
 
     def inject(self, run_bootstrap: bool = True, run_reasoner: bool = False) -> InjectionResult:
         """Tüm İngilizce semantik ilişkileri TAU'ya ekle."""
-        from tantrium.agi.relations import certify_and_add_edge
-        from tantrium.agi.semantic import Concept
-        from tantrium.agi.encoder import encode
+        from tantrium.agi.graph.relations import certify_and_add_edge
+        from tantrium.agi.core.semantic import Concept
+        from tantrium.agi.core.encoder import encode
 
         manifold = self.engine.manifold
         tau = self.engine.tau
@@ -314,7 +314,7 @@ class EnglishTopology:
         bootstrap_relations = 0
 
         if run_bootstrap:
-            from tantrium.agi.language import LanguageBootstrap
+            from tantrium.agi.language.bootstrap import LanguageBootstrap
             bootstrapper = LanguageBootstrap(self.engine, window=4, min_freq=1)
             result = bootstrapper.from_text(_ENGLISH_BOOTSTRAP_TEXT)
             bootstrap_concepts = result.new_concepts
@@ -322,7 +322,7 @@ class EnglishTopology:
 
         # 3. Reasoner: transitif kapatma (yeni çıkarımlar)
         if run_reasoner:
-            from tantrium.agi.reasoner import TauReasoner
+            from tantrium.agi.reasoning.reasoner import TauReasoner
             reasoner = TauReasoner(self.engine)
             # Sadece yeni eklenen İngilizce kavramlar üzerinde çalıştır
             eng_concepts = [src for src, _, _ in _ENGLISH_CORE[:50]]
