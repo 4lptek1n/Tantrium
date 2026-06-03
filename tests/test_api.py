@@ -125,7 +125,7 @@ def test_ai_has_engine_property(ai):  # type: ignore[misc]
 
 
 def test_ai_has_manifold_property(ai):  # type: ignore[misc]
-    from tantrium.agi.core.semantic import SemanticManifold
+    from tantrium.core.semantic import SemanticManifold
     assert isinstance(ai.manifold, SemanticManifold)
 
 

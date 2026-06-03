@@ -3,7 +3,7 @@ import pytest
 
 from tantrium.agi import CertificationEngine, CertificationPipeline, CertificationRun
 from tantrium.agi.core.encoder import encode, encode_smiles
-from tantrium.agi.core.semantic import SemanticManifold
+from tantrium.core.semantic import SemanticManifold
 
 
 # ─── CertificationEngine initialization ───────────────────────────────────────
