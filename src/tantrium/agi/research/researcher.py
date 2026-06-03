@@ -435,32 +435,25 @@ class AutonomousResearcher:
             results.extend(self.fetch_pubchem(q, max_results=1))
         return results
 
-    def _fetch_for_gap(self, gap: dict, batch: int = 0) -> list[tuple[str, list[float]]]:
-        """Bir boşluk için: algoritmik + OEIS + PubChem. Her döngüde farklı veri."""
+    def _fetch_for_gap(self, gap: dict, batch: int = 0, network: bool = False) -> list[tuple[str, list[float]]]:
+        """Bir boşluk için veri üret. network=False → saf algoritmik (hızlı)."""
         anchor = gap["anchor"]
-        keywords = gap.get("keywords", [])
         sequences: list[tuple[str, list[float]]] = []
 
-        # 1. Algoritmik diziler (ağ bağımsız, batch ile benzersiz isim)
+        # Algoritmik diziler — ağ bağımsız, saf hesaplama
         sequences.extend(_generate_sequences(anchor, batch=batch))
 
-        # 2. OEIS (erişilebilirse)
-        if len(sequences) < self.max_seq:
+        if network and len(sequences) < self.max_seq:
+            keywords = gap.get("keywords", [])
             for kw in keywords[:2]:
-                seqs = self.fetch_oeis(kw, max_results=3)
-                sequences.extend(seqs)
+                sequences.extend(self.fetch_oeis(kw, max_results=3))
                 if len(sequences) >= self.max_seq:
                     break
+            if anchor == "ZETA_ZEROS":
+                sequences.extend(self.fetch_lmfdb_zeros(n=30))
+            if len(sequences) < self.max_seq:
+                sequences.extend(self.fetch_pubchem_batch(batch=batch, size=2))
 
-        # 3. ZETA_ZEROS → LMFDB
-        if anchor == "ZETA_ZEROS" and len(sequences) < self.max_seq:
-            sequences.extend(self.fetch_lmfdb_zeros(n=30))
-
-        # 4. Her gap için PubChem moleküler bilgi
-        if len(sequences) < self.max_seq:
-            sequences.extend(self.fetch_pubchem_batch(batch=batch, size=2))
-
-        # 5. Fallback (gerçekten hiçbir şey yoksa)
         if not sequences:
             sequences.extend(_FALLBACK.get(anchor, []))
 
@@ -468,7 +461,7 @@ class AutonomousResearcher:
 
     # ─── Tek araştırma döngüsü ────────────────────────────────────────────────
 
-    def research_cycle(self, gap_threshold: int = 5, batch: int = 0) -> ResearchCycle:
+    def research_cycle(self, gap_threshold: int = 5, batch: int = 0, network: bool = False) -> ResearchCycle:
         """Tek araştırma döngüsü: değerlendirme → hedef → veri → öğren → raporla."""
         from tantrium.agi.research.autonomous import AutonomousObserver
         from tantrium.agi.research.goal import encode_goal
@@ -490,7 +483,7 @@ class AutonomousResearcher:
         # 3. İlk 5 boşluk için veri çek (batch ile her döngüde farklı)
         all_sequences: list[tuple[str, list[float]]] = []
         for gap in gaps[:5]:
-            seqs = self._fetch_for_gap(gap, batch=batch)
+            seqs = self._fetch_for_gap(gap, batch=batch, network=network)
             all_sequences.extend(seqs)
 
         sequences_fetched = len(all_sequences)
@@ -515,8 +508,9 @@ class AutonomousResearcher:
             after = goal.update_progress(concept_names, self.engine)
             goal_progress[goal.name] = (before, after)
 
-        # 6. Kalıcı kayıt
-        self.engine.auto_persist()
+        # 6. Kalıcı kayıt (her 100 cycle'da bir — IO darboğazını önler)
+        if batch % 100 == 0:
+            self.engine.auto_persist()
 
         return ResearchCycle(
             gaps_found=gaps,
@@ -547,7 +541,7 @@ class AutonomousResearcher:
         for i in range(max_cycles):
             if time.monotonic() - t_start >= time_limit_s:
                 break
-            cycle = self.research_cycle(gap_threshold=gap_threshold, batch=i)
+            cycle = self.research_cycle(gap_threshold=gap_threshold, batch=i, network=False)
             cycles.append(cycle)
             if not cycle.gaps_found:
                 break
