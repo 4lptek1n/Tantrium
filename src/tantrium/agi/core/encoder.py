@@ -28,7 +28,7 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Any, Sequence
 
-from tantrium.agi.core.codex import CodexObject
+from tantrium.agi.core.codex import CertifiableObject as CodexObject
 
 
 # ─── Matrix operations (exact rational arithmetic) ──────────────────────────

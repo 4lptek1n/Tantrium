@@ -158,8 +158,8 @@ class AI:
         """
         persist=True: manifold her işlemden sonra otomatik kaydedilir.
         """
-        from tantrium.agi.core.engine import AGIEngine
-        self._engine = AGIEngine()
+        from tantrium.agi.core.engine import CertificationEngine
+        self._engine = CertificationEngine()
         self._persist = persist
         self._mol_gen = None   # lazy init
         self._certifier = None # lazy init
@@ -204,7 +204,7 @@ class AI:
 
     def reason(self, query: str, depth: int = 2) -> ReasonResult:
         """Kavram üzerinde TAU zinciri — certified akıl yürütme."""
-        from tantrium.agi.reasoning.reasoner import TauReasoner
+        from tantrium.agi.reasoning.reasoner import GraphReasoner as TauReasoner
 
         # Kavram manifoldda yoksa encode edip TAU'ya ekle
         if query not in self._engine.tau.nodes:
@@ -212,7 +212,7 @@ class AI:
             obj = self._engine.encoder.encode(query, name=query[:64])
             concept = Concept(name=query[:64], moments=list(obj.moments), domain="input")
             self._engine.manifold.add_unchecked(concept)
-            from tantrium.agi.graph.tau_graph import TauNode
+            from tantrium.agi.graph.tau_graph import KnowledgeNode as TauNode
             self._engine.tau.nodes[query[:64]] = TauNode(
                 name=query[:64],
                 sr=float(obj.moments[0]) if obj.moments else 1.0,

@@ -2,14 +2,14 @@
 
 SemanticManifold'un yerini alır. Fark:
   - Manifold: 6748 kavram × 8 moment vektör = 1425 KB (flat, bağımsız)
-  - TauGraph:  6748 node × 1 float (sr) + sparse edges = ~200 KB (ağ topolojisi)
+  - KnowledgeGraph:  6748 node × 1 float (sr) + sparse edges = ~200 KB (ağ topolojisi)
 
 Her kavram bağımsız bir vektör değil — TAU ağında bir node.
 Bilgi node'da değil, EDGE'de. Edge var → Hankel PSD → certified bağlantı.
 
 DNA analojisi:
   - DNA atomları değil bağları saklar
-  - TauGraph momentleri değil topolojiyi saklar
+  - KnowledgeGraph momentleri değil topolojiyi saklar
   - Encoder + kelime → moment (deterministik, her zaman yeniden üretilir)
 
 Kuantum dolanıklık:
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 # ─── Node & Edge ──────────────────────────────────────────────────────────────
 
 @dataclass
-class TauNode:
+class KnowledgeNode:
     name: str
     domain: str = "general"
     source: str = "undefined"
@@ -39,7 +39,7 @@ class TauNode:
 
 
 @dataclass
-class TauEdge:
+class KnowledgeEdge:
     source: str
     target: str
     distance: float
@@ -48,7 +48,7 @@ class TauEdge:
 
 # ─── TAU Graph ────────────────────────────────────────────────────────────────
 
-class TauGraph:
+class KnowledgeGraph:
     """Tau / Hankel Kernel ağı.
 
     Tantrium diyagramındaki L2 katmanının tam implementasyonu.
@@ -58,8 +58,8 @@ class TauGraph:
     """
 
     def __init__(self) -> None:
-        self.nodes: dict[str, TauNode] = {}
-        self.edges: dict[str, list[TauEdge]] = {}  # adjacency list
+        self.nodes: dict[str, KnowledgeNode] = {}
+        self.edges: dict[str, list[KnowledgeEdge]] = {}  # adjacency list
         self._sr_sorted: list[tuple[float, str]] = []  # hızlı nearest için (sr, name)
         self._dirty: bool = False
 
@@ -68,7 +68,7 @@ class TauGraph:
     def add_node(self, concept: "Concept") -> None:
         """Kavramı node olarak ekle. Sadece isim + spektral yarıçap saklanır."""
         sr = float(concept.moments[-1]) if concept.moments else 0.0
-        self.nodes[concept.name] = TauNode(
+        self.nodes[concept.name] = KnowledgeNode(
             name=concept.name,
             domain=concept.domain,
             source=concept.source,
@@ -86,7 +86,7 @@ class TauGraph:
         self,
         a: "Concept",
         b: "Concept",
-    ) -> TauEdge | None:
+    ) -> KnowledgeEdge | None:
         """İki node arasındaki Hankel kernel'i sertifikala.
 
         Her iki kavram zaten ALEPH'ten geçti (manifold'dan geliyorlar).
@@ -94,7 +94,7 @@ class TauGraph:
         """
         from tantrium.agi.core.semantic import moment_distance
         d = float(moment_distance(a, b))
-        return TauEdge(
+        return KnowledgeEdge(
             source=a.name,
             target=b.name,
             distance=d,
@@ -127,8 +127,8 @@ class TauGraph:
             )
             dists.append((d, cand_name))
         dists.sort()
-        edges: list[TauEdge] = [
-            TauEdge(source=concept.name, target=name, distance=d, paradigm="ALEPH")
+        edges: list[KnowledgeEdge] = [
+            KnowledgeEdge(source=concept.name, target=name, distance=d, paradigm="ALEPH")
             for d, name in dists[:k]
         ]
         self.edges[concept.name] = edges
@@ -212,7 +212,7 @@ class TauGraph:
         manifold: "SemanticManifold",
         k: int = 5,
         verbose: bool = True,
-    ) -> "TauGraph":
+    ) -> "KnowledgeGraph":
         """Manifold'dan TAU ağı inşa et.
 
         Her node için K certified edge bulur.
@@ -297,7 +297,7 @@ class TauGraph:
         return len(names), total_edges
 
     @classmethod
-    def load(cls, path: str) -> "TauGraph":
+    def load(cls, path: str) -> "KnowledgeGraph":
         """TAU ağını integer-ID formatından yükle. Eski string formatı da desteklenir."""
         p = Path(path)
         if not p.exists():
@@ -313,7 +313,7 @@ class TauGraph:
             for row in data["n"]:
                 name, d_char, sr = row[0], row[1], row[2]
                 domain = domain_map.get(d_char, "general")
-                g.nodes[name] = TauNode(name=name, domain=domain, source="saved", sr=sr)
+                g.nodes[name] = KnowledgeNode(name=name, domain=domain, source="saved", sr=sr)
                 names.append(name)
             _P_REV = {"A": "ALEPH", "I": "IS_A", "U": "USES", "D": "DEFINES",
                       "V": "ACHIEVES", "R": "REQUIRES", "C": "COMPOSED",
@@ -321,7 +321,7 @@ class TauGraph:
             for i, edge_rows in enumerate(data["e"]):
                 src = names[i]
                 g.edges[src] = [
-                    TauEdge(
+                    KnowledgeEdge(
                         source=src,
                         target=names[row[0]],
                         distance=row[1],
@@ -333,7 +333,7 @@ class TauGraph:
         # Eski format: "nodes" ve "edges" dict'leri
         elif "nodes" in data:
             for name, v in data["nodes"].items():
-                g.nodes[name] = TauNode(
+                g.nodes[name] = KnowledgeNode(
                     name=name,
                     domain=v.get("d", "general"),
                     source=v.get("s", "saved"),
@@ -341,7 +341,7 @@ class TauGraph:
                 )
             for name, edge_list in data.get("edges", {}).items():
                 g.edges[name] = [
-                    TauEdge(source=name, target=e["t"], distance=e["d"])
+                    KnowledgeEdge(source=name, target=e["t"], distance=e["d"])
                     for e in edge_list
                 ]
 
@@ -359,3 +359,9 @@ class TauGraph:
             f"avg degree {avg_deg:.1f}  |  "
             f"topoloji = bilgi"
         )
+
+
+# Backward-compatible aliases
+TauGraph = KnowledgeGraph
+TauNode = KnowledgeNode
+TauEdge = KnowledgeEdge

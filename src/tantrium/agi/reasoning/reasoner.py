@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.agi.core.engine import AGIEngine
+    from tantrium.agi.core.engine import CertificationEngine as AGIEngine
 
 
 # ─── Zincirleme kuralları ─────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ class ReasoningResult:
 
 # ─── Akıl Yürütücü ───────────────────────────────────────────────────────────
 
-class TauReasoner:
+class GraphReasoner:
     """TAU semantik graf üzerinde forward-chaining inference.
 
     query()   → bir kavram hakkında tüm certified sonuçlar
@@ -296,3 +296,7 @@ class TauReasoner:
             r = self.query(name, depth=2)
             total_new += r.new_edges
         return total_new
+
+
+# Backward-compatible alias
+TauReasoner = GraphReasoner

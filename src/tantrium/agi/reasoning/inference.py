@@ -22,8 +22,8 @@ from datetime import datetime, timezone
 from fractions import Fraction
 from typing import Any
 
-from tantrium.agi.core.codex import CodexObject, ParadigmResult
-from tantrium.agi.core.network import NetworkRun
+from tantrium.agi.core.codex import CertifiableObject as CodexObject, ParadigmResult
+from tantrium.agi.core.network import CertificationRun as NetworkRun
 
 
 def _now() -> str:
@@ -73,7 +73,7 @@ class InferenceRule:
         raise NotImplementedError
 
 
-class ComposeAlephRule(InferenceRule):
+class ComposePSDRule(InferenceRule):
     """Tensor product of two PSD objects is PSD.
 
     If H(A) ⪰ 0 and H(B) ⪰ 0, then H(A ⊗ B) ⪰ 0.
@@ -112,7 +112,7 @@ class ComposeAlephRule(InferenceRule):
         )
 
 
-class TransferBetRule(InferenceRule):
+class TransferInfoRule(InferenceRule):
     """Concatenation of lossless transformations is lossless.
 
     If all transforms in A are lossless and all in B are lossless,
@@ -146,7 +146,7 @@ class TransferBetRule(InferenceRule):
         )
 
 
-class ChainTavRule(InferenceRule):
+class ChainFixedPointRule(InferenceRule):
     """Transitivity of fixed-point convergence.
 
     If A converges to fixed point p and B with initial value p converges to q,
@@ -182,7 +182,7 @@ class ChainTavRule(InferenceRule):
         )
 
 
-class UnionEmetRule(InferenceRule):
+class UnionConsistencyRule(InferenceRule):
     """Union of non-contradictory certified claims is consistent.
 
     If A and B are EMET-certified with no contradictions, their union is consistent.
@@ -218,7 +218,7 @@ class UnionEmetRule(InferenceRule):
         )
 
 
-class BoundHeRule(InferenceRule):
+class BoundLyapunovRule(InferenceRule):
     """Sum of non-increasing Lyapunov functions is non-increasing.
 
     V_A non-increasing + V_B non-increasing → V_A + V_B non-increasing.
@@ -256,7 +256,7 @@ class BoundHeRule(InferenceRule):
         )
 
 
-class SpectralZayinRule(InferenceRule):
+class SpectralPathSumRule(InferenceRule):
     """Diagonals of G_A + G_B are non-negative if each Gram's diagonal is.
 
     If path_weights(A) ≥ 0 and path_weights(B) ≥ 0,
@@ -298,42 +298,42 @@ class SpectralZayinRule(InferenceRule):
 # ─── All rules ────────────────────────────────────────────────────────────
 
 _RULES: list[InferenceRule] = [
-    ComposeAlephRule(
+    ComposePSDRule(
         rule_id="COMPOSE_ALEPH",
         name="Tensor product positivity",
         preconditions_a=["ALEPH"],
         preconditions_b=["ALEPH"],
         description="A PSD ⊗ B PSD → A⊗B PSD",
     ),
-    TransferBetRule(
+    TransferInfoRule(
         rule_id="TRANSFER_BET",
         name="Lossless pipeline composition",
         preconditions_a=["ALEPH", "BET"],
         preconditions_b=["ALEPH", "BET"],
         description="lossless(A) ∘ lossless(B) → lossless",
     ),
-    ChainTavRule(
+    ChainFixedPointRule(
         rule_id="CHAIN_TAV",
         name="Fixed-point transitivity",
         preconditions_a=["ALEPH", "TAV"],
         preconditions_b=["ALEPH", "TAV"],
         description="A→p + B(p)→q → A→q",
     ),
-    UnionEmetRule(
+    UnionConsistencyRule(
         rule_id="UNION_EMET",
         name="Consistent claim union",
         preconditions_a=["ALEPH", "EMET"],
         preconditions_b=["ALEPH", "EMET"],
         description="¬contra(A) ∧ ¬contra(B) → ¬contra(A∪B)",
     ),
-    BoundHeRule(
+    BoundLyapunovRule(
         rule_id="BOUND_HE",
         name="Lyapunov sum bound",
         preconditions_a=["ALEPH", "HE"],
         preconditions_b=["ALEPH", "HE"],
         description="dV_A/dt ≤ 0 ∧ dV_B/dt ≤ 0 → d(V_A+V_B)/dt ≤ 0",
     ),
-    SpectralZayinRule(
+    SpectralPathSumRule(
         rule_id="SPECTRAL_ZAYIN",
         name="LGV union path positivity",
         preconditions_a=["ALEPH", "ZAYIN"],
@@ -417,7 +417,7 @@ class InferenceChain:
             if val:
                 structure[key] = val
 
-        return CodexObject(
+        return CodexObject(  # CodexObject is aliased to CertifiableObject at top of file
             name=f"{run_a.obj.name}⊗{run_b.obj.name}",
             moments=composed_moments,
             structure=structure,
@@ -464,8 +464,8 @@ class InferenceChain:
         """
         import json
         from pathlib import Path
-        from tantrium.agi.core.codex import CodexObject
-        from tantrium.agi.core.network import AlephTekinNetwork
+        from tantrium.agi.core.codex import CertifiableObject as CodexObject
+        from tantrium.agi.core.network import CertificationPipeline as AlephTekinNetwork
 
         path = Path(knowledge_path)
         if not path.exists():

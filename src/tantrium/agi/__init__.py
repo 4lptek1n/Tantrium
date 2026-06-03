@@ -6,16 +6,26 @@ The manifold grows. Nothing is forgotten.
 """
 from tantrium.agi.domains.bridge import SemanticBridge, PARADIGM_TO_THEOREMS, THEOREM_TO_PARADIGMS
 from tantrium.agi.language.bootstrap import LanguageBootstrap, BootstrapResult
-from tantrium.agi.core.codex import CODEX, CODEX_BY_ID, CodexObject, ParadigmResult
+from tantrium.agi.core.codex import (
+    PARADIGMS, PARADIGM_BY_ID, CertifiableObject,
+    CODEX, CODEX_BY_ID, CodexObject,  # backward-compatible aliases
+    ParadigmResult,
+)
 from tantrium.agi.core.encoder import UniversalEncoder, encode
 from tantrium.agi.core.semantic import Concept, SemanticManifold
-from tantrium.agi.core.network import AlephTekinNetwork, NetworkRun
-from tantrium.agi.core.engine import AGIEngine
+from tantrium.agi.core.network import (
+    CertificationPipeline, CertificationRun,
+    AlephTekinNetwork, NetworkRun,  # backward-compatible aliases
+)
+from tantrium.agi.core.engine import CertificationEngine
 from tantrium.agi.reasoning.inference import InferenceChain, InferenceResult
 from tantrium.agi.research.explorer import Explorer, ExplorationObjective, ExplorationResult
 from tantrium.agi.language.speaker import Speaker, CertifiedStatement
 from tantrium.agi.reasoning.thinker import Thinker, ThinkingResult, ThinkingLevel
-from tantrium.agi.graph.tau_graph import TauGraph, TauNode, TauEdge
+from tantrium.agi.graph.tau_graph import (
+    KnowledgeGraph, KnowledgeNode, KnowledgeEdge,
+    TauGraph, TauNode, TauEdge,  # backward-compatible aliases
+)
 from tantrium.agi.graph.memory import SessionMemory, Turn
 from tantrium.agi.graph.relations import (
     extract_relations,
@@ -50,7 +60,7 @@ from tantrium.agi.research.autonomous import AutonomousObserver, Observation
 from tantrium.agi.research.researcher import AutonomousResearcher, ResearchCycle, ResearchReport
 from tantrium.agi.research.ingest import DataIngestor, IngestReport, IngestBatch
 from tantrium.agi.research.proof_loop import ProofLoop, LoopReport, LoopCycle
-from tantrium.agi.reasoning.reasoner import TauReasoner, ReasoningResult, ChainStep
+from tantrium.agi.reasoning.reasoner import GraphReasoner, TauReasoner, ReasoningResult, ChainStep
 from tantrium.agi.reasoning.necessity import NecessityEngine, NecessityReport
 from tantrium.agi.reasoning.planner import Planner, Plan, PlanStep
 from tantrium.agi.language.generator import CertifiedGenerator, GenerationResult, GeneratedStep
@@ -61,10 +71,25 @@ from tantrium.agi.domains.molecular import (
 )
 from tantrium.agi.core.encoder import encode_smiles
 
+# Backward-compatible alias
+AGIEngine = CertificationEngine
+
 __all__ = [
     "SemanticBridge",
     "PARADIGM_TO_THEOREMS",
     "THEOREM_TO_PARADIGMS",
+    # New names
+    "PARADIGMS",
+    "PARADIGM_BY_ID",
+    "CertifiableObject",
+    "CertificationPipeline",
+    "CertificationRun",
+    "CertificationEngine",
+    "KnowledgeGraph",
+    "KnowledgeNode",
+    "KnowledgeEdge",
+    "GraphReasoner",
+    # Backward-compatible aliases
     "CODEX",
     "CODEX_BY_ID",
     "CodexObject",

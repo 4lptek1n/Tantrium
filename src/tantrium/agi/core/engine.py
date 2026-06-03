@@ -24,9 +24,9 @@ from pathlib import Path
 from typing import Any
 
 from tantrium.agi.domains.bridge import SemanticBridge
-from tantrium.agi.core.codex import CodexObject, ParadigmResult
+from tantrium.agi.core.codex import CertifiableObject as CodexObject, ParadigmResult
 from tantrium.agi.core.encoder import UniversalEncoder, encode as universal_encode
-from tantrium.agi.core.network import AlephTekinNetwork, NetworkRun
+from tantrium.agi.core.network import CertificationPipeline, CertificationRun, AlephTekinNetwork
 from tantrium.agi.core.semantic import Concept, SemanticManifold
 
 
@@ -36,7 +36,7 @@ def _now() -> str:
 
 # ─── AGI Engine ────────────────────────────────────────────────────────────
 
-class AGIEngine:
+class CertificationEngine:
     """The Aleph-Tekin AGI engine.
 
     This is not a chatbot. It is not a predictor.
@@ -67,7 +67,7 @@ class AGIEngine:
         graph_path: str | Path = "tantrium/theorem_graph/theorem_graph.yaml",
         num_moments: int = 8,
     ) -> None:
-        self.network = AlephTekinNetwork()
+        self.network = CertificationPipeline()
         self.knowledge_path = Path(knowledge_path)
         self.graph_path = Path(graph_path)
         self.manifold = SemanticManifold()
@@ -94,9 +94,9 @@ class AGIEngine:
 
     # ─── Core: process any object ──────────────────────────────────────────
 
-    def process(self, obj: CodexObject) -> NetworkRun:
+    def process(self, obj: CodexObject) -> CertificationRun:
         """Run any object through the 22+1 paradigms.
-        Returns a NetworkRun — the complete certification record.
+        Returns a CertificationRun — the complete certification record.
         """
         self._run_count += 1
         run = self.network.run(obj)
@@ -104,14 +104,14 @@ class AGIEngine:
         self._sync_theorem_graph(run)
         return run
 
-    def process_concept(self, concept: Concept) -> NetworkRun:
+    def process_concept(self, concept: Concept) -> CertificationRun:
         """Run a linguistic/semantic concept through the network.
         The concept's moment sequence is the input.
         Same engine. Same mathematics. Language is not special.
         """
         return self.process(concept.to_codex_object())
 
-    def process_raw(self, input: Any, name: str | None = None) -> NetworkRun:
+    def process_raw(self, input: Any, name: str | None = None) -> CertificationRun:
         """Process ANY raw input through the universal encoder then the network.
 
         No domain knowledge required. The encoder computes spectral moments.
@@ -341,7 +341,7 @@ class AGIEngine:
 
     # ─── Persistence ────────────────────────────────────────────────────────
 
-    def _record(self, run: NetworkRun) -> None:
+    def _record(self, run: CertificationRun) -> None:
         """Append run to the knowledge store. The store is append-only."""
         record = {
             "timestamp": _now(),
@@ -465,7 +465,7 @@ class AGIEngine:
 
     def _load_tau_graph(self) -> None:
         """TAU ağını diskten yükle — yoksa manifold'dan inşa et."""
-        from tantrium.agi.graph.tau_graph import TauGraph
+        from tantrium.agi.graph.tau_graph import KnowledgeGraph as TauGraph
         if self._tau_path.exists():
             self.tau = TauGraph.load(str(self._tau_path))
         else:
@@ -476,7 +476,7 @@ class AGIEngine:
 
     def build_tau(self, k: int = 5) -> str:
         """TAU ağını manifold'dan (yeniden) inşa et ve kaydet."""
-        from tantrium.agi.graph.tau_graph import TauGraph
+        from tantrium.agi.graph.tau_graph import KnowledgeGraph as TauGraph
         print(f"TAU ağı inşa ediliyor ({len(self.manifold.concepts)} node, k={k})...")
         self.tau = TauGraph.build(self.manifold, k=k, verbose=True)
         nodes, edges = self.tau.save(str(self._tau_path))
@@ -538,7 +538,7 @@ class AGIEngine:
         if self.graph_path.exists():
             self.bridge.bootstrap_manifold(self.manifold)
 
-    def _sync_theorem_graph(self, run: NetworkRun) -> None:
+    def _sync_theorem_graph(self, run: CertificationRun) -> None:
         """Semantic sync: AGI certifications annotate existing theorem nodes.
 
         For paradigms that have known theorem graph correspondences, we
@@ -599,17 +599,17 @@ class AGIEngine:
 
     # ─── Self-directed growth ───────────────────────────────────────────────
 
-    def certify_theorem_graph(self) -> dict[str, "NetworkRun"]:
+    def certify_theorem_graph(self) -> dict[str, "CertificationRun"]:
         """Process all proven theorem nodes through the AGI network.
 
         This is the full vertical integration: the proof graph feeds the
         AGI network. Every proven theorem becomes a certified CodexObject.
         The inference chain then runs over all certified pairs.
 
-        Returns: {node_id: NetworkRun} for all processed nodes.
+        Returns: {node_id: CertificationRun} for all processed nodes.
         """
         objects = self.bridge.proven_theorem_objects()
-        runs: dict[str, "NetworkRun"] = {}
+        runs: dict[str, "CertificationRun"] = {}
         for obj in objects:
             run = self.process(obj)
             runs[obj.name] = run
@@ -731,3 +731,7 @@ class AGIEngine:
                 f"{last.get('certified', 0)}/{last.get('total', 0)} certified"
             )
         return "\n".join(lines)
+
+
+# Backward-compatible alias
+AGIEngine = CertificationEngine

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Sequence
 
-from tantrium.agi.core.codex import CodexObject, AlephParadigm, ParadigmResult
+from tantrium.agi.core.codex import CertifiableObject as CodexObject, PositivityParadigm as AlephParadigm, ParadigmResult
 
 
 # ─── A concept in natural language / any domain ────────────────────────────

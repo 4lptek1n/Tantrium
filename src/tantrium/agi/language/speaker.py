@@ -25,7 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from tantrium.agi.core.network import NetworkRun
+from tantrium.agi.core.network import CertificationRun as NetworkRun
 from tantrium.agi.core.semantic import Concept, SemanticManifold
 
 

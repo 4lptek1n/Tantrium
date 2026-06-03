@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterator
 
-from tantrium.agi.core.codex import CODEX, CODEX_BY_ID, CodexObject, Paradigm, ParadigmResult
+from tantrium.agi.core.codex import PARADIGMS as CODEX, PARADIGM_BY_ID as CODEX_BY_ID, CertifiableObject as CodexObject, Paradigm, ParadigmResult
 
 
 # ─── Network node ─────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ class NetworkNode:
 
 # ─── The network ──────────────────────────────────────────────────────────
 
-class AlephTekinNetwork:
+class CertificationPipeline:
     """The 22+1 Aleph-Tekin paradigms as a running DAG.
 
     run(obj) applies each paradigm in topological order.
@@ -78,9 +78,9 @@ class AlephTekinNetwork:
             node.result = None
             node.blocked_by_dependency = False
 
-    def run(self, obj: CodexObject) -> "NetworkRun":
+    def run(self, obj: CodexObject) -> "CertificationRun":
         """Run the object through all 22+1 paradigms in dependency order.
-        Returns a NetworkRun with the full certification record.
+        Returns a CertificationRun with the full certification record.
         """
         self.reset()
         for pid in self._topo_order:
@@ -106,9 +106,9 @@ class AlephTekinNetwork:
             else:
                 node.result = paradigm.verify(obj)
 
-        # Deep-copy nodes so NetworkRun is truly immutable.
+        # Deep-copy nodes so CertificationRun is truly immutable.
         # Without this copy, a subsequent net.run() (which calls reset()) would
-        # mutate the shared NetworkNode objects and corrupt all prior NetworkRuns.
+        # mutate the shared NetworkNode objects and corrupt all prior CertificationRuns.
         snapshot = {
             pid: NetworkNode(
                 paradigm=node.paradigm,
@@ -117,7 +117,7 @@ class AlephTekinNetwork:
             )
             for pid, node in self.nodes.items()
         }
-        return NetworkRun(obj=obj, nodes=snapshot)
+        return CertificationRun(obj=obj, nodes=snapshot)
 
     def certified_paradigms(self) -> list[str]:
         return [pid for pid, node in self.nodes.items()
@@ -142,7 +142,7 @@ class AlephTekinNetwork:
 # ─── A single run of the network ────────────────────────────────────────────
 
 @dataclass
-class NetworkRun:
+class CertificationRun:
     """The complete record of one pass through the network.
 
     This is immutable after creation.
@@ -222,3 +222,8 @@ class NetworkRun:
                 for pid, node in self.nodes.items()
             }
         }
+
+
+# Backward-compatible aliases
+AlephTekinNetwork = CertificationPipeline
+NetworkRun = CertificationRun

@@ -28,7 +28,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-from tantrium.agi.core.codex import CodexObject
+from tantrium.agi.core.codex import CertifiableObject as CodexObject
 
 
 def _now() -> str:
