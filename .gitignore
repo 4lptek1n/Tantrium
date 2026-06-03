@@ -48,6 +48,13 @@ Thumbs.db
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
+.tantrium/
+
+# Runtime outputs (not source code)
+results/
+archive/
+infra/
 
 # Replit
 .cache/
