@@ -87,6 +87,7 @@ class AGIEngine:
         self._bootstrap_manifold()
         self._load_tau_graph()
         self._ensure_anchors()       # çapaları hem manifold'a hem TAU'ya ekler
+        self._inject_math_kernel()   # Layer 0 → Layer 3 köprüsü
         self._load_spectral_cache()
         from tantrium.agi.language.speaker import Speaker
         self.speaker = Speaker(manifold=self.manifold)
@@ -514,6 +515,18 @@ class AGIEngine:
         """
         from tantrium.agi.graph.anchors import nearest_anchor
         return nearest_anchor(self.manifold, concept, top_n=top_n)
+
+    def _inject_math_kernel(self) -> None:
+        """Layer 0 (RH kanıt sistemi) → Layer 3 (AGI manifoldu) köprüsü.
+
+        Certified teoremler kavram olarak, bağımlılıklar TAU kenarı olarak girer.
+        Idempotent — zaten manifoldda olanları atlar.
+        """
+        try:
+            from tantrium.agi.domains.math_kernel import inject_math_kernel
+            inject_math_kernel(self)
+        except Exception:
+            pass  # Math kernel eksikse AGI çalışmaya devam eder
 
     def _bootstrap_manifold(self) -> None:
         """Populate the semantic manifold from proven theorem graph nodes.

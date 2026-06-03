@@ -214,7 +214,8 @@ class AI:
             self._engine.manifold.add_unchecked(concept)
             from tantrium.agi.graph.tau_graph import TauNode
             self._engine.tau.nodes[query[:64]] = TauNode(
-                name=query[:64], spectral_radius=float(obj.moments[0]) if obj.moments else 1.0
+                name=query[:64],
+                sr=float(obj.moments[0]) if obj.moments else 1.0,
             )
 
         reasoner = TauReasoner(self._engine)
