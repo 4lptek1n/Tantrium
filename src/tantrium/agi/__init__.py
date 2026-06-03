@@ -48,7 +48,9 @@ from tantrium.agi.graph.anchors import (
 )
 from tantrium.agi.research.autonomous import AutonomousObserver, Observation
 from tantrium.agi.research.researcher import AutonomousResearcher, ResearchCycle, ResearchReport
+from tantrium.agi.research.ingest import DataIngestor, IngestReport, IngestBatch
 from tantrium.agi.reasoning.reasoner import TauReasoner, ReasoningResult, ChainStep
+from tantrium.agi.reasoning.necessity import NecessityEngine, NecessityReport
 from tantrium.agi.reasoning.planner import Planner, Plan, PlanStep
 from tantrium.agi.language.generator import CertifiedGenerator, GenerationResult, GeneratedStep
 from tantrium.agi.language.lang_topology import EnglishTopology, InjectionResult
@@ -127,6 +129,11 @@ __all__ = [
     "AutonomousResearcher",
     "ResearchCycle",
     "ResearchReport",
+    "DataIngestor",
+    "IngestReport",
+    "IngestBatch",
+    "NecessityEngine",
+    "NecessityReport",
     "TauReasoner",
     "ReasoningResult",
     "ChainStep",

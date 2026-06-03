@@ -392,7 +392,7 @@ class AutonomousResearcher:
         encoded = urllib.parse.quote(query)
         url = (
             f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
-            f"{encoded}/property/IsomericSMILES,MolecularFormula/JSON"
+            f"{encoded}/property/SMILES,MolecularFormula/JSON"
         )
         results: list[tuple[str, list[float]]] = []
         try:
@@ -403,7 +403,7 @@ class AutonomousResearcher:
                 data = json.loads(resp.read().decode("utf-8"))
             compounds = (data.get("PropertyTable") or {}).get("Properties") or []
             for c in compounds[:max_results]:
-                smiles = c.get("IsomericSMILES", "")
+                smiles = c.get("SMILES", "") or c.get("IsomericSMILES", "")
                 cid = c.get("CID", "unknown")
                 formula = c.get("MolecularFormula", "")
                 if not smiles:
