@@ -1,0 +1,21 @@
+[project]
+name = "tantrium"
+version = "0.1.0"
+description = "Structure-first symbolic discovery framework."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "sympy>=1.12"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "src"]
+
+[tool.ruff]
+line-length = 100
