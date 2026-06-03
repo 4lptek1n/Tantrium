@@ -415,8 +415,9 @@ class MolecularCertifier:
             params = AllChem.ETKDGv3()
             params.randomSeed = 42
             if AllChem.EmbedMolecule(mol, params) == -1:
-                # ETKDGv3 başarısız → random coordinates
-                AllChem.EmbedMolecule(mol, AllChem.ETKDG())
+                fallback = AllChem.ETKDG()
+                fallback.randomSeed = 42
+                AllChem.EmbedMolecule(mol, fallback)
 
             AllChem.MMFFOptimizeMolecule(mol)
 
