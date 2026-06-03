@@ -338,13 +338,18 @@ class AutonomousResearcher:
                 url, headers={"User-Agent": "Tantrium-AGI/1.0"}
             )
             with urllib.request.urlopen(req, timeout=self.oeis_timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-            for entry in (data.get("results") or [])[:max_results]:
+                raw_data = json.loads(resp.read().decode("utf-8"))
+            # OEIS /search returns list directly; some endpoints return dict with "results"
+            if isinstance(raw_data, list):
+                data_list = raw_data
+            else:
+                data_list = raw_data.get("results") or []
+            for entry in data_list[:max_results]:
                 num = entry.get("number")
                 raw = entry.get("data", "")
                 if num is None or not raw:
                     continue
-                seq_id = f"OEIS:A{int(num):06d}"
+                seq_id = f"oeis:A{int(num):06d}"
                 try:
                     values = [
                         float(x.strip())
@@ -529,9 +534,11 @@ class AutonomousResearcher:
         max_cycles: int = 3,
         time_limit_s: float = 300.0,
         gap_threshold: int = 5,
+        network: bool = False,
     ) -> ResearchReport:
         """max_cycles araştırma döngüsü çalıştır (veya time_limit dolana kadar).
 
+        network=True → OEIS API kullan (gerçek matematiksel diziler).
         Her döngü: assess_gaps → fetch → observe → persist.
         Son: tam rapor.
         """
@@ -541,7 +548,7 @@ class AutonomousResearcher:
         for i in range(max_cycles):
             if time.monotonic() - t_start >= time_limit_s:
                 break
-            cycle = self.research_cycle(gap_threshold=gap_threshold, batch=i, network=False)
+            cycle = self.research_cycle(gap_threshold=gap_threshold, batch=i, network=network)
             cycles.append(cycle)
             if not cycle.gaps_found:
                 break
