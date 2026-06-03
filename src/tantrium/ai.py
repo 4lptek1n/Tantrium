@@ -158,7 +158,7 @@ class AI:
         """
         persist=True: manifold her işlemden sonra otomatik kaydedilir.
         """
-        from tantrium.agi.core.engine import CertificationEngine
+        from tantrium.core.engine import CertificationEngine
         self._engine = CertificationEngine()
         self._persist = persist
         self._mol_gen = None   # lazy init
@@ -168,7 +168,7 @@ class AI:
 
     def ask(self, query: str) -> AskResult:
         """Herhangi bir girdi → certify → manifold konumu + doğal dil yanıt."""
-        from tantrium.agi.core.semantic import Concept
+        from tantrium.core.semantic import Concept
 
         obj = self._engine.encoder.encode(query, name=query[:64])
         run = self._engine.network.run(obj)
@@ -204,21 +204,21 @@ class AI:
 
     def reason(self, query: str, depth: int = 2) -> ReasonResult:
         """Kavram üzerinde TAU zinciri — certified akıl yürütme."""
-        from tantrium.agi.reasoning.reasoner import GraphReasoner as TauReasoner
+        from tantrium.reasoning.reasoner import GraphReasoner
 
         # Kavram manifoldda yoksa encode edip TAU'ya ekle
         if query not in self._engine.tau.nodes:
-            from tantrium.agi.core.semantic import Concept
+            from tantrium.core.semantic import Concept
             obj = self._engine.encoder.encode(query, name=query[:64])
             concept = Concept(name=query[:64], moments=list(obj.moments), domain="input")
             self._engine.manifold.add_unchecked(concept)
-            from tantrium.agi.graph.tau_graph import KnowledgeNode as TauNode
-            self._engine.tau.nodes[query[:64]] = TauNode(
+            from tantrium.graph.knowledge_graph import KnowledgeNode
+            self._engine.tau.nodes[query[:64]] = KnowledgeNode(
                 name=query[:64],
                 sr=float(obj.moments[0]) if obj.moments else 1.0,
             )
 
-        reasoner = TauReasoner(self._engine)
+        reasoner = GraphReasoner(self._engine)
         result = reasoner.query(query[:64], depth=depth)
         steps = [
             f"{s.source} →[{s.paradigm}]→ {s.target}"
@@ -241,7 +241,7 @@ class AI:
         lang: str = "tr",
     ) -> GenResult:
         """TAU walk → Sturm-garantili certified metin üretimi."""
-        from tantrium.agi.language.generator import CertifiedGenerator
+        from tantrium.language.generator import CertifiedGenerator
         gen = CertifiedGenerator(self._engine, lang=lang)
         result = gen.generate(seed, max_steps=steps, goal_name=goal)
         return GenResult(
@@ -265,8 +265,8 @@ class AI:
         import warnings
         warnings.filterwarnings("ignore")
 
-        from tantrium.agi.core.encoder import encode_smiles
-        from tantrium.agi.domains.molecular import MolecularCertifier
+        from tantrium.core.encoder import encode_smiles
+        from tantrium.domains.certifier import MolecularCertifier
 
         certifier = self._get_certifier()
         raw = encode_smiles(smiles, name=name)
@@ -299,7 +299,7 @@ class AI:
         import warnings
         warnings.filterwarnings("ignore")
 
-        from tantrium.agi.domains.molecular import MoleculeGenerator
+        from tantrium.domains.generator import MoleculeGenerator
 
         gen = self._get_mol_gen()
         report = gen.generate(target, top_k=top_k, out_dir=out_dir)
@@ -338,7 +338,7 @@ class AI:
         import warnings
         warnings.filterwarnings("ignore")
 
-        from tantrium.agi.domains.molecular import MolecularCertifier
+        from tantrium.domains.certifier import MolecularCertifier
 
         certifier = self._get_certifier()
         report = certifier.generate_3d(
@@ -378,7 +378,7 @@ class AI:
 
         Döner: {"new_concepts": n, "relations": n, "persisted": bool}
         """
-        from tantrium.agi.language.bootstrap import LanguageBootstrap
+        from tantrium.language.bootstrap import LanguageBootstrap
         bs = LanguageBootstrap(self._engine, window=3, min_freq=1)
         r = bs.auto_learn(text)
         mem = self._engine.note_new_concepts(r.taught, relations_added=r.relations_added)
@@ -399,7 +399,7 @@ class AI:
 
         Döner: LoopReport (cycles, total_new_concepts, remaining_gaps)
         """
-        from tantrium.agi.research.proof_loop import ProofLoop
+        from tantrium.research.proof_loop import ProofLoop
         loop = ProofLoop(self._engine)
         report = loop.run(max_cycles=max_cycles, time_limit_s=time_limit_s)
         if self._persist and report.total_new_concepts > 0:
@@ -414,7 +414,7 @@ class AI:
 
         Döner: NecessityReport
         """
-        from tantrium.agi.reasoning.necessity import NecessityEngine
+        from tantrium.reasoning.necessity import NecessityEngine
         ne = NecessityEngine(self._engine)
         report = ne.run(domain=domain, inject=inject, find_gaps=True)
         if self._persist and inject and report.edges_injected > 0:
@@ -440,13 +440,13 @@ class AI:
 
     def _get_certifier(self):
         if self._certifier is None:
-            from tantrium.agi.domains.molecular import MolecularCertifier
+            from tantrium.domains.certifier import MolecularCertifier
             self._certifier = MolecularCertifier(self._engine)
         return self._certifier
 
     def _get_mol_gen(self):
         if self._mol_gen is None:
-            from tantrium.agi.domains.molecular import MoleculeGenerator
+            from tantrium.domains.generator import MoleculeGenerator
             self._mol_gen = MoleculeGenerator(self._engine)
         return self._mol_gen
 
