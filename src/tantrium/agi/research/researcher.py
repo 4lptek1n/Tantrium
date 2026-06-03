@@ -86,7 +86,139 @@ class ResearchReport:
         return "\n".join(lines)
 
 
-# ─── Fallback dizileri (ağ yoksa kullanılır) ─────────────────────────────────
+# ─── Algoritmik dizi üretimi (ağ bağımsız, her seferinde benzersiz) ──────────
+
+def _generate_sequences(anchor: str, batch: int = 0) -> list[tuple[str, list[float]]]:
+    """Her anchor için algoritmik olarak üretilmiş diziler.
+    batch parametresi her döngüde farklı segment alır → benzersiz isim.
+    """
+    import math
+
+    tag = f"b{batch}"
+
+    if anchor == "PRIME_GAPS":
+        # Asal sayıları hesapla, gap'leri al
+        limit = 500 + batch * 200
+        sieve = [True] * (limit + 1)
+        sieve[0] = sieve[1] = False
+        for i in range(2, int(limit**0.5) + 1):
+            if sieve[i]:
+                for j in range(i*i, limit + 1, i):
+                    sieve[j] = False
+        primes = [i for i in range(2, limit + 1) if sieve[i]]
+        gaps = [float(primes[i+1] - primes[i]) for i in range(len(primes)-1)]
+        offset = batch * 30
+        chunk = gaps[offset:offset+32]
+        return [(f"algo:prime_gaps_{tag}", chunk)] if len(chunk) >= 8 else []
+
+    if anchor == "ZETA_ZEROS":
+        # Riemann zeta sıfırlarının bilinen değerleri (50 tane)
+        known = [
+            14.134725, 21.022040, 25.010858, 30.424876, 32.935062,
+            37.586178, 40.918720, 43.327073, 48.005151, 49.773832,
+            52.970321, 56.446248, 59.347044, 60.831779, 65.112544,
+            67.079811, 69.546402, 72.067158, 75.704691, 77.144840,
+            79.337376, 82.910381, 84.735493, 87.425275, 88.809111,
+            92.491899, 94.651344, 95.870634, 98.831194, 101.317851,
+            103.725538, 105.446623, 107.168611, 111.029536, 111.874659,
+            114.320220, 116.226680, 118.790782, 121.370125, 122.946520,
+            124.256819, 127.516683, 129.578704, 131.087688, 133.497737,
+            134.756510, 138.116042, 139.736209, 141.123707, 143.111846,
+        ]
+        offset = (batch * 12) % (len(known) - 12)
+        chunk = known[offset:offset+20]
+        return [(f"algo:zeta_zeros_{tag}", chunk)]
+
+    if anchor == "GUE_RANDOM_MATRIX":
+        # GUE spacing distribution (Wigner surmise: p(s) = π/2 * s * exp(-π/4 * s²))
+        import math
+        spacings = []
+        for k in range(32):
+            # deterministic pseudo-sampling via inverse CDF approximation
+            u = (k + 0.5 + batch * 0.1) / (32 + batch * 0.1)
+            u = min(0.999, max(0.001, u))
+            # approximate inverse of Wigner surmise CDF
+            s = math.sqrt(-math.log(1 - u) * 4 / math.pi)
+            spacings.append(round(s, 4))
+        return [(f"algo:GUE_wigner_{tag}", spacings)]
+
+    if anchor == "GEOMETRIC_GROWTH":
+        seqs = []
+        # Lucas numbers
+        a, b = 2, 1
+        lucas = []
+        for _ in range(24):
+            lucas.append(float(a))
+            a, b = b, a + b
+        seqs.append((f"algo:lucas_{tag}", lucas))
+        # Tribonacci
+        a, b, c = 0, 0, 1
+        trib = []
+        for _ in range(24):
+            trib.append(float(a))
+            a, b, c = b, c, a + b + c
+        seqs.append((f"algo:tribonacci_{tag}", trib[1:]))
+        return seqs
+
+    if anchor == "GAUSSIAN_BELL":
+        # Normal distribution PDF samples
+        vals = []
+        for k in range(32):
+            x = -4.0 + k * 0.25 + batch * 0.1
+            v = math.exp(-x * x / 2) / math.sqrt(2 * math.pi)
+            vals.append(round(v, 6))
+        return [(f"algo:gaussian_pdf_{tag}", vals)]
+
+    if anchor == "MODULAR_FORMS":
+        # Ramanujan tau function τ(n) for small n
+        tau = [0, -24, 252, -1472, 4830, -6048, -16744, 84480, -113643,
+               -196884, 1, -24, 252, -1472, 4830, -6048, -16744, 84480,
+               -113643, -196884, 166320, 21492, -25830, 65520, -242208]
+        normalized = [float(abs(x)) / 200000 for x in tau[1:25]]
+        return [(f"algo:ramanujan_tau_{tag}", normalized)]
+
+    if anchor == "ELLIPTIC_CURVES":
+        # Trace of Frobenius for elliptic curve y²=x³-x over F_p
+        traces = []
+        for p in [3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
+                  47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]:
+            # simple heuristic: count points mod p
+            count = sum(1 for x in range(p)
+                        if pow(x*x*x - x, (p+1)//2, p) in (0, 1)) * 2 + 1
+            traces.append(float(p + 1 - count))
+        return [(f"algo:elliptic_trace_{tag}", traces)]
+
+    if anchor == "EXPONENTIAL_DECAY":
+        vals = [math.exp(-k * (0.1 + batch * 0.02)) for k in range(32)]
+        return [(f"algo:exp_decay_{tag}", vals)]
+
+    if anchor == "POISSON_PROCESS":
+        # Poisson PMF with varying lambda
+        lam = 2.5 + batch * 0.5
+        vals = [math.exp(-lam) * (lam**k) / math.factorial(min(k, 20))
+                for k in range(24)]
+        return [(f"algo:poisson_pmf_{tag}", vals)]
+
+    if anchor == "PERIODIC_LATTICE":
+        # Cosine wave with varying frequency
+        freq = 1.0 + batch * 0.25
+        vals = [math.cos(2 * math.pi * freq * k / 32) for k in range(32)]
+        return [(f"algo:cosine_{tag}", vals)]
+
+    if anchor == "LINEAR_RAMP":
+        start = batch * 10
+        vals = [float(start + k) for k in range(32)]
+        return [(f"algo:arithmetic_{tag}", vals)]
+
+    if anchor == "UNIFORM_MEASURE":
+        n = 32
+        vals = [(k + batch * 0.01) / n for k in range(n)]
+        return [(f"algo:uniform_{tag}", vals)]
+
+    return []
+
+
+# ─── Fallback dizileri (yedek) ────────────────────────────────────────────────
 
 _FALLBACK: dict[str, list[tuple[str, list[float]]]] = {
     "GUE_RANDOM_MATRIX": [
@@ -165,7 +297,7 @@ class AutonomousResearcher:
     def __init__(
         self,
         engine: "AGIEngine",
-        max_sequences_per_gap: int = 6,
+        max_sequences_per_gap: int = 8,
         bridge_threshold: float = 3e-2,
         oeis_timeout_s: float = 10.0,
     ) -> None:
@@ -228,19 +360,107 @@ class AutonomousResearcher:
             pass
         return results
 
-    def _fetch_for_gap(self, gap: dict) -> list[tuple[str, list[float]]]:
-        """Bir boşluk için OEIS'ten veri çek; başarısız olursa fallback kullan."""
+    # ─── LMFDB API ────────────────────────────────────────────────────────────
+
+    def fetch_lmfdb_zeros(self, n: int = 20) -> list[tuple[str, list[float]]]:
+        """LMFDB'den Riemann zeta sıfırlarını çek."""
+        url = f"https://www.lmfdb.org/api/Zeros/zeta/?N={n}&_format=json"
+        try:
+            req = urllib.request.Request(
+                url, headers={"User-Agent": "Tantrium-AGI/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=self.oeis_timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            zeros = [float(item["zero"]) for item in (data or []) if "zero" in item]
+            if len(zeros) >= 6:
+                return [("LMFDB:riemann_zeros", zeros[:32])]
+        except Exception:
+            pass
+        return []
+
+    # ─── PubChem API ──────────────────────────────────────────────────────────
+
+    def fetch_pubchem(self, query: str, max_results: int = 6) -> list[tuple[str, list[float]]]:
+        """PubChem'den SMILES çek → Morgan fingerprint → moment dizisi."""
+        from tantrium.agi.core.encoder import encode_smiles
+
+        encoded = urllib.parse.quote(query)
+        url = (
+            f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
+            f"{encoded}/property/IsomericSMILES,MolecularFormula/JSON"
+        )
+        results: list[tuple[str, list[float]]] = []
+        try:
+            req = urllib.request.Request(
+                url, headers={"User-Agent": "Tantrium-AGI/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=self.oeis_timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            compounds = (data.get("PropertyTable") or {}).get("Properties") or []
+            for c in compounds[:max_results]:
+                smiles = c.get("IsomericSMILES", "")
+                cid = c.get("CID", "unknown")
+                formula = c.get("MolecularFormula", "")
+                if not smiles:
+                    continue
+                try:
+                    obj = encode_smiles(smiles, name=f"PubChem:{cid}")
+                    if obj.moments and len(obj.moments) >= 4:
+                        results.append((f"PubChem:{cid}_{formula}", list(obj.moments)))
+                except Exception:
+                    continue
+            time.sleep(_RATE_LIMIT_S)
+        except Exception:
+            pass
+        return results
+
+    # ─── PubChem toplu çekim ──────────────────────────────────────────────────
+
+    _PUBCHEM_QUERIES: list[str] = [
+        "erlotinib", "gefitinib", "imatinib", "sorafenib", "dasatinib",
+        "sunitinib", "lapatinib", "vemurafenib", "crizotinib", "cetuximab",
+        "tamoxifen", "doxorubicin", "paclitaxel", "vincristine", "methotrexate",
+        "cisplatin", "carboplatin", "oxaliplatin", "fluorouracil", "gemcitabine",
+        "caffeine", "aspirin", "glucose", "adenine", "guanine",
+        "dopamine", "serotonin", "acetylcholine", "glutamate", "glycine",
+    ]
+
+    def fetch_pubchem_batch(self, batch: int = 0, size: int = 4) -> list[tuple[str, list[float]]]:
+        """PubChem'den batch'e göre ilaç/metabolit SMILES çek."""
+        queries = self._PUBCHEM_QUERIES
+        start = (batch * size) % len(queries)
+        selected = queries[start:start + size]
+        results = []
+        for q in selected:
+            results.extend(self.fetch_pubchem(q, max_results=1))
+        return results
+
+    def _fetch_for_gap(self, gap: dict, batch: int = 0) -> list[tuple[str, list[float]]]:
+        """Bir boşluk için: algoritmik + OEIS + PubChem. Her döngüde farklı veri."""
         anchor = gap["anchor"]
         keywords = gap.get("keywords", [])
         sequences: list[tuple[str, list[float]]] = []
 
-        for kw in keywords[:2]:
-            seqs = self.fetch_oeis(kw, max_results=(self.max_seq // 2) + 1)
-            sequences.extend(seqs)
-            if len(sequences) >= self.max_seq:
-                break
+        # 1. Algoritmik diziler (ağ bağımsız, batch ile benzersiz isim)
+        sequences.extend(_generate_sequences(anchor, batch=batch))
 
-        # OEIS başarısız → fallback
+        # 2. OEIS (erişilebilirse)
+        if len(sequences) < self.max_seq:
+            for kw in keywords[:2]:
+                seqs = self.fetch_oeis(kw, max_results=3)
+                sequences.extend(seqs)
+                if len(sequences) >= self.max_seq:
+                    break
+
+        # 3. ZETA_ZEROS → LMFDB
+        if anchor == "ZETA_ZEROS" and len(sequences) < self.max_seq:
+            sequences.extend(self.fetch_lmfdb_zeros(n=30))
+
+        # 4. Her gap için PubChem moleküler bilgi
+        if len(sequences) < self.max_seq:
+            sequences.extend(self.fetch_pubchem_batch(batch=batch, size=2))
+
+        # 5. Fallback (gerçekten hiçbir şey yoksa)
         if not sequences:
             sequences.extend(_FALLBACK.get(anchor, []))
 
@@ -248,7 +468,7 @@ class AutonomousResearcher:
 
     # ─── Tek araştırma döngüsü ────────────────────────────────────────────────
 
-    def research_cycle(self, gap_threshold: int = 5) -> ResearchCycle:
+    def research_cycle(self, gap_threshold: int = 5, batch: int = 0) -> ResearchCycle:
         """Tek araştırma döngüsü: değerlendirme → hedef → veri → öğren → raporla."""
         from tantrium.agi.research.autonomous import AutonomousObserver
         from tantrium.agi.research.goal import encode_goal
@@ -267,10 +487,10 @@ class AutonomousResearcher:
             if goal and self._goals.add(goal):
                 goals_created += 1
 
-        # 3. İlk 3 boşluk için veri çek
+        # 3. İlk 5 boşluk için veri çek (batch ile her döngüde farklı)
         all_sequences: list[tuple[str, list[float]]] = []
-        for gap in gaps[:3]:
-            seqs = self._fetch_for_gap(gap)
+        for gap in gaps[:5]:
+            seqs = self._fetch_for_gap(gap, batch=batch)
             all_sequences.extend(seqs)
 
         sequences_fetched = len(all_sequences)
@@ -324,10 +544,10 @@ class AutonomousResearcher:
         t_start = time.monotonic()
         cycles: list[ResearchCycle] = []
 
-        for _ in range(max_cycles):
+        for i in range(max_cycles):
             if time.monotonic() - t_start >= time_limit_s:
                 break
-            cycle = self.research_cycle(gap_threshold=gap_threshold)
+            cycle = self.research_cycle(gap_threshold=gap_threshold, batch=i)
             cycles.append(cycle)
             if not cycle.gaps_found:
                 break

@@ -303,16 +303,18 @@ class MetaParadigm:
         Önce en az komşusu olanlar (araştırma önceliği).
         """
         _ANCHOR_KEYWORDS: dict[str, list[str]] = {
-            "GUE_RANDOM_MATRIX":  ["random matrix", "GUE"],
-            "POISSON_PROCESS":    ["Poisson process"],
-            "UNIFORM_MEASURE":    ["equidistributed", "uniform"],
-            "EXPONENTIAL_DECAY":  ["exponential decay"],
-            "PERIODIC_LATTICE":   ["periodic", "lattice"],
-            "GAUSSIAN_BELL":      ["Gaussian", "normal distribution"],
-            "LINEAR_RAMP":        ["arithmetic progression"],
-            "GEOMETRIC_GROWTH":   ["geometric", "Fibonacci"],
-            "PRIME_GAPS":         ["prime gaps"],
-            "ZETA_ZEROS":         ["Riemann zeta", "L-function zeros"],
+            "GUE_RANDOM_MATRIX":  ["random matrix", "GUE", "Wigner semicircle", "eigenvalue spacing"],
+            "POISSON_PROCESS":    ["Poisson process", "waiting times", "exponential inter-arrival"],
+            "UNIFORM_MEASURE":    ["equidistributed", "uniform distribution", "van der Corput"],
+            "EXPONENTIAL_DECAY":  ["exponential decay", "radioactive decay", "half-life sequence"],
+            "PERIODIC_LATTICE":   ["periodic", "lattice", "crystal structure", "Fourier coefficients"],
+            "GAUSSIAN_BELL":      ["Gaussian", "normal distribution", "error function", "bell curve"],
+            "LINEAR_RAMP":        ["arithmetic progression", "linear sequence", "consecutive integers"],
+            "GEOMETRIC_GROWTH":   ["geometric", "Fibonacci", "Lucas numbers", "golden ratio"],
+            "PRIME_GAPS":         ["prime gaps", "prime numbers", "primes", "Goldbach"],
+            "ZETA_ZEROS":         ["Riemann zeta", "L-function zeros", "zeta function", "critical strip"],
+            "MODULAR_FORMS":      ["modular forms", "Ramanujan tau", "cusp forms", "theta series"],
+            "ELLIPTIC_CURVES":    ["elliptic curve", "Weierstrass", "rational points", "conductor"],
         }
         _PREFIX = "⊕ANCHOR:"
 

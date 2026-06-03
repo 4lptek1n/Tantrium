@@ -52,7 +52,7 @@ BANNER = """
 ║  /goals              aktif hedefler + ilerleme               ║
 ║  /pursue [hedef]     hedef peşinde döngü çalıştır            ║
 ║  /learn <dosya>      dosyadan öğren                          ║
-║  /grow               bilgi tabanını genişlet                 ║
+║  /grow [N]           otonom araştırma (N döngü, OEIS+LMFDB)  ║
 ║  /forget             çalışma belleğini temizle               ║
 ║  /save               manifold'u diske kaydet                 ║
 ║  /status             durum + oturum                          ║
@@ -279,13 +279,30 @@ def chat_loop(engine: AGIEngine) -> None:
             print()
             continue
 
-        if user_input.lower() == "/grow":
-            print("Bilgi tabanı genişletiliyor...")
-            s = engine.grow(max_rounds=2, max_explore_objectives=10)
-            n = engine.save_manifold()
-            print(f"  {s['theorem_nodes_processed']} teorem  |  "
-                  f"{s['inferences_derived']} çıkarım  |  "
-                  f"{s['manifold_size_after']} kavram  |  manifold kaydedildi ({n})")
+        if user_input.lower().startswith("/grow"):
+            parts = user_input.strip().split()
+            cycles = 3
+            if len(parts) > 1:
+                try:
+                    cycles = int(parts[1])
+                except ValueError:
+                    pass
+            n_before = len(engine.manifold.concepts)
+            e_before = sum(len(v) for v in engine.tau.edges.values())
+            print(f"Otonom araştırma başlıyor  ({cycles} döngü)...")
+            print(f"  Başlangıç: {n_before:,} kavram  |  {e_before:,} kenar")
+            from tantrium.agi.research.researcher import AutonomousResearcher
+            researcher = AutonomousResearcher(engine)
+            gaps = researcher.assess_gaps(threshold=8)
+            print(f"  Boşluklar: {', '.join(g['anchor'] for g in gaps[:6])}")
+            print()
+            report = researcher.run(max_cycles=cycles, gap_threshold=8)
+            n_after = len(engine.manifold.concepts)
+            e_after = sum(len(v) for v in engine.tau.edges.values())
+            print(report.summary())
+            print(f"\n  Öncesi: {n_before:,} kavram  {e_before:,} kenar")
+            print(f"  Sonrası: {n_after:,} kavram  {e_after:,} kenar")
+            print(f"  Büyüme:  +{n_after - n_before} kavram  +{e_after - e_before} kenar")
             print()
             continue
 
