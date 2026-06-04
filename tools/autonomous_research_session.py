@@ -20,8 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine
-from tantrium.agi.research.researcher import AutonomousResearcher
+from tantrium import CertificationEngine
+from tantrium.research.researcher import AutonomousResearcher
 
 
 def main() -> None:
@@ -33,7 +33,7 @@ def main() -> None:
 
     # ─── Engine yükle ────────────────────────────────────────────────────────
     print("\n  [1] Engine yükleniyor...")
-    engine = AGIEngine()
+    engine = CertificationEngine()
     n_concepts = len(engine.manifold.concepts)
     n_anchors = sum(1 for k in engine.manifold.concepts if k.startswith("⊕ANCHOR:"))
     n_edges = sum(len(v) for v in engine.tau.edges.values())

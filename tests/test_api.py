@@ -120,7 +120,7 @@ def test_ask_gaps_empty_when_fully_certified(ai):  # type: ignore[misc]
 # ─── AI.engine and AI.manifold properties ────────────────────────────────────
 
 def test_ai_has_engine_property(ai):  # type: ignore[misc]
-    from tantrium.agi import CertificationEngine
+    from tantrium import CertificationEngine
     assert isinstance(ai.engine, CertificationEngine)
 
 
@@ -130,5 +130,5 @@ def test_ai_has_manifold_property(ai):  # type: ignore[misc]
 
 
 def test_ai_has_tau_property(ai):  # type: ignore[misc]
-    from tantrium.agi import KnowledgeGraph
+    from tantrium import KnowledgeGraph
     assert isinstance(ai.tau, KnowledgeGraph)

@@ -11,9 +11,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine
-from tantrium.agi.language.bootstrap import LanguageBootstrap
-from tantrium.agi.graph.tau_graph import TauGraph
+from tantrium import CertificationEngine
+from tantrium.language.bootstrap import LanguageBootstrap
+from tantrium.graph.knowledge_graph import KnowledgeGraph
 
 CORPORA = [
     ("/tmp/arxiv/physics.txt",  "physics",  "arXiv Physics"),
@@ -31,7 +31,7 @@ def main() -> None:
     print("  CANONICAL TEXT ENCODING — MANIFOLD ÖĞRENME")
     print("═" * 60)
 
-    engine = AGIEngine()
+    engine = CertificationEngine()
 
     # Eski co_occurrence / canonical_text kavramları sıfırla
     to_remove = [
@@ -73,7 +73,7 @@ def main() -> None:
 
     print(f"\n  TAU ağı inşa ediliyor (k=10)...")
     t2 = time.time()
-    tau = TauGraph.build(engine.manifold, k=10, verbose=True)
+    tau = KnowledgeGraph.build(engine.manifold, k=10, verbose=True)
     tau_nodes, tau_edges = tau.save(str(engine._tau_path))
     engine.tau = tau
     print(f"  ✓ {fmt(tau_nodes)} node | {fmt(tau_edges)} edge | {time.time()-t2:.1f}s")

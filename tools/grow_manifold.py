@@ -12,9 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine
-from tantrium.agi.language.bootstrap import LanguageBootstrap
-from tantrium.agi.graph.tau_graph import TauGraph
+from tantrium import CertificationEngine
+from tantrium.language.bootstrap import LanguageBootstrap
+from tantrium.graph.knowledge_graph import KnowledgeGraph
 
 CORPORA = [
     # (dosya, domain, açıklama)
@@ -42,7 +42,7 @@ def main() -> None:
     print("  ALEPH-TEKIN MANIFOLD BÜYÜTME")
     print("═" * 60)
 
-    engine = AGIEngine()
+    engine = CertificationEngine()
     before = len(engine.manifold.concepts)
     print(f"\n  Başlangıç: {fmt(before)} kavram | {fmt(len(engine.tau.nodes))} TAU node\n")
 
@@ -81,7 +81,7 @@ def main() -> None:
     # TAU yeniden inşa — k=10 (daha fazla edge, daha zengin topoloji)
     print(f"\n  TAU ağı yeniden inşa ediliyor (k=10)...")
     t2 = time.time()
-    tau = TauGraph.build(engine.manifold, k=10, verbose=True)
+    tau = KnowledgeGraph.build(engine.manifold, k=10, verbose=True)
     tau_nodes, tau_edges = tau.save(str(engine._tau_path))
     engine.tau = tau
     print(f"  ✓ {fmt(tau_nodes)} node | {fmt(tau_edges)} certified edge | {time.time()-t2:.1f}s")

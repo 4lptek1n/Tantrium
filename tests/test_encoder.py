@@ -1,10 +1,10 @@
-"""Tests for the UniversalEncoder in tantrium.agi.core.encoder."""
+"""Tests for the UniversalEncoder in tantrium.core.encoder."""
 from fractions import Fraction
 
 import pytest
 
-from tantrium.agi.core.encoder import encode, encode_smiles
-from tantrium.agi.core.codex import CertifiableObject
+from tantrium.core.encoder import encode, encode_smiles
+from tantrium.core.codex import CertifiableObject
 
 
 # ─── encode() ────────────────────────────────────────────────────────────────

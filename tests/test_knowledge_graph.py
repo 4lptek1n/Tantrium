@@ -2,8 +2,8 @@
 import pytest
 from fractions import Fraction
 
-from tantrium.agi import KnowledgeGraph, KnowledgeNode, KnowledgeEdge
-from tantrium.agi.core.semantic import Concept
+from tantrium import KnowledgeGraph, KnowledgeNode, KnowledgeEdge
+from tantrium.core.semantic import Concept
 
 
 # ─── KnowledgeGraph initialization ───────────────────────────────────────────

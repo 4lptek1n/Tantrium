@@ -23,8 +23,8 @@ warnings.filterwarnings("ignore")
 import logging
 logging.disable(logging.CRITICAL)
 
-from tantrium.agi import AGIEngine
-from tantrium.agi.research.proof_loop import ProofLoop
+from tantrium import CertificationEngine
+from tantrium.research.proof_loop import ProofLoop
 
 
 def fmt_delta(before: int, after: int) -> str:
@@ -46,7 +46,7 @@ def main() -> None:
     print("  Manifold boşlukları → İspat kampanyaları → Yeni teoremler")
     print("═" * 72)
 
-    engine = AGIEngine()
+    engine = CertificationEngine()
     loop = ProofLoop(engine)
 
     n0 = len(engine.manifold.concepts)

@@ -26,11 +26,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine
-from tantrium.agi.reasoning.generalization import HankelGeneralizer
-from tantrium.agi.meta.topology import MomentTopology
-from tantrium.agi.core.semantic import Concept
-from tantrium.agi.domains.spectral import (
+from tantrium import CertificationEngine
+from tantrium.reasoning.generalization import HankelGeneralizer
+from tantrium.meta.topology import MomentTopology
+from tantrium.core.semantic import Concept
+from tantrium.domains.spectral import (
     dna_measure,
     dna_window_measures,
     spectral_distance,
@@ -201,7 +201,7 @@ def encode_dna_moments(seq: str, name: str) -> Concept:
 
 # ─── Sertifikasyon ────────────────────────────────────────────────────────────
 
-def certify_concept(engine: AGIEngine, concept: Concept) -> dict:
+def certify_concept(engine: CertificationEngine, concept: Concept) -> dict:
     """22+1 paradigma ile sertifika."""
     run = engine.network.run(concept.to_codex_object())
     return {
@@ -276,7 +276,7 @@ def main() -> None:
 
     # ── 3. AGI Engine Yükle ───────────────────────────────────────────────────
     print("\n  [3] Aleph-Tekin Manifold Yükleniyor...")
-    engine = AGIEngine()
+    engine = CertificationEngine()
     print(f"      ✓ {fmt(len(engine.manifold.concepts))} kavram  |  {fmt(sum(len(v) for v in engine.tau.edges.values()))} TAU edge")
 
     # ── 4. DNA → Moment Uzayı ─────────────────────────────────────────────────
@@ -290,7 +290,7 @@ def main() -> None:
     print(f"      Kanserli μ: {[round(float(m), 5) for m in cancer_concept.moments]}")
 
     # Moment farkı
-    from tantrium.agi.core.semantic import moment_distance
+    from tantrium.core.semantic import moment_distance
     dist = float(moment_distance(normal_concept, cancer_concept))
     delta = [
         round(float(cancer_concept.moments[i]) - float(normal_concept.moments[i]), 6)
@@ -400,7 +400,7 @@ def main() -> None:
                 ).limit_denominator(10 ** 9)
                 for i in range(k)
             ]
-            from tantrium.agi.core.semantic import Concept as _C
+            from tantrium.core.semantic import Concept as _C
             concept = _C(name=f"TP53_α={alpha:.2f}", moments=blended_m, domain="dna")
             label = f"α={alpha:.2f}     "
 

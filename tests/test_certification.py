@@ -1,8 +1,8 @@
 """Tests for CertificationEngine and CertificationPipeline."""
 import pytest
 
-from tantrium.agi import CertificationEngine, CertificationPipeline, CertificationRun
-from tantrium.agi.core.encoder import encode, encode_smiles
+from tantrium import CertificationEngine, CertificationPipeline, CertificationRun
+from tantrium.core.encoder import encode, encode_smiles
 from tantrium.core.semantic import SemanticManifold
 
 
@@ -113,7 +113,7 @@ def test_manifold_has_concepts(engine):  # type: ignore[misc]
 
 
 def test_manifold_nearest_returns_list(engine):  # type: ignore[misc]
-    from tantrium.agi.core.semantic import Concept
+    from tantrium.core.semantic import Concept
     from fractions import Fraction
     c = Concept(name="probe", moments=[Fraction(1, 2), Fraction(1, 3), Fraction(1, 6)],
                 domain="test")

@@ -25,9 +25,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine
-from tantrium.agi.language.bootstrap import LanguageBootstrap
-from tantrium.agi.graph.relations import (
+from tantrium import CertificationEngine
+from tantrium.language.bootstrap import LanguageBootstrap
+from tantrium.graph.relations import (
     SEMANTIC_PARADIGMS,
     certify_and_add_edge,
     extract_relations,
@@ -57,7 +57,7 @@ def main() -> None:
     print("  Pe: Σ* → P  |  Aleph: concept pair exists  |  TAU: edge certified")
     print("═" * 65)
 
-    engine = AGIEngine()
+    engine = CertificationEngine()
     bootstrap = LanguageBootstrap(engine, domain="language")
 
     print(f"\n  Manifold: {fmt(len(engine.manifold.concepts))} kavram")

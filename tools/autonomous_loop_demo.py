@@ -27,7 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine, AutonomousObserver
+from tantrium import CertificationEngine, AutonomousObserver
 
 
 # ─── Test girdileri (etiketsiz — sistem ne olduğunu bilmiyor) ─────────────────
@@ -77,7 +77,7 @@ def main() -> None:
     print("═" * 72)
 
     print("\n  [1] Engine yükleniyor...")
-    engine = AGIEngine()
+    engine = CertificationEngine()
     n_anchors = sum(1 for k in engine.manifold.concepts if k.startswith("⊕ANCHOR:"))
     print(f"      ✓ {len(engine.manifold.concepts):,} kavram  |  {n_anchors} matematiksel çapa")
 

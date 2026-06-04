@@ -1,7 +1,7 @@
-"""Tests for paradigm definitions in tantrium.agi.core.codex."""
+"""Tests for paradigm definitions in tantrium.core.codex."""
 import pytest
 
-from tantrium.agi.core.codex import (
+from tantrium.core.codex import (
     PARADIGMS,
     PARADIGM_BY_ID,
     CertifiableObject,
@@ -11,7 +11,7 @@ from tantrium.agi.core.codex import (
     FixedPointParadigm,
     ConsistencyParadigm,
 )
-from tantrium.agi.core.encoder import encode
+from tantrium.core.encoder import encode
 
 
 # ─── PARADIGMS list ───────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ def test_positivity_certifies_real_word():
 
 
 def test_positivity_certifies_smiles():
-    from tantrium.agi.core.encoder import encode_smiles
+    from tantrium.core.encoder import encode_smiles
     obj = encode_smiles("CCO")
     p = PositivityParadigm("ALEPH", "Positivity", "D >= 0", [])
     result = p.verify(obj)

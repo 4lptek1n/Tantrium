@@ -10,8 +10,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine
-from tantrium.agi.language.bootstrap import LanguageBootstrap
+from tantrium import CertificationEngine
+from tantrium.language.bootstrap import LanguageBootstrap
 
 CORPORA = [
     ("/tmp/arxiv/physics.txt",  "physics",  "arXiv Physics"),
@@ -29,7 +29,7 @@ def main() -> None:
     print("  SENTENCE CO-OCCURRENCE TAU EDGE WIRING")
     print("═" * 60)
 
-    engine = AGIEngine()
+    engine = CertificationEngine()
     before_edges = sum(len(v) for v in engine.tau.edges.values())
     print(f"\n  Manifold: {fmt(len(engine.manifold.concepts))} kavram")
     print(f"  TAU edges (önce): {fmt(before_edges)}")

@@ -1,7 +1,7 @@
 import pytest
 import tantrium
-from tantrium.agi import CertificationEngine
-from tantrium.agi.core.encoder import encode, encode_smiles
+from tantrium import CertificationEngine
+from tantrium.core.encoder import encode, encode_smiles
 
 
 @pytest.fixture(scope="session")

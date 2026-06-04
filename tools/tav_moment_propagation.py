@@ -26,8 +26,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine
-from tantrium.agi.graph.tau_graph import TauGraph
+from tantrium import CertificationEngine
+from tantrium.graph.knowledge_graph import KnowledgeGraph
 
 _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
 
@@ -94,12 +94,12 @@ def propagate_once(
     return updates, total_shift
 
 
-def rebuild_aleph_edges(engine: AGIEngine, k: int = 10) -> int:
+def rebuild_aleph_edges(engine: CertificationEngine, k: int = 10) -> int:
     """Yeni momentlerle ALEPH geometric edge'lerini yeniden hesapla.
     Semantik edge'leri KORUYARAK ALEPH edge'leri değiştirir.
     """
     tau = engine.tau
-    from tantrium.agi.graph.tau_graph import TauEdge
+    from tantrium.graph.knowledge_graph import KnowledgeEdge
 
     # sr_index yeniden oluştur (momentler değişti)
     for name, concept in engine.manifold.concepts.items():
@@ -139,7 +139,7 @@ def main() -> None:
     print(f"  α={ALPHA}  |  iterations={ITERATIONS}")
     print("═" * 65)
 
-    engine = AGIEngine()
+    engine = CertificationEngine()
     manifold = engine.manifold
     tau = engine.tau
 

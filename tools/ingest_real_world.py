@@ -28,8 +28,8 @@ warnings.filterwarnings("ignore")
 import logging
 logging.disable(logging.CRITICAL)
 
-from tantrium.agi import AGIEngine
-from tantrium.agi.research.ingest import DataIngestor
+from tantrium import CertificationEngine
+from tantrium.research.ingest import DataIngestor
 
 
 def main() -> None:
@@ -46,7 +46,7 @@ def main() -> None:
     print("  UniProt proteinleri + PubChem molekülleri + OEIS dizileri")
     print("═" * 72)
 
-    engine = AGIEngine()
+    engine = CertificationEngine()
     n0 = len(engine.manifold.concepts)
     e0 = sum(len(v) for v in engine.tau.edges.values())
     print(f"\n  Başlangıç: {n0:,} kavram  |  {e0:,} TAU kenar")

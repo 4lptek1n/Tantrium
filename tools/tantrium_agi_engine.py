@@ -20,17 +20,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import (
-    AGIEngine, CodexObject, Concept, AlephTekinNetwork,
+from tantrium import (
+    CertificationEngine, CertifiableObject, Concept, CertificationPipeline,
     InferenceChain, Explorer, Speaker,
 )
 
 
-def cmd_status(engine: AGIEngine) -> None:
+def cmd_status(engine: CertificationEngine) -> None:
     print(engine.status())
 
 
-def cmd_demo(engine: AGIEngine) -> None:
+def cmd_demo(engine: CertificationEngine) -> None:
     """Run the engine on a set of demo objects drawn from the proof system.
     These objects are the actual mathematical structures from the RH proof.
     """
@@ -40,7 +40,7 @@ def cmd_demo(engine: AGIEngine) -> None:
     #    μ_k = (1/2)^k — a valid moment sequence (Hankel PSD by construction).
     #    This is the structure underlying positivity certificates in the RH proof.
     rh_moments = [Fraction(1, 2) ** k for k in range(8)]
-    rh_obj = CodexObject(
+    rh_obj = CertifiableObject(
         name="D_positivity_RH",
         moments=rh_moments,
         structure={
@@ -132,7 +132,7 @@ def cmd_demo(engine: AGIEngine) -> None:
     print()
 
     # 2. A concept with negative moments — should fail Aleph
-    incoherent = CodexObject(
+    incoherent = CertifiableObject(
         name="incoherent_claim",
         moments=[Fraction(1), Fraction(-1), Fraction(2)],
         structure={}
@@ -163,13 +163,13 @@ def cmd_demo(engine: AGIEngine) -> None:
     print(engine.status())
 
 
-def cmd_teach(engine: AGIEngine, name: str, moments_str: str, domain: str) -> None:
+def cmd_teach(engine: CertificationEngine, name: str, moments_str: str, domain: str) -> None:
     moments = [Fraction(m.strip()) for m in moments_str.split(",")]
     concept = Concept(name=name, moments=moments, domain=domain)
     print(engine.teach(concept))
 
 
-def cmd_certify(engine: AGIEngine, name: str) -> None:
+def cmd_certify(engine: CertificationEngine, name: str) -> None:
     """Certify an object by name — load from knowledge store or theorem graph."""
     history = engine._load_history()
     matches = [h for h in history if name.lower() in h.get("object", "").lower()]
@@ -181,7 +181,7 @@ def cmd_certify(engine: AGIEngine, name: str) -> None:
         print("Run --demo or provide moments to certify a new object.")
 
 
-def cmd_infer(engine: AGIEngine, name_a: str, name_b: str) -> None:
+def cmd_infer(engine: CertificationEngine, name_a: str, name_b: str) -> None:
     """Run the inference chain between two previously certified objects."""
     history = engine._load_history()
 
@@ -209,7 +209,7 @@ def cmd_infer(engine: AGIEngine, name_a: str, name_b: str) -> None:
     print(f"\n{len(results)} inferences written to {engine.knowledge_path}")
 
 
-def cmd_explore(engine: AGIEngine, max_rounds: int) -> None:
+def cmd_explore(engine: CertificationEngine, max_rounds: int) -> None:
     """Run the autonomous exploration loop over the knowledge frontier."""
     explorer = Explorer(engine)
     objectives = explorer.scan_frontier()
@@ -227,7 +227,7 @@ def cmd_explore(engine: AGIEngine, max_rounds: int) -> None:
     print(explorer.report(results))
 
 
-def cmd_speak(engine: AGIEngine, name: str, detail: str) -> None:
+def cmd_speak(engine: CertificationEngine, name: str, detail: str) -> None:
     """Narrate a certified object — look it up from knowledge store first."""
     history = engine._load_history()
     obj_records = [
@@ -240,7 +240,7 @@ def cmd_speak(engine: AGIEngine, name: str, detail: str) -> None:
         obj_name = rec["object"]
         # Reconstruct minimal run for speaking from stored record
         from fractions import Fraction
-        from tantrium.agi.core.codex import CodexObject
+        from tantrium.core.codex import CertifiableObject
         obj = engine.encoder.encode(obj_name, name=obj_name)
         run = engine.network.run(obj)
         speaker = Speaker(manifold=engine.manifold)
@@ -251,12 +251,12 @@ def cmd_speak(engine: AGIEngine, name: str, detail: str) -> None:
         print(engine.query(name))
 
 
-def cmd_query(engine: AGIEngine, question: str) -> None:
+def cmd_query(engine: CertificationEngine, question: str) -> None:
     """Query the system for certified knowledge about a topic."""
     print(engine.query(question))
 
 
-def cmd_grow(engine: AGIEngine, rounds: int) -> None:
+def cmd_grow(engine: CertificationEngine, rounds: int) -> None:
     """Run the self-directed knowledge expansion loop."""
     print("═══ GROWING KNOWLEDGE BASE ═══")
     print(f"Processing theorem graph + running inference chain...")
@@ -274,7 +274,7 @@ def cmd_grow(engine: AGIEngine, rounds: int) -> None:
 
 def cmd_network() -> None:
     """Print the full network structure: nodes, dependencies, topology."""
-    net = AlephTekinNetwork()
+    net = CertificationPipeline()
     print("═══ ALEPH-TEKIN NETWORK: 22+1 PARADIGMS ═══\n")
     for pid in net._topo_order:
         node = net.nodes[pid]
@@ -306,7 +306,7 @@ def main() -> None:
     parser.add_argument("--grow-rounds", type=int, default=3, metavar="N")
     args = parser.parse_args()
 
-    engine = AGIEngine()
+    engine = CertificationEngine()
 
     if args.status:
         cmd_status(engine)

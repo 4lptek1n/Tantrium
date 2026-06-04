@@ -17,14 +17,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi import AGIEngine, SessionMemory, Turn
-from tantrium.agi.research.goal import GoalManifold, encode_goal
-from tantrium.agi.research.actor import Actor
-from tantrium.agi.reasoning.generalization import HankelGeneralizer
-from tantrium.agi.meta.topology import MomentTopology
-from tantrium.agi.meta.paradigm import MetaParadigm
-from tantrium.agi.core.semantic import Concept
-from tantrium.agi.language.bootstrap import LanguageBootstrap
+from tantrium import CertificationEngine, SessionMemory, Turn
+from tantrium.research.goal import GoalManifold, encode_goal
+from tantrium.research.actor import Actor
+from tantrium.reasoning.generalization import HankelGeneralizer
+from tantrium.meta.topology import MomentTopology
+from tantrium.meta.paradigm import MetaParadigm
+from tantrium.core.semantic import Concept
+from tantrium.language.bootstrap import LanguageBootstrap
 
 
 BANNER = """
@@ -61,7 +61,7 @@ BANNER = """
 """
 
 
-def _context_weave(engine: AGIEngine, user_input: str):
+def _context_weave(engine: CertificationEngine, user_input: str):
     """Girdiyi encode et; oturum çalışma belleği varsa aktif kavramların
     momentlerini ağırlıkla harmanla (multi-turn context).
 
@@ -95,7 +95,7 @@ def _context_weave(engine: AGIEngine, user_input: str):
     )
 
 
-def _speak(engine: AGIEngine, user_input: str) -> str:
+def _speak(engine: CertificationEngine, user_input: str) -> str:
     """Girdiyi encode et (context'le harmanla), sertifikala, doğal dil üret."""
     obj = _context_weave(engine, user_input)
     run = engine.network.run(obj)
@@ -124,7 +124,7 @@ def _speak(engine: AGIEngine, user_input: str) -> str:
     return "\n".join(lines)
 
 
-def chat_loop(engine: AGIEngine) -> None:
+def chat_loop(engine: CertificationEngine) -> None:
     bootstrap = LanguageBootstrap(engine, window=3, min_freq=1)
 
     # Kalıcı bellek: önceki oturumu sürdür ya da yeni başlat
@@ -291,7 +291,7 @@ def chat_loop(engine: AGIEngine) -> None:
             e_before = sum(len(v) for v in engine.tau.edges.values())
             print(f"Otonom araştırma başlıyor  ({cycles} döngü)...")
             print(f"  Başlangıç: {n_before:,} kavram  |  {e_before:,} kenar")
-            from tantrium.agi.research.researcher import AutonomousResearcher
+            from tantrium.research.researcher import AutonomousResearcher
             researcher = AutonomousResearcher(engine)
             gaps = researcher.assess_gaps(threshold=8)
             print(f"  Boşluklar: {', '.join(g['anchor'] for g in gaps[:6])}")
@@ -327,7 +327,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower().startswith("/reason "):
-            from tantrium.agi.reasoning.reasoner import TauReasoner
+            from tantrium.reasoning.reasoner import TauReasoner
             concept = user_input[8:].strip()
             if not concept:
                 print("  Kullanım: /reason <kavram>")
@@ -348,7 +348,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower().startswith("/compose "):
-            from tantrium.agi.reasoning.reasoner import TauReasoner
+            from tantrium.reasoning.reasoner import TauReasoner
             parts = user_input[9:].strip().split()
             if len(parts) < 2:
                 print("  Kullanım: /compose <kavram_A> <kavram_B> [alpha=0.5]")
@@ -368,7 +368,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower().startswith("/inject-english"):
-            from tantrium.agi.language.lang_topology import EnglishTopology
+            from tantrium.language.lang_topology import EnglishTopology
             print("İngilizce dil topolojisi yükleniyor...")
             inj = EnglishTopology(engine)
             result = inj.inject(run_bootstrap=True, run_reasoner=True)
@@ -377,7 +377,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower().startswith("/generate-en ") or user_input.lower().startswith("/generate "):
-            from tantrium.agi.language.generator import CertifiedGenerator
+            from tantrium.language.generator import CertifiedGenerator
             is_en = user_input.lower().startswith("/generate-en ")
             prefix_len = 13 if is_en else 10
             rest = user_input[prefix_len:].strip()
@@ -405,7 +405,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower().startswith("/plan "):
-            from tantrium.agi.reasoning.planner import Planner
+            from tantrium.reasoning.planner import Planner
             desc = user_input[6:].strip()
             if not desc:
                 print("  Kullanım: /plan <hedef açıklaması>")
@@ -453,7 +453,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower().startswith("/mol-gen "):
-            from tantrium.agi.domains.molecular import MoleculeGenerator
+            from tantrium.domains.molecular import MoleculeGenerator
             target = user_input[9:].strip()
             if not target:
                 print("  Kullanım: /mol-gen <hedef>  (örn: /mol-gen EGFR)")
@@ -468,7 +468,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower().startswith("/certify "):
-            from tantrium.agi.domains.molecular import MolecularCertifier
+            from tantrium.domains.molecular import MolecularCertifier
             rest = user_input[9:].strip()
             if not rest:
                 print("  Kullanım: /certify <hedef>  (örn: /certify EGFR)")
@@ -496,7 +496,7 @@ def chat_loop(engine: AGIEngine) -> None:
             continue
 
         if user_input.lower() == "/chain":
-            from tantrium.agi.reasoning.reasoner import TauReasoner
+            from tantrium.reasoning.reasoner import TauReasoner
             print("TAU transitif kapatma hesaplanıyor (max 200 kavram)...")
             reasoner = TauReasoner(engine)
             total = reasoner.chain_all(max_concepts=200)
@@ -556,7 +556,7 @@ def chat_loop(engine: AGIEngine) -> None:
         print()
 
         # Oturum çalışma belleğini bu turn'le güncelle (yanıttan sonra)
-        from tantrium.agi.language.bootstrap import _tokenize
+        from tantrium.language.bootstrap import _tokenize
         turn_concepts = [
             w for w in _tokenize(user_input)
             if w in engine.manifold.concepts
@@ -575,7 +575,7 @@ def main() -> None:
     parser.add_argument("--input", metavar="TEXT")
     args = parser.parse_args()
 
-    engine = AGIEngine()
+    engine = CertificationEngine()
 
     if args.grow_first:
         print("Başlangıç büyümesi...")

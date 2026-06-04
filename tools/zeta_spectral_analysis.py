@@ -28,14 +28,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tantrium.agi.domains.spectral import (
+from tantrium.domains.spectral import (
     SpectralMeasure,
     moments_to_spectral,
     spectral_distance,
     dna_bigram_matrix,
 )
-from tantrium.agi import AGIEngine
-from tantrium.agi.core.semantic import Concept
+from tantrium import CertificationEngine
+from tantrium.core.semantic import Concept
 from fractions import Fraction
 
 
@@ -154,7 +154,7 @@ def gue_variance() -> float:
 
 # ─── Manifold en yakın komşu ──────────────────────────────────────────────────
 
-def manifold_nearest(engine: AGIEngine, concept: Concept, n: int = 5) -> list[tuple[str, float]]:
+def manifold_nearest(engine: CertificationEngine, concept: Concept, n: int = 5) -> list[tuple[str, float]]:
     """Manifold'da moment mesafesiyle en yakın kavramlar."""
     return [
         (name, float(d))
@@ -162,7 +162,7 @@ def manifold_nearest(engine: AGIEngine, concept: Concept, n: int = 5) -> list[tu
     ]
 
 
-def manifold_nearest_spectral(engine: AGIEngine, concept: Concept, n: int = 5) -> list[tuple[str, float]]:
+def manifold_nearest_spectral(engine: CertificationEngine, concept: Concept, n: int = 5) -> list[tuple[str, float]]:
     """Manifold'da spektral Wasserstein-2 mesafesiyle en yakın kavramlar."""
     return engine.manifold.nearest_spectral(concept, n=n)
 
@@ -317,7 +317,7 @@ def main() -> None:
     # ── 6. AGI Engine — Manifold'da Zeta Komşuları ────────────────────────────
     print("\n  [6] AGI Manifold — ζ Sıfırlarının Komşuları...")
     print("       Yükleniyor...")
-    engine = AGIEngine()
+    engine = CertificationEngine()
     print(f"       ✓ {len(engine.manifold.concepts):,} kavram  |  "
           f"{sum(len(v) for v in engine.tau.edges.values()):,} TAU edge")
 
