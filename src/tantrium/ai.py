@@ -473,6 +473,150 @@ class AI:
 
     # ── Sistem ────────────────────────────────────────────────────────────────
 
+    def think(self, question: str, depth: int = 3) -> "object":
+        """Derin düşünce — manifold walk + certified inference chain.
+
+        Context window yok — manifold her şeyi tutuyor.
+        Sampling yok — her adım ya sertifikalı ya gap isimli.
+
+        Döner: ThinkingResult (levels, conclusion, certified_claims, gaps)
+        """
+        from tantrium.reasoning.thinker import Thinker
+        return Thinker(self._engine).think(question, depth=depth)
+
+    def observe(self, text: str) -> "object":
+        """Otonom gözlem — metin → encode → certify → manifold → cross-domain köprü.
+
+        AutonomousObserver döngüsü:
+          observe → certify (Aleph) → nearest_anchor → learn → spectral_bridge → save
+
+        Döner: Observation (certified, name, moments, nearest_anchor, bridges, summary)
+        """
+        from tantrium.research.autonomous import AutonomousObserver
+        obs = AutonomousObserver(self._engine)
+        result = obs.observe(text)
+        if self._persist and result.is_new:
+            self._engine.auto_persist()
+        return result
+
+    def plan(self, goal_text: str, max_steps: int = 5) -> "object":
+        """Hedef → TAU BFS → sertifikalı adım planı.
+
+        Mevcut manifolddaki bilgiden başlayarak hedefe giden
+        sertifikalı kavram yolunu bulur.
+
+        Döner: Plan (goal, steps: [PlanStep], distances)
+        """
+        from tantrium.research.goal import Goal
+        from tantrium.reasoning.planner import Planner
+        raw = self._engine.encoder.encode(goal_text, name=f"goal:{goal_text[:40]}")
+        goal = Goal(name=goal_text, moments=[float(m) for m in raw.moments])
+        return Planner(self._engine).plan(goal, max_steps=max_steps)
+
+    def explore(self, paradigm: str = "ALEPH", gap_name: str | None = None,
+                max_attempts: int = 2) -> "object":
+        """Bilgi sınırını keşfet — probe oluştur, boşluğu kapatmaya çalış.
+
+        knowledge.jsonl'den gerçek bloklanmış paradigmaları okur,
+        minimal probe CodexObject oluşturur, boşluğu test eder.
+
+        Döner: ExplorationResult (status: CLOSED|REFINED|PERSISTENT, gap, attempts)
+        """
+        from tantrium.research.explorer import Explorer, ExplorationObjective
+        obj = ExplorationObjective(
+            gap_paradigm=paradigm,
+            gap_name=gap_name or f"{paradigm}_GAP",
+            source_object=gap_name or paradigm,
+        )
+        return Explorer(self._engine, max_attempts_per_gap=max_attempts).explore(obj)
+
+    def act(self, goal_text: str) -> list:
+        """Hedef yönelimli eylem — Actor ile manifold-güvenli adımlar uygula.
+
+        Actor yalnızca beyaz-listeli eylemler yapar:
+          learn (kavram öğren), relate (ilişki çıkar), think (derin düşün), save
+
+        Döner: list[ActionResult]
+        """
+        from tantrium.research.goal import Goal, GoalManifold
+        from tantrium.research.actor import Actor
+        raw = self._engine.encoder.encode(goal_text, name=f"goal:{goal_text[:40]}")
+        goal = Goal(name=goal_text, moments=[float(m) for m in raw.moments])
+        gm = GoalManifold()
+        gm.add(goal)
+        actor = Actor(self._engine)
+        return actor.pursue_goal(goal, gm)
+
+    def introspect(self) -> dict:
+        """Öz-bilgi — sistemin kendi durumunu, boşluklarını ve gücünü raporla.
+
+        Döner: dict ile şu alanlar:
+          concepts: int          — manifoldda toplam kavram
+          tau_edges: int         — TAU kenarları
+          domains: dict          — domain → kavram sayısı
+          certified_theorems: list  — sertifikalı teorem isimleri
+          open_gaps: list        — NecessityEngine'in bulduğu boşluklar
+          anchors: list          — 10 matematiksel çapa
+          paradigms: int         — aktif paradigma sayısı
+          transport_certified: list  — örnek certified transport çiftleri
+          knowledge_frontier: list  — bloklanmış paradigma isimleri
+        """
+        from tantrium.reasoning.necessity import NecessityEngine
+        from tantrium.domains.math_kernel import _CERTIFIED_STATUSES
+        import json, pathlib
+
+        m = self._engine.manifold
+        tau = self._engine.tau
+
+        # Domain dağılımı
+        domains: dict[str, int] = {}
+        for c in m.concepts.values():
+            domains[c.domain] = domains.get(c.domain, 0) + 1
+
+        # Sertifikalı teoremler
+        certified_theorems = [
+            name for name in m.concepts
+            if name.startswith("theorem:")
+        ]
+
+        # Matematiksel çapalar
+        anchors = [name for name in m.concepts if "⊕ANCHOR:" in name]
+
+        # Manifold boşlukları
+        ne = NecessityEngine(self._engine)
+        report = ne.run(domain="math_kernel", inject=False, find_gaps=True)
+        open_gaps = [g.description for g in report.manifold_gaps]
+
+        # Knowledge frontier (son knowledge.jsonl'den)
+        frontier: list[str] = []
+        kpath = pathlib.Path("results/agi/knowledge.jsonl")
+        if kpath.exists():
+            lines = kpath.read_text().strip().split("\n")
+            for line in reversed(lines[-50:]):
+                try:
+                    rec = json.loads(line)
+                    for gap in rec.get("knowledge_frontier", []):
+                        gname = gap.get("gap_name", "") if isinstance(gap, dict) else str(gap)
+                        if gname and gname not in frontier:
+                            frontier.append(gname)
+                        if len(frontier) >= 10:
+                            break
+                except Exception:
+                    pass
+                if len(frontier) >= 10:
+                    break
+
+        return {
+            "concepts": len(m.concepts),
+            "tau_edges": sum(len(v) for v in tau.edges.values()),
+            "domains": domains,
+            "certified_theorems": certified_theorems,
+            "open_gaps": open_gaps,
+            "anchors": anchors,
+            "paradigms": 23,
+            "knowledge_frontier": frontier,
+        }
+
     def status(self) -> str:
         """Kısa durum özeti."""
         n = len(self._engine.manifold.concepts)

@@ -7,6 +7,12 @@ from tantrium.core.semantic import Concept, SemanticManifold
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
 from tantrium.graph.knowledge_graph import KnowledgeGraph, KnowledgeNode, KnowledgeEdge
 from tantrium.research.proof_loop import ProofLoop, LoopReport
+from tantrium.reasoning.thinker import ThinkingResult, ThinkingLevel
+from tantrium.research.autonomous import Observation
+from tantrium.research.explorer import ExplorationObjective, ExplorationResult
+from tantrium.reasoning.planner import Plan, PlanStep
+from tantrium.research.goal import Goal, GoalManifold
+from tantrium.research.actor import Action, ActionResult
 
 __all__ = [
     "AI",
@@ -26,4 +32,15 @@ __all__ = [
     "KnowledgeEdge",
     "ProofLoop",
     "LoopReport",
+    "ThinkingResult",
+    "ThinkingLevel",
+    "Observation",
+    "ExplorationObjective",
+    "ExplorationResult",
+    "Plan",
+    "PlanStep",
+    "Goal",
+    "GoalManifold",
+    "Action",
+    "ActionResult",
 ]
