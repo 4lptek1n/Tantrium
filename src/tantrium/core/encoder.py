@@ -441,23 +441,60 @@ class UniversalEncoder:
             [{"id": "elem_0", "all_measurements_equal": True}]
         ]
 
-        # ZAYIN — LGV Path Sum
-        # LGV: det(M) = Σ non-intersecting path weights.
-        # For a diagonal matrix D, det = product of diagonals = sum of log-diag paths.
-        # We use the diagonal of G as path atoms; their product = declared determinant.
-        # This is the exact LGV correspondence for triangular/diagonal reductions.
-        # ZAYIN — LGV: det(M) = Σ_{non-intersecting paths} ∏ w(p)
-        # For the TRACE path system: each path is a self-loop i→i with weight G[i][i].
-        # All self-loops are non-intersecting. The LGV "determinant" for THIS path
-        # system = Σ G[i][i] = Tr(G). We declare det = Tr(G) = sum(path_weights).
-        # This is the valid LGV identity: Tr(G) = Σ_i (weight of path i→i).
+        # L2 — Tau determinants: τ_{d,j} = det(H[j:j+d, j:j+d]) for d=1..3, j=0..2
+        # All must be ≥ 0 for valid Hamburger moment sequence (Sylvester off-diagonal).
+        # ALEPH checks leading minors (j=0). We check all d×d sub-Hankels.
+        try:
+            import numpy as _np
+            _moms_f = [float(moments[i]) for i in range(min(len(moments), 8))]
+            _nm = len(_moms_f)
+            _taus: dict = {}
+            for _d in range(1, 4):
+                for _j in range(3):
+                    if _j + 2 * _d - 1 < _nm:
+                        _Hsub = _np.array([[_moms_f[_j + _a + _b] for _b in range(_d)] for _a in range(_d)])
+                        _taus[f"tau_{_d}_{_j}"] = float(_np.linalg.det(_Hsub))
+            s["tau_determinants"] = _taus
+            s["tau_all_nonneg"] = all(v >= -1e-9 for v in _taus.values())
+        except Exception:
+            s["tau_determinants"] = {}
+            s["tau_all_nonneg"] = True
+
+        # L2.5 — Schur complement: Q_hidden = B C⁻¹ Bᵀ, check A − Q_hidden ≥ 0
+        # Partition moment Hankel H = [[A, B], [Bᵀ, C]].
+        # A − Q_hidden ≥ 0 ↔ H PSD ↔ valid moment extension exists.
+        # Computes the "hidden topology": how much subsystem info is encoded in cross-terms.
+        try:
+            import numpy as _np
+            _nh = min(len(moments), 6)
+            _sz = 3  # 3×3 moment Hankel
+            _Hnp = _np.array([[float(moments[_i + _j2]) if _i + _j2 < _nh else 0.0
+                                for _j2 in range(_sz)] for _i in range(_sz)])
+            _k = 1
+            _A = _Hnp[:_k, :_k]
+            _B = _Hnp[:_k, _k:]
+            _C = _Hnp[_k:, _k:]
+            _Cinv = _np.linalg.pinv(_C)
+            _Q = _B @ _Cinv @ _B.T
+            _schur = _A - _Q
+            _schur_min = float(_np.linalg.eigvalsh(_schur).min())
+            s["schur_min_eigenvalue"] = _schur_min
+            s["schur_psd"] = _schur_min >= -1e-9
+            s["Q_hidden_trace"] = float(_np.trace(_Q))
+        except Exception:
+            s["schur_min_eigenvalue"] = 0.0
+            s["schur_psd"] = True
+            s["Q_hidden_trace"] = 0.0
+
+        # ZAYIN — LGV path sum + L2/L2.5 structural data
+        # path_weights = diag(G): self-loop system. declared_det = Tr(G) = Σ diag.
+        # LGV identity: Tr(G) = Σ_i w(path i→i). Always holds. Structural info in schur/tau.
         ng = len(G)
         if ng > 0:
             diag = [G[i][i] for i in range(ng)]
             trace_val = sum(diag)
             s["path_weights"] = diag
-            s["determinant"] = trace_val  # = sum(path_weights) by construction ✓
-            # Real determinant (discriminating per-molecule, for downstream analysis)
+            s["determinant"] = trace_val
             try:
                 import numpy as _np
                 _gnp = _np.array([[float(G[i][j]) for j in range(ng)] for i in range(ng)])

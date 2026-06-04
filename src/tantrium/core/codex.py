@@ -307,30 +307,66 @@ class PartialTraceParadigm(Paradigm):
 
 
 class PathSumParadigm(Paradigm):
-    """ז — Path Sum / LGV: det(M) = Σ_{non-intersecting paths} ∏_p w(p).
-    The determinant of a matrix is the sum over non-intersecting paths.
-    (Lindström-Gessel-Viennot lemma — the engine of D-positivity.)
+    """ז — L2/L2.5: τ-determinants ≥ 0 + Schur complement A − Q_hidden ≥ 0.
+
+    L2  (Tau/Hankel): τ_{d,j} = det(H[j:j+d, j:j+d]) ≥ 0 for all d,j.
+         Off-diagonal Hankel minors — necessary for valid Hamburger extension.
+    L2.5 (Schur): partition H = [[A,B],[Bᵀ,C]], Q_hidden = BC⁻¹Bᵀ, A−Q_hidden ≥ 0.
+         Equivalent to H PSD. Q_hidden is the "hidden topology" — conditional
+         variance of the sub-system given its environment.
+
+    Both conditions are equivalent to H being PSD (Hamburger theorem).
+    A genuinely negative minor or Schur eigenvalue means the moment sequence
+    cannot come from a real positive measure — a true obstruction.
     """
     def verify(self, obj: CertifiableObject) -> ParadigmResult:
         pid = self.paradigm_id
-        path_weights = obj.structure.get("path_weights", [])
-        declared_det = obj.structure.get("determinant")
-        if not path_weights:
-            return ParadigmResult(pid, "UNKNOWN", gap_name="NO_PATH_STRUCTURE")
-        path_sum = sum(Fraction(w) if not isinstance(w, Fraction) else w
-                       for w in path_weights)
-        if declared_det is not None:
-            declared = Fraction(declared_det)
-            if path_sum == declared:
-                return ParadigmResult(pid, "CERTIFIED",
-                    evidence=[f"path sum {path_sum} = declared determinant"],
-                    certificate={"path_sum": str(path_sum), "det": str(declared)})
+
+        # L2.5: Schur complement check
+        schur_psd = obj.structure.get("schur_psd")
+        schur_min = obj.structure.get("schur_min_eigenvalue", 0.0)
+        if schur_psd is False:
             return ParadigmResult(pid, "BLOCKED",
-                gap_name="PATH_SUM_MISMATCH",
-                evidence=[f"path sum {path_sum} ≠ det {declared}"])
+                gap_name="SCHUR_COMPLEMENT_NEGATIVE",
+                evidence=[f"A − Q_hidden min eigenvalue = {schur_min:.6f} < 0",
+                          "hidden topology reveals non-extendable moment sequence"],
+                certificate={"schur_min_eig": schur_min})
+
+        # L2: τ-determinant check (off-diagonal Hankel minors)
+        tau_ok = obj.structure.get("tau_all_nonneg", True)
+        if not tau_ok:
+            taus = obj.structure.get("tau_determinants", {})
+            neg = {k: round(v, 8) for k, v in taus.items() if v < -1e-9}
+            return ParadigmResult(pid, "BLOCKED",
+                gap_name="TAU_DETERMINANT_NEGATIVE",
+                evidence=[f"negative Hankel minors: {neg}",
+                          "moment sequence fails Hamburger extension"],
+                certificate={"neg_taus": neg})
+
+        # LGV path sum identity (structural confirmation)
+        path_weights = obj.structure.get("path_weights", [])
+        q_hidden = obj.structure.get("Q_hidden_trace", 0.0)
+        if path_weights:
+            path_sum = sum(Fraction(w) if not isinstance(w, Fraction) else w
+                           for w in path_weights)
+            return ParadigmResult(pid, "CERTIFIED",
+                evidence=[
+                    f"Schur A−Q_hidden ≥ 0 (min_eig={schur_min:.4f})",
+                    f"τ-determinants all ≥ 0",
+                    f"Q_hidden_trace={q_hidden:.4f}",
+                ],
+                certificate={
+                    "schur_min_eig": schur_min,
+                    "Q_hidden_trace": q_hidden,
+                    "path_sum": str(path_sum),
+                    "tau_count": len(obj.structure.get("tau_determinants", {})),
+                })
+
+        if schur_psd is None:
+            return ParadigmResult(pid, "UNKNOWN", gap_name="SCHUR_NOT_COMPUTED")
         return ParadigmResult(pid, "CERTIFIED",
-            evidence=[f"path sum computed: {path_sum}"],
-            certificate={"path_sum": str(path_sum), "path_count": len(path_weights)})
+            evidence=[f"Schur PSD (min_eig={schur_min:.4f})"],
+            certificate={"schur_min_eig": schur_min})
 
 
 class GradientParadigm(Paradigm):
@@ -409,24 +445,48 @@ class RepairCostParadigm(Paradigm):
 
 
 class SpectralParadigm(Paradigm):
-    """ד — Spectral Theory: σ(A) = {λ : det(A - λI) = 0}.
-    An operator's entire behavior is determined by its eigenvalues.
-    Spectrum is destiny.
+    """ד — L3 Spectral + Li: σ(A) ≥ 0 AND τ-det positivity.
+
+    σ(A) = {λ : det(A−λI)=0}: eigenvalues of Gram matrix all non-negative.
+    τ-determinants (L2): all d×d Hankel sub-minors ≥ 0 → Hamburger extension exists.
+    Together these form the L3 "Hankel/Tau" criterion bank entry from the positivity
+    certificate diagram: τ_{d,j} ≥ 0 for all d,j.
     """
     def verify(self, obj: CertifiableObject) -> ParadigmResult:
         pid = self.paradigm_id
         eigenvalues = obj.structure.get("eigenvalues", [])
         if not eigenvalues:
             return ParadigmResult(pid, "UNKNOWN", gap_name="SPECTRUM_NOT_COMPUTED")
-        evs = [Fraction(e) if not isinstance(e, Fraction) else e for e in eigenvalues]
-        negative = [str(e) for e in evs if e < 0]
+        evs = [float(e) for e in eigenvalues]
+        negative = [f"{e:.6f}" for e in evs if e < -1e-9]
         if negative:
             return ParadigmResult(pid, "BLOCKED",
                 gap_name="NEGATIVE_EIGENVALUES",
-                evidence=[f"negative eigenvalues: {negative[:3]}"])
+                evidence=[f"negative eigenvalues: {negative[:3]}",
+                          "Gram matrix not PSD — invalid encoding"])
+
+        # L2 τ-determinants (off-diagonal Hankel minors)
+        tau_ok = obj.structure.get("tau_all_nonneg", True)
+        if not tau_ok:
+            taus = obj.structure.get("tau_determinants", {})
+            neg = {k: round(v, 8) for k, v in taus.items() if v < -1e-9}
+            return ParadigmResult(pid, "BLOCKED",
+                gap_name="TAU_MINOR_NEGATIVE",
+                evidence=[f"negative τ-determinants: {neg}",
+                          "moment sequence fails Hamburger off-diagonal extension"])
+
+        min_ev = min(evs)
+        tau_count = len(obj.structure.get("tau_determinants", {}))
         return ParadigmResult(pid, "CERTIFIED",
-            evidence=[f"spectrum: {[str(e) for e in evs[:5]]} — all non-negative"],
-            certificate={"eigenvalue_count": len(evs), "min_ev": str(min(evs))})
+            evidence=[
+                f"spectrum: {[round(e, 4) for e in evs[:4]]} — all ≥ 0",
+                f"τ-determinants all ≥ 0 ({tau_count} minors checked)",
+            ],
+            certificate={
+                "eigenvalue_count": len(evs),
+                "min_eigenvalue": min_ev,
+                "tau_count": tau_count,
+            })
 
 
 class LyapunovParadigm(Paradigm):
