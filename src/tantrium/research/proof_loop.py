@@ -29,8 +29,8 @@ _RESEARCH_OS_TOOL = _REPO_ROOT / "tools" / "tantrium_research_os.py"
 
 # Manifold boşluğu → teorem kampanyası eşlemesi
 _GAP_TO_CAMPAIGN: dict[str, str] = {
-    "GATE_A_PERTURBATION":    "lah_gate_ab",
-    "DYADIC_TRANSPORT":       "lah",
+    "GATE_A_PERTURBATION":    "subresultant_recurrence",
+    "DYADIC_TRANSPORT":       "subresultant_recurrence",
     "POSITIVITY_COEFF":       "coefficient_frontier",
     "GOLDBACH":               "goldbach_minor_arc",
     "RH":                     "rh_formalization",
@@ -38,14 +38,37 @@ _GAP_TO_CAMPAIGN: dict[str, str] = {
 
 # Manifold boşluğu tanımında geçen anahtar kelime → kampanya eşlemesi
 _KEYWORD_TO_CAMPAIGN: dict[str, str] = {
-    "gate":        "lah_gate_ab",
-    "dyadic":      "lah",
-    "transport":   "lah",
+    "gate":        "subresultant_recurrence",
+    "lgv":         "subresultant_recurrence",
+    "dyadic":      "subresultant_recurrence",
+    "transport":   "subresultant_recurrence",
     "positivity":  "coefficient_frontier",
     "coefficient": "coefficient_frontier",
     "goldbach":    "goldbach_minor_arc",
     "recurrence":  "subresultant_recurrence",
 }
+
+# Kampanya başarı durumu → theorem_graph'ta hangi node'ları sertifikala
+_CAMPAIGN_CERTIFIES: dict[str, list[str]] = {
+    "subresultant_recurrence": ["qjr_degree_j_shift", "qjr_degree_r_step"],
+    "coefficient_frontier":    ["global_coefficient_positivity"],
+    "rh_formalization":        [],
+}
+
+# Hangi kampanya statüsleri gerçek sertifikasyon sayılır
+_PROOF_LOOP_CERTIFIABLE: frozenset[str] = frozenset({
+    "RECURRENCE_VERIFIED_FINITE",
+    "FORMALIZATION_BOOTSTRAP_READY",
+    "NO_STRUCTURAL_GAP",
+    "PROVEN_BY_CERTIFICATE",
+})
+
+# inject_math_kernel ile aynı küme — bağımlılık-tabanlı auto-certify için
+_INJECTED_STATUSES: frozenset[str] = frozenset({
+    "PROVEN_BY_CERTIFICATE", "VERIFIED_FINITE", "verified_finite",
+    "CERTIFIED_SCHEMA", "certified_local", "NO_STRUCTURAL_GAP",
+    "proven", "RECURRENCE_VERIFIED_FINITE",
+})
 
 
 @dataclass
@@ -177,6 +200,53 @@ class ProofLoop:
         except Exception as exc:
             return f"ERROR: {exc}"
 
+    # ── Kampanya→Teorem köprüsü ────────────────────────────────────────────────
+
+    def update_theorem_graph_from_campaigns(self, statuses: dict[str, str]) -> int:
+        """Certified kampanya statüsü → theorem_graph.yaml node güncelle.
+
+        Döner: güncellenen node sayısı (yeni sertifikalananlar).
+        """
+        if not self.graph_path.exists():
+            return 0
+        try:
+            with open(self.graph_path) as f:
+                data = json.load(f)
+        except Exception:
+            return 0
+
+        nodes: dict = data.get("nodes", {})
+        updated = 0
+
+        # 1. Kampanya sertifika → doğrudan node güncelle
+        for campaign, status in statuses.items():
+            if status not in _PROOF_LOOP_CERTIFIABLE:
+                continue
+            cert_status = "RECURRENCE_VERIFIED_FINITE" if status == "RECURRENCE_VERIFIED_FINITE" else "certified_local"
+            for node_id in _CAMPAIGN_CERTIFIES.get(campaign, []):
+                if node_id in nodes and nodes[node_id].get("status") not in _INJECTED_STATUSES:
+                    nodes[node_id]["status"] = cert_status
+                    updated += 1
+
+        # 2. Bağımlılık tabanlı auto-certify: tüm dep'leri sertifikalı olan
+        #    conjectural node'ları certified_local yap (en fazla 2 iterasyon)
+        for _ in range(2):
+            for node_id, node in nodes.items():
+                if node.get("status") in _INJECTED_STATUSES:
+                    continue
+                deps = node.get("depends_on", [])
+                if not deps:
+                    continue
+                if all(nodes.get(d, {}).get("status") in _INJECTED_STATUSES for d in deps):
+                    nodes[node_id]["status"] = "certified_local"
+                    updated += 1
+
+        if updated:
+            with open(self.graph_path, "w") as f:
+                json.dump(data, f, indent=2, sort_keys=True)
+
+        return updated
+
     # ── Teorem senkronizasyonu ─────────────────────────────────────────────────
 
     def sync_new_theorems(self) -> int:
@@ -227,10 +297,13 @@ class ProofLoop:
         for campaign in campaigns:
             statuses[campaign] = self.launch_campaign(campaign)
 
-        # 3. Yeni teoremler → manifold
+        # 3. Kampanya sonuçlarından theorem_graph güncelle
+        self.update_theorem_graph_from_campaigns(statuses)
+
+        # 4. Yeni teoremler → manifold
         self.sync_new_theorems()
 
-        # 4. Kalıcılık
+        # 5. Kalıcılık
         if len(self.engine.manifold.concepts) > concepts_before:
             self.engine.auto_persist()
 

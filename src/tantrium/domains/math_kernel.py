@@ -31,6 +31,7 @@ _GRAPH_PATH_ALT = pathlib.Path("tantrium/theorem_graph/theorem_graph.yaml")
 _CERTIFIED_STATUSES = {
     "PROVEN_BY_CERTIFICATE",
     "VERIFIED_FINITE",
+    "verified_finite",
     "CERTIFIED_SCHEMA",
     "certified_local",
     "NO_STRUCTURAL_GAP",

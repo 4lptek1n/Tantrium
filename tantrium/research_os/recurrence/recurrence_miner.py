@@ -102,6 +102,7 @@ def mine_subresultant_recurrences(deep: bool = False, out_dir: Path = OUT_DIR) -
 
 def write_conjecture_doc(synthesis: dict[str, Any], ranking: dict[str, Any]) -> None:
     path = REPO_ROOT / "theorems" / "SUBRESULTANT_QJR_RECURRENCE_CONJECTURE.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
     best = ranking["ranked_candidates"][0]
     path.write_text(
         "\n".join(

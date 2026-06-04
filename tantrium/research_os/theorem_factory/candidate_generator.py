@@ -87,4 +87,6 @@ def write_catalog_md(catalog: dict[str, Any]) -> None:
         lines.append(f"| `{item['candidate_id']}` | `{item['score']}` | `{item['expected_blocker_if_proof_fails']}` |")
     lines.append("")
     lines.append("These are theorem candidates. None is marked proven without a certificate.")
-    (REPO_ROOT / "docs" / "TANTRIUM_THEOREM_CANDIDATE_CATALOG.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    _p = REPO_ROOT / "docs" / "TANTRIUM_THEOREM_CANDIDATE_CATALOG.md"
+    _p.parent.mkdir(parents=True, exist_ok=True)
+    _p.write_text("\n".join(lines) + "\n", encoding="utf-8")
