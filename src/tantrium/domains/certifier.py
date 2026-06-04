@@ -43,19 +43,25 @@ class MoleculeReport:
     target_distance: float
     gaps: list[str]
     anchor: str = ""
-    dyadic_score: float = 0.0   # D-pozitiflik derinliği — dyadic transport stabilitesi
+    dyadic_score: float = 0.0
+    transport_cert: object | None = None  # TransportCertificate
 
     @property
     def certified(self) -> bool:
         return self.certified_count > 0
 
+    @property
+    def transport_certified(self) -> bool:
+        return self.transport_cert is not None and getattr(self.transport_cert, "certified", False)
+
     def summary(self) -> str:
         bar = "█" * self.certified_count + "░" * (self.total_paradigms - self.certified_count)
         gap_str = ", ".join(self.gaps) if self.gaps else "yok"
+        tc_str = self.transport_cert.summary() if self.transport_cert else "—"
         return (
             f"  {self.name:<20} [{bar}] {self.certified_count}/{self.total_paradigms}\n"
             f"    μ₁={self.mu1:.4f}  μ₂={self.mu2:.4f}  μ₃={self.mu3:.4f}\n"
-            f"    Dyadic-skor: {self.dyadic_score:.6f}  |  Gap: {gap_str}\n"
+            f"    Transport: {tc_str}\n"
             f"    Anchor: {self.anchor or 'belirsiz'}"
         )
 
@@ -250,7 +256,11 @@ class MolecularCertifier:
         except Exception:
             anchor = ""
 
-        dyadic_score = self._dyadic_transport_score(raw.moments)
+        # Gerçek certified dyadic transport: source=target_concept, tgt=aday
+        from tantrium.core.transport import CertifiedTransport
+        transport = CertifiedTransport(self.engine)
+        tc = transport.certify(list(target_concept.moments), list(raw.moments))
+        dyadic_score = tc.transport_cost if tc.certified else 0.0
 
         return MoleculeReport(
             name=name,
@@ -264,6 +274,7 @@ class MolecularCertifier:
             gaps=gaps,
             anchor=anchor,
             dyadic_score=dyadic_score,
+            transport_cert=tc,
         )
 
     def _fetch_candidates(self, query: str, max_results: int = 10) -> list[tuple[str, str]]:
