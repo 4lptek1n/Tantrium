@@ -21,8 +21,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
 
-# Repo kökü: src/tantrium/agi/research/proof_loop.py → 5 seviye yukarı
-_REPO_ROOT = Path(__file__).resolve().parents[5]
+# Repo kökü: src/tantrium/research/proof_loop.py → 3 seviye yukarı
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 _THEOREM_GRAPH_PATH = _REPO_ROOT / "tantrium" / "theorem_graph" / "theorem_graph.yaml"
 _RESEARCH_OS_TOOL = _REPO_ROOT / "tools" / "tantrium_research_os.py"
 

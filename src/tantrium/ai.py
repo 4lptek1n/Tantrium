@@ -376,7 +376,7 @@ class AI:
     def learn(self, text: str) -> dict:
         """Metin öğret → manifolda ekle.
 
-        Döner: {"new_concepts": n, "relations": n, "persisted": bool}
+        Döner: {"new_concepts": n, "already_known": n, "relations": n, "persisted": bool}
         """
         from tantrium.language.bootstrap import LanguageBootstrap
         bs = LanguageBootstrap(self._engine, window=3, min_freq=1)
@@ -384,6 +384,7 @@ class AI:
         mem = self._engine.note_new_concepts(r.taught, relations_added=r.relations_added)
         return {
             "new_concepts": r.new_concepts,
+            "already_known": len(r.already_known),
             "relations": r.relations_added,
             "persisted": mem.get("persisted", False),
         }

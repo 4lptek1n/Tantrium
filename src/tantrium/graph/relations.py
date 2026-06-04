@@ -53,6 +53,8 @@ _RAW_PATTERNS: dict[str, list[str]] = {
         r"\b(?:using|applying|via)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:to|for)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
         r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:applied|trained|evaluated)\s+on\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
         r"\bapply\s+([a-z]{4,}(?:\s[a-z]{4,})?)\s+to\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:connects?|links?|relates?)\s+to\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:via|through|by\s+means\s+of)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
     ],
     "ACHIEVES": [
         r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:achieves?|obtains?|yields?|produces?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
