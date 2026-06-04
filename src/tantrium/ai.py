@@ -389,6 +389,55 @@ class AI:
             "persisted": mem.get("persisted", False),
         }
 
+    def transport(self, source: str, target: str, use_smiles: bool = False) -> "object":
+        """Certified dyadic transport from source → target moment sequences.
+
+        Three-layer proof:
+          1. Dyadic: exact rational mass coverage (solve_greedy → verified_exact)
+          2. Sturm: H(t)=(1-t)H_src + t*H_tgt stays PSD throughout (real measure manifold)
+          3. Zeta: distance from target spectral family to Riemann ζ-zeros family
+
+        Better than nearest-neighbor: paths through non-PSD territory (STURM_FAILED)
+        are rejected even if closer in moment distance.
+
+        use_smiles=True: encode source/target as molecular SMILES (Morgan ECFP4)
+        use_smiles=False: encode as general text/semantic input (bigram matrix)
+
+        Döner: TransportCertificate(certified, dyadic_verified, sturm_verified, zeta_distance, ...)
+        """
+        from tantrium.core.transport import CertifiedTransport
+
+        if use_smiles:
+            from tantrium.core.encoder import encode_smiles
+            src_obj = encode_smiles(source, name=source[:64])
+            tgt_obj = encode_smiles(target, name=target[:64])
+        else:
+            from tantrium.core.encoder import encode as _enc
+            src_obj = _enc(source, name=source[:64])
+            tgt_obj = _enc(target, name=target[:64])
+
+        ct = CertifiedTransport(self._engine)
+        return ct.certify(list(src_obj.moments), list(tgt_obj.moments))
+
+    def rank(self, target: str, candidates: list[str] | None = None, top_n: int = 10) -> "object":
+        """Rank candidates for a target via certified dyadic transport.
+
+        Returns TransportRanking with .certified_only() and .best() methods.
+        Certified candidates have paths that stay on the real-measure manifold.
+        """
+        from tantrium.core.transport import CertifiedTransport
+        from tantrium.core.semantic import Concept
+        from tantrium.core.encoder import encode as _enc
+
+        # Ensure target is in manifold
+        if target not in self._engine.manifold.concepts:
+            obj = _enc(target, name=target[:64])
+            concept = Concept(name=target[:64], moments=list(obj.moments), domain="input")
+            self._engine.manifold.add_unchecked(concept)
+
+        ct = CertifiedTransport(self._engine)
+        return ct.rank_candidates(target, candidate_names=candidates, top_n=top_n)
+
     def prove(self, max_cycles: int = 3, time_limit_s: float = 300.0):
         """Manifold boşluklarını Research OS ispat kampanyaları ile kapat.
 

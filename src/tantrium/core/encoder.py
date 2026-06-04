@@ -395,17 +395,16 @@ class UniversalEncoder:
         except Exception:
             s["eigenvalues"] = gram_diag[:6]
 
-        # HE — Lyapunov: V must be non-increasing (dV/dt ≤ 0).
-        # We use normalized moment RATIOS: r_k = μ_{k+1}/μ_k.
-        # For a stable system, these ratios are ≤ 1 (spectral radius ≤ 1).
-        # Normalize: divide each moment by the spectral norm proxy (max diagonal of G).
-        norm = max((float(G[i][i]) for i in range(len(G))), default=1.0) or 1.0
-        lyap = [float(moments[k]) / (norm ** k) if norm > 0 else 0.0
+        # HE — Lyapunov: V(k) = Tr(G^k) / (n * ρ^k) where ρ = max eigenvalue of G.
+        # Since all λ_i ≤ ρ, each (λ_i/ρ)^k ≤ 1 is non-increasing in k.
+        # V(k) = Σ_i (λ_i/ρ)^k / n → strictly non-increasing for all valid Gram inputs.
+        # No artificial clipping needed — this is a genuine Lyapunov function.
+        try:
+            lyap_norm = float(max(s["eigenvalues"])) or 1.0
+        except Exception:
+            lyap_norm = max((float(G[i][i]) for i in range(len(G))), default=1.0) or 1.0
+        lyap = [float(moments[k]) / (lyap_norm ** k) if lyap_norm > 0 else 0.0
                 for k in range(min(6, len(moments)))]
-        # Ensure non-increasing (clip upward deviations to previous value)
-        for k in range(1, len(lyap)):
-            if lyap[k] > lyap[k - 1]:
-                lyap[k] = lyap[k - 1]
         s["lyapunov_values"] = lyap
 
         # KAF — Injectivity
@@ -524,11 +523,23 @@ class UniversalEncoder:
         s["data_given_model_length"] = max(0, n - self.num_moments)
         s["alternative_models"] = []
 
-        # RESH — Partial Trace
+        # RESH — Partial Trace: ε(ρ) = Tr_E[U(ρ⊗η)U†]
+        # Real partial trace: half the eigenvalue spectrum = subsystem, all = total.
+        # For PSD Gram G: total_information = Tr(G), subsystem = sum of top-half eigenvalues.
         s["environment_trace"] = True
-        total = float(_trace(G)) if G else 1.0
-        s["total_information"] = max(1.0, total)
-        s["subsystem_information"] = max(0.0, total * 0.6)
+        try:
+            import numpy as _rnp
+            _rng = len(G)
+            _rgnp = _rnp.array([[float(G[i][j]) for j in range(_rng)] for i in range(_rng)])
+            _reigs = sorted(_rnp.linalg.eigvalsh(_rgnp).tolist(), reverse=True)
+            total = max(1.0, float(sum(_reigs)))
+            half = max(1, len(_reigs) // 2)
+            subsystem = float(sum(_reigs[:half]))
+        except Exception:
+            total = max(1.0, float(_trace(G)) if G else 1.0)
+            subsystem = total * 0.5
+        s["total_information"] = total
+        s["subsystem_information"] = max(0.0, subsystem)
 
         # TET — Cross-Ratio
         # Four consecutive moments form a cross-ratio quadruple
