@@ -60,3 +60,7 @@ infra/
 .cache/
 .local/
 replit.md
+
+# EEG / raw data files
+*.edf
+eeg_data/
