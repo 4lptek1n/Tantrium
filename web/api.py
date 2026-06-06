@@ -109,16 +109,58 @@ async def certify(req: CertifyRequest):
     if ai.manifold.concepts:
         nearest = [n for n, _ in ai.manifold.nearest(concept, n=5)]
 
+    # ── Plain-language result ────────────────────────────────────────────────
+    certified = run.certified_count == run.total
+    top_anchor = anchors[0][0] if anchors else "unknown"
+    top_anchor_dist = anchors[0][1] if anchors else 0.0
+
+    _anchor_meaning = {
+        "ZETA_ZEROS":        "Riemann zeta zeros — prime number structure",
+        "GUE_RANDOM_MATRIX": "Random matrix (GUE) — quantum-level complexity",
+        "PRIME_GAPS":        "Prime gap distribution — number theory",
+        "POISSON_PROCESS":   "Poisson process — independent random events",
+        "GAUSSIAN_BELL":     "Gaussian distribution — normal variation",
+        "PERIODIC_LATTICE":  "Periodic / wave structure",
+        "UNIFORM_MEASURE":   "Uniform distribution — flat structure",
+        "EXPONENTIAL_DECAY": "Exponential decay — rapid convergence",
+        "LINEAR_RAMP":       "Linear / arithmetic structure",
+        "GEOMETRIC_GROWTH":  "Geometric growth — exponential scaling",
+    }
+    anchor_meaning = _anchor_meaning.get(top_anchor, top_anchor)
+
+    rank = spec.effective_rank()
+    gaps = [pid for pid, r in paradigm_results.items() if r["status"] == "BLOCKED"]
+
+    if certified:
+        verdict = f'"{req.input}" exists in mathematical reality.'
+        finding = (
+            f"Its structure belongs to the {anchor_meaning} family "
+            f"(spectral distance {top_anchor_dist:.3f}). "
+            f"It occupies {rank:.1f} effective dimensions in moment space. "
+            f"All 23 mathematical paradigms are satisfied — no gaps."
+        )
+        if nearest:
+            finding += f" Nearest known structures: {', '.join(nearest[:3])}."
+    else:
+        verdict = f'"{req.input}" has {len(gaps)} open mathematical question(s).'
+        finding = (
+            f"It partially certifies ({run.certified_count}/{run.total} paradigms). "
+            f"Open gaps: {', '.join(gaps)}. "
+            f"Closest mathematical family: {anchor_meaning}."
+        )
+
     return {
         "input": req.input,
-        "certified": run.certified_count == run.total,
+        "certified": certified,
+        "verdict": verdict,
+        "finding": finding,
         "paradigms_passed": run.certified_count,
         "paradigms_total": run.total,
         "paradigm_results": paradigm_results,
         "moments": [float(m) for m in obj.moments],
         "eigenvalues": spec.eigenvalues[:4],
         "entropy": round(spec.entropy(), 4),
-        "effective_rank": round(spec.effective_rank(), 2),
+        "effective_rank": round(rank, 2),
         "spectral_gap": round(spec.gap(), 4),
         "nearest_anchors": [{"name": n, "distance": round(d, 4)} for n, d in anchors],
         "nearest_concepts": nearest[:5],
@@ -131,14 +173,40 @@ async def transport(req: TransportRequest):
     t0 = time.monotonic()
     ai = get_ai()
     tc = ai.transport(req.source, req.target, use_smiles=req.use_smiles)
+
+    zeta = round(float(tc.zeta_distance), 4)
+
+    if tc.certified:
+        verdict = f"A mathematically certified path exists from \"{req.source}\" to \"{req.target}\"."
+        finding = (
+            f"The path stays entirely within the real-measure manifold. "
+            f"Dyadic mass coverage: exact. Sturm chain: positive throughout. "
+            f"Distance from Riemann zero family: {zeta}. "
+            f"This connection is not a guess — it is proven."
+        )
+    elif not tc.dyadic_verified:
+        verdict = f"No certified path from \"{req.source}\" to \"{req.target}\"."
+        finding = (
+            f"Dyadic transport failed: the mass distributions cannot be exactly covered. "
+            f"These two structures live in incompatible regions of mathematical reality."
+        )
+    else:
+        verdict = f"Path exists but leaves the real-measure manifold."
+        finding = (
+            f"Dyadic coverage succeeded but the Sturm chain breaks — "
+            f"the interpolation path passes through non-real territory. "
+            f"The connection is not certifiable."
+        )
+
     return {
         "source": req.source,
         "target": req.target,
         "certified": tc.certified,
+        "verdict": verdict,
+        "finding": finding,
         "dyadic_verified": tc.dyadic_verified,
         "sturm_verified": tc.sturm_verified,
-        "zeta_distance": round(float(tc.zeta_distance), 4),
-        "summary": tc.summary(),
+        "zeta_distance": zeta,
         "duration_ms": round((time.monotonic() - t0) * 1000, 1),
     }
 

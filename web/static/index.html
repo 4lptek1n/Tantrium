@@ -464,43 +464,35 @@
     <div class="loading" id="certify-loading">COMPUTING CERTIFICATE...</div>
 
     <div class="result-box" id="certify-result">
-      <div id="cert-badge"></div>
 
-      <div class="metric-row">
-        <span class="metric-label">PARADIGMS</span>
-        <span class="metric-value" id="cert-paradigms">—</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">ENTROPY</span>
-        <span class="metric-value" id="cert-entropy">—</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">EFFECTIVE RANK</span>
-        <span class="metric-value" id="cert-rank">—</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">SPECTRAL GAP</span>
-        <span class="metric-value" id="cert-gap">—</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">DURATION</span>
-        <span class="metric-value" id="cert-time">—</span>
-      </div>
+      <!-- RESULT FIRST -->
+      <div id="cert-verdict" style="font-size:15px;font-weight:400;color:var(--white);margin-bottom:10px;line-height:1.5;"></div>
+      <div id="cert-finding" style="font-size:13px;color:var(--gray-200);line-height:1.8;margin-bottom:20px;"></div>
 
-      <div style="margin-top:16px;">
-        <div class="metric-label" style="margin-bottom:8px;">EIGENVALUE SPECTRUM</div>
+      <!-- Anchor highlight -->
+      <div id="cert-anchor-highlight" style="padding:12px 16px;border-left:3px solid var(--accent);background:rgba(200,169,110,0.06);margin-bottom:20px;font-size:12px;color:var(--accent);"></div>
+
+      <!-- Spectral bars -->
+      <div style="margin-bottom:20px;">
+        <div class="metric-label" style="margin-bottom:8px;">SPECTRAL SIGNATURE</div>
         <div class="spectral-bars" id="spectral-bars"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:9px;color:var(--gray-400);">
+          <span>λ₁</span><span>λ₂</span><span>λ₃</span><span>λ₄</span>
+        </div>
       </div>
 
-      <div style="margin-top:16px;">
-        <div class="metric-label" style="margin-bottom:4px;">NEAREST MATHEMATICAL FAMILY</div>
-        <div class="anchor-list" id="anchor-list"></div>
-      </div>
-
-      <div style="margin-top:16px;">
-        <div class="metric-label" style="margin-bottom:8px;">22+1 PARADIGM MATRIX</div>
-        <div class="paradigm-grid" id="paradigm-grid"></div>
-      </div>
+      <!-- Paradigm grid — secondary -->
+      <details style="cursor:pointer;">
+        <summary style="font-family:var(--font-mono);font-size:10px;color:var(--gray-400);letter-spacing:2px;list-style:none;margin-bottom:8px;">
+          ▸ 22+1 PARADIGM DETAIL — <span id="cert-paradigms">—</span>
+        </summary>
+        <div class="paradigm-grid" id="paradigm-grid" style="margin-top:8px;"></div>
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-family:var(--font-mono);font-size:10px;color:var(--gray-400);">
+          <div>ENTROPY <span id="cert-entropy" style="color:var(--white)">—</span></div>
+          <div>EFF. RANK <span id="cert-rank" style="color:var(--white)">—</span></div>
+          <div>TIME <span id="cert-time" style="color:var(--white)">—</span></div>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -526,20 +518,18 @@
     <div class="loading" id="transport-loading">RUNNING DYADIC · STURM · ZETA...</div>
 
     <div class="result-box" id="transport-result">
-      <div id="transport-badge"></div>
-      <div class="metric-row">
-        <span class="metric-label">DYADIC</span>
-        <span class="metric-value" id="t-dyadic">—</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">STURM PATH</span>
-        <span class="metric-value" id="t-sturm">—</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">ζ-DISTANCE</span>
-        <span class="metric-value gold" id="t-zeta">—</span>
-      </div>
-      <div style="margin-top:12px;font-size:11px;color:var(--gray-400);line-height:1.6;" id="t-summary"></div>
+      <div id="t-verdict" style="font-size:15px;font-weight:400;color:var(--white);margin-bottom:10px;line-height:1.5;"></div>
+      <div id="t-finding" style="font-size:13px;color:var(--gray-200);line-height:1.8;margin-bottom:16px;"></div>
+      <details style="cursor:pointer;">
+        <summary style="font-family:var(--font-mono);font-size:10px;color:var(--gray-400);letter-spacing:2px;list-style:none;">
+          ▸ PROOF LAYERS
+        </summary>
+        <div style="margin-top:10px;">
+          <div class="metric-row"><span class="metric-label">DYADIC</span><span id="t-dyadic">—</span></div>
+          <div class="metric-row"><span class="metric-label">STURM PATH</span><span id="t-sturm">—</span></div>
+          <div class="metric-row"><span class="metric-label">ζ-DISTANCE</span><span class="metric-value gold" id="t-zeta">—</span></div>
+        </div>
+      </details>
     </div>
 
     <!-- Compare -->
@@ -682,16 +672,22 @@ async function doCertify() {
     });
     const d = await r.json();
 
-    // Badge
-    const badge = document.getElementById('cert-badge');
-    badge.className = 'cert-badge ' + (d.certified ? 'certified' : 'blocked');
-    badge.innerHTML = `<span>${d.certified ? '✓' : '✗'}</span> ${d.certified ? 'CERTIFIED' : 'BLOCKED'} — ${d.paradigms_passed}/${d.paradigms_total} PARADIGMS`;
+    // Result first
+    document.getElementById('cert-verdict').textContent = d.verdict;
+    document.getElementById('cert-finding').textContent = d.finding;
 
-    document.getElementById('cert-paradigms').textContent = `${d.paradigms_passed} / ${d.paradigms_total}`;
-    document.getElementById('cert-paradigms').className = 'metric-value ' + (d.certified ? 'green' : 'red');
+    // Anchor highlight
+    if (d.nearest_anchors.length > 0) {
+      const top = d.nearest_anchors[0];
+      document.getElementById('cert-anchor-highlight').textContent =
+        `Mathematical family: ${top.name}  ·  spectral distance ${top.distance}`;
+    }
+
+    // Paradigm summary
+    document.getElementById('cert-paradigms').textContent =
+      `${d.paradigms_passed}/${d.paradigms_total} passed`;
     document.getElementById('cert-entropy').textContent = d.entropy;
     document.getElementById('cert-rank').textContent = d.effective_rank;
-    document.getElementById('cert-gap').textContent = d.spectral_gap;
     document.getElementById('cert-time').textContent = d.duration_ms + ' ms';
 
     // Spectral bars
@@ -702,20 +698,16 @@ async function doCertify() {
       const bar = document.createElement('div');
       bar.className = 'spectral-bar';
       bar.style.height = Math.max(4, (e / maxEig) * 60) + 'px';
-      bar.title = e.toFixed(4);
+      bar.title = 'λ = ' + e.toFixed(4);
       bars.appendChild(bar);
     });
-
-    // Anchors
-    const anchorList = document.getElementById('anchor-list');
-    anchorList.innerHTML = d.nearest_anchors.map(a =>
-      `<div class="anchor-item"><span class="anchor-name">${a.name}</span><span class="anchor-dist">W₂ = ${a.distance}</span></div>`
-    ).join('');
 
     // Paradigms
     const grid = document.getElementById('paradigm-grid');
     grid.innerHTML = Object.entries(d.paradigm_results).map(([pid, res]) =>
-      `<div class="paradigm-cell ${res.status === 'CERTIFIED' ? 'pass' : 'fail'}" title="${res.gap || pid}">${pid}</div>`
+      `<div class="paradigm-cell ${res.status === 'CERTIFIED' ? 'pass' : 'fail'}" title="${res.gap || ''}">
+        ${pid}
+      </div>`
     ).join('');
 
     document.getElementById('certify-result').classList.add('show');
@@ -744,15 +736,13 @@ async function doTransport() {
     });
     const d = await r.json();
 
-    const badge = document.getElementById('transport-badge');
-    badge.className = 'cert-badge ' + (d.certified ? 'certified' : 'blocked');
-    badge.innerHTML = `<span>${d.certified ? '✓' : '✗'}</span> TRANSPORT ${d.certified ? 'CERTIFIED' : 'BLOCKED'}`;
+    document.getElementById('t-verdict').textContent = d.verdict;
+    document.getElementById('t-finding').textContent = d.finding;
 
     const check = v => `<span class="metric-value ${v ? 'green' : 'red'}">${v ? 'VERIFIED' : 'FAILED'}</span>`;
-    document.getElementById('t-dyadic').outerHTML = `<span class="metric-value" id="t-dyadic">${check(d.dyadic_verified)}</span>`;
-    document.getElementById('t-sturm').outerHTML = `<span class="metric-value" id="t-sturm">${check(d.sturm_verified)}</span>`;
+    document.getElementById('t-dyadic').innerHTML = check(d.dyadic_verified);
+    document.getElementById('t-sturm').innerHTML = check(d.sturm_verified);
     document.getElementById('t-zeta').textContent = d.zeta_distance;
-    document.getElementById('t-summary').textContent = d.summary;
 
     document.getElementById('transport-result').classList.add('show');
   } catch(e) {
