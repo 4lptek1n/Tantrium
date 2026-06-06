@@ -1,16 +1,12 @@
-"""Tantrium ASI — Web API
-
-FastAPI wrapper around tantrium.AI()
-Serves the web UI and REST endpoints.
-"""
+"""Tantrium ASI — Web API"""
 from __future__ import annotations
 
 import time
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -23,8 +19,6 @@ os.chdir(str(_root))  # engine uses relative paths (results/agi/...)
 
 import tantrium
 
-# ── Singleton AI instance ────────────────────────────────────────────────────
-
 _ai: tantrium.AI | None = None
 
 def get_ai() -> tantrium.AI:
@@ -33,8 +27,6 @@ def get_ai() -> tantrium.AI:
         _ai = tantrium.AI()
     return _ai
 
-
-# ── App ──────────────────────────────────────────────────────────────────────
 
 app = FastAPI(title="Tantrium ASI", version="1.0.0")
 
@@ -49,8 +41,6 @@ static_dir = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
-# ── Request models ───────────────────────────────────────────────────────────
-
 class CertifyRequest(BaseModel):
     input: str
 
@@ -63,8 +53,10 @@ class CompareRequest(BaseModel):
     a: str
     b: str
 
+class DiscoverRequest(BaseModel):
+    target: str
+    top_k: int = 6
 
-# ── Endpoints ────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -83,6 +75,63 @@ async def status():
         "paradigms": 23,
         "status": "OPERATIONAL",
     }
+
+
+@app.post("/api/discover")
+async def discover(req: DiscoverRequest):
+    t0 = time.monotonic()
+    ai = get_ai()
+
+    try:
+        result = ai.discover(req.target, top_k=req.top_k)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    candidates = []
+    for c in result.candidates:
+        sdf_name = Path(c.sdf).name if c.sdf else None
+        candidates.append({
+            "name": c.name,
+            "smiles": c.smiles,
+            "certified": c.certified,
+            "paradigms_passed": c.paradigms_passed,
+            "paradigms_total": c.paradigms_total,
+            "dyadic_score": float(c.dyadic_score) if c.dyadic_score else 0.0,
+            "sdf_file": sdf_name,
+            "has_3d": bool(c.sdf and Path(c.sdf).exists()),
+        })
+
+    best_name = result.best.name if result.best else None
+
+    return {
+        "target": req.target,
+        "candidates": candidates,
+        "best": best_name,
+        "count": len(candidates),
+        "certified_count": sum(1 for c in candidates if c["certified"]),
+        "duration_s": round(result.duration_s, 2),
+    }
+
+
+@app.get("/api/download/{filename}")
+async def download(filename: str):
+    # Only allow .sdf files, no path traversal
+    if "/" in filename or "\\" in filename or not filename.endswith(".sdf"):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    search_dirs = [
+        _root / "results" / "molecules",
+        _root / "results" / "agi",
+    ]
+    for d in search_dirs:
+        f = d / filename
+        if f.exists():
+            return FileResponse(
+                str(f),
+                media_type="chemical/x-mdl-sdfile",
+                filename=filename,
+            )
+    raise HTTPException(status_code=404, detail="File not found")
 
 
 @app.post("/api/certify")
@@ -109,22 +158,21 @@ async def certify(req: CertifyRequest):
     if ai.manifold.concepts:
         nearest = [n for n, _ in ai.manifold.nearest(concept, n=5)]
 
-    # ── Plain-language result ────────────────────────────────────────────────
     certified = run.certified_count == run.total
     top_anchor = anchors[0][0] if anchors else "unknown"
     top_anchor_dist = anchors[0][1] if anchors else 0.0
 
     _anchor_meaning = {
-        "ZETA_ZEROS":        "Riemann zeta zeros — prime number structure",
-        "GUE_RANDOM_MATRIX": "Random matrix (GUE) — quantum-level complexity",
-        "PRIME_GAPS":        "Prime gap distribution — number theory",
-        "POISSON_PROCESS":   "Poisson process — independent random events",
-        "GAUSSIAN_BELL":     "Gaussian distribution — normal variation",
+        "ZETA_ZEROS":        "Prime number / Riemann zero family",
+        "GUE_RANDOM_MATRIX": "Quantum-level complexity (GUE)",
+        "PRIME_GAPS":        "Prime gap distribution",
+        "POISSON_PROCESS":   "Independent random events (Poisson)",
+        "GAUSSIAN_BELL":     "Normal distribution family",
         "PERIODIC_LATTICE":  "Periodic / wave structure",
-        "UNIFORM_MEASURE":   "Uniform distribution — flat structure",
-        "EXPONENTIAL_DECAY": "Exponential decay — rapid convergence",
+        "UNIFORM_MEASURE":   "Flat / uniform structure",
+        "EXPONENTIAL_DECAY": "Exponential decay",
         "LINEAR_RAMP":       "Linear / arithmetic structure",
-        "GEOMETRIC_GROWTH":  "Geometric growth — exponential scaling",
+        "GEOMETRIC_GROWTH":  "Geometric / exponential scaling",
     }
     anchor_meaning = _anchor_meaning.get(top_anchor, top_anchor)
 
@@ -132,21 +180,20 @@ async def certify(req: CertifyRequest):
     gaps = [pid for pid, r in paradigm_results.items() if r["status"] == "BLOCKED"]
 
     if certified:
-        verdict = f'"{req.input}" exists in mathematical reality.'
+        verdict = f'"{req.input}" is a verified mathematical structure.'
         finding = (
-            f"Its structure belongs to the {anchor_meaning} family "
-            f"(spectral distance {top_anchor_dist:.3f}). "
-            f"It occupies {rank:.1f} effective dimensions in moment space. "
-            f"All 23 mathematical paradigms are satisfied — no gaps."
+            f"Mathematical family: {anchor_meaning} (distance {top_anchor_dist:.3f}). "
+            f"Dimensionality: {rank:.1f} effective dimensions. "
+            f"All 23 paradigms certified."
         )
         if nearest:
-            finding += f" Nearest known structures: {', '.join(nearest[:3])}."
+            finding += f" Nearest known: {', '.join(nearest[:3])}."
     else:
         verdict = f'"{req.input}" has {len(gaps)} open mathematical question(s).'
         finding = (
-            f"It partially certifies ({run.certified_count}/{run.total} paradigms). "
-            f"Open gaps: {', '.join(gaps)}. "
-            f"Closest mathematical family: {anchor_meaning}."
+            f"Partially certified ({run.certified_count}/{run.total} paradigms). "
+            f"Open: {', '.join(gaps)}. "
+            f"Closest family: {anchor_meaning}."
         )
 
     return {
@@ -177,26 +224,18 @@ async def transport(req: TransportRequest):
     zeta = round(float(tc.zeta_distance), 4)
 
     if tc.certified:
-        verdict = f"A mathematically certified path exists from \"{req.source}\" to \"{req.target}\"."
+        verdict = f'Certified path: "{req.source}" → "{req.target}"'
         finding = (
-            f"The path stays entirely within the real-measure manifold. "
-            f"Dyadic mass coverage: exact. Sturm chain: positive throughout. "
-            f"Distance from Riemann zero family: {zeta}. "
-            f"This connection is not a guess — it is proven."
+            f"Mathematically proven connection. "
+            f"Dyadic mass: exact. Sturm chain: positive. "
+            f"Riemann zero distance: {zeta}."
         )
     elif not tc.dyadic_verified:
-        verdict = f"No certified path from \"{req.source}\" to \"{req.target}\"."
-        finding = (
-            f"Dyadic transport failed: the mass distributions cannot be exactly covered. "
-            f"These two structures live in incompatible regions of mathematical reality."
-        )
+        verdict = f'No certified path: "{req.source}" → "{req.target}"'
+        finding = "Dyadic transport failed — incompatible mathematical structures."
     else:
-        verdict = f"Path exists but leaves the real-measure manifold."
-        finding = (
-            f"Dyadic coverage succeeded but the Sturm chain breaks — "
-            f"the interpolation path passes through non-real territory. "
-            f"The connection is not certifiable."
-        )
+        verdict = f'Path exists but outside the real-measure manifold.'
+        finding = f"Dyadic OK but Sturm chain breaks. Connection is not certifiable."
 
     return {
         "source": req.source,
