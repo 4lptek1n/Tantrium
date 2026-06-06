@@ -6,17 +6,26 @@ from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
 from tantrium.core.semantic import Concept, SemanticManifold
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
 from tantrium.graph.knowledge_graph import KnowledgeGraph, KnowledgeNode, KnowledgeEdge
+from tantrium.graph.memory import SessionMemory, Turn
 from tantrium.research.proof_loop import ProofLoop, LoopReport
 from tantrium.reasoning.thinker import ThinkingResult, ThinkingLevel
-from tantrium.research.autonomous import Observation
+from tantrium.reasoning.generalization import DerivedConcept, HankelGeneralizer
+from tantrium.reasoning.reasoner import ChainStep, ReasoningResult, GraphReasoner
+from tantrium.reasoning.planner import Plan, PlanStep, Planner
+from tantrium.research.autonomous import Observation, AutonomousObserver
 from tantrium.research.explorer import ExplorationObjective, ExplorationResult
-from tantrium.reasoning.planner import Plan, PlanStep
 from tantrium.research.goal import Goal, GoalManifold
 from tantrium.research.actor import Action, ActionResult
+from tantrium.research.ingest import IngestBatch, IngestReport, DataIngestor
+from tantrium.research.researcher import ResearchCycle, ResearchReport, AutonomousResearcher
+from tantrium.language.generator import GeneratedStep, GenerationResult, CertifiedGenerator
+from tantrium.language.speaker import CertifiedStatement, Speaker
+from tantrium.domains.spectral import SpectralMeasure, gram_spectrum, spectral_distance, dna_measure, moments_to_spectral
 from tantrium.meta.paradigm import MetaParadigm, UniversalRule, ParadigmMoment, SelfCertResult
 from tantrium.meta.topology import MomentTopology, MathRegion
 
 __all__ = [
+    # Core SDK
     "AI",
     "CertificationEngine",
     "CertificationPipeline",
@@ -29,22 +38,53 @@ __all__ = [
     "CertifiedTransport",
     "TransportCertificate",
     "TransportRanking",
+    # Graph
     "KnowledgeGraph",
     "KnowledgeNode",
     "KnowledgeEdge",
+    "SessionMemory",
+    "Turn",
+    # Research
     "ProofLoop",
     "LoopReport",
-    "ThinkingResult",
-    "ThinkingLevel",
     "Observation",
+    "AutonomousObserver",
     "ExplorationObjective",
     "ExplorationResult",
-    "Plan",
-    "PlanStep",
     "Goal",
     "GoalManifold",
     "Action",
     "ActionResult",
+    "IngestBatch",
+    "IngestReport",
+    "DataIngestor",
+    "ResearchCycle",
+    "ResearchReport",
+    "AutonomousResearcher",
+    # Reasoning
+    "ThinkingResult",
+    "ThinkingLevel",
+    "DerivedConcept",
+    "HankelGeneralizer",
+    "ChainStep",
+    "ReasoningResult",
+    "GraphReasoner",
+    "Plan",
+    "PlanStep",
+    "Planner",
+    # Language
+    "GeneratedStep",
+    "GenerationResult",
+    "CertifiedGenerator",
+    "CertifiedStatement",
+    "Speaker",
+    # Spectral
+    "SpectralMeasure",
+    "gram_spectrum",
+    "spectral_distance",
+    "dna_measure",
+    "moments_to_spectral",
+    # Meta
     "MetaParadigm",
     "UniversalRule",
     "ParadigmMoment",

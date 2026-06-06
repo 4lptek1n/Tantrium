@@ -712,6 +712,211 @@ class AI:
             self._mol_gen = MoleculeGenerator(self._engine)
         return self._mol_gen
 
+    # ── Genelleme / Moment İnterpolasyonu ────────────────────────────────────
+
+    def interpolate(
+        self,
+        concept_a: str,
+        concept_b: str,
+        alpha: float = 0.5,
+    ) -> "object":
+        """İki kavramın Hankel moment uzayında konveks kombinasyonu → yeni kavram.
+
+        H_A PSD, H_B PSD → H_C = αH_A + (1-α)H_B PSD (konveks → Aleph garantili).
+        α=0.5: geometrik orta nokta. α→0: B'ye yakın. α→1: A'ya yakın.
+
+        Döner: DerivedConcept (certified, moments, parents, summary())
+        """
+        from tantrium.reasoning.generalization import HankelGeneralizer
+        return HankelGeneralizer(self._engine).interpolate(concept_a, concept_b, alpha)
+
+    def midpoints(
+        self,
+        concept_a: str,
+        concept_b: str,
+        steps: int = 7,
+    ) -> list:
+        """A'dan B'ye moment uzayında yol haritası — her adım certified ya da void.
+
+        Aleph geçen bölgeler: gerçek matematiksel alan.
+        Aleph geçmeyen bölgeler: iki kavram arasındaki matematiksel boşluk.
+
+        Döner: list[DerivedConcept]
+        """
+        from tantrium.reasoning.generalization import HankelGeneralizer
+        return HankelGeneralizer(self._engine).explore_midpoints(concept_a, concept_b, steps)
+
+    def derive(self, concept_names: list) -> "object":
+        """N kavramın moment ortalamasından yeni kavram türet (uniform ağırlık).
+
+        PSD matrislerinin ortalaması PSD → Aleph garantisi korunur.
+        Döner: DerivedConcept
+        """
+        from tantrium.reasoning.generalization import HankelGeneralizer
+        return HankelGeneralizer(self._engine).derive(concept_names)
+
+    def blend(self, weighted_concepts: list) -> "object":
+        """Ağırlıklı kavram karışımı: [(isim, ağırlık), ...] → yeni kavram.
+
+        Ağırlıklar normalize edilir → konveks kombinasyon → PSD garantili.
+        Döner: DerivedConcept
+        """
+        from tantrium.reasoning.generalization import HankelGeneralizer
+        return HankelGeneralizer(self._engine).weighted_blend(weighted_concepts)
+
+    def compose(self, concept_a: str, concept_b: str, alpha: float = 0.5) -> str:
+        """İki kavramı moment uzayında birleştir, kalıtsal özellikleri raporla.
+
+        Döner: str — COMPOSED kavramın certified özellik listesi
+        """
+        from tantrium.reasoning.reasoner import GraphReasoner
+        return GraphReasoner(self._engine).compose(concept_a, concept_b, alpha)
+
+    # ── Konuşma / Sertifikalı Anlatım ────────────────────────────────────────
+
+    def narrate(self, query: str, detail: str = "standard") -> str:
+        """Girdiyi certify et, doğal dil sertifika raporu üret.
+
+        detail: "line" | "brief" | "standard" | "full"
+        Yalnızca kanıtlanmış gerçekleri söyler. Her boşluğu isimlendirir.
+        Hiçbir şeyi icat etmez. Hiçbir şeyi gizlemez.
+
+        Döner: str — certified İngilizce anlatım
+        """
+        obj = self._engine.encoder.encode(query, name=query[:64])
+        run = self._engine.network.run(obj)
+        return self._engine.speaker.narrate(run, detail=detail)
+
+    def explain(self, query: str) -> str:
+        """Bir kavramı certified olgulardan oluşan paragrafla açıkla.
+
+        ask()'tan farkı: Türkçe değil, İngilizce; certify+manifest değil
+        pure natural language explanation.
+
+        Döner: str — certified açıklama paragrafı
+        """
+        obj = self._engine.encoder.encode(query, name=query[:64])
+        run = self._engine.network.run(obj)
+        return self._engine.speaker.explain(run)
+
+    def compare(self, query_a: str, query_b: str) -> str:
+        """İki kavramı certified olarak karşılaştır: ortak/farklı paradigmalar.
+
+        Döner: str — paradigma bazında karşılaştırma raporu
+        """
+        obj_a = self._engine.encoder.encode(query_a, name=query_a[:64])
+        obj_b = self._engine.encoder.encode(query_b, name=query_b[:64])
+        run_a = self._engine.network.run(obj_a)
+        run_b = self._engine.network.run(obj_b)
+        return self._engine.speaker.compare(run_a, run_b)
+
+    def synthesize(self, concept: str, facts: dict) -> str:
+        """TAU kenarlarından akıcı Türkçe paragraf üret.
+
+        facts: {"IS_A": ["araç", "yöntem"], "ACHIEVES": ["kararlılık"], ...}
+        Her cümle TAU'da kenar olduğu için certified.
+
+        Döner: str — certified Türkçe paragraf
+        """
+        return self._engine.speaker.synthesize(concept, facts)
+
+    # ── Otonom Araştırma ─────────────────────────────────────────────────────
+
+    def observe_batch(self, inputs: list, verbose: bool = False) -> list:
+        """Bir girdi akışını otonom işle: encode → certify → manifold → köprü.
+
+        inputs: metin listesi, sayı listesi listesi, SMILES listesi — her şey.
+        Her girdi: Aleph sertifika → çapa sınıflandırma → cross-domain köprü keşfi.
+
+        Döner: list[Observation]
+        """
+        from tantrium.research.autonomous import AutonomousObserver
+        obs = AutonomousObserver(self._engine)
+        results = obs.run(inputs, verbose=verbose)
+        if self._persist:
+            self._engine.auto_persist()
+        return results
+
+    def ingest(
+        self,
+        uniprot: int = 0,
+        pubchem: int = 0,
+        oeis: list | None = None,
+    ) -> "object":
+        """Gerçek bilimsel veri çek → certify → manifolda ekle → köprü keşfet.
+
+        uniprot: çekilecek protein sayısı (Swiss-Prot, insan proteini)
+        pubchem: çekilecek bileşik sayısı (SMILES → Morgan moment)
+        oeis: OEIS anahtar kelimeleri listesi (["L-function", "prime", ...])
+
+        Resumable: .tantrium/ingest_state.json ile kaldığı yerden devam eder.
+        Döner: IngestReport (batches, total_new, total_bridges, summary())
+        """
+        from tantrium.research.ingest import DataIngestor
+        ing = DataIngestor(self._engine)
+        return ing.run(uniprot=uniprot, pubchem=pubchem, oeis_keywords=oeis or [])
+
+    def auto_research(
+        self,
+        max_cycles: int = 2,
+        time_limit_s: float = 300.0,
+        network: bool = False,
+    ) -> "object":
+        """AGI'nin kendi araştırma gündemini belirleyip uygulaması.
+
+        blind_spots() → hedef → veri (OEIS/algoritmik) → öğren → ölç → kaydet.
+        network=True: OEIS API + PubChem'den gerçek veri çeker.
+        network=False: algoritmik diziler (ağ bağımsız, hızlı).
+
+        Döner: ResearchReport (cycles, total_new_concepts, total_bridges, remaining_gaps)
+        """
+        from tantrium.research.researcher import AutonomousResearcher
+        researcher = AutonomousResearcher(self._engine)
+        report = researcher.run(max_cycles=max_cycles, time_limit_s=time_limit_s, network=network)
+        if self._persist and report.total_new_concepts > 0:
+            self._engine.auto_persist()
+        return report
+
+    # ── Spektral Analiz ──────────────────────────────────────────────────────
+
+    def spectrum(self, query: str) -> "object":
+        """Girdinin spektral ölçüsü: G=AᵀA → özdeğer dağılımı dμ = Σwᵢδ(λ-λᵢ).
+
+        Hamburger: bounded support → dμ ↔ {μₖ} birebir (TAV sabit noktası unique).
+        8 moment gölgesi değil — operatörün kendisi.
+
+        Döner: SpectralMeasure (eigenvalues, entropy(), gap(), effective_rank(), ...)
+        """
+        from tantrium.domains.spectral import moments_to_spectral
+        obj = self._engine.encoder.encode(query, name=query[:64])
+        return moments_to_spectral([float(m) for m in obj.moments], name=query[:64])
+
+    def anchor_of(self, query: str, top_n: int = 3) -> list:
+        """Bir kavramın en yakın matematiksel çapalarını bul.
+
+        "Bu şey hangi matematiksel aileye benziyor?"
+        Cevap: GUE? Poisson? Zeta sıfırları? Asal aralıklar?
+        Spektral W₂ mesafesiyle — yorumlanabilir cevap.
+
+        Döner: [(anchor_name, w2_distance), ...] yakından uzağa sıralı
+        """
+        from tantrium.graph.anchors import nearest_anchor
+        from tantrium.core.semantic import Concept
+        obj = self._engine.encoder.encode(query, name=query[:64])
+        concept = Concept(name=query[:64], moments=list(obj.moments), domain="input")
+        return nearest_anchor(self._engine.manifold, concept, top_n=top_n)
+
+    def remember(self, key: str | None = None) -> "object":
+        """Session hafızası: son konuşma geçmişini döndür.
+
+        Döner: SessionMemory — turns, certified_concepts listesi
+        """
+        session = getattr(self._engine, "session", None)
+        if session is None:
+            from tantrium.graph.memory import SessionMemory
+            return SessionMemory()
+        return session
+
     # ── Engine'e doğrudan erişim ─────────────────────────────────────────────
 
     @property
