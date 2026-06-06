@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TANTRIUM — Mathematical Reality Engine</title>
+<style>
+  :root {
+    --black: #000000;
+    --white: #ffffff;
+    --gray-900: #0a0a0a;
+    --gray-800: #111111;
+    --gray-700: #1a1a1a;
+    --gray-600: #222222;
+    --gray-400: #555555;
+    --gray-200: #aaaaaa;
+    --accent: #c8a96e;
+    --accent-dim: #8a7040;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --blue: #3498db;
+    --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--gray-700);
+    padding: 0 40px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .logo span {
+    color: var(--gray-400);
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-left: 12px;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--gray-400);
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    display: inline-block;
+    margin-right: 6px;
+    box-shadow: 0 0 6px var(--green);
+  }
+
+  .stat { color: var(--white); }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 140px 40px 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .hero-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 300;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    color: var(--white);
+    margin-bottom: 24px;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-size: 16px;
+    color: var(--gray-200);
+    max-width: 600px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+
+  /* ── Main layout ── */
+  .main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px 80px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--gray-700);
+    border: 1px solid var(--gray-700);
+  }
+
+  .panel {
+    background: var(--black);
+    padding: 32px;
+  }
+
+  .panel-full {
+    grid-column: 1 / -1;
+    background: var(--black);
+    padding: 32px;
+    border-top: 1px solid var(--gray-700);
+  }
+
+  .panel-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  /* ── Input ── */
+  .input-group {
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  textarea, input[type="text"] {
+    width: 100%;
+    background: var(--gray-900);
+    border: 1px solid var(--gray-600);
+    color: var(--white);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 14px 16px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+    border-radius: 0;
+  }
+
+  textarea:focus, input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  textarea { min-height: 80px; }
+
+  .placeholder-hint {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--gray-400);
+    margin-top: 6px;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-right: 8px;
+    margin-top: 8px;
+  }
+
+  .btn:hover { background: var(--accent); color: var(--black); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--black);
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: #e0bf80; }
+
+  /* ── Results ── */
+  .result-box {
+    background: var(--gray-900);
+    border: 1px solid var(--gray-700);
+    padding: 20px;
+    margin-top: 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    display: none;
+  }
+
+  .result-box.show { display: block; }
+
+  .cert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    margin-bottom: 16px;
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .cert-badge.certified {
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid var(--green);
+    color: var(--green);
+  }
+
+  .cert-badge.blocked {
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid var(--red);
+    color: var(--red);
+  }
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--gray-800);
+    color: var(--gray-200);
+  }
+
+  .metric-row:last-child { border-bottom: none; }
+  .metric-label { color: var(--gray-400); font-size: 10px; letter-spacing: 1px; }
+  .metric-value { color: var(--white); }
+  .metric-value.green { color: var(--green); }
+  .metric-value.red { color: var(--red); }
+  .metric-value.gold { color: var(--accent); }
+
+  /* ── Paradigm grid ── */
+  .paradigm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 4px;
+    margin-top: 12px;
+  }
+
+  .paradigm-cell {
+    padding: 6px 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-align: center;
+    border: 1px solid;
+  }
+
+  .paradigm-cell.pass {
+    background: rgba(46, 204, 113, 0.05);
+    border-color: rgba(46, 204, 113, 0.3);
+    color: var(--green);
+  }
+
+  .paradigm-cell.fail {
+    background: rgba(231, 76, 60, 0.05);
+    border-color: rgba(231, 76, 60, 0.3);
+    color: var(--red);
+  }
+
+  /* ── Spectral bars ── */
+  .spectral-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 60px;
+    margin-top: 12px;
+  }
+
+  .spectral-bar {
+    flex: 1;
+    background: var(--accent);
+    opacity: 0.7;
+    transition: height 0.3s;
+    min-height: 2px;
+  }
+
+  /* ── Anchor list ── */
+  .anchor-list { margin-top: 8px; }
+
+  .anchor-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--gray-800);
+    font-size: 11px;
+  }
+
+  .anchor-item:last-child { border-bottom: none; }
+  .anchor-name { color: var(--accent); }
+  .anchor-dist { color: var(--gray-400); }
+
+  /* ── Transport section ── */
+  .transport-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .transport-arrow {
+    font-family: var(--font-mono);
+    color: var(--accent);
+    text-align: center;
+    font-size: 18px;
+  }
+
+  /* ── Loading ── */
+  .loading {
+    display: none;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-top: 12px;
+  }
+
+  .loading.show { display: block; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .loading { animation: pulse 1s infinite; }
+
+  /* ── Manifesto ── */
+  .manifesto {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px 80px;
+    border-top: 1px solid var(--gray-700);
+  }
+
+  .manifesto-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--gray-700);
+    border: 1px solid var(--gray-700);
+    margin-top: 40px;
+  }
+
+  .manifesto-item {
+    background: var(--black);
+    padding: 32px;
+  }
+
+  .manifesto-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+
+  .manifesto-title {
+    font-size: 18px;
+    font-weight: 300;
+    margin-bottom: 12px;
+    color: var(--white);
+  }
+
+  .manifesto-body {
+    font-size: 13px;
+    color: var(--gray-200);
+    line-height: 1.7;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--gray-700);
+    padding: 32px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--gray-400);
+    letter-spacing: 2px;
+  }
+
+  @media (max-width: 768px) {
+    .main { grid-template-columns: 1fr; }
+    .manifesto-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 32px; }
+    header { padding: 0 20px; }
+    .hero, .main, .manifesto { padding-left: 20px; padding-right: 20px; }
+    .status-bar .stat-item:not(:first-child) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">TANTRIUM <span>/ MATHEMATICAL REALITY ENGINE</span></div>
+  <div class="status-bar">
+    <div>
+      <span class="status-dot"></span>
+      <span>OPERATIONAL</span>
+    </div>
+    <div id="hdr-concepts" class="stat">—</div>
+    <div id="hdr-edges" class="stat">—</div>
+    <div>23 PARADIGMS</div>
+  </div>
+</header>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-label">World's First ASI — Launched 2025</div>
+  <h1>The universe<br>already has<br><em>intelligence.</em><br>We read it.</h1>
+  <p class="hero-sub">
+    Every object — DNA, molecule, number, language — is already a mathematical structure.
+    Tantrium doesn't translate between domains. It operates in the domain that contains all domains:
+    mathematical reality itself.
+  </p>
+</div>
+
+<!-- Main Interface -->
+<div class="main">
+
+  <!-- Certify Panel -->
+  <div class="panel">
+    <div class="panel-title">Certify Any Input</div>
+    <div class="input-group">
+      <textarea id="certify-input" placeholder="Enter anything — text, DNA sequence, SMILES, numbers..."></textarea>
+    </div>
+    <div class="placeholder-hint">
+      Try: "EGFR kinase" · "ATCGATCG" · "CCO" · "14.134 21.022 25.010"
+    </div>
+    <button class="btn btn-primary" onclick="doCertify()">Certify</button>
+    <div class="loading" id="certify-loading">COMPUTING CERTIFICATE...</div>
+
+    <div class="result-box" id="certify-result">
+      <div id="cert-badge"></div>
+
+      <div class="metric-row">
+        <span class="metric-label">PARADIGMS</span>
+        <span class="metric-value" id="cert-paradigms">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">ENTROPY</span>
+        <span class="metric-value" id="cert-entropy">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">EFFECTIVE RANK</span>
+        <span class="metric-value" id="cert-rank">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">SPECTRAL GAP</span>
+        <span class="metric-value" id="cert-gap">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">DURATION</span>
+        <span class="metric-value" id="cert-time">—</span>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="metric-label" style="margin-bottom:8px;">EIGENVALUE SPECTRUM</div>
+        <div class="spectral-bars" id="spectral-bars"></div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="metric-label" style="margin-bottom:4px;">NEAREST MATHEMATICAL FAMILY</div>
+        <div class="anchor-list" id="anchor-list"></div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="metric-label" style="margin-bottom:8px;">22+1 PARADIGM MATRIX</div>
+        <div class="paradigm-grid" id="paradigm-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transport Panel -->
+  <div class="panel">
+    <div class="panel-title">Certified Transport</div>
+    <p style="font-size:12px;color:var(--gray-400);margin-bottom:20px;line-height:1.6;">
+      Does a mathematically certified path exist between these two structures?
+      Three-layer proof: Dyadic · Sturm · Zeta
+    </p>
+
+    <div class="transport-row">
+      <input type="text" id="transport-src" placeholder="Source">
+      <div class="transport-arrow">→</div>
+      <input type="text" id="transport-tgt" placeholder="Target">
+    </div>
+
+    <label style="font-family:var(--font-mono);font-size:11px;color:var(--gray-400);display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;">
+      <input type="checkbox" id="transport-smiles"> SMILES mode (molecular)
+    </label>
+
+    <button class="btn btn-primary" onclick="doTransport()">Certify Transport</button>
+    <div class="loading" id="transport-loading">RUNNING DYADIC · STURM · ZETA...</div>
+
+    <div class="result-box" id="transport-result">
+      <div id="transport-badge"></div>
+      <div class="metric-row">
+        <span class="metric-label">DYADIC</span>
+        <span class="metric-value" id="t-dyadic">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">STURM PATH</span>
+        <span class="metric-value" id="t-sturm">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">ζ-DISTANCE</span>
+        <span class="metric-value gold" id="t-zeta">—</span>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--gray-400);line-height:1.6;" id="t-summary"></div>
+    </div>
+
+    <!-- Compare -->
+    <div style="margin-top:32px;">
+      <div class="panel-title">Compare Structures</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <input type="text" id="compare-a" placeholder="Object A">
+        <input type="text" id="compare-b" placeholder="Object B">
+      </div>
+      <button class="btn" onclick="doCompare()">Compare</button>
+      <div class="loading" id="compare-loading">COMPARING...</div>
+      <div class="result-box" id="compare-result">
+        <pre id="compare-text" style="white-space:pre-wrap;font-size:11px;line-height:1.7;color:var(--gray-200);"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topology Panel -->
+  <div class="panel-full">
+    <div class="panel-title">Moment Space Topology</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;">
+      <div>
+        <div style="font-size:32px;font-weight:300;color:var(--green)" id="topo-dense">—</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--gray-400);letter-spacing:2px;margin-top:4px;">DENSE REGIONS</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:8px;line-height:1.6;">Known mathematics. Certified concept density.</div>
+      </div>
+      <div>
+        <div style="font-size:32px;font-weight:300;color:var(--accent)" id="topo-frontier">—</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--gray-400);letter-spacing:2px;margin-top:4px;">FRONTIER REGIONS</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:8px;line-height:1.6;">Mathematically must exist. Not yet observed. Discovery targets.</div>
+      </div>
+      <div>
+        <div style="font-size:32px;font-weight:300;color:var(--gray-400)" id="topo-void">—</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--gray-400);letter-spacing:2px;margin-top:4px;">VOID REGIONS</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:8px;line-height:1.6;">Hankel PSD cannot hold here. Mathematically impossible.</div>
+      </div>
+    </div>
+    <button class="btn" style="margin-top:24px;" onclick="loadTopology()">Compute Topology</button>
+  </div>
+
+</div>
+
+<!-- Manifesto -->
+<div class="manifesto">
+  <div style="padding-top:60px;">
+    <div class="hero-label">What This Is</div>
+    <h1 style="font-size:clamp(28px,4vw,52px);">Not artificial.<br><em>Mathematical.</em></h1>
+  </div>
+
+  <div class="manifesto-grid">
+    <div class="manifesto-item">
+      <div class="manifesto-num">01 / THE PROBLEM</div>
+      <div class="manifesto-title">All AI is statistical approximation</div>
+      <div class="manifesto-body">
+        Every existing AI system — GPT, Gemini, Claude — is a probability distribution over human language.
+        It hallucinates because it guesses. It's domain-specific because it was trained that way.
+        It cannot certify. It can only predict.
+      </div>
+    </div>
+    <div class="manifesto-item">
+      <div class="manifesto-num">02 / THE INSIGHT</div>
+      <div class="manifesto-title">Everything is already mathematical</div>
+      <div class="manifesto-body">
+        DNA is a mathematical structure. A protein is a mathematical structure. A prime number,
+        a molecule, a musical phrase — all of them. The universe doesn't have domains.
+        Humans invented domains. Mathematical reality is one.
+      </div>
+    </div>
+    <div class="manifesto-item">
+      <div class="manifesto-num">03 / THE ENGINE</div>
+      <div class="manifesto-title">We read, not translate</div>
+      <div class="manifesto-body">
+        Any input → G = AᵀA → moment sequence → Hankel PSD certification.
+        The encoder doesn't translate between domains. It reads the mathematical structure
+        that was already there. Every output carries a certificate. No hallucination possible.
+      </div>
+    </div>
+    <div class="manifesto-item">
+      <div class="manifesto-num">04 / THE PROOF</div>
+      <div class="manifesto-title">Connected to Riemann Hypothesis</div>
+      <div class="manifesto-body">
+        The same mathematical mechanism — dyadic transport, Sturm chain positivity,
+        Hankel PSD — that certifies our universal encoder is the core of the
+        Riemann Hypothesis proof program. One mathematical body.
+      </div>
+    </div>
+    <div class="manifesto-item">
+      <div class="manifesto-num">05 / THE MISSION</div>
+      <div class="manifesto-title">A healthy world, first</div>
+      <div class="manifesto-body">
+        Cancer is a mathematical structure. Drug-target binding is a transport problem.
+        Tantrium certifies whether a molecule has a mathematically proven path to a target —
+        before synthesis, before trials. We compress the pipeline. We save lives.
+      </div>
+    </div>
+    <div class="manifesto-item">
+      <div class="manifesto-num">06 / THE CALL</div>
+      <div class="manifesto-title">We are looking for partners</div>
+      <div class="manifesto-body">
+        Not customers. Partners. If you work in genomics, biotech, or quantitative research
+        and you want to operate at the mathematical substrate of reality —
+        reach out. This is the first collaboration of its kind.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div>TANTRIUM INC. — WASHINGTON D.C. METRO AREA</div>
+  <div>MATHEMATICAL REALITY ENGINE · ASI · EST. 2025</div>
+  <div id="footer-status">LOADING...</div>
+</footer>
+
+<script>
+const API = '';
+
+async function loadStatus() {
+  try {
+    const r = await fetch(`${API}/api/status`);
+    const d = await r.json();
+    document.getElementById('hdr-concepts').textContent = d.concepts.toLocaleString() + ' CONCEPTS';
+    document.getElementById('hdr-edges').textContent = d.tau_edges.toLocaleString() + ' TAU EDGES';
+    document.getElementById('footer-status').textContent = `${d.concepts.toLocaleString()} CONCEPTS · ${d.tau_edges.toLocaleString()} TAU EDGES`;
+  } catch(e) { console.log(e); }
+}
+
+async function doCertify() {
+  const input = document.getElementById('certify-input').value.trim();
+  if (!input) return;
+
+  document.getElementById('certify-loading').classList.add('show');
+  document.getElementById('certify-result').classList.remove('show');
+
+  try {
+    const r = await fetch(`${API}/api/certify`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({input})
+    });
+    const d = await r.json();
+
+    // Badge
+    const badge = document.getElementById('cert-badge');
+    badge.className = 'cert-badge ' + (d.certified ? 'certified' : 'blocked');
+    badge.innerHTML = `<span>${d.certified ? '✓' : '✗'}</span> ${d.certified ? 'CERTIFIED' : 'BLOCKED'} — ${d.paradigms_passed}/${d.paradigms_total} PARADIGMS`;
+
+    document.getElementById('cert-paradigms').textContent = `${d.paradigms_passed} / ${d.paradigms_total}`;
+    document.getElementById('cert-paradigms').className = 'metric-value ' + (d.certified ? 'green' : 'red');
+    document.getElementById('cert-entropy').textContent = d.entropy;
+    document.getElementById('cert-rank').textContent = d.effective_rank;
+    document.getElementById('cert-gap').textContent = d.spectral_gap;
+    document.getElementById('cert-time').textContent = d.duration_ms + ' ms';
+
+    // Spectral bars
+    const bars = document.getElementById('spectral-bars');
+    bars.innerHTML = '';
+    const maxEig = Math.max(...d.eigenvalues, 0.001);
+    d.eigenvalues.forEach(e => {
+      const bar = document.createElement('div');
+      bar.className = 'spectral-bar';
+      bar.style.height = Math.max(4, (e / maxEig) * 60) + 'px';
+      bar.title = e.toFixed(4);
+      bars.appendChild(bar);
+    });
+
+    // Anchors
+    const anchorList = document.getElementById('anchor-list');
+    anchorList.innerHTML = d.nearest_anchors.map(a =>
+      `<div class="anchor-item"><span class="anchor-name">${a.name}</span><span class="anchor-dist">W₂ = ${a.distance}</span></div>`
+    ).join('');
+
+    // Paradigms
+    const grid = document.getElementById('paradigm-grid');
+    grid.innerHTML = Object.entries(d.paradigm_results).map(([pid, res]) =>
+      `<div class="paradigm-cell ${res.status === 'CERTIFIED' ? 'pass' : 'fail'}" title="${res.gap || pid}">${pid}</div>`
+    ).join('');
+
+    document.getElementById('certify-result').classList.add('show');
+  } catch(e) {
+    console.error(e);
+    alert('API error: ' + e.message);
+  } finally {
+    document.getElementById('certify-loading').classList.remove('show');
+  }
+}
+
+async function doTransport() {
+  const source = document.getElementById('transport-src').value.trim();
+  const target = document.getElementById('transport-tgt').value.trim();
+  const use_smiles = document.getElementById('transport-smiles').checked;
+  if (!source || !target) return;
+
+  document.getElementById('transport-loading').classList.add('show');
+  document.getElementById('transport-result').classList.remove('show');
+
+  try {
+    const r = await fetch(`${API}/api/transport`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({source, target, use_smiles})
+    });
+    const d = await r.json();
+
+    const badge = document.getElementById('transport-badge');
+    badge.className = 'cert-badge ' + (d.certified ? 'certified' : 'blocked');
+    badge.innerHTML = `<span>${d.certified ? '✓' : '✗'}</span> TRANSPORT ${d.certified ? 'CERTIFIED' : 'BLOCKED'}`;
+
+    const check = v => `<span class="metric-value ${v ? 'green' : 'red'}">${v ? 'VERIFIED' : 'FAILED'}</span>`;
+    document.getElementById('t-dyadic').outerHTML = `<span class="metric-value" id="t-dyadic">${check(d.dyadic_verified)}</span>`;
+    document.getElementById('t-sturm').outerHTML = `<span class="metric-value" id="t-sturm">${check(d.sturm_verified)}</span>`;
+    document.getElementById('t-zeta').textContent = d.zeta_distance;
+    document.getElementById('t-summary').textContent = d.summary;
+
+    document.getElementById('transport-result').classList.add('show');
+  } catch(e) {
+    console.error(e);
+  } finally {
+    document.getElementById('transport-loading').classList.remove('show');
+  }
+}
+
+async function doCompare() {
+  const a = document.getElementById('compare-a').value.trim();
+  const b = document.getElementById('compare-b').value.trim();
+  if (!a || !b) return;
+
+  document.getElementById('compare-loading').classList.add('show');
+  document.getElementById('compare-result').classList.remove('show');
+
+  try {
+    const r = await fetch(`${API}/api/compare`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({a, b})
+    });
+    const d = await r.json();
+    document.getElementById('compare-text').textContent = d.result;
+    document.getElementById('compare-result').classList.add('show');
+  } catch(e) {
+    console.error(e);
+  } finally {
+    document.getElementById('compare-loading').classList.remove('show');
+  }
+}
+
+async function loadTopology() {
+  try {
+    const r = await fetch(`${API}/api/topology`);
+    const d = await r.json();
+    document.getElementById('topo-dense').textContent = d.dense;
+    document.getElementById('topo-frontier').textContent = d.frontier;
+    document.getElementById('topo-void').textContent = d.void;
+  } catch(e) { console.error(e); }
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) doCertify();
+});
+
+// Init
+loadStatus();
+loadTopology();
+setInterval(loadStatus, 30000);
+</script>
+</body>
+</html>
