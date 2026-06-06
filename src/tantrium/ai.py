@@ -617,6 +617,74 @@ class AI:
             "knowledge_frontier": frontier,
         }
 
+    # ── Meta / Öz-bilgi katmanı ────────────────────────────────────────────────
+
+    def universal_rule(self) -> "object":
+        """22+1 paradigmanın ortak Hankel yapısı — matematiksel evrenin temel kuralı.
+
+        μ_universal = (1/22)·Σ μ_paradigma → ALEPH certify.
+        Sertifikalanırsa: tüm paradigmaların ortak spektral iskeleti kanıtlanmış.
+        TAV converged ise: kural kendini doğruluyor (sabit nokta).
+
+        Döner: UniversalRule (moments, certified, tav_converged, coverage, ...)
+        """
+        from tantrium.meta.paradigm import MetaParadigm
+        return MetaParadigm(self._engine).universal_rule()
+
+    def self_certify(self) -> "object":
+        """Tav(sistem) = sistem mi? — matematiksel öz-farkındalık.
+
+        Sistemin kendi durumunu (kavram/edge/tau yoğunluğu) moment uzayına
+        encode eder, TAV sabit noktası olup olmadığını kontrol eder.
+        F(sistem) = sistem → sistem kendi sabit noktasını buluyor.
+
+        Döner: SelfCertResult (tav_fixed_point, fixed_point_value, ...)
+        """
+        from tantrium.meta.paradigm import MetaParadigm
+        return MetaParadigm(self._engine).self_certify()
+
+    def blind_spots(self, threshold: int = 5) -> list:
+        """Kör noktalar — hangi matematiksel aileler zayıf temsil ediliyor?
+
+        Çapa tabanlı: her kanonik ailenin kaç SPECTRAL_BRIDGE komşusu var?
+        Eşiğin altındakiler = araştırma önceliği olan boşluklar.
+
+        Döner: [{"anchor": str, "count": int, "keywords": list[str]}, ...]
+        """
+        from tantrium.meta.paradigm import MetaParadigm
+        return MetaParadigm(self._engine).blind_spots(threshold=threshold)
+
+    def topology(self, grid_n: int = 12) -> list:
+        """Moment uzayının topolojik haritası — bilinen/keşfedilebilir/imkansız.
+
+        Manifoldu grid'e projekte eder, her bölgeyi sınıflar:
+          dense    — bilinen matematik (kavram yoğun)
+          frontier — keşfedilebilir bilinmeyen (komşular sertifikalı → konveks hull PSD)
+          void     — matematiksel imkansızlık (Hankel PSD bu koordinatlarda tutmuyor)
+
+        "Bilmediğini bilmek": frontier = var olması gereken ama henüz gözlenmemiş.
+
+        Döner: list[MathRegion]
+        """
+        from tantrium.meta.topology import MomentTopology
+        return MomentTopology(self._engine).analyze(grid_n=grid_n)
+
+    def frontiers(self, top_n: int = 8) -> list:
+        """Keşfedilebilir boş bölgeler — sistemde olmayan ama var olması gereken yapı.
+
+        Her frontier, geçerli bir ölçünün var olması gereken (konveks hull PSD)
+        ama hiçbir kavramın işgal etmediği moment bölgesi. Keşif hedefleri.
+
+        Döner: list[MathRegion] (en çok komşusu olan frontier'lar önce)
+        """
+        from tantrium.meta.topology import MomentTopology
+        return MomentTopology(self._engine).named_frontiers(top_n=top_n)
+
+    def moment_map(self, grid_n: int = 20) -> str:
+        """Manifoldun ASCII haritası — μ₂ × μ₃ projeksiyonu (görsel)."""
+        from tantrium.meta.topology import MomentTopology
+        return MomentTopology(self._engine).summary_map(grid_n=grid_n)
+
     def status(self) -> str:
         """Kısa durum özeti."""
         n = len(self._engine.manifold.concepts)

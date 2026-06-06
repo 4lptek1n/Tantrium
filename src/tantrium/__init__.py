@@ -13,6 +13,8 @@ from tantrium.research.explorer import ExplorationObjective, ExplorationResult
 from tantrium.reasoning.planner import Plan, PlanStep
 from tantrium.research.goal import Goal, GoalManifold
 from tantrium.research.actor import Action, ActionResult
+from tantrium.meta.paradigm import MetaParadigm, UniversalRule, ParadigmMoment, SelfCertResult
+from tantrium.meta.topology import MomentTopology, MathRegion
 
 __all__ = [
     "AI",
@@ -43,4 +45,10 @@ __all__ = [
     "GoalManifold",
     "Action",
     "ActionResult",
+    "MetaParadigm",
+    "UniversalRule",
+    "ParadigmMoment",
+    "SelfCertResult",
+    "MomentTopology",
+    "MathRegion",
 ]
