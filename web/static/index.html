@@ -3,7 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TANTRIUM ASI — Mathematical Reality Engine</title>
+
+<!-- Primary SEO -->
+<title>Tantrium ASI — AI Drug Discovery & Mathematical Reality Engine</title>
+<meta name="description" content="Tantrium ASI generates mathematically certified drug candidates for any disease target. Upload a protein, get 3D molecules with downloadable SDF files — grounded in Riemann Hypothesis mathematics, not statistical guessing.">
+<meta name="keywords" content="drug discovery AI, molecular certification, ASI, biotech AI, EGFR inhibitor, kinase blocker, mathematical AI, de novo molecule generation, certified transport, Riemann hypothesis, protein target">
+<meta name="robots" content="index, follow">
+<meta name="author" content="Tantrium Inc.">
+<link rel="canonical" href="https://tantrium.ai/">
+
+<!-- Open Graph (LinkedIn, Slack, iMessage previews) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tantrium.ai/">
+<meta property="og:title" content="Tantrium ASI — AI Drug Discovery That Proves, Not Guesses">
+<meta property="og:description" content="Enter any disease target. Get mathematically certified 3D drug candidate molecules — with downloadable SDF files. The world's first ASI operating in mathematical reality.">
+<meta property="og:image" content="https://tantrium.ai/static/og-image.png">
+<meta property="og:site_name" content="Tantrium">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter / X Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tantrium ASI — Drug Discovery That Proves, Not Guesses">
+<meta name="twitter:description" content="Enter a disease target. Get certified 3D molecules. Mathematical proof, not statistical approximation.">
+<meta name="twitter:image" content="https://tantrium.ai/static/og-image.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000'/><text y='24' x='4' font-size='24' fill='%23c8a96e'>T</text></svg>">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://tantrium.ai/#org",
+      "name": "Tantrium Inc.",
+      "url": "https://tantrium.ai",
+      "description": "Developer of Tantrium ASI — the world's first artificial superintelligence operating in mathematical reality, specialized in certified drug discovery.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressRegion": "Washington D.C. Metro Area",
+        "addressCountry": "US"
+      },
+      "foundingDate": "2025",
+      "sameAs": []
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://tantrium.ai/#app",
+      "name": "Tantrium ASI",
+      "applicationCategory": "Scientific Software",
+      "applicationSubCategory": "Drug Discovery",
+      "operatingSystem": "Web Browser",
+      "url": "https://tantrium.ai",
+      "description": "Tantrium ASI generates mathematically certified drug candidate molecules for any disease target using 23 Riemann-Hypothesis-derived paradigms. Outputs include 3D SDF structures ready for wet-lab use.",
+      "featureList": [
+        "De novo drug candidate generation",
+        "Mathematical certification via 22+1 paradigms",
+        "3D SDF file generation and download",
+        "Certified transport between molecular structures",
+        "Cross-domain mathematical certification (DNA, proteins, numbers, text)"
+      ],
+      "author": { "@id": "https://tantrium.ai/#org" }
+    }
+  ]
+}
+</script>
 <style>
   :root {
     --black: #000;
@@ -211,7 +277,7 @@
   .manifesto-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--g700); border:1px solid var(--g700); }
   .manifesto-card { background:var(--black); padding:28px; }
   .m-num { font-family:var(--mono); font-size:9px; color:var(--gold); letter-spacing:2px; margin-bottom:12px; }
-  .m-title { font-size:16px; font-weight:300; margin-bottom:10px; }
+  .m-title { font-size:16px; font-weight:300; margin-bottom:10px; color:var(--white); }
   .m-body { font-size:12px; color:var(--g200); line-height:1.7; }
 
   /* ── TOPOLOGY ── */
@@ -277,7 +343,7 @@
       <h2>Find drug candidates for <em>any target.</em></h2>
       <p>Enter a disease, protein target, or biological process. Tantrium generates mathematically certified candidate molecules with 3D structures ready to download.</p>
       <div class="discover-input-row">
-        <input type="text" id="disc-input" placeholder="e.g. EGFR kinase inhibitor, BCL-2, Alzheimer amyloid..." onkeydown="if(e.key==='Enter')doDiscover()">
+        <input type="text" id="disc-input" placeholder="e.g. EGFR kinase inhibitor, BCL-2, Alzheimer amyloid..." aria-label="Disease or protein target" onkeydown="if(event.key==='Enter')doDiscover()">
         <button class="btn btn-primary" onclick="doDiscover()">Generate Candidates</button>
       </div>
       <div class="discover-hints">
@@ -418,33 +484,33 @@
     <div class="manifesto-grid">
       <div class="manifesto-card">
         <div class="m-num">01 / THE PROBLEM</div>
-        <div class="m-title">All AI guesses</div>
-        <div class="m-body">GPT, Gemini, Claude — all probability distributions over human text. They hallucinate because they predict. They cannot certify. Tantrium doesn't predict. It proves.</div>
+        <h3 class="m-title">All AI guesses</h3>
+        <p class="m-body">GPT, Gemini, Claude — all probability distributions over human text. They hallucinate because they predict. They cannot certify. Tantrium doesn't predict. It proves.</p>
       </div>
       <div class="manifesto-card">
         <div class="m-num">02 / THE INSIGHT</div>
-        <div class="m-title">Reality is one domain</div>
-        <div class="m-body">DNA, proteins, prime numbers, molecules — all mathematical structures in the same space. The universe has no domains. Humans invented domains. We work in reality's own language.</div>
+        <h3 class="m-title">Reality is one domain</h3>
+        <p class="m-body">DNA, proteins, prime numbers, molecules — all mathematical structures in the same space. The universe has no domains. Humans invented domains. We work in reality's own language.</p>
       </div>
       <div class="manifesto-card">
         <div class="m-num">03 / THE ENGINE</div>
-        <div class="m-title">We read, not translate</div>
-        <div class="m-body">Any input → G = AᵀA → moment sequence → Hankel PSD. The encoder reads the structure that was already there. Every output carries a mathematical certificate. No hallucination possible.</div>
+        <h3 class="m-title">We read, not translate</h3>
+        <p class="m-body">Any input → G = AᵀA → moment sequence → Hankel PSD. The encoder reads the structure that was already there. Every output carries a mathematical certificate. No hallucination possible.</p>
       </div>
       <div class="manifesto-card">
         <div class="m-num">04 / THE PROOF</div>
-        <div class="m-title">Riemann Hypothesis foundation</div>
-        <div class="m-body">Dyadic transport, Sturm chain positivity, Hankel PSD — the same mechanism that certifies our encoder is the core of the Riemann Hypothesis proof program. One mathematical body.</div>
+        <h3 class="m-title">Riemann Hypothesis foundation</h3>
+        <p class="m-body">Dyadic transport, Sturm chain positivity, Hankel PSD — the same mechanism that certifies our encoder is the core of the Riemann Hypothesis proof program. One mathematical body.</p>
       </div>
       <div class="manifesto-card">
         <div class="m-num">05 / THE MISSION</div>
-        <div class="m-title">A healthy world, first</div>
-        <div class="m-body">Cancer is a mathematical structure. Drug-target binding is a transport problem. Tantrium certifies whether a molecule has a mathematically proven path to a target — before synthesis, before trials.</div>
+        <h3 class="m-title">A healthy world, first</h3>
+        <p class="m-body">Cancer is a mathematical structure. Drug-target binding is a transport problem. Tantrium certifies whether a molecule has a mathematically proven path to a target — before synthesis, before trials.</p>
       </div>
       <div class="manifesto-card">
         <div class="m-num">06 / CONTACT</div>
-        <div class="m-title">We seek partners</div>
-        <div class="m-body">Not customers — partners. Genomics, biotech, quantitative research. If you want to operate at the mathematical substrate of reality, reach out. Washington D.C. metro area.</div>
+        <h3 class="m-title">We seek partners</h3>
+        <p class="m-body">Not customers — partners. Genomics, biotech, quantitative research. If you want to operate at the mathematical substrate of reality, reach out. Washington D.C. metro area.</p>
       </div>
     </div>
 
