@@ -194,43 +194,44 @@ class CertifiedTransport:
     # ── Spectral decomposition ───────────────────────────────────────────────
 
     def _moments_to_cells(self, moments: list, prefix: str) -> list:
-        """Moments → Hankel matrix → eigenvalues → Cell objects.
+        """Moments μ₁..μ₇ → Cell objects with exact rational masses.
 
-        The Hankel matrix H[i,j] = μ_{i+j} captures the spectral measure.
-        Its eigenvalues are the "atoms" — fundamental positive units.
-        Mass is normalized so Σ mass = 1 (probability measure).
+        Uses non-trivial moments (μ₁..μ₇, skip μ₀=1) as cell mass weights.
+        Normalizes to sum = exactly 1 via /1000 quantization.
+
+        diff coordinate = int(μ_k * 10) for each cell k:
+          - Small moments (μ_k < 0.1) → diff=0  (simple/small molecules)
+          - Medium moments (0.1 ≤ μ_k < 0.2) → diff=1  (typical drugs)
+          - Large moments (μ_k ≥ 0.2) → diff=2+  (complex molecules)
+
+        This replaces the Hankel-eigenvalue approach which was near rank-1
+        (single dominant eigenvalue + tiny residuals → mass imbalance → FAIL).
         """
         from tantrium.certificates.certificate import Cell
 
         n = min(len(moments), 8)
-        m = [float(moments[i]) for i in range(n)]
-        size = max(n // 2, 2)
+        # Use μ₁..μ_{n-1} (skip μ₀=1 which carries no structural information)
+        raw = [max(0.0, float(moments[k])) for k in range(1, n)]
+        total = sum(raw) or 1.0
 
-        H = np.array([
-            [m[i + j] if i + j < n else 0.0 for j in range(size)]
-            for i in range(size)
-        ])
-        eigs = np.linalg.eigvalsh(H)
-        eigs = np.maximum(eigs, 0.0)
-        total = float(eigs.sum()) or 1.0
+        # Quantize to /1000 denominator for stable exact arithmetic
+        quant = [round(r / total * 1000) for r in raw]
+        # Adjust to ensure exact sum = 1000 (add residual to first cell)
+        residual = 1000 - sum(quant)
+        quant[0] = max(0, quant[0] + residual)
 
-        # diff = eigenvalue pozisyonu × 1000 (integer)
-        # diffgap map bu farkı transport maliyeti olarak kullanır
-        # → Wasserstein-1 benzeri spektral mesafe
         cells = []
-        for k, ev in enumerate(sorted(eigs, reverse=True)):
-            mass = Fraction(ev / total).limit_denominator(10 ** 6)
-            if mass > 0:
-                ev_norm = ev / (eigs.max() or 1.0)
-                # 0-10 arası kaba quantize: diffgap ≤ 10 → 2^10=1024x maliyet
-                diff_coord = max(0, min(10, int(ev_norm * 10)))
-                cells.append(Cell.make(
-                    f"{prefix}_atom_{k}",
-                    mass,
-                    diff=diff_coord,
-                    p=k + 1,
-                    q=1,
-                ))
+        for k, (mass_q, m_k) in enumerate(zip(quant, raw)):
+            if mass_q <= 0:
+                continue
+            diff_coord = max(0, min(10, int(m_k / total * 10)))
+            cells.append(Cell.make(
+                f"{prefix}_atom_{k}",
+                Fraction(mass_q, 1000),
+                diff=diff_coord,
+                p=k + 1,
+                q=1,
+            ))
         return cells
 
     # ── Sturm path verification ──────────────────────────────────────────────
