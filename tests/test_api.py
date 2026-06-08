@@ -284,3 +284,33 @@ def test_ai_has_manifold_property(ai):  # type: ignore[misc]
 def test_ai_has_tau_property(ai):  # type: ignore[misc]
     from tantrium import KnowledgeGraph
     assert isinstance(ai.tau, KnowledgeGraph)
+
+
+# ─── Top-level exports ────────────────────────────────────────────────────────
+
+def test_ask_result_exported_from_tantrium():
+    from tantrium import AskResult
+    r = AskResult(query="test", answer="ok", certified=True, paradigms_passed=23,
+                  paradigms_total=23, gaps=[], nearest=[])
+    assert r.certified is True
+
+
+def test_loop_cycle_exported_from_tantrium():
+    from tantrium import LoopCycle
+    cycle = LoopCycle(gaps_found=0, campaigns_launched=[], campaign_statuses={},
+                      concepts_before=100, concepts_after=100,
+                      tau_edges_before=500, tau_edges_after=500,
+                      necessity_edges_before=10, necessity_edges_after=10,
+                      duration_s=0.1)
+    assert cycle.new_concepts == 0
+
+
+# ─── Goal distance metric ─────────────────────────────────────────────────────
+
+def test_goal_distance_uses_l1():
+    from tantrium.research.goal import Goal
+    g = Goal(name="test", moments=[1.0, 0.5, 0.25, 0.125])
+    d = g.distance_to([1.0, 0.5, 0.25, 0.125])
+    assert d == 0.0  # identical moments → L1 distance 0
+    d2 = g.distance_to([1.0, 1.0, 0.25, 0.125])
+    assert abs(d2 - 0.5) < 1e-9  # one moment differs by 0.5

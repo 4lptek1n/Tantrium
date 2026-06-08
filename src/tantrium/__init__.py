@@ -1,5 +1,5 @@
 """Tantrium: structure-first symbolic discovery framework."""
-from tantrium.ai import AI
+from tantrium.ai import AI, AskResult, MolResult, GenResult, ReasonResult, DiscoverResult
 from tantrium.core.engine import CertificationEngine
 from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
@@ -9,7 +9,7 @@ from tantrium.proof.certificate import Cell, Certificate, TransportEdge
 from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
 from tantrium.graph.knowledge_graph import KnowledgeGraph, KnowledgeNode, KnowledgeEdge
 from tantrium.graph.memory import SessionMemory, Turn
-from tantrium.research.proof_loop import ProofLoop, LoopReport
+from tantrium.research.proof_loop import ProofLoop, LoopReport, LoopCycle
 from tantrium.reasoning.thinker import ThinkingResult, ThinkingLevel
 from tantrium.reasoning.generalization import DerivedConcept, HankelGeneralizer
 from tantrium.reasoning.reasoner import ChainStep, ReasoningResult, GraphReasoner
@@ -34,6 +34,11 @@ from tantrium.meta.synthesis import (
 __all__ = [
     # Core SDK
     "AI",
+    "AskResult",
+    "MolResult",
+    "GenResult",
+    "ReasonResult",
+    "DiscoverResult",
     "CertificationEngine",
     "CertificationPipeline",
     "CertificationRun",
@@ -60,6 +65,7 @@ __all__ = [
     # Research
     "ProofLoop",
     "LoopReport",
+    "LoopCycle",
     "Observation",
     "AutonomousObserver",
     "ExplorationObjective",
