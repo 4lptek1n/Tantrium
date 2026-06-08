@@ -509,6 +509,10 @@ class RepairCostParadigm(Paradigm):
         achilles_margin = obj.structure.get("achilles_margin", 0.0)
         margins = obj.structure.get("paradigm_margins", {})
         if not margins:
+            if "open_obstructions" not in obj.structure:
+                return ParadigmResult(pid, "UNKNOWN",
+                    gap_name="REPAIR_COST_NOT_COMPUTED",
+                    evidence=["paradigm_margins not available — GIMEL stage not reached"])
             return ParadigmResult(pid, "CERTIFIED",
                 evidence=["no open obstructions — system is closed"],
                 certificate={"obstruction_count": 0})

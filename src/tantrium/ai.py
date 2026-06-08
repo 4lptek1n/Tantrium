@@ -969,6 +969,44 @@ class AI:
 
         return f"{base_report}\n\nL1 moment mesafesi: {l1:.4f}\n{res_line}"
 
+    def infer(self, concept_a: str, concept_b: str) -> list:
+        """İki sertifikalı kavramdan ses mantık kurallarıyla yeni teoremler türet.
+
+        7 ses kural: COMPOSE_ALEPH (tensör çarpımı), TRANSFER_BET (bilgi koruması),
+        CHAIN_TAV (transitif yakınsama), UNION_EMET (çelişkisiz birleşim),
+        BOUND_HE (Lyapunov toplamı), SPECTRAL_ZAYIN (spektral pozitiflik),
+        DISTINCT_KAF (injektif birleşim).
+
+        Her sonuç bir TAU edge olarak kaydedilir.
+        Döner: list[InferenceResult] — her biri .conclusion ve .theorem_id içerir.
+        """
+        from tantrium.reasoning.inference import InferenceChain
+
+        obj_a = self._engine.encoder.encode(concept_a, name=concept_a[:64])
+        obj_b = self._engine.encoder.encode(concept_b, name=concept_b[:64])
+        run_a = self._engine.network.run(obj_a)
+        run_b = self._engine.network.run(obj_b)
+
+        chain = InferenceChain()
+        results = chain.infer(run_a, run_b)
+
+        # Türetilen her sonuç TAU'ya INFERRED edge olarak ekle
+        if results:
+            from tantrium.graph.knowledge_graph import KnowledgeEdge
+            for r in results:
+                src = concept_a[:64]
+                tgt = concept_b[:64]
+                edges = self._engine.tau.edges.setdefault(src, [])
+                if not any(e.target == tgt and e.paradigm == r.rule_id for e in edges):
+                    edges.append(KnowledgeEdge(
+                        source=src,
+                        target=tgt,
+                        distance=0.0,
+                        paradigm=r.rule_id,
+                    ))
+
+        return results
+
     def synthesize(self, concept: str, facts: dict) -> str:
         """TAU kenarlarından akıcı Türkçe paragraf üret.
 

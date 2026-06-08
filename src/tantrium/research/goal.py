@@ -53,7 +53,7 @@ class Goal:
 
     def distance_to(self, concept_moments: list) -> float:
         k = min(len(self.moments), len(concept_moments))
-        return sum((self.moments[i] - float(concept_moments[i])) ** 2 for i in range(k)) ** 0.5
+        return sum(abs(self.moments[i] - float(concept_moments[i])) for i in range(k))
 
     def update_progress(self, concept_names: list[str], engine: "CertificationEngine") -> float:
         """Bilinen kavramların hedefe manifold uzaklığına göre progress güncelle.

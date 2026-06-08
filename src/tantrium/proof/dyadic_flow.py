@@ -93,6 +93,8 @@ def solve_greedy(
             if not candidates:
                 break
             r, _, _, source, beta = sorted(candidates)[0]
+            if remaining_deficit[target.cell_id] <= 0:
+                break
             delivered = min(remaining_deficit[target.cell_id], remaining_source[source.cell_id] * beta)
             raw_used = delivered / beta
             remaining_source[source.cell_id] -= raw_used

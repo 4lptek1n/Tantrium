@@ -298,6 +298,6 @@ def propagate_subset(
             break
         for name, moms in new_moments.items():
             manifold_concepts[name].moments = moms
-        updated_total = len(new_moments)
+        updated_total += len(new_moments)
 
     return updated_total

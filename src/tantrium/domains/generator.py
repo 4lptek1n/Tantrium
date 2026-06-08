@@ -376,6 +376,16 @@ class MoleculeGenerator:
             for cname, csmi in self._combine_scaffolds(n1, s1, n3, s3):
                 candidate_smiles.append((cname, csmi))
 
+        # d) Interpolated walk: hedef momentine doğru 60% yönelim
+        seen = {s for _, s, _ in top_scaffolds}
+        for _, _, smc in top_scaffolds[:2]:
+            mid = self._interpolate_moments(smc, target_morgan, 0.6)
+            mid_ranked = sorted(self._lib, key=lambda x: self._morgan_distance(mid, x[2]))
+            for iname, ismiles, _ in mid_ranked[:2]:
+                if ismiles not in seen:
+                    candidate_smiles.append((f"walk_{iname}", ismiles))
+                    seen.add(ismiles)
+
         # 4. Her adayı Aleph ağından geçir
         certifier = MolecularCertifier(self.engine)
         candidates: list[GenerationCandidate] = []

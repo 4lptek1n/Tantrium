@@ -456,7 +456,11 @@ class CertificationEngine:
         )
         # Momentler değiştiyse TAU node spektral yarıçaplarını güncelle
         if updated:
+            affected: set[str] = set(new_names)
             for name in new_names:
+                for edge in self.tau.edges.get(name, []):
+                    affected.add(edge.target)
+            for name in affected:
                 c = self.manifold.concepts.get(name)
                 if c is not None and name in self.tau.nodes:
                     self.tau.nodes[name].sr = float(c.moments[-1]) if c.moments else 0.0
