@@ -135,7 +135,7 @@ class CosmicVision:
         lyapunov = _lyapunov_stable(obj.structure)
         li_pos = _li_positive(obj.structure)
         lambda_db = _debruijn_lambda(obj.structure)
-        sr = float(concept.moments[-1]) if concept.moments else 0.0
+        sr = max(eigs) if eigs else 0.0
 
         return CosmicFrame(
             name=name,
@@ -436,7 +436,7 @@ def _narrate_frame(f: CosmicFrame) -> str:
     lines.append(f"    Paradigma  : {f.paradigms_passed}/23 geçti")
     lines.append(f"    Eigenvalue entropy: {f.eigenvalue_entropy:.3f} bit")
     lines.append(f"      → {'Zengin spektrum (yüksek ayrımcılık)' if f.eigenvalue_entropy > 2.0 else 'Yoğun spektrum (dominant eigenvalue hâkim)'}")
-    lines.append(f"    Spektral yarıçap (μ₇): {f.spectral_radius:.6f}")
+    lines.append(f"    Spektral yarıçap (max λ): {f.spectral_radius:.6f}")
     lines.append(f"    Moment topolojisi: {f.topology_class.upper()}")
 
     if f.nearest_anchors:

@@ -105,7 +105,7 @@ class HankelGeneralizer:
         if len(concepts) < 2:
             return None
 
-        k = len(concepts[0].moments)
+        k = min(len(c.moments) for c in concepts)
         n = len(concepts)
         avg = [
             Fraction(

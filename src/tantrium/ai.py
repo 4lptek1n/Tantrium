@@ -1004,6 +1004,7 @@ class AI:
                         distance=0.0,
                         paradigm=r.rule_id,
                     ))
+            self._engine.tau._dirty = True
 
         return results
 

@@ -197,9 +197,6 @@ class ConceptSynthesizer:
             bridge_name = existing[0][0]
             bridge_concept = self.engine.manifold.concepts[bridge_name]
             bridge_moments = [float(m) for m in bridge_concept.moments]
-            k_br = min(len(bridge_moments), len(mu_a), len(mu_b))
-            bridge_dist_a = sum(abs(bridge_moments[i] - mu_a[i]) for i in range(k_br))
-            bridge_dist_b = sum(abs(bridge_moments[i] - mu_b[i]) for i in range(k_br))
             try:
                 bridge_fracs_real = [Fraction(m).limit_denominator(10 ** 9) for m in bridge_moments]
                 obj_br = enc(bridge_fracs_real, name=bridge_name)
@@ -236,9 +233,6 @@ class ConceptSynthesizer:
                 paradigms_passed = 0
             bridge_moments = mu_bridge
 
-            bridge_dist_a = sum(abs(mu_bridge[i] - mu_a[i]) for i in range(k))
-            bridge_dist_b = sum(abs(mu_bridge[i] - mu_b[i]) for i in range(k))
-
         # Transport sertifikasyon: source → bridge → target
         ct = CertifiedTransport(self.engine)
         obj_a = enc(list(concept_a.moments), name=name_a)
@@ -250,8 +244,10 @@ class ConceptSynthesizer:
         tc_ab = ct.certify(obj_a, obj_bridge)
         tc_bt = ct.certify(obj_bridge, obj_b)
 
-        bridge_dist_a = sum(abs(mu_bridge[i] - mu_a[i]) for i in range(k))
-        bridge_dist_b = sum(abs(mu_bridge[i] - mu_b[i]) for i in range(k))
+        # Distances from actual bridge moments (not always mu_bridge)
+        k_br = min(len(bridge_moments), len(mu_a), len(mu_b))
+        bridge_dist_a = sum(abs(bridge_moments[i] - mu_a[i]) for i in range(k_br))
+        bridge_dist_b = sum(abs(bridge_moments[i] - mu_b[i]) for i in range(k_br))
 
         return BridgeResult(
             source=name_a,

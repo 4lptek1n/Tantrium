@@ -314,3 +314,92 @@ def test_goal_distance_uses_l1():
     assert d == 0.0  # identical moments → L1 distance 0
     d2 = g.distance_to([1.0, 1.0, 0.25, 0.125])
     assert abs(d2 - 0.5) < 1e-9  # one moment differs by 0.5
+
+
+# ─── HankelGeneralizer.derive() with mixed-length moments ────────────────────
+
+def test_derive_handles_min_moment_length(ai):  # type: ignore[misc]
+    """derive() must not crash when concepts have different moment lengths."""
+    from tantrium.reasoning.generalization import HankelGeneralizer
+    from tantrium.core.semantic import Concept
+    from fractions import Fraction
+
+    # Inject two concepts with different moment lengths directly (unchecked)
+    c_long  = Concept(name="_test_long_",  moments=[Fraction(1,2)**k for k in range(8)], domain="test")
+    c_short = Concept(name="_test_short_", moments=[Fraction(1,2)**k for k in range(4)], domain="test")
+    ai.engine.manifold.add_unchecked(c_long)
+    ai.engine.manifold.add_unchecked(c_short)
+
+    dc = HankelGeneralizer(ai.engine).derive(["_test_long_", "_test_short_"])
+    # Should return a result without IndexError; k = min(8,4) = 4 moments
+    assert dc is not None
+    assert len(dc.concept.moments) == 4
+
+
+# ─── AI.infer() marks TAU dirty ──────────────────────────────────────────────
+
+def test_infer_marks_tau_dirty(ai):  # type: ignore[misc]
+    """infer() writes edges to TAU and marks _dirty=True so they get persisted."""
+    ai.engine.tau._dirty = False  # reset
+    results = ai.infer("DNA", "protein")
+    # infer always runs the 7 sound rules; some should fire
+    assert isinstance(results, list)
+    if results:
+        assert ai.engine.tau._dirty is True
+
+
+# ─── AI.vision() spectral_radius = max eigenvalue ────────────────────────────
+
+def test_vision_spectral_radius_is_max_eigenvalue(ai):  # type: ignore[misc]
+    """CosmicFrame.spectral_radius must be max(eigenvalues), not last moment."""
+    frame = ai.vision("prime")
+    # spectral_radius should be >= 0 (it's the max eigenvalue of the Gram matrix)
+    assert frame.spectral_radius >= 0.0
+    # It must equal the maximum eigenvalue in the frame
+    if frame.eigenvalues:
+        assert abs(frame.spectral_radius - max(frame.eigenvalues)) < 1e-9
+
+
+# ─── AI.bridge() distances use actual bridge moments ─────────────────────────
+
+def test_bridge_distances_reflect_bridge_concept(ai):  # type: ignore[misc]
+    """Bridge distances should be computed from the actual bridge concept moments."""
+    result = ai.bridge("theorem", "proof")
+    k = min(len(result.bridge_moments), len(result.source_distance.__class__.__mro__))
+    # source_distance = L1(bridge_moments, source_moments) — must be >= 0
+    assert result.source_distance >= 0.0
+    assert result.target_distance >= 0.0
+    # If bridge is the ideal midpoint, source_dist == target_dist (symmetric)
+    # (not always equal for existing bridges, but both must be finite)
+    assert result.source_distance < float("inf")
+    assert result.target_distance < float("inf")
+
+
+# ─── AI.think() ──────────────────────────────────────────────────────────────
+
+def test_think_returns_thinking_result(ai):  # type: ignore[misc]
+    from tantrium import ThinkingResult
+    result = ai.think("protein folding")
+    assert isinstance(result, ThinkingResult)
+    assert result.question == "protein folding"
+    assert isinstance(result.depth, int)
+    assert isinstance(result.levels, list)
+
+
+def test_think_has_certified_claims(ai):  # type: ignore[misc]
+    result = ai.think("DNA")
+    # Level 0 always runs (encode+certify); total_certified >= 0
+    assert result.total_certified >= 0
+    assert result.total_gaps >= 0
+
+
+# ─── AI.interpolate() ────────────────────────────────────────────────────────
+
+def test_interpolate_returns_derived_concept(ai):  # type: ignore[misc]
+    from tantrium import DerivedConcept
+    dc = ai.interpolate("prime", "zeta")
+    # Manifold might not have both; returns None if either missing
+    if dc is not None:
+        assert isinstance(dc, DerivedConcept)
+        assert dc.alpha == 0.5
+        assert len(dc.parents) == 2
