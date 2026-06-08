@@ -32,7 +32,7 @@ def graph_from_dict(data: dict[str, Any]) -> TheoremGraph:
 
 def dependency_closed(graph: TheoremGraph, node: TheoremNode) -> bool:
     if not node.depends_on:
-        return False
+        return True  # no dependencies → trivially closed
     good = {"proven", "certified_local"}
     return all(dep in graph.nodes and graph.nodes[dep].status in good for dep in node.depends_on)
 
