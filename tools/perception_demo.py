@@ -90,6 +90,16 @@ def main() -> None:
     print("    Artık ses/görüntü, kelimelerle ve moleküllerle AYNI uzayda.")
     print()
 
+    # Görmek = hatırlamak: percept benzediği şeylere bağlandı mı?
+    print("    GÖRMEK = HATIRLAMAK — percept neye çağrışım yaptı:")
+    for pname in ("grounded_tone_440", "grounded_concentric"):
+        edges = ai._engine.tau.edges.get(pname, [])
+        targets = ", ".join(e.target for e in edges[:3]) or "(bağ yok)"
+        print(f"      {pname:22s} → {targets}")
+    print("      (ses bir matematik dizisine, görüntü bir dağılıma bağlandı —")
+    print("       rastgele değil; moment yapıları benzer olduğu için.)")
+    print()
+
     # ─── 4. CROSS-MODAL: modaliteler arası mesafe ────────────────────────────
     print("[4] CROSS-MODAL — gürültü iki modalitede de aynı bölgede mi?")
 

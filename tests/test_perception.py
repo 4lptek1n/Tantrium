@@ -129,6 +129,27 @@ def test_perceive_learn_adds_to_manifold(ai):
     del ai._engine.manifold.concepts[name]
 
 
+def test_perceive_learn_wires_memory_associations(ai):
+    """Görmek = hatırlamak: learn=True percept'i en yakın komşulara TAU
+    kenarıyla bağlar (belleğe örmek, kutuya atmak değil)."""
+    name = "wired_percept_test_abc"
+    if name in ai._engine.manifold.concepts:
+        del ai._engine.manifold.concepts[name]
+    if name in ai._engine.tau.edges:
+        del ai._engine.tau.edges[name]
+
+    ai.perceive(concentric_image(), modality="image", name=name, learn=True)
+    edges = ai._engine.tau.edges.get(name, [])
+    assert len(edges) > 0  # çağrışım kuruldu
+    # her kenar gerçek bir hedefe ve sonlu mesafeye sahip
+    for e in edges:
+        assert e.target != name
+        assert e.distance >= 0.0
+
+    del ai._engine.manifold.concepts[name]
+    del ai._engine.tau.edges[name]
+
+
 def test_perceive_cross_modal_structured_closer_than_noise(ai):
     """Yapılı ses, yapılı görüntüye; gürültüden daha yakın olmalı."""
     t = ai.perceive(tone(440), modality="signal", name="xm_tone").obj.moments

@@ -486,6 +486,9 @@ class AI:
                 source=f"perception:{modality}",
             )
             self._engine.manifold.add_unchecked(concept)
+            # GÖRMEK = HATIRLAMAK: percept'i en yakın komşularına TAU kenarıyla
+            # bağla — belleğe örmek, kutuya atmak değil. Çağrışım böyle kurulur.
+            self._engine.tau.add_edges_for(concept, self._engine.manifold, k=8)
             self._engine.note_new_concepts([name])
 
         return run
