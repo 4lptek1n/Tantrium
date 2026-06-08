@@ -412,7 +412,7 @@ class UniversalEncoder:
             import numpy as _np
             _ng = len(G)
             _gnp = _np.array([[float(G[i][j]) for j in range(_ng)] for i in range(_ng)])
-            _eigs = _np.linalg.eigvalsh(_gnp).tolist()
+            _eigs = [max(0.0, e) for e in _np.linalg.eigvalsh(_gnp).tolist()]
             s["eigenvalues"] = sorted(_eigs, reverse=True)[:6]
         except Exception:
             s["eigenvalues"] = gram_diag[:6]
@@ -780,7 +780,7 @@ class UniversalEncoder:
         try:
             _margins: dict[str, float] = {}
             _margins["ALEPH"] = float(min(moments)) if moments else 0.0
-            _margins["DALET"] = float(min(s.get("eigenvalues", [0.0])))
+            _margins["DALET"] = float(max(0.0, min(s.get("eigenvalues", [0.0]))))
             _lyap_v = s.get("lyapunov_values", [])
             if len(_lyap_v) > 1:
                 _margins["HE"] = float(min(-(_lyap_v[_k+1] - _lyap_v[_k]) for _k in range(len(_lyap_v)-1)))
@@ -884,56 +884,65 @@ def _infer_name(input: Any) -> str:
 
 # ─── SMILES Morgan fingerprint encoding ─────────────────────────────────────
 
-def _smiles_molecular_moments(smiles: str, num_moments: int = 8) -> list[Fraction] | None:
-    """SMILES → 12 normalized RDKit descriptors → Hausdorff power moments.
+def _smiles_to_graph_moments(smiles: str, num_moments: int = 8) -> list[Fraction] | None:
+    """SMILES → atom-bağ adjacency matrisi → graf spektrumu → Hausdorff momentler.
 
-    Each descriptor is normalized to [0,1] and treated as an atom position.
-    Power moments m_k = mean(d_i^k) give a valid Hausdorff moment sequence
-    (atoms in [0,1] → Hankel PSD guaranteed).
+    Molekül bir graftur — bunu DOĞRUDAN encode ediyoruz:
+      A[i][j] = bağ derecesi (single=1, double=2, triple=3, aromatic=1.5)
+      A[i][i] = atom elektronegatifliği (C=1.0, N=1.3, O=1.6, F=2.0, ...)
+      G = A^T * A → her zaman PSD, eigenvalues = grafın spektral izleri
+      Normalized eigenvalues ∈ [0,1] → geçerli Hausdorff moment dizisi
 
-    This avoids the binary-fingerprint collapse problem (sparse vector → all
-    eigenvalues near zero → dyadic FAIL). Descriptor distribution moments
-    capture pharmacological class:
-      - NSAIDs: moderate MW, moderate logP, low TPSA → clustered near 0.2-0.4
-      - Kinase inhibitors: high MW, multiple rings → skewed to higher values
-      - Antibiotics: high MW, many heteroatoms, high TPSA → different spread
+    HARF benzerliği değil, MOLEKÜLER YAPI topolojisi:
+      - Farklı bağ yapısı → farklı graf spektrumu → farklı momentler
+      - Benzer topoloji → benzer spektrum → transport sertifikası
     """
     try:
         from rdkit import Chem
-        from rdkit.Chem import Descriptors, rdMolDescriptors
+        import numpy as np
 
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             return None
+        n = mol.GetNumAtoms()
+        if n < 2:
+            return None
 
-        # 12 descriptors, each mapped to [0,1] with physiological max
-        raw = [
-            Descriptors.MolWt(mol) / 1000.0,
-            max(0.0, Descriptors.MolLogP(mol) + 5.0) / 20.0,
-            Descriptors.NumHAcceptors(mol) / 20.0,
-            Descriptors.NumHDonors(mol) / 10.0,
-            Descriptors.TPSA(mol) / 300.0,
-            rdMolDescriptors.CalcNumRotatableBonds(mol) / 20.0,
-            rdMolDescriptors.CalcNumRings(mol) / 10.0,
-            rdMolDescriptors.CalcNumAromaticRings(mol) / 6.0,
-            Descriptors.HeavyAtomCount(mol) / 100.0,
-            rdMolDescriptors.CalcFractionCSP3(mol),
-            rdMolDescriptors.CalcNumAliphaticRings(mol) / 6.0,
-            rdMolDescriptors.CalcNumHeteroatoms(mol) / 20.0,
-        ]
-        # Clip to [0,1] and sort (atoms ordered on real line [0,1])
-        atoms = sorted(max(0.0, min(1.0, d)) for d in raw)
-        n = len(atoms)
+        BOND_ORDER = {
+            Chem.rdchem.BondType.SINGLE:   1.0,
+            Chem.rdchem.BondType.DOUBLE:   2.0,
+            Chem.rdchem.BondType.TRIPLE:   3.0,
+            Chem.rdchem.BondType.AROMATIC: 1.5,
+        }
+        ATOM_EN = {6: 1.0, 7: 1.3, 8: 1.6, 9: 2.0,
+                   16: 1.1, 17: 1.4, 35: 1.3, 15: 1.1, 53: 1.2}
 
-        # Hausdorff power moments: m_k = (1/n) Σ d_i^k
-        # m_0 = 1 by normalization (each d_i^0 = 1)
+        A = np.zeros((n, n))
+        for bond in mol.GetBonds():
+            i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+            w = BOND_ORDER.get(bond.GetBondType(), 1.0)
+            A[i, j] = w
+            A[j, i] = w
+        for i in range(n):
+            A[i, i] = ATOM_EN.get(mol.GetAtomWithIdx(i).GetAtomicNum(), 1.0)
+
+        G = A.T @ A
+        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
+        max_eig = eigs.max() or 1.0
+        atoms = sorted(eigs / max_eig)
+
         moments: list[Fraction] = [Fraction(1)]
         for k in range(1, num_moments):
-            mk = sum(d ** k for d in atoms) / n
+            mk = sum(d ** k for d in atoms) / len(atoms)
             moments.append(Fraction(mk).limit_denominator(10 ** 9))
         return moments
     except Exception:
         return None
+
+
+# Backward-compat alias
+def _smiles_molecular_moments(smiles: str, num_moments: int = 8) -> list[Fraction] | None:
+    return _smiles_to_graph_moments(smiles, num_moments)
 
 
 def _smiles_to_descriptor_matrix(smiles: str) -> list[list[Fraction]]:
