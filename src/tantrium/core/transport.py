@@ -227,7 +227,7 @@ class CertifiedTransport:
 
         Falls back to _moments_to_cells() if no eigenvalue structure available.
         """
-        from tantrium.certificates.certificate import Cell
+        from tantrium.proof.certificate import Cell
 
         # Extract eigenvalues from CodexObject structure (set by pipeline)
         eigenvalues: list[float] = []
@@ -277,7 +277,7 @@ class CertifiedTransport:
         This replaces the Hankel-eigenvalue approach which was near rank-1
         (single dominant eigenvalue + tiny residuals → mass imbalance → FAIL).
         """
-        from tantrium.certificates.certificate import Cell
+        from tantrium.proof.certificate import Cell
 
         n = min(len(moments), 8)
         # Use μ₁..μ_{n-1} (skip μ₀=1 which carries no structural information)

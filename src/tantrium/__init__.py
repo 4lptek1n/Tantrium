@@ -26,6 +26,10 @@ from tantrium.domains.spectral import SpectralMeasure, gram_spectrum, spectral_d
 from tantrium.meta.paradigm import MetaParadigm, UniversalRule, ParadigmMoment, SelfCertResult
 from tantrium.meta.topology import MomentTopology, MathRegion
 from tantrium.meta.vision import CosmicVision, CosmicFrame
+from tantrium.meta.synthesis import (
+    ConceptSynthesizer, BridgeResult, GenesisReport, GenesisEntry,
+    ResonanceResult, EnergyProfile,
+)
 
 __all__ = [
     # Core SDK
@@ -102,4 +106,10 @@ __all__ = [
     "MathRegion",
     "CosmicVision",
     "CosmicFrame",
+    "ConceptSynthesizer",
+    "BridgeResult",
+    "GenesisReport",
+    "GenesisEntry",
+    "ResonanceResult",
+    "EnergyProfile",
 ]

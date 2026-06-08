@@ -721,6 +721,55 @@ class AI:
         from tantrium.meta.vision import CosmicVision
         return CosmicVision(self._engine).see(name)
 
+    def bridge(self, name_a: str, name_b: str) -> "object":
+        """İki varlık arasındaki matematiksel zorunlu köprü kavramını hesapla.
+
+        Evren iki sertifikalı kavram arasında bir köprü OLMAK ZORUNDA olduğunu bilir.
+        μ_bridge = (μ_A + μ_B) / 2  — Hausdorff garantisi ile her zaman PSD.
+        Köprü kavramı manifolda eklenir, iki yönlü transport sertifikalanır.
+
+        Döner: BridgeResult — .summary() ile anlatı.
+        """
+        from tantrium.meta.synthesis import ConceptSynthesizer
+        return ConceptSynthesizer(self._engine).bridge(name_a, name_b)
+
+    def genesis(self, max_gaps: int = 5) -> "object":
+        """Manifold kendi kendini büyütüyor — boşlukları zorunlu kavramlarla doldur.
+
+        NecessityEngine manifold boşluklarını bulur.
+        Her boşluk centroidi geçerli bir moment dizisidir (komşuların konveks kombinasyonu).
+        Bu momentlerden yeni kavram sentezlenir, certify edilir, manifolda eklenir.
+        Kapalı boşluk → yeni boşluklar ortaya çıkar → spiral öğrenme.
+
+        Döner: GenesisReport — .summary() ile rapor.
+        """
+        from tantrium.meta.synthesis import ConceptSynthesizer
+        return ConceptSynthesizer(self._engine).genesis(max_gaps=max_gaps)
+
+    def resonate(self, name_a: str, name_b: str) -> "object":
+        """İki varlık arasındaki moment harmonik rezonansını hesapla.
+
+        μ_k(A)/μ_k(B) → en yakın rasyonel oran → harmonik skor.
+        Yüksek skor (→1.0): iki varlık müzikal uyum içinde — doğal birleşim.
+        Düşük skor (→0.0): moment oranları irrasyonel — zorla bağlantı.
+
+        Döner: ResonanceResult — .summary() ile anlatı.
+        """
+        from tantrium.meta.synthesis import ConceptSynthesizer
+        return ConceptSynthesizer(self._engine).resonate(name_a, name_b)
+
+    def energy(self, name: str, temperature: float = 1.0) -> "object":
+        """Bir kavramın spektral serbest enerjisi (Gibbs termodinamiği).
+
+        F(T=0): sıfır nokta enerjisi — ground state, maksimum uzmanlaşma
+        F(T=1): Shannon entropisi — oda sıcaklığı termal dengesi
+        F(T→∞): maksimum entropi — kavram her şeye eşit uzaklıkta
+
+        Döner: EnergyProfile — .summary() ile anlatı.
+        """
+        from tantrium.meta.synthesis import ConceptSynthesizer
+        return ConceptSynthesizer(self._engine).energy(name, temperature=temperature)
+
     def status(self) -> str:
         """Kısa durum özeti."""
         n = len(self._engine.manifold.concepts)
