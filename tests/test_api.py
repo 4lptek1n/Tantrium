@@ -403,3 +403,13 @@ def test_interpolate_returns_derived_concept(ai):  # type: ignore[misc]
         assert isinstance(dc, DerivedConcept)
         assert dc.alpha == 0.5
         assert len(dc.parents) == 2
+
+
+def test_remember_returns_session_memory(ai):
+    """ai.remember() must not crash even when no session is active."""
+    from tantrium.graph.memory import SessionMemory
+    mem = ai.remember()
+    assert isinstance(mem, SessionMemory)
+    assert isinstance(mem.session_id, str)
+    assert len(mem.session_id) > 0
+    assert isinstance(mem.turns, list)

@@ -1112,7 +1112,8 @@ class AI:
         session = getattr(self._engine, "session", None)
         if session is None:
             from tantrium.graph.memory import SessionMemory
-            return SessionMemory()
+            latest = SessionMemory.latest()
+            return latest if latest is not None else SessionMemory.new()
         return session
 
     # ── Engine'e doğrudan erişim ─────────────────────────────────────────────
