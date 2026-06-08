@@ -39,6 +39,9 @@ src/tantrium/          ← pip install -e . ile kurulu paket
   reasoning/           ← NecessityEngine, reasoner, inference, thinker...
   research/            ← ProofLoop, explorer, researcher, ingest, goal, actor
   language/            ← CertifiedGenerator, Speaker, LanguageBootstrap
+  perception/          ← duyusal grounding (ses/görüntü → AYNI moment uzayı)
+    encode.py          ← encode_signal/encode_image/encode_matrix
+    generate.py        ← tone, chord, white_noise, *_image üreteçleri
   meta/                ← MetaParadigm, MomentTopology, CosmicVision, ConceptSynthesizer
 
 tantrium/              ← Research OS (SADECE subprocess ile erişilir)
@@ -46,9 +49,10 @@ tantrium/              ← Research OS (SADECE subprocess ile erişilir)
   theorem_graph/       ← GraphStore, theorem_graph.yaml
   positivity_machine.py
 
-tools/                 ← 5 CLI script
+tools/                 ← 6 CLI script
   tantrium_research_os.py     ← Research OS CLI (ProofLoop subprocess target)
   proof_loop_demo.py
+  perception_demo.py          ← duyusal grounding demosu (ses+görüntü)
   ingest_real_world.py
   autonomous_research_session.py
   grow_manifold.py
@@ -151,6 +155,12 @@ ai.bridge("theorem", "proof")                  # → BridgeResult (zorunlu köpr
 ai.genesis(max_gaps=5)                         # → GenesisReport (manifold kendi kendini büyütür)
 ai.resonate("zeta", "riemann")                 # → ResonanceResult (harmonik oran skoru)
 ai.energy("prime", temperature=1.0)            # → EnergyProfile (Gibbs serbest enerjisi)
+
+# Algı (duyusal grounding — ham sinyal AYNI moment uzayına)
+from tantrium.perception import tone, white_noise, noise_image
+ai.perceive(tone(440), modality="signal", name="t440")        # → CertificationRun
+ai.perceive(noise_image(), modality="image", name="nz", learn=True)  # manifolda ekle
+# modality: "signal" (ses/zaman serisi), "image" (2D piksel), "matrix" (herhangi 2D)
 ```
 
 ---
@@ -167,7 +177,33 @@ ai.energy("prime", temperature=1.0)            # → EnergyProfile (Gibbs serbes
 
 ## Mevcut Durum
 
-- Kavram: 39,929 | TAU edge: 654,962+ | Paradigma: 23/23
-- Theorem graph: 9 node, 9/9 CERTIFIED
+- Kavram: 39,942 | TAU edge: 654,896+ | Paradigma: 23/23
+- Theorem graph: 97 node (PROVEN/CERTIFIED)
 - ProofLoop: TAM KAPALI — subresultant_recurrence kampanyası çalışıyor
-- Tests: 92 geçiyor
+- Algı katmanı: ses+görüntü grounding aktif (Wiener–Khinchin/Bochner momentleri)
+- Tests: 143 geçiyor
+
+---
+
+## Algı Katmanı (Duyusal Grounding)
+
+Dil kavramları yapısal okunur ama fiziksel gerçekliğe bağlı değildi — bu
+katman o boşluğu kapatır. Ham duyusal sinyal AYNI moment uzayına çekilir:
+
+```
+SES:     sinyal → otokorelasyon R[k] (Wiener–Khinchin: PSD'nin momentleri)
+                → Toeplitz(R) (Bochner: PSD) → G=TᵀT → μ_k
+GÖRÜNTÜ: piksel - DC → G=PᵀP → tekil-değer dağılımı → μ_k
+```
+
+Momentler eigenvalue-normalize Hausdorff dizisi (SMILES ile AYNI rejim,
+μ_k∈[0,1]) → perceptual kavramlar kelime/molekülle aynı bölgede.
+
+Sistem spektral entropiyi SÖYLENMEDEN okur:
+- ton (μ₁≈0.07) < akor (≈0.08) < gürültü (≈0.69) — artan karmaşıklık
+- düz görüntü: boş imza (4/23, μ₁=0); gürültü: yüksek μ₁ (ses ile aynı yön)
+- yapılı ses ↔ yapılı görüntü cross-modal YAKIN; gürültü uzak
+
+ÖNEMLİ: büyük duyusal matris → exact Fraction determinant patlar (4300+
+basamak). Çözüm: momentleri numpy float'ta hesapla, yapı çıkarımı için
+momentlerden KÜÇÜK Hankel kur (encoder'ın uzun-dizi hızlı yoluyla aynı).

@@ -31,6 +31,9 @@ from tantrium.meta.synthesis import (
     ConceptSynthesizer, BridgeResult, GenesisReport, GenesisEntry,
     ResonanceResult, EnergyProfile,
 )
+from tantrium.perception import (
+    encode_signal, encode_image, encode_matrix, signal_autocorrelation,
+)
 
 __all__ = [
     # Core SDK
@@ -122,4 +125,9 @@ __all__ = [
     "GenesisEntry",
     "ResonanceResult",
     "EnergyProfile",
+    # Perception (duyusal grounding)
+    "encode_signal",
+    "encode_image",
+    "encode_matrix",
+    "signal_autocorrelation",
 ]

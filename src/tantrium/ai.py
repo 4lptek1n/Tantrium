@@ -441,6 +441,55 @@ class AI:
         # Pass full CodexObjects so transport uses eigenvalue spectrum (pipeline output)
         return ct.certify(src_obj, tgt_obj)
 
+    def perceive(
+        self,
+        data,
+        modality: str = "signal",
+        name: str = "percept",
+        learn: bool = False,
+    ) -> "object":
+        """Ham duyusal veriyi oku — ses, görüntü ya da herhangi bir matris.
+
+        Duyusal grounding: dil katmanı kavramları yapısal okur ama fiziksel
+        gerçekliğe bağlı değildir. Bu metod ham sinyali AYNI moment uzayına
+        çeker — Hamburger/Bochner momentleri duyusal veriye uygulanır.
+
+        modality:
+          "signal" → 1D ses/zaman serisi (otokorelasyon → Toeplitz → moment)
+          "image"  → 2D piksel ızgarası (G=PᵀP → tekil-değer momentleri)
+          "matrix" → herhangi bir 2D sayısal dizi
+
+        learn=True ise algılanan kavram manifolda kalıcı olarak eklenir —
+        kelimelerin ve moleküllerin yanına, aynı uzayda grounded bir nokta.
+
+        Döner: CertificationRun (23 paradigma) + .obj.moments duyusal imza.
+        """
+        from tantrium.perception import encode_signal, encode_image, encode_matrix
+
+        if modality == "signal":
+            obj = encode_signal(data, name=name)
+        elif modality == "image":
+            obj = encode_image(data, name=name)
+        elif modality == "matrix":
+            obj = encode_matrix(data, name=name)
+        else:
+            raise ValueError(f"Bilinmeyen modalite: {modality!r} (signal/image/matrix)")
+
+        run = self._engine.process(obj)
+
+        if learn and name not in self._engine.manifold.concepts:
+            from tantrium.core.semantic import Concept
+            concept = Concept(
+                name=name,
+                moments=list(obj.moments),
+                domain="percept",
+                source=f"perception:{modality}",
+            )
+            self._engine.manifold.add_unchecked(concept)
+            self._engine.note_new_concepts([name])
+
+        return run
+
     def rank(self, target: str, candidates: list[str] | None = None, top_n: int = 10) -> "object":
         """Rank candidates for a target via certified dyadic transport.
 
