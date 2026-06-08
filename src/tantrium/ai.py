@@ -702,6 +702,25 @@ class AI:
         from tantrium.meta.topology import MomentTopology
         return MomentTopology(self._engine).summary_map(grid_n=grid_n)
 
+    def vision(self, name: str) -> "object":
+        """Tanrısal göz: sertifikalanmış herhangi bir varlığın tam kozmik vizyonu.
+
+        Geçmiş:  TAU geriye iz — hangi zorunluluktan doğdu?
+        Şimdi:   23 paradigma, eigenvalue entropisi, topoloji sınıfı
+        Gelecek: Isı akışı çekicisi, min-enerji jeodezik, evrim yönü
+        Fizik:   Lyapunov, Li kriteri, de Bruijn-Newman Λ
+
+        Döner: CosmicFrame — .narrate() ile tam anlatı.
+
+        Örnek:
+            frame = ai.vision("EGFR")
+            print(frame.narrate())
+            print(frame.attractor_concept)   # nereye evriliyor
+            print(frame.eigenvalue_entropy)  # ayrımcılık kapasitesi
+        """
+        from tantrium.meta.vision import CosmicVision
+        return CosmicVision(self._engine).see(name)
+
     def status(self) -> str:
         """Kısa durum özeti."""
         n = len(self._engine.manifold.concepts)

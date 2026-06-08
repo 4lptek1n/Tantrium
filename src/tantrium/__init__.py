@@ -25,6 +25,7 @@ from tantrium.language.speaker import CertifiedStatement, Speaker
 from tantrium.domains.spectral import SpectralMeasure, gram_spectrum, spectral_distance, dna_measure, moments_to_spectral
 from tantrium.meta.paradigm import MetaParadigm, UniversalRule, ParadigmMoment, SelfCertResult
 from tantrium.meta.topology import MomentTopology, MathRegion
+from tantrium.meta.vision import CosmicVision, CosmicFrame
 
 __all__ = [
     # Core SDK
@@ -99,4 +100,6 @@ __all__ = [
     "SelfCertResult",
     "MomentTopology",
     "MathRegion",
+    "CosmicVision",
+    "CosmicFrame",
 ]
