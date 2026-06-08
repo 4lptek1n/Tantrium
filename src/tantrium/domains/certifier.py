@@ -312,11 +312,26 @@ class MolecularCertifier:
         return results
 
     def _manifold_candidates(self, target_concept) -> list[tuple[str, str]]:
-        """Manifoldda zaten olan drug_candidate kavramlarını döndür."""
+        """Manifoldda zaten olan drug_candidate kavramlarını döndür.
+
+        Döner: (name, smiles) — sadece SMILES bilinen kavramlar (boş atlanır).
+        """
         candidates = []
         for name, concept in self.engine.manifold.concepts.items():
-            if concept.domain == "drug_candidate" or concept.source == "pubchem":
-                candidates.append((name, ""))  # SMILES yoksa boş
+            if concept.domain != "drug_candidate" and concept.source != "pubchem":
+                continue
+            # SMILES'ı source alanından veya metadata'dan çıkar
+            smiles = ""
+            src = concept.source or ""
+            if src.startswith("SMILES:"):
+                smiles = src[7:]
+            elif src.startswith("smiles:"):
+                smiles = src[7:]
+            elif concept.domain == "drug_candidate" and len(src) > 3 and "/" not in src:
+                # source muhtemelen SMILES (kısa, slash yok)
+                smiles = src
+            if smiles:
+                candidates.append((name, smiles))
         return candidates[:20]
 
     def _dyadic_transport_score(self, moments, max_steps: int = 20) -> float:

@@ -387,6 +387,8 @@ class SemanticManifold:
     def clear_spectral_cache(self) -> None:
         """Spektral ölçü cache'ini temizle (manifold güncellemesinden sonra)."""
         self._spec_cache = {}
+        self._spec_mat = None
+        self._spec_labels = None
 
     def gauge_class(self, concept: Concept, tol: Fraction = Fraction(1, 1000)) -> list[str]:
         """Find all concepts gauge-equivalent to the given one (Mem).

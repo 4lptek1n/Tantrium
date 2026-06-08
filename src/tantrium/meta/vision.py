@@ -182,8 +182,11 @@ class CosmicVision:
         chain: list[str] = []
         visited = {name}
         queue = [(name, 0)]
+        max_depth_seen = 0
         while queue:
             current, depth = queue.pop(0)
+            if depth > max_depth_seen:
+                max_depth_seen = depth
             if depth >= depth_limit:
                 continue
             for pred in self._reverse_index.get(current, []):
@@ -208,31 +211,33 @@ class CosmicVision:
             if node:
                 origin_domain = node.domain
 
-        return chain[:5], origin_domain, len(chain)
+        return chain[:5], origin_domain, max_depth_seen
 
     # ─── Şimdi: topoloji sınıfı ──────────────────────────────────────────────
 
     def _classify_topology(self, moments: list[float]) -> str:
-        """Kavramın moment uzayındaki yerel yoğunluğunu hesapla."""
-        concept_q = moments
-        k = len(concept_q)
-        count = 0
+        """Kavramın moment uzayındaki yerel yoğunluğunu hesapla.
+
+        nearest() kullanır — O(40k) Python döngüsü yerine numpy vektörizasyonu.
+        """
+        from tantrium.core.semantic import Concept
+        from fractions import Fraction
+        probe = Concept(
+            name="_topology_probe_",
+            moments=[Fraction(m).limit_denominator(10**9) for m in moments],
+            domain="probe",
+        )
+        # nearest() numpy vektörizasyonunu kullanır — çok daha hızlı
+        neighbors = self.engine.manifold.nearest(probe, n=50)
         threshold_dense = 0.15
         threshold_sparse = 0.5
-
-        for name, c in self.engine.manifold.concepts.items():
-            d = sum(
-                abs(concept_q[i] - (float(c.moments[i]) if i < len(c.moments) else 0.0))
-                for i in range(k)
-            )
-            if d < threshold_dense:
-                count += 1
-            if count >= 10:
-                return "dense"
-
-        if count >= 3:
+        within_dense = sum(1 for _, d in neighbors if float(d) < threshold_dense)
+        within_sparse = sum(1 for _, d in neighbors if float(d) < threshold_sparse)
+        if within_dense >= 10:
+            return "dense"
+        if within_sparse >= 3:
             return "sparse"
-        if count >= 1:
+        if within_sparse >= 1:
             return "frontier"
         return "void"
 

@@ -240,13 +240,13 @@ def stage_l2_zayin_hankel(
         state["schur_psd"] = True
         state["Q_hidden_trace"] = 0.0
 
-    # LGV trace kimliği: path_weights + determinant
+    # LGV path_weights = diag(G); determinant = det(G) (DALET'ten alınır)
     _ng = len(G)
     if _ng > 0:
         _diag = [G[i][i] for i in range(_ng)]
-        _trace_val = sum(_diag)
         state["path_weights"] = _diag
-        state["determinant"] = _trace_val
+        # DALET zaten real_determinant hesapladı — onu kullan
+        state["determinant"] = state.get("real_determinant", sum(_diag))
     else:
         state["path_weights"] = [Fraction(1)]
         state["determinant"] = Fraction(1)
@@ -301,10 +301,23 @@ def stage_l3_het_li(state: dict) -> None:
             for n in range(len(li_coeffs) - 1)
         ]
     except Exception:
-        state["li_coefficients"] = [0.008, 0.046, 0.116, 0.220]
-        state["li_positive"] = True
-        state["potential_values"] = {f"lambda_{k}": 0.0 for k in range(1, 5)}
-        state["flows"] = [{"from": "lambda_1", "to": "lambda_2", "gradient": 0.0}]
+        # Compute approximate Li values from eigenvalues instead of hardcoding
+        _eigs_fallback = [e for e in state.get("eigenvalues", [1.0]) if e > 1e-10] or [1.0]
+        _li_fallback: list[float] = []
+        for _n in range(1, 5):
+            _li_n = 0.0
+            for _lam in _eigs_fallback:
+                _rho_re, _rho_im = 0.5, _lam
+                _mod2 = _rho_re ** 2 + _rho_im ** 2
+                _omr = 1.0 - _rho_re / _mod2
+                _omi = _rho_im / _mod2
+                _r = (_omr ** 2 + _omi ** 2) ** 0.5
+                _li_n += 1.0 - (_r ** _n) * math.cos(_n * math.atan2(_omi, _omr))
+            _li_fallback.append(_li_n)
+        state["li_coefficients"] = _li_fallback
+        state["li_positive"] = all(l > 0 for l in _li_fallback)
+        state["potential_values"] = {f"lambda_{k + 1}": _li_fallback[k] for k in range(len(_li_fallback))}
+        state["flows"] = [{"from": f"lambda_{k + 1}", "to": f"lambda_{k + 2}", "gradient": _li_fallback[k + 1] - _li_fallback[k]} for k in range(len(_li_fallback) - 1)]
 
 
 # ─── L4 – TAV: de Bruijn-Newman heat-flow ────────────────────────────────────

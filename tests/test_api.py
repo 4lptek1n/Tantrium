@@ -98,6 +98,158 @@ def test_ask_has_paradigms_total(ai):  # type: ignore[misc]
     assert r.paradigms_total == 23
 
 
+# ─── AI.paradigms() ───────────────────────────────────────────────────────────
+
+def test_paradigms_returns_dict(ai):
+    result = ai.paradigms("EGFR")
+    assert isinstance(result, dict)
+
+
+def test_paradigms_has_23_entries(ai):
+    result = ai.paradigms("riemann")
+    assert len(result) == 23
+
+
+def test_paradigms_each_has_status(ai):
+    result = ai.paradigms("DNA")
+    for pid, v in result.items():
+        assert "status" in v
+        assert v["status"] in ("CERTIFIED", "BLOCKED", "UNKNOWN", "DEP_BLOCKED")
+
+
+def test_paradigms_each_has_evidence(ai):
+    result = ai.paradigms("DNA")
+    for pid, v in result.items():
+        assert "evidence" in v
+        assert isinstance(v["evidence"], list)
+
+
+def test_paradigms_egfr_all_certified(ai):
+    result = ai.paradigms("EGFR")
+    certified = sum(1 for v in result.values() if v["status"] == "CERTIFIED")
+    assert certified == 23
+
+
+# ─── AI.trace() ───────────────────────────────────────────────────────────────
+
+def test_trace_returns_dict(ai):
+    result = ai.trace("zeta")
+    assert isinstance(result, dict)
+
+
+def test_trace_has_expected_keys(ai):
+    result = ai.trace("riemann")
+    assert "name" in result
+    assert "ancestors" in result
+    assert "descendants" in result
+    assert "depth" in result
+    assert "domain" in result
+
+
+def test_trace_name_matches_input(ai):
+    result = ai.trace("prime")
+    assert result["name"] == "prime"
+
+
+def test_trace_ancestors_is_list(ai):
+    result = ai.trace("zeta")
+    assert isinstance(result["ancestors"], list)
+
+
+def test_trace_descendants_is_list(ai):
+    result = ai.trace("prime")
+    assert isinstance(result["descendants"], list)
+
+
+# ─── AI.energy() with temperature ─────────────────────────────────────────────
+
+def test_energy_has_free_energy_field(ai):
+    from tantrium.meta.synthesis import EnergyProfile
+    e = ai.energy("prime")
+    assert hasattr(e, "free_energy")
+    assert isinstance(e.free_energy, float)
+
+
+def test_energy_has_temperature_field(ai):
+    e = ai.energy("prime", temperature=0.5)
+    assert hasattr(e, "temperature")
+    assert e.temperature == 0.5
+
+
+def test_energy_free_energy_varies_with_temperature(ai):
+    e0 = ai.energy("prime", temperature=0.0)
+    e1 = ai.energy("prime", temperature=1.0)
+    assert e0.free_energy != e1.free_energy
+
+
+def test_energy_stability_is_valid_class(ai):
+    e = ai.energy("riemann")
+    assert e.stability in ("GROUND_STATE", "EXCITED", "CRITICAL")
+
+
+# ─── AI.bridge() real certification ──────────────────────────────────────────
+
+def test_bridge_returns_bridge_result(ai):
+    from tantrium.meta.synthesis import BridgeResult
+    result = ai.bridge("theorem", "proof")
+    assert isinstance(result, BridgeResult)
+
+
+def test_bridge_paradigms_passed_is_int(ai):
+    result = ai.bridge("quantum", "classical")
+    assert isinstance(result.paradigms_passed, int)
+    assert 0 <= result.paradigms_passed <= 23
+
+
+def test_bridge_distances_computed(ai):
+    result = ai.bridge("physics", "math")
+    assert isinstance(result.source_distance, float)
+    assert isinstance(result.target_distance, float)
+    assert result.source_distance >= 0
+    assert result.target_distance >= 0
+
+
+# ─── AI.compare() with resonance ─────────────────────────────────────────────
+
+def test_compare_returns_string(ai):
+    result = ai.compare("prime", "zeta")
+    assert isinstance(result, str)
+
+
+def test_compare_includes_l1_distance(ai):
+    result = ai.compare("riemann", "zeta")
+    assert "L1" in result
+
+
+def test_compare_includes_resonance(ai):
+    result = ai.compare("prime", "riemann")
+    assert "Harmonik" in result or "rezonans" in result.lower()
+
+
+# ─── Vision topology performance ──────────────────────────────────────────────
+
+def test_vision_topology_class_is_valid(ai):
+    frame = ai.vision("prime")
+    assert frame.topology_class in ("dense", "sparse", "frontier", "void")
+
+
+def test_vision_ancestry_depth_is_int(ai):
+    frame = ai.vision("zeta")
+    assert isinstance(frame.ancestry_depth, int)
+    assert frame.ancestry_depth >= 0
+
+
+# ─── EnergyProfile export ─────────────────────────────────────────────────────
+
+def test_energy_profile_exported_from_tantrium():
+    from tantrium import EnergyProfile
+    import dataclasses
+    fields = {f.name for f in dataclasses.fields(EnergyProfile)}
+    assert "free_energy" in fields
+    assert "temperature" in fields
+
+
+
 def test_ask_has_nearest_list(ai):  # type: ignore[misc]
     r = ai.ask("DNA")
     assert hasattr(r, "nearest")

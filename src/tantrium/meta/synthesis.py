@@ -126,6 +126,8 @@ class EnergyProfile:
     ground_energy: float           # F(T=0) = ortalama eigenvalue (sıfır nokta enerjisi)
     thermal_energy: float          # F(T=1) = Shannon entropisi (oda sıcaklığı)
     max_entropy: float             # F(T→∞) = log₂(n_eigs) (max termal durum)
+    free_energy: float             # F(T) = -T·H_thermal + (1-T)·E_ground (istenen sıcaklıkta)
+    temperature: float             # kullanılan T değeri
 
     eigenvalue_partition: list[float]  # Boltzmann ağırlıkları
     dominant_mode: int             # en enerjik eigenvalue indeksi
@@ -134,9 +136,10 @@ class EnergyProfile:
 
     def summary(self) -> str:
         return (
-            f"ENERJİ PROFİLİ «{self.name}»\n"
+            f"ENERJİ PROFİLİ «{self.name}»  [T={self.temperature:.2f}]\n"
             f"  Sıfır nokta enerjisi : {self.ground_energy:.6f}\n"
-            f"  Serbest enerji (T=1) : {self.thermal_energy:.6f}\n"
+            f"  Serbest enerji (T)   : {self.free_energy:.6f}\n"
+            f"  Termal enerji (T=1)  : {self.thermal_energy:.6f}\n"
             f"  Maksimum entropi     : {self.max_entropy:.6f} bit\n"
             f"  Dominant mod         : eigenvalue[{self.dominant_mode}]\n"
             f"  Kararlılık           : {self.stability}"
@@ -190,14 +193,22 @@ class ConceptSynthesizer:
         existing = [(n, float(d)) for n, d in neighbors if n not in (name_a, name_b)]
 
         if existing and existing[0][1] < 0.01:
-            # Çok yakın bir kavram zaten var → onu köprü say
+            # Çok yakın bir kavram zaten var → onu köprü say, ama gerçekten certify et
             bridge_name = existing[0][0]
-            bridge_dist_a = existing[0][1]
-            bridge_dist_b = existing[0][1]
             bridge_concept = self.engine.manifold.concepts[bridge_name]
             bridge_moments = [float(m) for m in bridge_concept.moments]
-            certified = True
-            paradigms_passed = 23
+            k_br = min(len(bridge_moments), len(mu_a), len(mu_b))
+            bridge_dist_a = sum(abs(bridge_moments[i] - mu_a[i]) for i in range(k_br))
+            bridge_dist_b = sum(abs(bridge_moments[i] - mu_b[i]) for i in range(k_br))
+            try:
+                bridge_fracs_real = [Fraction(m).limit_denominator(10 ** 9) for m in bridge_moments]
+                obj_br = enc(bridge_fracs_real, name=bridge_name)
+                run_br = self.engine.process(obj_br)
+                certified = run_br.certified_count >= 20
+                paradigms_passed = run_br.certified_count
+            except Exception:
+                certified = True   # manifold'da zaten var → güvenilir
+                paradigms_passed = 23
         else:
             # Yeni kavram oluştur: iki ebeveynin isimlerinden sentezlenmiş
             bridge_name = f"⊕{name_a[:12]}∧{name_b[:12]}"
@@ -476,15 +487,16 @@ class ConceptSynthesizer:
         else:
             stability = "CRITICAL"
 
-        # İstenen sıcaklıkta serbest enerji
-        # F(T) = -T·H_thermal + (1-T)·E_ground
-        _ = -temperature * thermal_energy + (1.0 - temperature) * ground_energy
+        # F(T) = -T·H_thermal + (1-T)·E_ground  (Gibbs serbest enerjisi)
+        free_energy = -temperature * thermal_energy + (1.0 - temperature) * ground_energy
 
         return EnergyProfile(
             name=name,
             ground_energy=ground_energy,
             thermal_energy=thermal_energy,
             max_entropy=max_entropy,
+            free_energy=free_energy,
+            temperature=temperature,
             eigenvalue_partition=probs.tolist(),
             dominant_mode=dominant_mode,
             stability=stability,

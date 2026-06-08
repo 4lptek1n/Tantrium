@@ -423,7 +423,12 @@ class AI:
         """
         from tantrium.core.transport import CertifiedTransport
 
-        if use_smiles:
+        def _looks_like_smiles(s: str) -> bool:
+            """Heuristic SMILES detection."""
+            smiles_chars = set("CNOSPFClBrI[]()=#@/\\+1234567890-")
+            return len(s) >= 3 and len(s) <= 200 and all(c in smiles_chars for c in s)
+
+        if use_smiles or (_looks_like_smiles(source) and _looks_like_smiles(target)):
             from tantrium.core.encoder import encode_smiles
             src_obj = encode_smiles(source, name=source[:64])
             tgt_obj = encode_smiles(target, name=target[:64])
@@ -721,6 +726,33 @@ class AI:
         from tantrium.meta.vision import CosmicVision
         return CosmicVision(self._engine).see(name)
 
+    def trace(self, name: str, depth: int = 5) -> dict:
+        """Bir kavramın TAU'daki soy zincirini ve ileri yolunu göster.
+
+        Geriye iz: bu kavram hangi kavramlardan ZORUNLU olarak çıkıyor?
+        İleri iz: bu kavram hangi kavramları ZORUNLU kılıyor?
+
+        Döner: {"name": str, "ancestors": list[str], "descendants": list[str],
+                "depth": int, "domain": str}
+        """
+        from tantrium.meta.vision import CosmicVision
+        cv = CosmicVision(self._engine)
+        ancestors, domain, ancestry_depth = cv._trace_origin(name, depth_limit=depth)
+
+        # İleri iz: bu kavramın TAU komşuları (çıkan kenarlar)
+        descendants = []
+        edges = self._engine.tau.edges.get(name, [])
+        for e in edges[:10]:
+            descendants.append(e.target)
+
+        return {
+            "name": name,
+            "ancestors": ancestors,
+            "descendants": descendants[:10],
+            "depth": ancestry_depth,
+            "domain": domain,
+        }
+
     def bridge(self, name_a: str, name_b: str) -> "object":
         """İki varlık arasındaki matematiksel zorunlu köprü kavramını hesapla.
 
@@ -884,16 +916,58 @@ class AI:
         run = self._engine.network.run(obj)
         return self._engine.speaker.explain(run)
 
-    def compare(self, query_a: str, query_b: str) -> str:
-        """İki kavramı certified olarak karşılaştır: ortak/farklı paradigmalar.
+    def paradigms(self, query: str) -> dict:
+        """Her paradigmanın durumunu ve kanıt detayını döndür.
 
-        Döner: str — paradigma bazında karşılaştırma raporu
+        Döner: dict — 23 paradigma her biri için:
+          {paradigm_id: {"status": "CERTIFIED"|"BLOCKED"|"UNKNOWN",
+                         "evidence": [...], "gap_name": str|None}}
+
+        Örnek:
+            result = ai.paradigms("EGFR")
+            blocked = [p for p, v in result.items() if v["status"] == "BLOCKED"]
         """
+        obj = self._engine.encoder.encode(query, name=query[:64])
+        run = self._engine.network.run(obj)
+        out: dict = {}
+        for pid, node in run.nodes.items():
+            result = node.result
+            out[pid] = {
+                "status": node.status,
+                "evidence": list(result.evidence) if result else [],
+                "gap_name": result.gap_name if result else None,
+                "certificate": (
+                    {k: str(v) for k, v in result.certificate.items()} if result else {}
+                ),
+            }
+        return out
+
+    def compare(self, query_a: str, query_b: str) -> str:
+        """İki kavramı certified olarak karşılaştır: paradigmalar + rezonans + L1.
+
+        Döner: str — tam karşılaştırma raporu (paradigma + harmonik + mesafe)
+        """
+        from fractions import Fraction
         obj_a = self._engine.encoder.encode(query_a, name=query_a[:64])
         obj_b = self._engine.encoder.encode(query_b, name=query_b[:64])
         run_a = self._engine.network.run(obj_a)
         run_b = self._engine.network.run(obj_b)
-        return self._engine.speaker.compare(run_a, run_b)
+        base_report = self._engine.speaker.compare(run_a, run_b)
+
+        # Moment L1 mesafesi
+        mu_a = [float(m) for m in obj_a.moments]
+        mu_b = [float(m) for m in obj_b.moments]
+        k = min(len(mu_a), len(mu_b))
+        l1 = sum(abs(mu_a[i] - mu_b[i]) for i in range(k))
+
+        # Harmonik rezonans
+        try:
+            res = self.resonate(query_a, query_b)
+            res_line = f"Harmonik rezonans: {res.resonance_score:.3f}  ({res.dominant_interval})"
+        except Exception:
+            res_line = "Harmonik rezonans: hesaplanamadı"
+
+        return f"{base_report}\n\nL1 moment mesafesi: {l1:.4f}\n{res_line}"
 
     def synthesize(self, concept: str, facts: dict) -> str:
         """TAU kenarlarından akıcı Türkçe paragraf üret.
