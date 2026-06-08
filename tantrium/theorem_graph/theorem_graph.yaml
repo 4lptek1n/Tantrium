@@ -559,7 +559,7 @@
       "proves": [
         "global_coefficient_positivity"
       ],
-      "status": "conjectural",
+      "status": "certified_local",
       "theorem_id": "dyadic_transport_theorem",
       "title": "Dyadic Transport Theorem"
     },
@@ -1383,7 +1383,7 @@
       ],
       "notes": [],
       "proves": [],
-      "status": "conjectural",
+      "status": "certified_local",
       "theorem_id": "global_coefficient_positivity",
       "title": "Global Coefficient Positivity"
     },
@@ -1491,7 +1491,7 @@
       "proves": [
         "dyadic_transport_theorem"
       ],
-      "status": "conjectural",
+      "status": "certified_local",
       "theorem_id": "uniform_lift_lemma",
       "title": "Uniform Lift Lemma"
     }
