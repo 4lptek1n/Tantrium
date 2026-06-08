@@ -201,7 +201,8 @@ class KnowledgeGraph:
 
         half = window // 2
         start = max(0, lo - half)
-        end = min(len(self._sr_sorted), lo + half)
+        end = min(len(self._sr_sorted), start + window)
+        start = max(0, end - window)  # push start left if end was clipped
         return [name for _, name in self._sr_sorted[start:end]]
 
     # ─── Build from SemanticManifold ──────────────────────────────────────────
