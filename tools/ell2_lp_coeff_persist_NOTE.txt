@@ -1,1 +1,0 @@
-ell2 LP coefficient persistence tool placeholder. The intended output schema is: lemma,r,a,family,shift_s,multiplier_b,coefficient. The solver should write results/engine/ell2_lp_coefficient_matrix.csv.

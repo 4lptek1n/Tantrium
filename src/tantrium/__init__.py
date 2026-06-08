@@ -5,6 +5,8 @@ from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
 from tantrium.core.semantic import Concept, SemanticManifold
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
+from tantrium.proof.certificate import Cell, Certificate, TransportEdge
+from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
 from tantrium.graph.knowledge_graph import KnowledgeGraph, KnowledgeNode, KnowledgeEdge
 from tantrium.graph.memory import SessionMemory, Turn
 from tantrium.research.proof_loop import ProofLoop, LoopReport
@@ -38,6 +40,12 @@ __all__ = [
     "CertifiedTransport",
     "TransportCertificate",
     "TransportRanking",
+    # Proof primitives
+    "Cell",
+    "Certificate",
+    "TransportEdge",
+    "solve_greedy",
+    "FlowPolicy",
     # Graph
     "KnowledgeGraph",
     "KnowledgeNode",

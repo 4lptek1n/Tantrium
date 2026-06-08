@@ -18,23 +18,14 @@ The distinction from nearest-neighbor:
 """
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass, field
 from fractions import Fraction
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
-
-# Extend tantrium namespace so root tantrium/ (transport, certificates) is importable
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_root_tantrium = str(_REPO_ROOT / "tantrium")
-import tantrium as _pkg
-if _root_tantrium not in _pkg.__path__:
-    _pkg.__path__.append(_root_tantrium)
 
 
 @dataclass
@@ -122,7 +113,7 @@ class CertifiedTransport:
         spectrum (pipeline L2.5 output), not raw moments. This makes transport
         sensitive to the actual spectral structure of each object.
         """
-        from tantrium.transport.dyadic_flow import solve_greedy, FlowPolicy
+        from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
 
         src_cells = self._obj_to_cells(source, "src")
         tgt_cells = self._obj_to_cells(target, "tgt")

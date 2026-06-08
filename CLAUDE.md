@@ -1,383 +1,166 @@
-# Tantrium AGI — Sistem Hafızası
-
-Bu dosya, sistemin her detayını içerir. Her yeni session'da bu dosyayı oku — hiçbir şeyi unutma.
-
----
+# Tantrium — Sistem Hafızası
 
 ## Aktif Branch
+`claude/seninle-agi-yapacagiz-XwJRz` — tüm geliştirme buraya.
 
-Tüm geliştirme: `claude/seninle-agi-yapacagiz-XwJRz`
-
-Matematiksel temel (RH ispat araçları): `tce-collapse-engine` branch'inde.
-
----
-
-## ÖNEMLI: Mimari Geçmişi
-
-`src/tantrium/agi/` katmanı TAMAMEN SİLİNDİ. Artık TEK bir düz ağaç var.
-Eski `tantrum.agi.*` import yolları YOK. Doğrusu: `from tantrium import ...`
+## Temel Kural
+`from tantrium.agi import ...` → YOK. Her şey düz: `from tantrium import ...`
 
 ---
 
-## Proje Yapısı (GÜNCEL — DÜZ AĞAÇ)
+## Proje Yapısı
 
 ```
-/home/user/Tantrium/
-├── src/tantrium/               ← KURULU paket (pip install -e .)
-│   ├── __init__.py             ← Tüm ana exportlar
-│   ├── ai.py                   ← Üst seviye SDK: tantrium.AI()
-│   ├── core/
-│   │   ├── encoder.py          ← Universal encoder (domain-blind)
-│   │   ├── codex.py            ← 22+1 paradigma tanımları
-│   │   ├── network.py          ← CertificationPipeline (DAG runner)
-│   │   ├── semantic.py         ← Concept, SemanticManifold
-│   │   ├── engine.py           ← CertificationEngine (orkestratör)
-│   │   └── transport.py        ← CertifiedTransport (3 katman: dyadic+Sturm+Zeta)
-│   ├── algebra/
-│   │   ├── sturm.py            ← normalized_sturm_chain, normalized_sturm_pivots
-│   │   ├── positivity.py       ← has_positive_coefficients, ramp_top_coefficient
-│   │   └── sheffer.py          ← Lah sayıları, Sheffer polinomları
-│   ├── graph/
-│   │   ├── knowledge_graph.py  ← KnowledgeGraph (TAU), KnowledgeNode, KnowledgeEdge
-│   │   ├── anchors.py          ← 10 matematiksel çapa (GUE, ZETA, ...)
-│   │   ├── relations.py        ← Semantik ilişki çıkarma + certify_and_add_edge
-│   │   └── memory.py           ← SessionMemory
-│   ├── domains/
-│   │   ├── bridge.py           ← PARADIGM_TO_THEOREMS eşlemesi, SemanticBridge
-│   │   ├── math_kernel.py      ← inject_math_kernel() (theorem→manifold)
-│   │   ├── certifier.py        ← MolecularCertifier (CertifiedTransport kullanır)
-│   │   ├── generator.py        ← MoleculeGenerator
-│   │   └── spectral.py         ← SpectralMeasure, gram_spectrum, W₂ mesafe
-│   ├── reasoning/
-│   │   ├── necessity.py        ← NecessityEngine (geçişli kapanış + boşluk)
-│   │   ├── reasoner.py         ← GraphReasoner (semantik zincir)
-│   │   ├── inference.py        ← InferenceChain
-│   │   ├── thinker.py          ← Thinker
-│   │   ├── generalization.py   ← HankelGeneralizer
-│   │   └── planner.py          ← Planner
-│   ├── research/
-│   │   ├── proof_loop.py       ← ProofLoop (AGI↔Research OS kapalı döngü)
-│   │   ├── autonomous.py       ← AutonomousObserver (insansız öğrenme)
-│   │   ├── researcher.py       ← AutonomousResearcher (OEIS/LMFDB)
-│   │   ├── ingest.py           ← DataIngestor (UniProt/PubChem/OEIS)
-│   │   ├── goal.py             ← GoalManifold
-│   │   ├── actor.py            ← Actor
-│   │   └── explorer.py         ← Explorer
-│   └── language/
-│       ├── generator.py        ← CertifiedGenerator (TAU walk üretim)
-│       ├── bootstrap.py        ← LanguageBootstrap
-│       ├── speaker.py          ← Speaker
-│       └── lang_topology.py
-├── tantrium/                   ← AYRI paket (pip ile kurulmaz, sys.path ile)
-│   ├── research_os/            ← Research OS (run_campaigns)
-│   ├── theorem_graph/          ← GraphStore, TheoremNode, theorem_graph.yaml
-│   ├── transport/              ← dyadic_flow.py (solve_greedy)
-│   └── positivity_machine.py
-├── tools/
-│   ├── proof_loop_demo.py      ← AGI↔Research OS kapalı döngü demo
-│   ├── autonomous_research_session.py
-│   ├── ingest_real_world.py    ← UniProt/PubChem/OEIS ingestion
-│   └── tantrium_research_os.py ← Research OS CLI
-└── results/agi/
-    ├── manifold.json           ← 39,918 kavram (kalıcı)
-    ├── tau_graph.json          ← 654,834 TAU edge (kalıcı)
-    └── spectral_cache.json     ← Wasserstein spektral cache
+src/tantrium/          ← pip install -e . ile kurulu paket
+  ai.py                ← tantrium.AI() — SDK girişi
+  core/
+    encoder.py         ← girdi→moments (domain-blind)
+    codex.py           ← 23 paradigma (verify() okur, hesaplamaz)
+    pipeline.py        ← run_pipeline() L0-L7 sıralı hesaplama
+    network.py         ← CertificationPipeline (topolojik DAG)
+    engine.py          ← CertificationEngine (orkestratör)
+    transport.py       ← CertifiedTransport (dyadic+Sturm+Zeta)
+    semantic.py        ← SemanticManifold (40k kavram, L1 mesafe)
+  proof/               ← dyadic ispat ilkleri (pip'ten erişilir)
+    dyadic_flow.py     ← solve_greedy (Fraction aritmetik)
+    certificate.py     ← Cell, Certificate, TransportEdge
+  algebra/             ← Sturm, positivity, Sheffer
+  graph/
+    knowledge_graph.py ← KnowledgeGraph / TAU (654k+ edge)
+    anchors.py         ← 10 kanonik dağılım (ZETA, GUE, ...)
+    relations.py       ← semantik ilişki çıkarma
+    memory.py          ← SessionMemory
+  domains/
+    bridge.py          ← paradigma→theorem eşlemesi
+    math_kernel.py     ← inject_math_kernel() (theorem→manifold)
+    certifier.py       ← MolecularCertifier
+    generator.py       ← MoleculeGenerator
+    spectral.py        ← SpectralMeasure, gram_spectrum
+  reasoning/           ← NecessityEngine, reasoner, inference, thinker...
+  research/            ← ProofLoop, explorer, researcher, ingest, goal, actor
+  language/            ← CertifiedGenerator, Speaker, LanguageBootstrap
+  meta/                ← MetaParadigm, MomentTopology
+
+tantrium/              ← Research OS (SADECE subprocess ile erişilir)
+  research_os/         ← run_campaigns()
+  theorem_graph/       ← GraphStore, theorem_graph.yaml
+  positivity_machine.py
+
+tools/                 ← 5 CLI script
+  tantrium_research_os.py     ← Research OS CLI (ProofLoop subprocess target)
+  proof_loop_demo.py
+  ingest_real_world.py
+  autonomous_research_session.py
+  grow_manifold.py
+
+results/agi/
+  manifold.json        ← 39,929 kavram (kalıcı)
+  tau_graph.json       ← 654,962+ edge (kalıcı)
+  spectral_cache.json
 ```
 
 ---
 
-## Temel Felsefe
-
-Her şey (DNA, molekül, cümle, asal sayı) zaten matematiksel bir nesne. Encoder "çevirmez" — okur.
+## Felsefe
 
 ```
-girdi → matris → Gram G = AᵀA → μ_k = Tr(G^k)/n → 8 Fraction moment
+girdi → A matris → G=AᵀA (daima PSD) → μ_k=Tr(G^k)/n → 8 moment
 ```
-
-G = AᵀA her zaman PSD → Hamburger moment dizisi → Hankel PSD → ALEPH geçer.
+Hamburger Teoremi: kompakt destekli ölçü moment dizisiyle tek biçimde belirlenir.
+Encoder "çevirmez" — okur. DNA, molekül, cümle, asal sayı — hepsi aynı formül.
 
 ---
 
-## 22+1 Paradigma Gerçek Durumu
+## 23 Paradigma (L0-L7 Pipeline Sırası)
 
-**NOT**: Encoder geçerli Gram moment dizisi üretir. Geçerli inputlar için ÇOĞU paradigma zaten geçer (bu tasarım gereği). Asıl filtre CertifiedTransport'ta.
+| Aşama | Paradigma | Hesaplama |
+|-------|-----------|-----------|
+| L2.5 | DALET | eigvalsh(Gram) → gerçek eigenvalue'lar |
+| L0.5 | BET | ‖A‖²_F = Tr(G) (Frobenius) |
+| L1.5 | HE | V(k) = μ_k / λ_max^k |
+| L2   | ZAYIN | path_sum = Tr(G), det(G) ayrıca |
+| L3   | HET | Li: λ_n = Σ[1−(1−1/ρ)^n] > 0 |
+| L4   | TAV | de Bruijn-Newman: Λ = −var₀ ≤ 0 |
+| L5   | GIMEL | Achilles: zayıf paradigma yok |
+| L6   | EMET | cross-check, çelişki yok |
+| Yrd. | ALEPH,KAF,AYIN,MEM,LAMED,TET,YOD,RESH,TSADI,SHIN,PE,VAV,NUN,SU3,KUF | |
 
-| Paradigma | Gerçek mi? | Notlar |
-|-----------|-----------|--------|
-| ALEPH | ✓ Gerçek | Hankel PSD, Sylvester kriteri |
-| DALET | ✓ Gerçek | numpy.eigvalsh(Gram) — gerçek eigenvalue |
-| HE | ✓ Gerçek | V(k)=μ_k/ρ^k, ρ=max eigenvalue — DOĞAL azalan |
-| TET | ✓ Gerçek | Möbius cross-ratio = (a-c)(b-d)/((a-d)(b-c)) |
-| KAF | ✓ Gerçek | SHA256(position+content) — enjektif |
-| HET | ✓ Gerçek | Li kriteri λ_n = Σ_ρ [1−(1−1/ρ)^n] > 0, ilk 20 Riemann sıfırı |
-| SHIN | ✓ Gerçek | argmax moment skoru |
-| TAV | ✓ Gerçek | de Bruijn-Newman heat-flow, L*=dominant eigenvalue, Λ=−var₀ ≤ 0 |
-| ZAYIN | ✓ Geçerli | Tr(G) = Σ self-loop paths — LGV trace identity |
-| RESH | ✓ Gerçek | Üst yarı eigenvalue = subsystem — real partial trace |
-| TSADI | Trivial | hash=hash her zaman doğru |
-| BET | Trivial | information_loss=0 hardcoded |
-| SU3 | Trivial | center_order=3 hardcoded |
-| KUF | Trivial | topological_index=18 hardcoded |
-| MEM | Trivial | gauge_classes tutarlı tasarımla |
-| YOD | Trivial | alternative_models=[] → her zaman minimal |
-| GIMEL | Trivial | open_obstructions=[] → her zaman closed |
-| VAV/NUN | Trivial | composite_dim=n*m her zaman |
-| LAMED | Trivial | locally_observable=physical_differences |
-| PE | Trivial | semantic_map dolu her zaman |
-| AYIN | Trivial | position_index her zaman ayırt eder |
-| EMET | Trivial | contradictions=[] hardcoded |
-
-**Gerçek discrimination CertifiedTransport'ta:**
-- benzene DYADIC_FAILED (simetrik ring → farklı spektral kütle dağılımı)
-- aspirin CERTIFIED, caffeine CERTIFIED
-- Zeta mesafesi: aspirin ζ-dist=2.09, benzene ζ-dist=2.00
+Gerçek ayrımcılık CertifiedTransport'ta: benzene DYADIC_FAILED, aspirin CERTIFIED.
 
 ---
 
-## Encoder Gerçekleri (Güncel)
-
-**DALET**: `numpy.linalg.eigvalsh(Gram)` — gerçek eigenvalue'lar ✓
-
-**HE (Lyapunov)**: `V(k) = μ_k / (max_eigenvalue^k)` — gerçek Lyapunov fonksiyonu, klip YOK ✓
-
-**ZAYIN**: `path_weights = diag(G)`, `declared_det = trace(G) = sum(diag)` — LGV trace identity ✓
-Ayrıca `real_determinant = det(G)` kaydedilir (discrimination için)
-
-**HET (Li kriteri)**: `λ_n = Σ_ρ [1−(1−1/ρ)^n]` for n=1..4, ilk 20 Riemann sıfırı (γ_k listesi encoder'da sabitlenmiş). De Moivre ile hesaplanır. `li_positive=True` → tüm sıfırlar Re=½ ✓
-
-**TAV (de Bruijn-Newman)**: Heat-flow `m_t → λ_max` yakınsaması. `fixed_point = max(eigenvalues)` (moleküle özgü). `debruijn_newman_lambda = −var₀ ≤ 0` (Λ=0 ispatı 2020). Her molekül farklı L* ve Λ değeri alır ✓
-
-**RESH**: `subsystem_info = sum(top_half_eigenvalues)`, `total_info = sum(all_eigenvalues)` — gerçek ✓
-
----
-
-## AGI Motor: CertifiedTransport (`core/transport.py`)
-
-Bu sistem NEAREST-NEIGHBOR ARAMIYOR — SERTIFIKALAMA YAPIYOR.
+## CertifiedTransport
 
 ```
-Kaynak moment → Hankel → eigenvalue → Cell nesneleri (dyadic kütleler)
-Hedef moment  → Hankel → eigenvalue → Cell nesneleri
+Kaynak eigenvalues → Cell nesneleri (Fraction kütleler)
+Hedef eigenvalues  → Cell nesneleri
 
-1. DYADIC: solve_greedy(src_cells, tgt_cells, policy) → "verified_exact" veya fail
-2. STURM: H(t)=(1-t)H_src + t*H_tgt her t için PSD mi? (normalized_sturm_pivots)
-3. ZETA: hedef momentlerinin ⊕ANCHOR:ZETA_ZEROS ailesine L1 mesafesi
+1. DYADIC: solve_greedy → "verified_exact" veya FAIL
+2. STURM:  H(t)=(1-t)H_src+t·H_tgt tüm t∈[0,1] için PSD
+3. ZETA:   L1(hedef, ⊕ANCHOR:ZETA_ZEROS)
 
 CERTIFIED = dyadic ✓ AND sturm ✓
-BLOCKED = DYADIC_FAILED veya STURM_FAILED
 ```
 
-**API:**
+**ÖNEMLİ:** SMILES için `structure["eigenvalues"]` = n×n moleküler Laplacian eigenvalue'ları.
+Metin için = 4×4 Gram-Hankel eigenvalue'ları.
+
+---
+
+## ProofLoop (AGI ↔ Research OS)
+
 ```python
-from tantrium import CertifiedTransport, TransportCertificate, TransportRanking
-
-# Doğrudan
-ct = CertifiedTransport(engine)
-tc = ct.certify(source_moments, target_moments)
-# tc.certified, tc.dyadic_verified, tc.sturm_verified, tc.zeta_distance
-
-# AI SDK üzerinden
-ai = tantrium.AI()
-tc = ai.transport("CCO", "aspirin", use_smiles=True)  # SMILES moleküler
-tc = ai.transport("EGFR", "erlotinib")                # metin semantik
-ranking = ai.rank("EGFR", top_n=10)                  # sıralama
+ai.prove(max_cycles=3)
+  → NecessityEngine.find_manifold_gaps()       # boşluk tespiti
+  → subprocess: tantrium_research_os.py --campaign <name>  # ispat
+  → update_theorem_graph_from_campaigns()       # theorem_graph.yaml güncelle
+  → inject_math_kernel(engine)                  # manifolda ekle
+  → engine.auto_persist()                       # kaydet
 ```
 
----
-
-## TAU Grafiği (KnowledgeGraph)
-
-Bilgi node'da değil, **edge'de**.
-
-- `KnowledgeNode`: name + domain + source + **sr** (spectral radius = son moment μ_7)
-- `KnowledgeEdge`: source + target + distance + paradigm
-
-**Paradigm türleri:**
-- `ALEPH` — geometrik (moment L1 mesafesi), K=10 en yakın
-- `IS_A, USES, DEFINES, ACHIEVES, REQUIRES, COMPOSED` — semantik (metin regex)
-- `SPECTRAL_BRIDGE` — cross-domain köprü (Wasserstein-2 < threshold)
-- `REQUIRES, ACHIEVES` — theorem bağımlılıkları (inject_math_kernel)
-
----
-
-## Matematiksel Çapalar (10 adet)
-
-Gerçek kanonik dağılımlardan power-moment ile üretilir, `domain="anchor"`:
-
-| Çapa | Kaynak |
-|------|--------|
-| ⊕ANCHOR:ZETA_ZEROS | İlk 50 Riemann sıfırı (sabitlenmiş) |
-| ⊕ANCHOR:GUE_RANDOM_MATRIX | Wigner-Dyson GUE aralıkları |
-| ⊕ANCHOR:PRIME_GAPS | Asal sayı aralıkları (2→3000) |
-| ⊕ANCHOR:POISSON_PROCESS | Üstel aralıklı bağımsız noktalar |
-| ⊕ANCHOR:GAUSSIAN_BELL | N(0.5, 0.15) örnekleri |
-| ⊕ANCHOR:PERIODIC_LATTICE | Sinüzoidal (f=8Hz) |
-| ⊕ANCHOR:UNIFORM_MEASURE | [0,1] düzgün dağılım |
-| ⊕ANCHOR:EXPONENTIAL_DECAY | e^{-3t} |
-| ⊕ANCHOR:LINEAR_RAMP | Aritmetik dizi |
-| ⊕ANCHOR:GEOMETRIC_GROWTH | 1.03^n |
-
----
-
-## Kapalı Döngü — ProofLoop (`research/proof_loop.py`)
-
-```
-NecessityEngine.find_manifold_gaps()
-    → 5 boşluk bulundu (GATE_A_PERTURBATION cluster)
-    → kampanya eşlemesi: GAP_TO_CAMPAIGN dict
-ProofLoop.launch_campaign(name)
-    → subprocess: python tools/tantrium_research_os.py --campaign <name>
-ProofLoop.sync_new_theorems()
-    → inject_math_kernel(engine) yeniden çalışır (idempotent)
-engine.auto_persist()
-```
-
-**API:**
-```python
-import tantrium
-ai = tantrium.AI()
-report = ai.prove(max_cycles=3)  # kapalı döngü
-print(report.total_new_concepts)
-print(report.remaining_gaps)
-```
-
----
-
-## Research OS (`tantrium/research_os/`)
-
-**ÖNEMLI:** `tantrium/` kökündeki paket `src/tantrium/` ile FARKLI.
-- `src/tantrium/` → pip install, normal import
-- `tantrium/research_os/` → sadece subprocess ile erişilir
-
-Research OS subprocess çağrısı:
+Research OS subprocess:
 ```bash
-python tools/tantrium_research_os.py --campaign lah_gate_ab
+python tools/tantrium_research_os.py --campaign subresultant_recurrence
+# Geçerli kampanyalar: subresultant_recurrence, lah_gate_ab,
+#   coefficient_frontier, goldbach_minor_arc, rh_formalization, all
 ```
 
-**Geçerli kampanya isimleri:**
-`subresultant_recurrence, lah, lah_gate_ab, coefficient_frontier, goldbach_minor_arc, rh_formalization, all`
+NecessityEngine: `domain="math_kernel"` kullan (domain="theorem" → timeout).
 
 ---
 
-## NecessityEngine (`reasoning/necessity.py`)
-
-```python
-ne = NecessityEngine(engine)
-report = ne.run(domain="math_kernel", inject=True, find_gaps=True)
-# report.necessary_edges → [NecessaryEdge(source, target, chain, is_new)]
-# report.manifold_gaps   → [ManifoldGap(centroid, nearest_concepts, description)]
-# report.edges_injected  → 42 (bu oturumda)
-```
-
-**ÖNEMLİ:** `domain="math_kernel"` kullan, `"theorem"` değil.
-
----
-
-## Mevcut Durum (Son Ölçüm)
-
-- **Kavram:** 39,929
-- **TAU edge:** 654,962+
-- **Paradigma:** 23/23 — hepsi gerçek RH-türetilmiş formül
-- **Theorem graph:** 9 node, 9/9 CERTIFIED — `subresultant_recurrence` kampanyası tüm zincirleri kapattı
-- **NecessityEngine:** 5 manifold boşluğu (GATE_A_PERTURBATION cluster — gerçek matematik gerektiriyor)
-- **Çapalar:** 10 matematiksel kanonik dağılım
-- **CertifiedTransport:** Çalışıyor — benzene DYADIC_FAILED, aspirin/caffeine CERTIFIED
-- **ProofLoop:** TAM KAPALI DÖNGÜ — `subresultant_recurrence` → RECURRENCE_VERIFIED_FINITE → theorem_graph güncelle → inject_math_kernel → manifold büyür
-- **Tests:** 92 geçiyor
-- **Universal domain:** DNA, asal sayılar, molekül, cümle, müzik — hepsi aynı moment uzayında
-
-## Bu Session'da Tamamlananlar
-
-**HET** (GradientParadigm): Trivial V(m_k)=1/(k+1) yerine gerçek **Li kriteri** — λ_n = Σ_ρ [1−(1−1/ρ)^n] > 0, ilk 20 Riemann sıfırı ile hesaplanır. Riemann Hipotezi bağlantısı doğrudan.
-
-**TAV** (FixedPointParadigm): Picard-to-m1 yerine gerçek **de Bruijn-Newman heat-flow** — spectral mass dominant eigenvalue'a yakınsar. `fixed_point = λ_max` (moleküle özgü), `Λ = −var₀ ≤ 0` (2020 ispatı). Her molekül farklı L* ve Λ.
-
-**BET/AYIN/MEM/LAMED/YOD/SU3/KUF/GIMEL/EMET (9 paradigma):** Tüm trivial implementasyonlar gerçek matematikle değiştirildi. Frobenius, Gram separability, Newton identity, MDL compression, rank/nullity, dependency margins, cross-check — hepsi çalışıyor.
-
-**ProofLoop Kapalı Döngü:** `subresultant_recurrence` kampanyası RECURRENCE_VERIFIED_FINITE üretiyor. `update_theorem_graph_from_campaigns()` → theorem_graph.yaml node'ları günceller. Bağımlılık tabanlı auto-certify: tüm dep'leri sertifikalı theorem'lar otomatik olarak `certified_local` olur. `inject_math_kernel` yeni kavramları manifolda ekler. Zincir: qjr_degree_j_shift → qjr_degree_r_step → uniform_lift_lemma → dyadic_transport_theorem → global_coefficient_positivity — hepsi sertifikalandı.
-
-**Theorem graph düzeltmesi:** `verified_finite` (lowercase) `_CERTIFIED_STATUSES`'a eklendi — `ell4_q20_uniform_probe` artık doğru inject ediliyor.
-
-**Mimari Gerçeği (Artık Netleşti):** 22+1 İbrani harfi paradigması = RH ispat diyagramının L0-L7 katmanları. Bunlar metafor değil, çekirdeğin kendisi. Evren nasıl çalışıyorsa makine aynı yasayla çalışıyor.
-
----
-
-## API Özeti
+## API
 
 ```python
 import tantrium
-
 ai = tantrium.AI()
 
-# Durum
-print(ai.status())
-# "Tantrium AI  |  39,918 kavram  |  654,834 TAU kenar  |  Aleph-Tekin 23 paradigma"
-
-# Sertifika
-r = ai.ask("EGFR nedir?")
-print(r.certified, r.paradigms_passed)   # True, 23
-
-# Molekül certify
-r = ai.certify("Erlotinib", smiles="COCCOC1=CC2=...", target="EGFR")
-
-# Molekül üret
-r = ai.discover("EGFR", top_k=5)
-print(r.best.smiles, r.best.dyadic_score)
-
-# Certified dyadic transport (3 katman)
-tc = ai.transport("CCO", "aspirin", use_smiles=True)  # SMILES
-print(tc.summary())  # CERTIFIED | dyadic=✓ | sturm=✓ | ζ-dist=2.09
-
-tc = ai.transport("EGFR inhibitor", "kinase blocker")  # metin
-print(tc.summary())
-
-# Transport ile sıralama
-ranking = ai.rank("EGFR", top_n=10)
-print(ranking.certified_only())  # sadece CERTIFIED adaylar
-print(ranking.best())             # en iyi (en düşük ζ-mesafe)
-
-# Zorunlu kenarlar türet
-r = ai.close(domain="math_kernel", inject=True)
-print(r.edges_injected, len(r.manifold_gaps))  # 42, 5
-
-# Research OS kapalı döngü
-r = ai.prove(max_cycles=2, time_limit_s=180)
-print(r.total_new_concepts, r.remaining_gaps)
-
-# Öğrenme
-result = ai.learn("EGFR is a receptor tyrosine kinase.")
-print(result)  # {"new_concepts": n, "already_known": n, "relations": n, "persisted": bool}
+ai.status()                                    # kavram/edge/paradigma sayısı
+ai.ask("EGFR")                                 # → CertificationRun (23 paradigma)
+ai.transport("CCO", "aspirin", use_smiles=True)# → TransportCertificate
+ai.rank("EGFR", top_n=10)                      # → TransportRanking
+ai.prove(max_cycles=2)                         # → LoopReport (kapalı döngü)
+ai.close(domain="math_kernel", inject=True)    # → NecessityReport
+ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, ...}
+ai.think("protein folding")                    # → ThinkingResult
+ai.discover("EGFR", top_k=5)                   # → molekül keşfi
 ```
 
 ---
 
-## Sık Yapılan Hatalar
+## Kritik Pitfall'lar
 
-1. **`from tantrium.agi import ...`** → YOKTUR, agi/ katmanı silindi. Doğrusu: `from tantrium import ...`
-
-2. **`domain="theorem"` NecessityEngine'e geçirme** → tüm 39k kavram → timeout. Doğrusu: `domain="math_kernel"`.
-
-3. **`from tantrium.research_os import ...`** → ModuleNotFoundError. Doğrusu: subprocess ile `tools/tantrium_research_os.py`.
-
-4. **inject_math_kernel() idempotent** — zaten manifoldda olanlar atlanır, yeni proven'lar eklenir.
-
-5. **CertifiedTransport namespace**: `tantrium.transport.dyadic_flow` root `tantrium/` paketindedir (pip ile kurulmaz). `core/transport.py` `tantrium.__path__` üzerinden erişir.
-
-6. **SMILES vs metin transport**: `ai.transport(src, tgt, use_smiles=True)` ECFP4 fingerprint kullanır. `use_smiles=False` (default) metin bigram kullanır.
+1. `from tantrium.agi import ...` → YOK.
+2. `domain="theorem"` NecessityEngine'e → timeout. Doğrusu: `domain="math_kernel"`.
+3. `from tantrium.research_os import ...` → ModuleNotFoundError. subprocess kullan.
+4. `inject_math_kernel()` idempotent — mevcut kavramları geçer.
+5. `transport.py` artık `tantrium.proof.dyadic_flow` import eder (`tantrium.transport` değil).
 
 ---
 
-## Matematiksel Temel
+## Mevcut Durum
 
-Tüm sistem şu özdeşliğe dayanır:
-
-**Hamburger Teoremi:** Sınırlı destekli kompakt ölçü, moment dizisi tarafından TEK biçimde belirlenir.
-
-**CertifiedTransport ↔ RH bağlantısı:**
-- Sturm chain pivotları > 0 ↔ H(t) tüm t için PSD
-- H(t) PSD ↔ interpolasyon yolu "gerçek ölçü" manifoldunda kalıyor
-- ζ-sıfırları moment ailesi = Hamburger optimal ölçü
-
-**D-positivity (ramp_top_coefficient)**:
-`2^T_j * Π_{m=1}^j (n+m)^m` — bu katsayı Sturm pivot büyüme oranını verir.
-`algebra/positivity.py:ramp_top_coefficient(j, n)` ile hesaplanır.
+- Kavram: 39,929 | TAU edge: 654,962+ | Paradigma: 23/23
+- Theorem graph: 9 node, 9/9 CERTIFIED
+- ProofLoop: TAM KAPALI — subresultant_recurrence kampanyası çalışıyor
+- Tests: 92 geçiyor

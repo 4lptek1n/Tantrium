@@ -479,6 +479,49 @@ def _smiles_molecular_moments(smiles: str, num_moments: int = 8) -> list[Fractio
     return _smiles_to_graph_moments(smiles, num_moments)
 
 
+def _smiles_full_eigenvalues(smiles: str) -> list[float] | None:
+    """Full n×n molecular adjacency+diagonal eigenvalues, normalized to [0,1].
+
+    Returns the actual graph spectrum — aspirin (27 atoms) and salicylic acid
+    (15 atoms) produce genuinely different cell lists for dyadic transport.
+    """
+    try:
+        from rdkit import Chem
+        import numpy as np
+
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return None
+        n = mol.GetNumAtoms()
+        if n < 2:
+            return None
+
+        BOND_ORDER = {
+            Chem.rdchem.BondType.SINGLE:   1.0,
+            Chem.rdchem.BondType.DOUBLE:   2.0,
+            Chem.rdchem.BondType.TRIPLE:   3.0,
+            Chem.rdchem.BondType.AROMATIC: 1.5,
+        }
+        ATOM_EN = {6: 1.0, 7: 1.3, 8: 1.6, 9: 2.0,
+                   16: 1.1, 17: 1.4, 35: 1.3, 15: 1.1, 53: 1.2}
+
+        A = np.zeros((n, n))
+        for bond in mol.GetBonds():
+            i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+            w = BOND_ORDER.get(bond.GetBondType(), 1.0)
+            A[i, j] = w
+            A[j, i] = w
+        for i in range(n):
+            A[i, i] = ATOM_EN.get(mol.GetAtomWithIdx(i).GetAtomicNum(), 1.0)
+
+        G = A.T @ A
+        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
+        max_eig = eigs.max() or 1.0
+        return sorted((eigs / max_eig).tolist(), reverse=True)
+    except Exception:
+        return None
+
+
 def _smiles_to_descriptor_matrix(smiles: str) -> list[list[Fraction]]:
     """SMILES → molecular moments → Hankel matrix (for structure extraction)."""
     moments = _smiles_molecular_moments(smiles)
@@ -526,6 +569,12 @@ def encode_smiles(smiles: str, name: str | None = None, num_moments: int = 8) ->
     A = _sequence_to_hankel_matrix(moments)
     G = _gram(A)
     structure = encoder._extract_structure(smiles, A, G, moments)
+    # Override eigenvalues with actual n×n molecular graph spectrum so that
+    # CertifiedTransport cells reflect genuine molecular topology differences.
+    mol_eigs = _smiles_full_eigenvalues(smiles)
+    if mol_eigs:
+        structure["eigenvalues"] = mol_eigs
+        structure["eigenvalue_source"] = "molecular_graph"
     structure.update({
         "encoder":    "rdkit_descriptors",
         "smiles":     smiles[:100],
