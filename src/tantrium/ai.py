@@ -268,20 +268,36 @@ class AI:
         from tantrium.core.encoder import encode_smiles
         from tantrium.domains.certifier import MolecularCertifier
 
+        from tantrium.core.transport import CertifiedTransport
+
         certifier = self._get_certifier()
         raw = encode_smiles(smiles, name=name)
         run = self._engine.network.run(raw)
-        dyadic = certifier._dyadic_transport_score(raw.moments)
         gaps = [pid for pid, node in run.nodes.items() if node.status == "BLOCKED"]
+
+        # Dyadic transport score: use eigenvalue-based cells via full CodexObject
+        ct = CertifiedTransport(self._engine)
+        if target and target in self._engine.manifold.concepts:
+            tgt_concept = self._engine.manifold.concepts[target]
+            tc = ct.certify(raw, tgt_concept)
+            dyadic = tc.transport_cost if tc.certified else 0.0
+            transport_certified = tc.certified
+        else:
+            dyadic = certifier._dyadic_transport_score(raw.moments)
+            transport_certified = dyadic > 0
 
         sdf = ""
         if save_3d:
             sdf = certifier._smiles_to_sdf(smiles, name, target or name, "results/molecules")
 
+        # certified = all paradigms pass AND transport succeeds (if target given)
+        pipeline_ok = run.certified_count == run.total
+        certified = pipeline_ok and (transport_certified if target else True)
+
         return MolResult(
             name=name,
             smiles=smiles,
-            certified=run.certified_count == run.total,
+            certified=certified,
             paradigms_passed=run.certified_count,
             paradigms_total=run.total,
             dyadic_score=dyadic,
@@ -417,7 +433,8 @@ class AI:
             tgt_obj = _enc(target, name=target[:64])
 
         ct = CertifiedTransport(self._engine)
-        return ct.certify(list(src_obj.moments), list(tgt_obj.moments))
+        # Pass full CodexObjects so transport uses eigenvalue spectrum (pipeline output)
+        return ct.certify(src_obj, tgt_obj)
 
     def rank(self, target: str, candidates: list[str] | None = None, top_n: int = 10) -> "object":
         """Rank candidates for a target via certified dyadic transport.

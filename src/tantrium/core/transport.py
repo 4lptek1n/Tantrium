@@ -105,44 +105,66 @@ class CertifiedTransport:
 
     def certify(
         self,
-        source_moments: list,
-        target_moments: list,
+        source,
+        target,
         theorem_id: str = "DYADIC_TRANSPORT",
     ) -> TransportCertificate:
-        """Certify transport from source to target moments.
+        """Certify transport from source to target.
+
+        source/target: CodexObject (from pipeline) OR list of moments (fallback).
 
         Three-layer proof:
-          1. Dyadic: solve_greedy covering exact rational mass
+          1. Dyadic: solve_greedy on eigenvalue spectral cells (pipeline output)
           2. Sturm: H(t) stays PSD throughout transport path
           3. Zeta: target spectral family membership
+
+        When CodexObjects are passed, dyadic cells are built from the eigenvalue
+        spectrum (pipeline L2.5 output), not raw moments. This makes transport
+        sensitive to the actual spectral structure of each object.
         """
         from tantrium.transport.dyadic_flow import solve_greedy, FlowPolicy
 
-        src_cells = self._moments_to_cells(source_moments, "src")
-        tgt_cells = self._moments_to_cells(target_moments, "tgt")
+        src_cells = self._obj_to_cells(source, "src")
+        tgt_cells = self._obj_to_cells(target, "tgt")
+
+        # Extract moment lists for Sturm path check
+        if hasattr(source, "moments"):
+            source_moments = list(source.moments)
+            target_moments = list(target.moments)
+        else:
+            source_moments = list(source)
+            target_moments = list(target)
 
         policy = FlowPolicy(
             theorem_id=theorem_id,
             kernel_id="hankel_spectral",
-            map_name="diffgap",  # cross-rank transport costs 2^|diff| — spectral mismatch penalized
+            map_name="diffgap",
             require_q_ge=False,
             require_diff_ge=False,
         )
         cert = solve_greedy(src_cells, tgt_cells, policy)
         dyadic_ok = cert.status == "verified_exact"
-        # Wasserstein-like cost: total raw source mass consumed
         cost = float(sum(e.raw_source_used for e in cert.edges))
 
         sturm_ok = self._sturm_path_check(source_moments, target_moments)
         zeta_dist = self._zeta_distance(target_moments)
-        li1 = self._li_coefficient(n=1)  # L3: λ_1 from first 20 Riemann zeros
 
+        # Li coefficient: use pipeline output (input-specific) if available
+        li1 = 0.0
+        for obj in (source, target):
+            if hasattr(obj, "structure"):
+                li_coeffs = obj.structure.get("li_coefficients", [])
+                if li_coeffs:
+                    li1 = li_coeffs[0]
+                    break
+        if li1 == 0.0:
+            li1 = self._li_coefficient(n=1)
+
+        blocker = ""
         if not dyadic_ok:
             blocker = "DYADIC_FAILED"
         elif not sturm_ok:
             blocker = "STURM_FAILED"
-        else:
-            blocker = ""
 
         return TransportCertificate(
             certified=dyadic_ok and sturm_ok,
@@ -175,12 +197,17 @@ class CertifiedTransport:
             neighbors = self.engine.manifold.nearest(target_c, n=top_n * 2)
             candidate_names = [n for n, _ in neighbors if n != target_name]
 
+        # Encode target as CodexObject to get eigenvalue structure
+        from tantrium.core.encoder import encode as _enc
+        target_obj = _enc(list(target_c.moments), name=target_name)
+
         results: list[tuple[str, TransportCertificate]] = []
         for name in candidate_names[:top_n * 3]:
             cand_c = self.engine.manifold.concepts.get(name)
             if cand_c is None:
                 continue
-            tc = self.certify(list(target_c.moments), list(cand_c.moments))
+            cand_obj = _enc(list(cand_c.moments), name=name)
+            tc = self.certify(target_obj, cand_obj)
             results.append((name, tc))
 
         # Sort: certified first, then by zeta_distance
@@ -192,6 +219,58 @@ class CertifiedTransport:
         )
 
     # ── Spectral decomposition ───────────────────────────────────────────────
+
+    def _obj_to_cells(self, obj, prefix: str) -> list:
+        """CodexObject → Cell objects from eigenvalue spectrum (pipeline output).
+
+        Pipeline L2.5 (DALET) computes the eigenvalue spectrum σ(G).
+        Each eigenvalue = one spectral mode of the object:
+          mass = λ_i / Σλ   (spectral weight — how much this mode contributes)
+          diff = int(λ_i/λ_max * 10)  (0=degenerate/small, 10=dominant)
+          p = rank (1=most dominant eigenvalue, 2=second, ...)
+
+        This makes dyadic transport sensitive to actual molecular topology:
+          - benzene: [1.63, 1.63, 1.63, ...] → uniform cells (symmetric ring)
+          - aspirin: [1.42, 0.8, 0.5, ...]   → asymmetric cells (complex structure)
+          - ethanol: [2.72, 0.13, 0.0, ...]  → single dominant mode (simple chain)
+
+        Falls back to _moments_to_cells() if no eigenvalue structure available.
+        """
+        from tantrium.certificates.certificate import Cell
+
+        # Extract eigenvalues from CodexObject structure (set by pipeline)
+        eigenvalues: list[float] = []
+        if hasattr(obj, "structure") and obj.structure:
+            eigenvalues = [e for e in obj.structure.get("eigenvalues", []) if e > 1e-10]
+
+        if not eigenvalues:
+            # Fallback: use moments (for Concept objects from manifold)
+            moments = list(obj.moments) if hasattr(obj, "moments") else (obj if isinstance(obj, list) else [])
+            return self._moments_to_cells(moments, prefix)
+
+        lam_max = eigenvalues[0]  # already sorted descending by pipeline
+        lam_sum = sum(eigenvalues) or 1.0
+
+        # Quantize masses to /1000 for stable exact arithmetic
+        weights = [lam / lam_sum for lam in eigenvalues[:7]]
+        quant = [round(w * 1000) for w in weights]
+        residual = 1000 - sum(quant)
+        if quant:
+            quant[0] = max(0, quant[0] + residual)
+
+        cells = []
+        for k, (mass_q, lam) in enumerate(zip(quant, eigenvalues[:7])):
+            if mass_q <= 0:
+                continue
+            diff = max(0, min(10, int(lam / lam_max * 10)))
+            cells.append(Cell.make(
+                f"{prefix}_mode_{k}",
+                Fraction(mass_q, 1000),
+                diff=diff,
+                p=k + 1,
+                q=1,
+            ))
+        return cells
 
     def _moments_to_cells(self, moments: list, prefix: str) -> list:
         """Moments μ₁..μ₇ → Cell objects with exact rational masses.
