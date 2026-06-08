@@ -47,6 +47,14 @@ from tantrium.perception.generate import (
     tone,
     white_noise,
 )
+from tantrium.perception.crypto import (
+    analyze,
+    achilles,
+    bytes_to_signal,
+    count_repeated_blocks,
+    CryptoReading,
+    AchillesReading,
+)
 
 __all__ = [
     "encode_signal",
@@ -62,4 +70,11 @@ __all__ = [
     "concentric_image",
     "checkerboard_image",
     "noise_image",
+    # Kriptografik yapı okuyucu (savunma / zafiyet tespiti)
+    "analyze",
+    "achilles",
+    "bytes_to_signal",
+    "count_repeated_blocks",
+    "CryptoReading",
+    "AchillesReading",
 ]
