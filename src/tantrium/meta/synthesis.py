@@ -216,6 +216,10 @@ class ConceptSynthesizer:
                 if certified:
                     self.engine.manifold.add_unchecked(bridge_concept)
                     self.engine.tau.add_node(bridge_concept)
+                    try:
+                        self.engine.auto_persist()
+                    except Exception:
+                        pass
             except Exception:
                 certified = False
                 paradigms_passed = 0
@@ -340,6 +344,12 @@ class ConceptSynthesizer:
         manifold_after = len(self.engine.manifold.concepts)
         tau_after = sum(len(v) for v in self.engine.tau.edges.values())
         gaps_filled = sum(1 for e in created if e.certified)
+
+        if gaps_filled > 0:
+            try:
+                self.engine.auto_persist()
+            except Exception:
+                pass
 
         return GenesisReport(
             concepts_created=created,

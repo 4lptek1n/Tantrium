@@ -39,7 +39,7 @@ src/tantrium/          ← pip install -e . ile kurulu paket
   reasoning/           ← NecessityEngine, reasoner, inference, thinker...
   research/            ← ProofLoop, explorer, researcher, ingest, goal, actor
   language/            ← CertifiedGenerator, Speaker, LanguageBootstrap
-  meta/                ← MetaParadigm, MomentTopology
+  meta/                ← MetaParadigm, MomentTopology, CosmicVision, ConceptSynthesizer
 
 tantrium/              ← Research OS (SADECE subprocess ile erişilir)
   research_os/         ← run_campaigns()
@@ -144,6 +144,13 @@ ai.close(domain="math_kernel", inject=True)    # → NecessityReport
 ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, ...}
 ai.think("protein folding")                    # → ThinkingResult
 ai.discover("EGFR", top_k=5)                   # → molekül keşfi
+
+# Meta (tanrısal göz & sentez)
+ai.vision("prime")                             # → CosmicFrame (geçmiş/şimdi/gelecek)
+ai.bridge("theorem", "proof")                  # → BridgeResult (zorunlu köprü kavramı)
+ai.genesis(max_gaps=5)                         # → GenesisReport (manifold kendi kendini büyütür)
+ai.resonate("zeta", "riemann")                 # → ResonanceResult (harmonik oran skoru)
+ai.energy("prime", temperature=1.0)            # → EnergyProfile (Gibbs serbest enerjisi)
 ```
 
 ---
