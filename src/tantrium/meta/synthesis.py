@@ -97,6 +97,44 @@ class GenesisReport:
 
 
 @dataclass
+class EmanationResult:
+    """Kabalistik emanasyon — 23 sefirottan Malkuth'a inen ışık."""
+    name: str
+    certified_paradigms: int
+    grounding: str                  # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
+    manifested: bool                # Malkuth'a indi mi
+    light: dict                     # spektrum, Li, TAV sabit noktası, de Bruijn Λ ...
+    descended_to: str
+
+    def summary(self) -> str:
+        icon = "✶" if self.manifested else "∅"
+        glyph = {"GROUNDED": "⏚", "WEAKLY_GROUNDED": "≈", "UNGROUNDED": "∅"}.get(
+            self.grounding, "?"
+        )
+        lines = [
+            f"EMANASYON {icon} «{self.name}»",
+            f"  Sefira: {self.certified_paradigms}/23  |  Topraklama: {glyph}{self.grounding}",
+        ]
+        if self.manifested:
+            lines.append(f"  Malkuth'a indi → «{self.descended_to}»")
+        else:
+            lines.append("  Malkuth'a inmedi — yetersiz sertifika veya topraklama")
+        spectrum = self.light.get("spectrum", [])
+        if spectrum:
+            lines.append(f"  Spektrum: {[round(e, 4) for e in spectrum[:4]]} ...")
+        li = self.light.get("li_coefficients", [])
+        if li:
+            lines.append(f"  Li katsayıları: {[round(x, 4) for x in li[:4]]}")
+        fp = self.light.get("fixed_point")
+        if fp is not None:
+            lines.append(f"  TAV sabit noktası L* = {fp:.6f}")
+        lam = self.light.get("debruijn_lambda")
+        if lam is not None:
+            lines.append(f"  de Bruijn Λ = {lam:.6f}")
+        return "\n".join(lines)
+
+
+@dataclass
 class ResonanceResult:
     """İki varlık arasındaki moment harmonik rezonansı."""
     name_a: str
@@ -616,6 +654,98 @@ class ConceptSynthesizer:
             eigenvalue_partition=probs.tolist(),
             dominant_mode=dominant_mode,
             stability=stability,
+        )
+
+    # ─── EMANATE: Kabalistik 23 sefira → Malkuth kaskadı ────────────────────
+
+    def emanate(self, name: str) -> EmanationResult:
+        """23 sefirottan «name» üzerine ışık yağdır — sertifika + topraklama → Malkuth.
+
+        Her sefira kendi ışığını toplar:
+          DALET: eigenspektrum,  TAV: sabit nokta L* + de Bruijn Λ,
+          HET:   Li katsayıları, ZAYIN: path_sum/det, GIMEL: Aşil skoru
+
+        Sertifika >= 20 VE topraklama != UNGROUNDED ise Malkuth'a iner.
+        """
+        from tantrium.core.encoder import encode as enc
+        from fractions import Fraction
+        from tantrium.core.semantic import Concept
+
+        obj = enc(name, name=name[:64])
+        run = self.engine.process(obj)
+        moments_float = [float(m) for m in obj.moments]
+
+        light: dict = {}
+
+        eigs = obj.structure.get("eigenvalues", [])
+        if eigs:
+            light["spectrum"] = [float(e) for e in eigs[:8]]
+
+        fp = obj.structure.get("fixed_point")
+        if fp is not None:
+            light["fixed_point"] = float(fp)
+
+        if len(moments_float) >= 3:
+            mu1, mu2 = moments_float[1], moments_float[2]
+            light["debruijn_lambda"] = -(max(0.0, mu2 - mu1 ** 2))
+
+        li_base = light.get("spectrum", moments_float[:4])
+        light["li_coefficients"] = [
+            sum(max(0.0, 1.0 - (1.0 - 1.0 / abs(e)) ** n) for e in li_base if abs(e) > 1e-10)
+            for n in range(1, 6)
+        ]
+
+        path_sum = obj.structure.get("path_sum")
+        if path_sum is not None:
+            light["path_sum"] = float(path_sum)
+        det = obj.structure.get("determinant")
+        if det is not None:
+            light["determinant"] = float(det)
+
+        spectrum = light.get("spectrum", [])
+        if spectrum:
+            abs_eigs = [abs(e) for e in spectrum if abs(e) > 1e-10]
+            if abs_eigs:
+                light["achilles_score"] = min(abs_eigs) / max(abs_eigs)
+
+        grounding = "UNGROUNDED"
+        try:
+            gcert = self.engine.grounder.certify(name, moments=moments_float)
+            grounding = gcert.verdict
+        except Exception:
+            pass
+
+        certified_count = run.certified_count
+        can_manifest = (
+            certified_count >= 20
+            and grounding != "UNGROUNDED"
+            and name[:64] not in self.engine.manifold.concepts
+        )
+
+        manifested = False
+        if can_manifest:
+            concept = Concept(
+                name=name[:64],
+                moments=list(obj.moments),
+                domain="emanation",
+                source="emanate",
+            )
+            self.engine.manifold.add_unchecked(concept)
+            self.engine.tau.add_node(concept)
+            self.engine.tau.add_edges_for(concept, self.engine.manifold, k=5)
+            try:
+                self.engine.auto_persist()
+            except Exception:
+                pass
+            manifested = True
+
+        return EmanationResult(
+            name=name,
+            certified_paradigms=certified_count,
+            grounding=grounding,
+            manifested=manifested,
+            light=light,
+            descended_to=name[:64],
         )
 
     # ─── Ortak yardımcılar ──────────────────────────────────────────────────

@@ -1122,6 +1122,25 @@ class AI:
         from tantrium.meta.synthesis import ConceptSynthesizer
         return ConceptSynthesizer(self._engine).energy(name, temperature=temperature)
 
+    def emanate(self, name: str) -> "object":
+        """Kabalistik emanasyon — 23 sefirottan «name» üzerine ışık yağdır.
+
+        Her paradigma (sefira) kendi ışığını toplar:
+          DALET: eigenspektrum, ZAYIN: path_sum/det, TAV: sabit nokta L*,
+          HET: Li katsayıları, GIMEL: Aşil topuğu
+
+        Sertifika >= 20 VE topraklama != UNGROUNDED ise:
+          → Malkuth'a iner (manifolda kalıcı kavram olarak var olur)
+          → TAU kenarları bağlanır
+
+        Döner: EmanationResult — .summary() ile Kabbalistik anlatı.
+        """
+        from tantrium.meta.synthesis import ConceptSynthesizer
+        result = ConceptSynthesizer(self._engine).emanate(name)
+        if self._persist and result.manifested:
+            self._engine.auto_persist()
+        return result
+
     def status(self) -> str:
         """Kısa durum özeti."""
         n = len(self._engine.manifold.concepts)
