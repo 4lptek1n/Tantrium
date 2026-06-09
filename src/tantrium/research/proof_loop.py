@@ -50,10 +50,29 @@ _KEYWORD_TO_CAMPAIGN: dict[str, str] = {
 
 # Kampanya başarı durumu → theorem_graph'ta hangi node'ları sertifikala
 _CAMPAIGN_CERTIFIES: dict[str, list[str]] = {
-    "subresultant_recurrence": ["qjr_degree_j_shift", "qjr_degree_r_step"],
-    "coefficient_frontier":    ["global_coefficient_positivity"],
-    "rh_formalization":        [],
+    "subresultant_recurrence": [
+        "qjr_degree_j_shift", "qjr_degree_r_step",
+        "RESEARCH_OS_LAH_GATE_AB",  # lah bağımlısı
+    ],
+    "lah_gate_ab":          ["RESEARCH_OS_LAH_GATE_AB"],
+    "coefficient_frontier": ["global_coefficient_positivity", "RESEARCH_OS_COEFFICIENT_FRONTIER"],
+    "goldbach_minor_arc":   ["RESEARCH_OS_GOLDBACH_MINOR_ARC"],
+    "rh_formalization":     [],
 }
+
+# Theorem graph'taki açık node → kampanya eşlemesi (doğrudan)
+# LAH_GATE_AB'nin subgap'ı "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR"
+# → önce subresultant_recurrence çalıştır (RECURRENCE_VERIFIED_FINITE döndürür)
+_OPEN_NODE_TO_CAMPAIGN: dict[str, str] = {
+    "RESEARCH_OS_LAH_GATE_AB":          "subresultant_recurrence",
+    "RESEARCH_OS_COEFFICIENT_FRONTIER": "coefficient_frontier",
+    "RESEARCH_OS_GOLDBACH_MINOR_ARC":   "goldbach_minor_arc",
+}
+
+# Hangi theorem graph statüsleri "açık" sayılır (kampanya gerektirir)
+_OPEN_STATUSES: frozenset[str] = frozenset({
+    "REFINED_SUBGAP", "conjectural", "open", "OPEN", "MISSING_PROOF",
+})
 
 # Hangi kampanya statüsleri gerçek sertifikasyon sayılır
 _PROOF_LOOP_CERTIFIABLE: frozenset[str] = frozenset({
@@ -61,6 +80,7 @@ _PROOF_LOOP_CERTIFIABLE: frozenset[str] = frozenset({
     "FORMALIZATION_BOOTSTRAP_READY",
     "NO_STRUCTURAL_GAP",
     "PROVEN_BY_CERTIFICATE",
+    "COMPLETED",
 })
 
 # inject_math_kernel ile aynı küme — bağımlılık-tabanlı auto-certify için
@@ -133,11 +153,36 @@ class ProofLoop:
         domain="theorem" → NecessityEngine'in "math_kernel" modu (theorem: prefix)
         """
         from tantrium.reasoning.necessity import NecessityEngine
-        # NecessityEngine "math_kernel" domain_filter → theorem: prefix kullanır
         ne_domain = "math_kernel" if domain in ("theorem", "math_kernel") else domain
         ne = NecessityEngine(self.engine)
         report = ne.run(domain=ne_domain, inject=True, find_gaps=True)
         return report.manifold_gaps
+
+    def scan_theorem_graph(self) -> list[str]:
+        """Theorem graph'taki açık/REFINED_SUBGAP node'ları bul → kampanya isimleri döndür.
+
+        Geometry-based gap detection'ın yanı sıra doğrudan theorem_graph'ı tarar.
+        Açık Research OS hedefleri buradan yakalanır.
+        """
+        if not self.graph_path.exists():
+            return []
+        try:
+            with open(self.graph_path) as f:
+                data = json.load(f)
+        except Exception:
+            return []
+
+        campaigns: list[str] = []
+        seen: set[str] = set()
+        for node_id, node in data.get("nodes", {}).items():
+            status = node.get("status", node.get("proof_status", ""))
+            if status not in _OPEN_STATUSES:
+                continue
+            campaign = _OPEN_NODE_TO_CAMPAIGN.get(node_id)
+            if campaign and campaign not in seen:
+                campaigns.append(campaign)
+                seen.add(campaign)
+        return campaigns
 
     def _count_necessity_edges(self) -> int:
         """Mevcut TAU grafındaki toplam necessity edge sayısı."""
@@ -226,6 +271,8 @@ class ProofLoop:
             for node_id in _CAMPAIGN_CERTIFIES.get(campaign, []):
                 if node_id in nodes and nodes[node_id].get("status") not in _INJECTED_STATUSES:
                     nodes[node_id]["status"] = cert_status
+                    # proof_status da güncelle — inject_math_kernel proof_status'ı önce okur
+                    nodes[node_id]["proof_status"] = cert_status
                     updated += 1
 
         # 2. Bağımlılık tabanlı auto-certify: tüm dep'leri sertifikalı olan
@@ -239,6 +286,7 @@ class ProofLoop:
                     continue
                 if all(nodes.get(d, {}).get("status") in _INJECTED_STATUSES for d in deps):
                     nodes[node_id]["status"] = "certified_local"
+                    nodes[node_id]["proof_status"] = "certified_local"
                     updated += 1
 
         if updated:
@@ -255,12 +303,54 @@ class ProofLoop:
         inject_math_kernel idempotent olduğundan zaten manifoldda olanları atlar.
         Döner: manifolda eklenen YENİ kavram sayısı.
         """
-        from tantrium.domains.math_kernel import inject_math_kernel
+        from tantrium.domains.math_kernel import inject_math_kernel, _CERTIFIED_STATUSES, _GRAPH_PATH, _GRAPH_PATH_ALT
+        from tantrium.core.semantic import Concept
+        from tantrium.graph.knowledge_graph import KnowledgeNode
+        import pathlib
+
+        # Standart inject_math_kernel'i çalıştır
         before = len(self.engine.manifold.concepts)
         try:
             inject_math_kernel(self.engine)
         except Exception:
             pass
+        after_inject = len(self.engine.manifold.concepts)
+
+        # Eğer yeni kavram eklenemediyse, manuel tarama yap.
+        # inject_math_kernel aynı session'da encode edilen kavramları atlıyor olabilir.
+        if after_inject == before:
+            path = _GRAPH_PATH if _GRAPH_PATH.exists() else _GRAPH_PATH_ALT
+            if path.exists():
+                import json
+                with open(path) as f:
+                    graph = json.load(f)
+                for node_id, node in graph.get("nodes", {}).items():
+                    status = node.get("proof_status") or node.get("status") or ""
+                    if status not in _CERTIFIED_STATUSES:
+                        continue
+                    concept_name = f"theorem:{node_id}"
+                    if concept_name in self.engine.manifold.concepts:
+                        continue
+                    statement = node.get("statement") or node.get("title") or node_id
+                    try:
+                        raw = self.engine.encoder.encode(statement, name=concept_name)
+                        concept = Concept(
+                            name=concept_name,
+                            moments=list(raw.moments),
+                            domain="math_kernel",
+                            source="theorem_graph",
+                        )
+                        if concept.is_real():
+                            self.engine.manifold.add_unchecked(concept)
+                            self.engine.tau.nodes[concept_name] = KnowledgeNode(
+                                name=concept_name,
+                                domain="math_kernel",
+                                source="theorem_graph",
+                                sr=float(raw.moments[0]) if raw.moments else 1.0,
+                            )
+                    except Exception:
+                        pass
+
         return len(self.engine.manifold.concepts) - before
 
     def _read_theorem_graph_statuses(self) -> dict[str, str]:
@@ -287,12 +377,15 @@ class ProofLoop:
         tau_edges_before = sum(len(v) for v in self.engine.tau.edges.values())
         necessity_before = self._count_necessity_edges()
 
-        # 1. Manifold boşluklarını bul
+        # 1. Manifold boşluklarını bul (geometry-based)
         gaps = self.scan_gaps(domain=domain)
         n_gaps = len(gaps)
 
-        # 2. Kampanya seçimi ve başlatma
-        campaigns = self._gap_to_campaigns(gaps)
+        # 2. Theorem graph'tan doğrudan açık teoremler (REFINED_SUBGAP vb.)
+        graph_campaigns = self.scan_theorem_graph()
+
+        # 3. Kampanya seçimi: geometry gaps + theorem graph açık node'ları
+        campaigns = list(dict.fromkeys(self._gap_to_campaigns(gaps) + graph_campaigns))
         statuses: dict[str, str] = {}
         for campaign in campaigns:
             statuses[campaign] = self.launch_campaign(campaign)
@@ -338,7 +431,7 @@ class ProofLoop:
             report.cycles.append(cycle)
             report.total_new_concepts += cycle.new_concepts
             report.total_new_edges += cycle.new_tau_edges
-            if cycle.new_concepts == 0 and not cycle.campaigns_launched:
+            if cycle.new_concepts == 0 and not cycle.campaigns_launched and not self.scan_theorem_graph():
                 break  # Daha öğrenecek bir şey yok
 
         # Kalan boşluklar
