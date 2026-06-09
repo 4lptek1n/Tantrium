@@ -95,6 +95,40 @@ Gerçek ayrımcılık CertifiedTransport'ta: benzene DYADIC_FAILED, aspirin CERT
 
 ---
 
+## Topraklama Ekseni (Sertifikasyonun 2. Ekseni)
+
+**Sorun:** 23 paradigma YAPISAL geçerliliği ölçer — G=AᵀA daima PSD, yani
+*her şey* "var" çıkar. Rastgele harf çöpü `xqzwvbnmkjhgfd` de ATP de 23/23
+alıyordu. Sertifika tek başına ELEMİYORDU. Anlam karakterlerde değil —
+**referansta ve ilişkilerde**.
+
+**Çözüm:** `core/grounding.py` — `GroundingCertifier`. İki bağımsız sinyal:
+
+```
+1. DOĞRUDAN: token TAU'da köklü düğüm mü? (çıkan+gelen kenar ≥ 3)
+   protein=137, energy=160, EGFR=20 köklü ; çöp=0 topraksız
+2. REZONANS: bilinmeyen token sıkı yarıçapta (L1 ≤ 0.5) köklü + tutarlı
+   kümeye mi düşüyor? (ham komşuluk YETMEZ — 40k yoğun manifoldda her nokta
+   bir komşuya yakın; yarıçap gürültüyü eler)
+```
+
+Yargı: `GROUNDED` (köklü/rezonans) | `WEAKLY_GROUNDED` (tek komşu, belirsiz)
+| `UNGROUNDED` (geçerli ama yalıtık = anlamsız).
+
+```python
+ai.grounding("protein")  # → GROUNDED, 137 ilişki
+ai.grounding("ATP")      # → GROUNDED, biyokimya kümesine rezonans (öğrenilmemiş token)
+ai.grounding("florbglomp")  # → UNGROUNDED, "anlamsız bir nokta"
+```
+
+`ai.ask()` artık `grounding`+`grounding_score` taşır. `ai("...")` topraksız
+nokta için komşu LİSTELEMEZ (yanıltıcı olur) — dürüstçe "anlamsız" der.
+`engine.grounder` startup'ta hazır. Tests: `test_grounding.py` (11).
+
+ÖNEMLİ: Topraksız-ama-geçerli token = sistemin öğrenmesi gereken kör nokta.
+
+---
+
 ## CertifiedTransport
 
 ```
@@ -151,7 +185,8 @@ ai(noise_image())                              # → str: görüntü → dil
 ai(b"\x00\xff...")                             # → str: kripto yapı analizi
 ai.run(cycles=3, time_limit_s=600)             # → dict: KAPALI DÖNGÜ (tüm büyüme adımları)
                                                #   blind_spots → auto_research → close → genesis → prove → persist
-ai.ask("EGFR")                                 # → CertificationRun (23 paradigma, ham)
+ai.ask("EGFR")                                 # → AskResult (23 paradigma + topraklama ekseni)
+ai.grounding("protein")                        # → GroundingCertificate (GROUNDED/WEAKLY/UNGROUNDED)
 ai.transport("CCO", "aspirin", use_smiles=True)# → TransportCertificate
 ai.rank("EGFR", top_n=10)                      # → TransportRanking
 ai.prove(max_cycles=2)                         # → LoopReport (kapalı döngü)

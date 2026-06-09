@@ -91,6 +91,10 @@ class CertificationEngine:
         self._load_spectral_cache()
         from tantrium.language.speaker import Speaker
         self.speaker = Speaker(manifold=self.manifold)
+        # Topraklama ekseni: yapısal geçerlilik (23 paradigma) yanında
+        # "bilinen referanslara bağlı mı?" sorusunu cevaplar.
+        from tantrium.core.grounding import GroundingCertifier
+        self.grounder = GroundingCertifier(self)
 
     # ─── Core: process any object ──────────────────────────────────────────
 

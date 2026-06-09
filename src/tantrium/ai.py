@@ -48,11 +48,14 @@ class AskResult:
     paradigms_total: int
     gaps: list[str]
     nearest: list[str]        # en yakın manifold kavramları
+    grounding: str = "UNKNOWN"   # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
+    grounding_score: float = 0.0
 
     def __str__(self) -> str:
         cert = "✓" if self.certified else "✗"
+        g = {"GROUNDED": "⏚", "WEAKLY_GROUNDED": "≈", "UNGROUNDED": "∅"}.get(self.grounding, "?")
         return (
-            f"{cert} [{self.paradigms_passed}/{self.paradigms_total}]  {self.answer}"
+            f"{cert} [{self.paradigms_passed}/{self.paradigms_total}] {g}{self.grounding}  {self.answer}"
             + (f"\n  gaps: {', '.join(self.gaps)}" if self.gaps else "")
         )
 
@@ -256,12 +259,19 @@ class AI:
         # Sertifika anlatımı
         narrative = self._engine.speaker.narrate(run, detail="brief")
 
-        # Manifold komşuları — domain-çeşitli
-        concept = Concept(name=nm, moments=list(obj.moments), domain="input")
-        neighbors = self._engine.manifold.nearest(concept, n=30)
-        diverse = self._diverse_names([n for n, _ in neighbors], max_per_domain=2, total=4)
-        if diverse:
-            narrative += f"\n\nManifoldda en yakın: {', '.join(diverse)}"
+        # Topraklama: yapısal geçerlilik tek başına anlamı garantilemez.
+        # Sistem bildiğini gürültüden dürüstçe ayırsın.
+        gcert = self._engine.grounder.certify(nm, moments=list(obj.moments))
+        narrative += f"\n\n{gcert.summary()}"
+
+        # Manifold komşuları — yalnızca topraksız DEĞİLSE göster
+        # (topraksız nokta için komşu listelemek yanıltıcı olur).
+        if gcert.verdict != "UNGROUNDED":
+            concept = Concept(name=nm, moments=list(obj.moments), domain="input")
+            neighbors = self._engine.manifold.nearest(concept, n=30)
+            diverse = self._diverse_names([n for n, _ in neighbors], max_per_domain=2, total=4)
+            if diverse:
+                narrative += f"\nManifoldda en yakın: {', '.join(diverse)}"
 
         return narrative
 
@@ -380,6 +390,14 @@ class AI:
 
     # ── Temel: sertifika + akıl yürütme ─────────────────────────────────────
 
+    def grounding(self, token: str) -> "object":
+        """Topraklama sertifikası — token bilinen referanslara bağlı mı?
+
+        Yapısal sertifika (23 paradigma) her şeyi geçirir; bu eksen ELER:
+        GROUNDED (köklü/rezonans) | WEAKLY_GROUNDED | UNGROUNDED (anlamsız).
+        """
+        return self._engine.grounder.certify(token)
+
     def ask(self, query: str) -> AskResult:
         """Herhangi bir girdi → certify → manifold konumu + doğal dil yanıt."""
         from tantrium.core.semantic import Concept
@@ -402,9 +420,14 @@ class AI:
             if nearest:
                 location_text = f"Manifold komşuları: {', '.join(nearest[:3])}"
 
+        # Topraklama ekseni: yapısal geçerlilik tek başına elemiyor (her şey PSD).
+        # "Bu token bilinen referanslara bağlı mı, yoksa geçerli ama anlamsız mı?"
+        gcert = self._engine.grounder.certify(query[:64], moments=list(obj.moments))
+
         answer = cert_summary
         if location_text:
             answer = f"{cert_summary}\n{location_text}"
+        answer = f"{answer}\n{gcert.summary()}"
 
         return AskResult(
             query=query,
@@ -414,6 +437,8 @@ class AI:
             paradigms_total=run.total,
             gaps=gaps,
             nearest=nearest,
+            grounding=gcert.verdict,
+            grounding_score=gcert.score,
         )
 
     def reason(self, query: str, depth: int = 2) -> ReasonResult:
