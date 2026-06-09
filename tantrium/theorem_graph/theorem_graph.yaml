@@ -299,9 +299,9 @@
       ],
       "external_formalization_status": "PENDING",
       "node_id": "RESEARCH_OS_LAH_GATE_AB",
-      "proof_status": "REFINED_SUBGAP",
+      "proof_status": "RECURRENCE_VERIFIED_FINITE",
       "statement": "The research OS refines the Lah/Gate B blocker into a sharper subresultant recurrence subgap.",
-      "status": "REFINED_SUBGAP",
+      "status": "RECURRENCE_VERIFIED_FINITE",
       "theorem_file": "results/research_os/campaigns/lah_gate_ab/human_review_packet.md",
       "updated_at": "2026-05-02T01:38:40Z",
       "verification_scope": "internal_certificate_system"
