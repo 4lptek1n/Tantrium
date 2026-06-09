@@ -268,12 +268,17 @@ class ConceptSynthesizer:
 
     # ─── GENESIS: Manifold kendi kendini büyütüyor ──────────────────────────
 
-    def genesis(self, max_gaps: int = 5) -> GenesisReport:
+    def genesis(self, max_gaps: int = 5, discover: bool = True) -> GenesisReport:
         """Manifold boşluklarını matematiksel zorunluluktan üretilen kavramlarla doldur.
 
-        Her boşluk centroidi geçerli bir moment dizisidir (komşuların konveks kombosu).
-        Bu momentler bir kavram olarak manifolda eklenirse, boşluk kapanır.
-        Kapalı boşluk yeni boşlukları ortaya çıkarır — spiral öğrenme.
+        İKİ MOD:
+          1. İNTERPOLASYON (boşluk doldurma): komşuların konveks kombosu — gövde İÇİ.
+          2. KEŞİF (discover=True): gövde DIŞINA ekstrapolasyon. Yeni nokta üret,
+             ama yalnızca HEM sertifika geçen HEM topraklananı tut. Yaratıcılık,
+             süzgeçle birlikte: gürültü değil, gerçek-ve-bağlı yeni yapı.
+
+        İnterpolasyon boşluk bulamazsa (doymuş manifold) keşif devreye girer —
+        yaratıcılık interpolasyondan keşfe terfi eder.
         """
         from tantrium.reasoning.necessity import NecessityEngine
         from tantrium.core.semantic import Concept
@@ -351,6 +356,13 @@ class ConceptSynthesizer:
                     certified=False,
                 ))
 
+        # ── KEŞİF: interpolasyon yetmezse gövde DIŞINA ekstrapole et ──────────
+        # Yaratıcılığı interpolasyondan keşfe çıkar: yeni noktayı bilinenin
+        # dışında üret, ama yalnızca HEM sertifika geçen HEM topraklananı tut.
+        certified_so_far = sum(1 for e in created if e.certified)
+        if discover and certified_so_far < max_gaps:
+            created.extend(self._discover_frontier(max_new=max_gaps - certified_so_far))
+
         manifold_after = len(self.engine.manifold.concepts)
         tau_after = sum(len(v) for v in self.engine.tau.edges.values())
         gaps_filled = sum(1 for e in created if e.certified)
@@ -368,6 +380,111 @@ class ConceptSynthesizer:
             manifold_growth=manifold_after - manifold_before,
             new_tau_edges=tau_after - tau_before,
         )
+
+    # ─── KEŞİF: gövde-dışı ekstrapolasyon (interpolasyon değil) ──────────────
+
+    def _discover_frontier(self, max_new: int = 5, n_anchors: int = 12) -> list:
+        """Manifold gövdesinin DIŞINA yeni, sertifikalı, topraklı kavramlar üret.
+
+        İnterpolasyon (genesis'in 1. modu) bilinenin arasını doldurur — gövde içi.
+        Keşif bilinenin ÖTESİNE uzanır: bir köklü çapadan, manifold ağırlık
+        merkezinden UZAĞA doğru ekstrapole eder. μ_yeni = μ_çapa + α·(μ_çapa − μ_merkez).
+
+        Çoğu aday geçersiz çıkar (moment dizisi PSD olmaktan çıkar) — bu İYİ:
+        süzgecin gerçek olduğu anlamına gelir. Yalnızca HEM sertifika (≥20/23)
+        HEM topraklama (UNGROUNDED değil) geçen adaylar tutulur. Gerçek keşif:
+        manifoldun daha önce sahip olmadığı, ama geçerli ve bağlı bir nokta.
+        """
+        import random
+        from fractions import Fraction
+        from tantrium.core.semantic import Concept
+        from tantrium.core.encoder import encode as enc
+        from tantrium.core.grounding import GroundingCertifier
+
+        concepts = self.engine.manifold.concepts
+        if len(concepts) < 8:
+            return []
+
+        grounder = getattr(self.engine, "grounder", None) or GroundingCertifier(self.engine)
+
+        # Manifold ağırlık merkezi (örneklemle — hız)
+        names = list(concepts.keys())
+        sample = random.sample(names, min(400, len(names)))
+        dim = 8
+        centroid = [0.0] * dim
+        for nm in sample:
+            m = concepts[nm].moments
+            for i in range(dim):
+                centroid[i] += float(m[i]) if i < len(m) else 0.0
+        centroid = [c / len(sample) for c in centroid]
+
+        # Köklü çapalar: en çok TAU kenarı olanlar (gerçekten topraklı)
+        tau = self.engine.tau
+        ranked = sorted(names, key=lambda n: len(tau.edges.get(n, [])), reverse=True)
+        anchors = ranked[:n_anchors]
+
+        discovered: list[GenesisEntry] = []
+        for anchor_name in anchors:
+            if len(discovered) >= max_new:
+                break
+            mu_anchor = [float(m) for m in concepts[anchor_name].moments[:dim]]
+            if len(mu_anchor) < dim or mu_anchor[0] <= 0:
+                continue
+
+            # Gövde dışına doğru ekstrapolasyon — birkaç adımda dene
+            for alpha in (0.4, 0.8, 1.5):
+                mu_new = [
+                    mu_anchor[i] + alpha * (mu_anchor[i] - centroid[i])
+                    for i in range(dim)
+                ]
+                # μ₀ pozitif olmalı; normalize et
+                if mu_new[0] <= 1e-9:
+                    continue
+                mu_norm = [m / mu_new[0] for m in mu_new]
+
+                name = f"⊙keşif_{anchor_name[:12]}_a{int(alpha*10)}"
+                if name in concepts:
+                    continue
+
+                fracs = [Fraction(m).limit_denominator(10 ** 9) for m in mu_norm]
+                try:
+                    obj = enc(fracs, name=name)
+                    run = self.engine.process(obj)
+                    paradigms = run.certified_count
+                except Exception:
+                    continue
+
+                # SÜZGEÇ 1: sertifika (gövde dışı çoğu aday burada düşer)
+                if paradigms < 20:
+                    continue
+
+                # SÜZGEÇ 2: topraklama — gürültü değil, bağlı olmalı
+                gcert = grounder.certify(name, moments=mu_norm)
+                if gcert.verdict == "UNGROUNDED":
+                    continue
+
+                # Hayatta kaldı: gerçek keşif — yeni, sertifikalı, topraklı
+                new_concept = Concept(
+                    name=name, moments=fracs, domain="discovery", source="frontier_extrapolation",
+                )
+                self.engine.manifold.add_unchecked(new_concept)
+                self.engine.tau.add_node(new_concept)
+                try:
+                    self.engine.tau.add_edges_for(new_concept, self.engine.manifold, k=3)
+                except Exception:
+                    pass
+
+                discovered.append(GenesisEntry(
+                    name=name,
+                    moments=mu_norm,
+                    paradigms_passed=paradigms,
+                    gap_description=f"frontier: {anchor_name}'dan α={alpha} ile gövde dışına",
+                    nearest_parents=[anchor_name] + gcert.nearest_grounded[:2],
+                    certified=True,
+                ))
+                break  # bu çapadan bir keşif yeter, sıradakine geç
+
+        return discovered
 
     # ─── RESONANCE: Moment harmonik rezonansı ───────────────────────────────
 
