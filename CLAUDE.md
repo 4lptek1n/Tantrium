@@ -142,7 +142,16 @@ import tantrium
 ai = tantrium.AI()
 
 ai.status()                                    # kavram/edge/paradigma sayısı
-ai.ask("EGFR")                                 # → CertificationRun (23 paradigma)
+ai("ATP")                                      # → str: sertifika + manifold konumu (Türkçe)
+ai("protein folding nedir?")                   # → str: düşünce zinciri (ThinkingResult.narrate)
+ai("c1ccccc1")                                 # → str: SMILES sertifikası
+ai("ATP", "ADP")                               # → str: transport + karşılaştırma
+ai(tone(440))                                  # → str: algı → dil ("Bir sinyal algıladım...")
+ai(noise_image())                              # → str: görüntü → dil
+ai(b"\x00\xff...")                             # → str: kripto yapı analizi
+ai.run(cycles=3, time_limit_s=600)             # → dict: KAPALI DÖNGÜ (tüm büyüme adımları)
+                                               #   blind_spots → auto_research → close → genesis → prove → persist
+ai.ask("EGFR")                                 # → CertificationRun (23 paradigma, ham)
 ai.transport("CCO", "aspirin", use_smiles=True)# → TransportCertificate
 ai.rank("EGFR", top_n=10)                      # → TransportRanking
 ai.prove(max_cycles=2)                         # → LoopReport (kapalı döngü)

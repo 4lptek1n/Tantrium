@@ -32,60 +32,60 @@ from tantrium.core.semantic import Concept, SemanticManifold
 # ─── Paradigm sentence templates ──────────────────────────────────────────
 
 _CERTIFIED_TEMPLATES: dict[str, str] = {
-    "ALEPH":  "{name} exists in the real manifold. Its moment sequence is positive semi-definite.",
-    "BET":    "All transformations of {name} are information-lossless. Nothing is lost.",
-    "GIMEL":  "The Achilles point of {name} is identified. The optimal move is known.",
-    "DALET":  "The spectral structure of {name} is non-negative. Eigenvalues ≥ 0.",
-    "HE":     "The system {name} has a Lyapunov attractor. It flows toward a stable state.",
-    "VAV":    "The tensor composition of {name} is dimensionally consistent.",
-    "ZAYIN":  "The path system of {name} satisfies the LGV lemma. Paths are non-intersecting.",
-    "HET":    "The gradient of {name} flows downhill. The potential is monotone decreasing.",
-    "TET":    "The cross-ratio of {name} is preserved. Projective invariance holds.",
-    "YOD":    "The minimum description length of {name} is certified. MDL principle satisfied.",
-    "KAF":    "The map of {name} is injective. Every element has a unique image.",
-    "LAMED":  "The observable structure of {name} is locally visible. No hidden degrees.",
-    "MEM":    "The gauge equivalence classes of {name} are identified. Indistinguishables merged.",
-    "NUN":    "The dimensional multiplicativity of {name} is certified.",
-    "SHIN":   "The optimal action for {name} is chosen. Maximum score selected.",
-    "AYIN":   "The distinct pairs in {name} are separable by measurement.",
-    "PE":     "The semantic map of {name} is defined. Meaning is geometrically located.",
-    "TSADI":  "The sensor-certificate chain of {name} is verified. Hash integrity confirmed.",
-    "KUF":    "The topological index of {name} is 18 (Z₃ × C₆). Index certified.",
-    "RESH":   "The partial trace of {name} is well-defined. Subsystem information bounded.",
-    "EMET":   "{name} is consistent. All certified claims hold. No contradictions detected.",
-    "TAV":    "The fixed point of {name} is reached. The system has converged.",
-    "SU3":    "The SU(3) symmetry of {name} is certified. Z₃ center of order 3.",
+    "ALEPH":  "{name} gerçek manifoldda var. Moment dizisi pozitif yarı-tanımlı.",
+    "BET":    "{name}'nin tüm dönüşümleri bilgi-yitirimsiz. Hiçbir şey kaybolmuyor.",
+    "GIMEL":  "{name}'nin Aşil noktası belirlendi. Optimal hamle biliniyor.",
+    "DALET":  "{name}'nin spektral yapısı negatif-olmayan. Özdeğerler ≥ 0.",
+    "HE":     "{name} sisteminin bir Lyapunov çekicisi var. Kararlı duruma akıyor.",
+    "VAV":    "{name}'nin tensör bileşimi boyutsal olarak tutarlı.",
+    "ZAYIN":  "{name}'nin yol sistemi LGV lemmasını sağlıyor. Yollar kesişmiyor.",
+    "HET":    "{name}'nin gradyanı aşağı akıyor. Potansiyel monoton azalıyor.",
+    "TET":    "{name}'nin çapraz oranı korunuyor. Projektif değişmezlik sağlanıyor.",
+    "YOD":    "{name}'nin minimum tanımlama uzunluğu sertifikalandı. MDL ilkesi sağlandı.",
+    "KAF":    "{name}'nin haritası örten. Her elementin tek bir görüntüsü var.",
+    "LAMED":  "{name}'nin gözlemlenebilir yapısı yerel olarak görünür. Gizli derece yok.",
+    "MEM":    "{name}'nin ayar denklik sınıfları belirlendi. Ayırt edilemezler birleştirildi.",
+    "NUN":    "{name}'nin boyutsal çoğulculuğu sertifikalandı.",
+    "SHIN":   "{name} için optimal eylem seçildi. Maksimum skor elde edildi.",
+    "AYIN":   "{name}'deki farklı çiftler ölçümle ayrılabilir.",
+    "PE":     "{name}'nin anlamsal haritası tanımlı. Anlam geometrik olarak konumlandı.",
+    "TSADI":  "{name}'nin sensör-sertifika zinciri doğrulandı. Hash bütünlüğü onaylandı.",
+    "KUF":    "{name}'nin topolojik indeksi 18 (Z₃ × C₆). İndeks sertifikalandı.",
+    "RESH":   "{name}'nin kısmi izi iyi tanımlı. Alt-sistem bilgisi sınırlı.",
+    "EMET":   "{name} tutarlı. Tüm sertifikalı iddialar geçerli. Çelişki yok.",
+    "TAV":    "{name}'nin sabit noktasına ulaşıldı. Sistem yakınsadı.",
+    "SU3":    "{name}'nin SU(3) simetrisi sertifikalandı. Z₃ merkezi, mertebe 3.",
 }
 
 _GAP_TEMPLATES: dict[str, str] = {
-    "ALEPH":  "{name} does not exist in the real manifold. Gap: {gap}.",
-    "BET":    "Information loss detected in {name}. Gap: {gap}.",
-    "GIMEL":  "The Achilles point of {name} is not identified. Gap: {gap}.",
-    "DALET":  "Spectral non-negativity of {name} is not certified. Gap: {gap}.",
-    "HE":     "No Lyapunov attractor found for {name}. Gap: {gap}.",
-    "VAV":    "Tensor composition of {name} fails dimensionality check. Gap: {gap}.",
-    "ZAYIN":  "LGV path system of {name} is unverified. Gap: {gap}.",
-    "HET":    "Gradient flow of {name} is not downhill. Gap: {gap}.",
-    "TET":    "Cross-ratio invariance of {name} is not certified. Gap: {gap}.",
-    "YOD":    "Minimum description length of {name} is unresolved. Gap: {gap}.",
-    "KAF":    "The map of {name} has a collision. Injectivity not certified. Gap: {gap}.",
-    "LAMED":  "Observable structure of {name} is not locally visible. Gap: {gap}.",
-    "MEM":    "Gauge classes of {name} are not identified. Gap: {gap}.",
-    "NUN":    "Dimensional multiplicativity of {name} is not certified. Gap: {gap}.",
-    "SHIN":   "No optimal action selected for {name}. Gap: {gap}.",
-    "AYIN":   "Distinct pairs in {name} are not measurably separable. Gap: {gap}.",
-    "PE":     "Semantic map of {name} is not defined. Gap: {gap}.",
-    "TSADI":  "Sensor-certificate integrity of {name} is broken. Gap: {gap}.",
-    "KUF":    "Topological index of {name} is not 18. Gap: {gap}.",
-    "RESH":   "Partial trace of {name} is not well-defined. Gap: {gap}.",
-    "EMET":   "{name} has a contradiction. Consistency not certified. Gap: {gap}.",
-    "TAV":    "Fixed point of {name} not reached within iteration budget. Gap: {gap}.",
-    "SU3":    "SU(3) symmetry of {name} is not certified. Gap: {gap}.",
+    "ALEPH":  "{name} gerçek manifoldda yok. Boşluk: {gap}.",
+    "BET":    "{name}'de bilgi kaybı tespit edildi. Boşluk: {gap}.",
+    "GIMEL":  "{name}'nin Aşil noktası belirlenemedi. Boşluk: {gap}.",
+    "DALET":  "{name}'nin spektral negatif-olmayanlığı sertifikalanmadı. Boşluk: {gap}.",
+    "HE":     "{name} için Lyapunov çekicisi bulunamadı. Boşluk: {gap}.",
+    "VAV":    "{name}'nin tensör bileşimi boyutluluk testinden geçemiyor. Boşluk: {gap}.",
+    "ZAYIN":  "{name}'nin LGV yol sistemi doğrulanamadı. Boşluk: {gap}.",
+    "HET":    "{name}'nin gradyan akışı yukarı gidiyor. Boşluk: {gap}.",
+    "TET":    "{name}'nin çapraz oran değişmezliği sertifikalanmadı. Boşluk: {gap}.",
+    "YOD":    "{name}'nin minimum tanımlama uzunluğu çözümsüz. Boşluk: {gap}.",
+    "KAF":    "{name}'nin haritasında çakışma var. Örtenlik sertifikalanmadı. Boşluk: {gap}.",
+    "LAMED":  "{name}'nin gözlemlenebilir yapısı yerel olarak görünmüyor. Boşluk: {gap}.",
+    "MEM":    "{name}'nin ayar sınıfları belirlenemedi. Boşluk: {gap}.",
+    "NUN":    "{name}'nin boyutsal çoğulculuğu sertifikalanmadı. Boşluk: {gap}.",
+    "SHIN":   "{name} için optimal eylem seçilemedi. Boşluk: {gap}.",
+    "AYIN":   "{name}'deki farklı çiftler ölçümle ayrılamıyor. Boşluk: {gap}.",
+    "PE":     "{name}'nin anlamsal haritası tanımlanamadı. Boşluk: {gap}.",
+    "TSADI":  "{name}'nin sensör-sertifika bütünlüğü bozuk. Boşluk: {gap}.",
+    "KUF":    "{name}'nin topolojik indeksi 18 değil. Boşluk: {gap}.",
+    "RESH":   "{name}'nin kısmi izi iyi tanımlı değil. Boşluk: {gap}.",
+    "EMET":   "{name}'de çelişki var. Tutarlılık sertifikalanmadı. Boşluk: {gap}.",
+    "TAV":    "{name}'nin sabit noktasına iterasyon bütçesi içinde ulaşılamadı. Boşluk: {gap}.",
+    "SU3":    "{name}'nin SU(3) simetrisi sertifikalanmadı. Boşluk: {gap}.",
 }
 
-_DEFAULT_CERTIFIED = "{name} satisfies paradigm {pid}."
-_DEFAULT_GAP = "{name} does not satisfy paradigm {pid}. Gap: {gap}."
-_DEP_BLOCKED = "Paradigm {pid} of {name} is blocked by an upstream gap ({dep_gap})."
+_DEFAULT_CERTIFIED = "{name}, {pid} paradigmasını sağlıyor."
+_DEFAULT_GAP = "{name}, {pid} paradigmasını sağlamıyor. Boşluk: {gap}."
+_DEP_BLOCKED = "{name}'nin {pid} paradigması bir üst boşlukla engellendi ({dep_gap})."
 
 
 # ─── A single certified statement ────────────────────────────────────────
@@ -176,12 +176,12 @@ class Speaker:
 
         if detail == "line":
             if certified == total:
-                return f"{name} is fully certified ({certified}/{total} paradigms)."
+                return f"{name} tamamen sertifikalandı ({certified}/{total} paradigma)."
             elif certified == 0:
-                return f"{name} is blocked at the first paradigm. It does not exist in this manifold."
+                return f"{name} ilk paradigmada bloke. Bu manifoldda yok."
             else:
-                gaps = ", ".join(frontier) if frontier else "none"
-                return f"{name}: {certified}/{total} paradigms certified. Open questions: {gaps}."
+                gaps = ", ".join(frontier) if frontier else "yok"
+                return f"{name}: {certified}/{total} paradigma sertifikalandı. Açık sorular: {gaps}."
 
         stmts = self._build_statements(run)
         certified_stmts = [s for s in stmts if s.status == "CERTIFIED"]
@@ -191,52 +191,52 @@ class Speaker:
         lines = []
 
         if detail in ("brief", "standard", "full"):
-            # Opening
+            # Açılış
             if certified == total:
                 lines.append(
-                    f"{name} is fully certified. All {total} mathematical paradigms are satisfied."
+                    f"{name} tamamen sertifikalandı. {total} matematiksel paradigmanın tamamı sağlandı."
                 )
             elif certified == 0:
                 lines.append(
-                    f"{name} is not certifiable. It does not pass the existence filter."
+                    f"{name} sertifikalandırılamıyor. Varlık filtresinden geçemiyor."
                 )
             else:
                 lines.append(
-                    f"{name} is partially certified: {certified} of {total} paradigms satisfied."
+                    f"{name} kısmen sertifikalandı: {total} paradigmanın {certified}'i sağlandı."
                 )
 
         if detail == "brief":
-            # Only ALEPH + frontier
+            # Sadece ALEPH + sınır
             aleph = next((s for s in certified_stmts if s.paradigm_id == "ALEPH"), None)
             if aleph:
                 lines.append(aleph.text)
             if frontier:
-                lines.append(f"Open questions: " + "; ".join(
+                lines.append("Açık sorular: " + "; ".join(
                     self._gap_sentence(pid, name,
-                        run.nodes[pid].result.gap_name if run.nodes[pid].result else "UNKNOWN")
+                        run.nodes[pid].result.gap_name if run.nodes[pid].result else "BİLİNMİYOR")
                     for pid in frontier
                 ))
 
         elif detail in ("standard", "full"):
             if certified_stmts:
                 lines.append("")
-                lines.append("What is known:")
+                lines.append("Bilinenler:")
                 for s in certified_stmts:
                     lines.append(f"  {s.text}")
 
             if gap_stmts:
                 lines.append("")
-                lines.append("What is not yet known (genuine gaps):")
+                lines.append("Henüz bilinmeyenler (gerçek boşluklar):")
                 for s in gap_stmts:
                     lines.append(f"  {s.text}")
                 lines.append(
-                    "These are the precise boundaries of knowledge — not failures, "
-                    "but exact statements of what remains open."
+                    "Bunlar bilginin kesin sınırları — başarısızlık değil, "
+                    "neyin açık kaldığının tam ifadesi."
                 )
 
             if detail == "full" and dep_stmts:
                 lines.append("")
-                lines.append("Cascade-blocked (blocked by upstream gap):")
+                lines.append("Üst boşlukla engellenenler:")
                 for s in dep_stmts:
                     lines.append(f"  {s.text}")
 
@@ -259,46 +259,46 @@ class Speaker:
 
         if certified == 0:
             return (
-                f"The object '{name}' was tested against all {total} mathematical paradigms "
-                f"and failed at the first: existence. Its moment sequence is not positive "
-                f"semi-definite. This object does not correspond to any real measure — "
-                f"it cannot exist in the manifold. This is not an error. It is precise knowledge."
+                f"'{name}' nesnesi {total} matematiksel paradigmanın tamamına karşı test edildi "
+                f"ve ilkinde başarısız oldu: varlık. Moment dizisi pozitif yarı-tanımlı değil. "
+                f"Bu nesne hiçbir gerçek ölçüye karşılık gelmiyor — "
+                f"manifoldda var olamaz. Bu bir hata değil. Kesin bir bilgidir."
             )
 
-        # Build readable summary from certified paradigms
+        # Sertifikalı paradigmalardan okunabilir özet
         highlights = []
         if "ALEPH" in certified_pids:
-            highlights.append("it exists (Hankel PSD certified)")
+            highlights.append("var (Hankel PSD sertifikalı)")
         if "BET" in certified_pids:
-            highlights.append("all its transformations conserve information")
+            highlights.append("tüm dönüşümleri bilgi koruyucu")
         if "TAV" in certified_pids:
-            highlights.append("it converges to a fixed point")
+            highlights.append("sabit noktaya yakınsar")
         if "EMET" in certified_pids:
-            highlights.append("it is internally consistent")
+            highlights.append("içsel olarak tutarlı")
         if "HE" in certified_pids:
-            highlights.append("it has a Lyapunov attractor")
+            highlights.append("Lyapunov çekicisi var")
         if "KAF" in certified_pids:
-            highlights.append("its mappings are injective")
+            highlights.append("haritaları örten")
 
-        highlight_str = "; ".join(highlights) if highlights else f"{certified} paradigms certified"
+        highlight_str = "; ".join(highlights) if highlights else f"{certified} paradigma sertifikalı"
 
         parts = [
-            f"'{name}' is a certified mathematical object.",
-            f"It satisfies {certified} of {total} paradigms: {highlight_str}.",
+            f"'{name}' sertifikalı bir matematiksel nesnedir.",
+            f"{total} paradigmanın {certified}'ini sağlıyor: {highlight_str}.",
         ]
 
         if frontier:
             gap_names = [
-                run.nodes[pid].result.gap_name if run.nodes[pid].result else "UNKNOWN"
+                run.nodes[pid].result.gap_name if run.nodes[pid].result else "BİLİNMİYOR"
                 for pid in frontier
             ]
             parts.append(
-                f"The open questions are: {', '.join(frontier)}. "
-                f"Specifically: {'; '.join(gap_names)}. "
-                f"These are the exact limits of what the system knows about this object."
+                f"Açık sorular: {', '.join(frontier)}. "
+                f"Özellikle: {'; '.join(gap_names)}. "
+                f"Bunlar sistemin bu nesne hakkında bildiğinin tam sınırlarıdır."
             )
         else:
-            parts.append("There are no open questions about this object.")
+            parts.append("Bu nesne hakkında açık soru yok.")
 
         return " ".join(parts)
 
@@ -321,36 +321,36 @@ class Speaker:
         shared_gaps = gap_a & gap_b
 
         lines = [
-            f"═══ COMPARISON: {name_a} vs {name_b} ═══",
+            f"═══ KARŞILAŞTIRMA: {name_a} ↔ {name_b} ═══",
             f"",
-            f"Shared certified paradigms ({len(shared)}): "
-            f"{', '.join(sorted(shared)) or 'none'}",
+            f"Ortak sertifikalı paradigmalar ({len(shared)}): "
+            f"{', '.join(sorted(shared)) or 'yok'}",
         ]
 
         if only_a:
             lines.append(
-                f"Certified in {name_a} only ({len(only_a)}): "
+                f"Yalnızca {name_a}'da sertifikalı ({len(only_a)}): "
                 f"{', '.join(sorted(only_a))}"
             )
         if only_b:
             lines.append(
-                f"Certified in {name_b} only ({len(only_b)}): "
+                f"Yalnızca {name_b}'da sertifikalı ({len(only_b)}): "
                 f"{', '.join(sorted(only_b))}"
             )
         if shared_gaps:
             lines.append(
-                f"Shared open questions ({len(shared_gaps)}): "
+                f"Ortak açık sorular ({len(shared_gaps)}): "
                 f"{', '.join(sorted(shared_gaps))}"
             )
 
         if not only_a and not only_b:
             lines.append(
-                f"\n{name_a} and {name_b} are certified on exactly the same paradigms. "
-                f"They are indistinguishable at the level of the Aleph-Tekin network."
+                f"\n{name_a} ve {name_b} tam olarak aynı paradigmalarda sertifikalı. "
+                f"Aleph-Tekin ağı düzeyinde birbirinden ayırt edilemiyor."
             )
         else:
             lines.append(
-                f"\n{name_a} and {name_b} differ on {len(only_a) + len(only_b)} paradigm(s)."
+                f"\n{name_a} ve {name_b}, {len(only_a) + len(only_b)} paradigmada farklılık gösteriyor."
             )
 
         return "\n".join(lines)
@@ -365,24 +365,24 @@ class Speaker:
         """
         if not self.manifold.concepts:
             return (
-                f"'{concept.name}' cannot be located on the manifold — "
-                f"the manifold is empty. Teach certified concepts first."
+                f"'{concept.name}' manifoldda konumlandırılamıyor — "
+                f"manifold boş. Önce sertifikalı kavramlar öğretilmeli."
             )
 
         if not concept.is_real():
             return (
-                f"'{concept.name}' cannot be located — it does not pass the Aleph filter. "
-                f"It does not exist in the real manifold."
+                f"'{concept.name}' konumlandırılamıyor — Aleph filtresinden geçemiyor. "
+                f"Gerçek manifoldda yok."
             )
 
         neighbors = self.manifold.nearest(concept, n)
         if not neighbors:
-            return f"'{concept.name}' is isolated — no neighbors in the current manifold."
+            return f"'{concept.name}' yalıtılmış — mevcut manifoldda komşu yok."
 
-        parts = [f"'{concept.name}' is located on the semantic manifold."]
-        parts.append(f"Nearest certified concepts:")
+        parts = [f"'{concept.name}' anlamsal manifoldda konumlandı."]
+        parts.append(f"En yakın sertifikalı kavramlar:")
         for name, dist in neighbors:
-            parts.append(f"  {name} (distance: {dist})")
+            parts.append(f"  {name} (mesafe: {dist:.4f})")
         return "\n".join(parts)
 
     # ─── Synthesize TAU facts into fluent Turkish paragraph ───────────────
@@ -514,14 +514,10 @@ class Speaker:
     # ─── Express a single named gap ───────────────────────────────────────
 
     def name_gap(self, paradigm_id: str, gap_name: str, obj_name: str) -> str:
-        """Express a named gap in precise language.
-
-        A named gap is not an error. It is the system's exact statement of
-        what it does not know. This is more powerful than a guess.
-        """
+        """Adlandırılmış boşluğu kesin dille ifade et."""
         gap_sentence = self._gap_sentence(paradigm_id, obj_name, gap_name)
         return (
             f"{gap_sentence}\n"
-            f"This is a named gap: the system knows precisely that it does not know this.\n"
-            f"A named gap is more valuable than a guess — it is exact knowledge of the boundary."
+            f"Bu adlandırılmış bir boşluktur: sistem bunu bilmediğini kesin olarak biliyor.\n"
+            f"Adlandırılmış boşluk tahminden daha değerlidir — sınırın tam bilgisidir."
         )
