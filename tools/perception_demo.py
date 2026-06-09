@@ -120,9 +120,32 @@ def main() -> None:
     print("      gürültü her iki modalitede yüksek-entropi bölgesinde.")
     print()
 
+    # ─── 5. ALGI → DİL: gördüğünü anlat ──────────────────────────────────────
+    print("[5] ALGI → DİL — sistem gördüğünü/duyduğunu ANLATSIN")
+    print("    perceive() momentleri okur ama suskundur. witness() o")
+    print("    suskunluğu kırar: spektral karakter + modalite + çağrışım.")
+    print()
+    witnessed = [
+        ("saf ton 440Hz",   tone(440),               "signal", "w_ton"),
+        ("A-maj akoru",     chord([440, 554, 659]),  "signal", "w_akor"),
+        ("beyaz gürültü",   white_noise(seed=11),    "signal", "w_gurultu"),
+        ("eş-merkez halka", concentric_image(),      "image",  "w_halka"),
+    ]
+    for label, data, modality, nm in witnessed:
+        print(f"    ┌─ {label}")
+        text = ai.witness(data, modality=modality, name=nm, learn=True)
+        for ln in text.split("\n"):
+            print(f"    │  {ln}")
+        print(f"    └─")
+        print()
+    print("    → Aynı moment dizisi; biri sayı, biri cümle. Köprü kuruldu:")
+    print("      görmek = hatırlamak = anlatmak.")
+    print()
+
     print("═" * 64)
     print("  Duyusal grounding aktif. Ses, görüntü, kelime, molekül —")
     print("  hepsi tek moment uzayında. Formül değişmedi; girdi değişti.")
+    print("  Ve artık sistem gördüğünü DİLE döküyor.")
     print("═" * 64)
 
 

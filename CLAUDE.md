@@ -163,6 +163,11 @@ from tantrium.perception import tone, white_noise, noise_image
 ai.perceive(tone(440), modality="signal", name="t440")        # → CertificationRun
 ai.perceive(noise_image(), modality="image", name="nz", learn=True)  # manifolda ekle
 # modality: "signal" (ses/zaman serisi), "image" (2D piksel), "matrix" (herhangi 2D)
+
+# Algı → dil köprüsü (gördüğünü/duyduğunu DİLE dök)
+ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (Türkçe)
+# spektral karakter (saf ton↔gürültü) + grounding (N/23) + çağrışım (TAU komşusu)
+# "görmek = hatırlamak = anlatmak" — perceive suskun, witness konuşur
 ```
 
 ---
@@ -183,8 +188,9 @@ ai.perceive(noise_image(), modality="image", name="nz", learn=True)  # manifolda
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
 - ProofLoop: TAM KAPALI — subresultant_recurrence kampanyası çalışıyor
 - Algı katmanı: ses+görüntü grounding aktif (Wiener–Khinchin/Bochner momentleri)
+- Algı→dil köprüsü: `ai.witness()` gördüğünü dile döker (görmek=hatırlamak=anlatmak)
 - Kripto okuyucu: GIMEL Aşil topuğu zayıf şifreyi ZAYIN ekseninden yakalar (savunma)
-- Tests: 159 geçiyor
+- Tests: 167 geçiyor
 
 ---
 
@@ -210,3 +216,19 @@ Sistem spektral entropiyi SÖYLENMEDEN okur:
 ÖNEMLİ: büyük duyusal matris → exact Fraction determinant patlar (4300+
 basamak). Çözüm: momentleri numpy float'ta hesapla, yapı çıkarımı için
 momentlerden KÜÇÜK Hankel kur (encoder'ın uzun-dizi hızlı yoluyla aynı).
+
+### Algı → Dil Köprüsü (`ai.witness`)
+
+`perceive()` momentleri ve TAU çağrışımlarını üretir ama SUSKUNDUR.
+`witness()` o suskunluğu kırar — `Speaker.describe_percept()` ile algıyı
+tek bir akıcı Türkçe ifadeye çevirir:
+
+```
+μ₁ < 0.10 → "saf ton gibi"   |  0.10–0.30 → "akor gibi"
+0.30–0.55 → "karmaşık doku"  |  ≥ 0.55    → "gürültü gibi, düz spektrum"
++ grounding (N/23) + çağrışım (TAU komşusu, aileye indirgenmiş)
+```
+
+Çağrışımlar aile bazında tekilleşir: `algo:tribonacci_b0/_b1/_b10` →
+tek "tribonacci" (`Speaker._concept_family`). Çağrışım yoksa dürüstçe
+"yalnız bir nokta" der — uydurmaz. Görmek = hatırlamak = ANLATMAK.

@@ -432,6 +432,107 @@ class Speaker:
 
         return " ".join(sentences)
 
+    # ─── Algı → dil köprüsü: gördüğünü/duyduğunu anlat ────────────────────
+
+    # Spektral karakter bantları (μ₁ — perception katmanıyla kalibre):
+    #   ton ≈ 0.07, akor ≈ 0.08, karmaşık ses, gürültü ≈ 0.69.
+    #   Düşük μ₁ = yoğun/odaklı spektrum; yüksek μ₁ = düz/gürültülü spektrum.
+    _PERCEPT_BANDS: tuple[tuple[float, str], ...] = (
+        (0.10, "saf ve yoğun bir yapı — spektrumu tek bir bölgeye odaklı, "
+               "saf bir ton gibi"),
+        (0.30, "yapılı ve çok-bileşenli — birkaç belirgin bileşen bir arada, "
+               "bir akor gibi"),
+        (0.55, "karmaşık bir doku — birçok bileşen iç içe, belirgin bir tek "
+               "yapı yok"),
+        (1.01, "neredeyse düz bir spektrum — gürültü gibi, ayırt edici yapı "
+               "taşımıyor"),
+    )
+
+    _PERCEPT_VERB: dict[str, str] = {
+        "signal": "Bir sinyal algıladım",
+        "image":  "Bir görüntü gördüm",
+        "matrix": "Bir yapı okudum",
+    }
+
+    @staticmethod
+    def _concept_family(name: str) -> str:
+        """Kavram adını ailesine indir: 'tribonacci_b100' → 'tribonacci'.
+
+        TAU komşuları sık sık tek bir ailenin indeksli parçalarıdır
+        (algo:tribonacci_b0, _b1, _b10…). Dile dökerken bunlar üç ayrı
+        çağrışım değil tek bir çağrışımdır — aileye indir, anlam berraklaşsın.
+        """
+        import re
+        base = name.split(":", 1)[-1]            # 'algo:tribonacci_b1' → 'tribonacci_b1'
+        base = re.sub(r"_b?\d+$", "", base)       # '_b1' / '_100' kuyruğunu at
+        return base or name
+
+    def _spectral_character(self, mu1: float) -> str:
+        for hi, phrase in self._PERCEPT_BANDS:
+            if mu1 < hi:
+                return phrase
+        return self._PERCEPT_BANDS[-1][1]
+
+    def describe_percept(
+        self,
+        run: NetworkRun,
+        modality: str = "signal",
+        associations: list[str] | None = None,
+    ) -> str:
+        """Bir algı run'ını duyusal dile dök — görmek = anlatmak.
+
+        perceive() momentleri ve TAU çağrışımlarını üretir ama suskundur.
+        Bu metod o suskunluğu kırar: ne algılandığını (ses/görüntü),
+        spektral karakterini (saf ton mu, gürültü mü), ne kadar grounded
+        olduğunu, ve neyi HATIRLATTIĞINI (TAU komşuları) tek bir akıcı
+        ifadeye çevirir. Hiçbir şey icat etmez — momentlerden okur.
+
+        associations: percept'in çağrıştırdığı kavram adları (TAU komşuları).
+        "Görmek = hatırlamak" hattının dile yansıması.
+        """
+        mu1 = float(run.obj.moments[1]) if len(run.obj.moments) > 1 else 0.0
+        verb = self._PERCEPT_VERB.get(modality, "Bir yapı okudum")
+        character = self._spectral_character(mu1)
+
+        lines = [f"{verb}: {character} (spektral entropi μ₁ = {mu1:.3f})."]
+
+        # Grounding: kaç paradigmadan geçti
+        certified, total = run.certified_count, run.total
+        if certified == total:
+            lines.append(
+                f"Tümüyle grounded — {certified}/{total} paradigma sertifikalı; "
+                f"bu algı moment uzayında gerçek bir nokta."
+            )
+        elif certified == 0:
+            lines.append(
+                f"Bu algı varlık filtresinden geçmiyor (0/{total}) — moment "
+                f"dizisi pozitif yarı-tanımlı değil, gerçek bir ölçüye karşılık gelmiyor."
+            )
+        else:
+            lines.append(
+                f"Kısmen grounded — {certified}/{total} paradigma sertifikalı."
+            )
+
+        # Görmek = hatırlamak: neyi çağrıştırdı
+        assoc = [self._concept_family(a) for a in (associations or []) if a]
+        if assoc:
+            seen = list(dict.fromkeys(assoc))[:3]  # aile bazında tekrarsız, ilk 3
+            if len(seen) == 1:
+                joined = seen[0]
+            else:
+                joined = ", ".join(seen[:-1]) + " ve " + seen[-1]
+            lines.append(
+                f"Bu bana {joined} kavram(lar)ını hatırlatıyor — moment "
+                f"geometrileri benzer olduğu için, etiketten değil yapıdan."
+            )
+        else:
+            lines.append(
+                "Şu an bu algının manifoldda yakın bir çağrışımı yok — yalnız "
+                "bir nokta."
+            )
+
+        return "\n".join(lines)
+
     # ─── Express a single named gap ───────────────────────────────────────
 
     def name_gap(self, paradigm_id: str, gap_name: str, obj_name: str) -> str:

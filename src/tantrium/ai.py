@@ -493,6 +493,45 @@ class AI:
 
         return run
 
+    def witness(
+        self,
+        data,
+        modality: str = "signal",
+        name: str = "percept",
+        learn: bool = False,
+    ) -> str:
+        """Algıla ve gördüğünü/duyduğunu DİLE DÖK — algı→dil köprüsü.
+
+        perceive() ham sinyali moment uzayına çeker ama suskun kalır:
+        momentleri ve TAU çağrışımlarını üretir, kelimeye dökmez. witness()
+        o köprüyü kurar — algıyı çalıştırır, neyi hatırlattığını (TAU
+        komşuları) toplar ve Speaker ile duyusal bir ifadeye çevirir.
+
+        Görmek = hatırlamak = anlatmak. Dönen metin yalnızca momentlerden
+        okunur; hiçbir şey icat edilmez.
+
+        learn=True ise percept manifolda kalıcılaşır ve TAU komşuları gerçek
+        belleğe örülmüş çağrışımlar olur (yalnızca okunan değil, hatırlanan).
+
+        Döner: str — certified Türkçe duyusal anlatım.
+        """
+        run = self.perceive(data, modality=modality, name=name, learn=learn)
+
+        # Neyi hatırlattı? learn ise gerçek TAU kenarları (örülmüş bellek),
+        # değilse anlık en yakın komşular (okunan benzerlik).
+        associations: list[str] = []
+        edges = self._engine.tau.edges.get(name, [])
+        if edges:
+            associations = [e.target for e in edges]
+        else:
+            from tantrium.core.semantic import Concept
+            probe = Concept(name=name, moments=list(run.obj.moments), domain="percept")
+            associations = [nm for nm, _ in self._engine.manifold.nearest(probe, n=5)]
+
+        return self._engine.speaker.describe_percept(
+            run, modality=modality, associations=associations
+        )
+
     def rank(self, target: str, candidates: list[str] | None = None, top_n: int = 10) -> "object":
         """Rank candidates for a target via certified dyadic transport.
 
