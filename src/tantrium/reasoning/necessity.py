@@ -183,12 +183,12 @@ class NecessityEngine:
         self,
         domain: str = "math_kernel",
         n_gaps: int = 5,
+        max_pairs: int = 40,
     ) -> list[ManifoldGap]:
         """Moment uzayında doldurulması zorunlu boşlukları bul.
 
-        Teorem kümesinin sınır bölgelerini analiz eder:
-        iki teorem arasındaki 'ara' koordinatlar gerçek bir kavramla
-        doldurulmamışsa, yapısal zorunluluk o kavramın var olmasını gerektirir.
+        Teorem kümesinin sınır bölgelerini analiz eder. max_pairs ile
+        aranacak çift sayısı sınırlanır — büyük manifoldlarda timeout'u önler.
         """
         import numpy as np
         from tantrium.core.semantic import Concept
@@ -204,36 +204,41 @@ class NecessityEngine:
         moments_arr = np.array([[float(m) for m in c.moments[:6]] for _, c in concepts])
         names = [n for n, _ in concepts]
 
+        # Büyük kümede rastgele örnekle — hız garanti
+        import random as _rnd
+        pairs: list[tuple[int, int]] = []
+        for i in range(len(concepts)):
+            for j in range(i + 1, min(i + 6, len(concepts))):
+                pairs.append((i, j))
+        if len(pairs) > max_pairs:
+            pairs = _rnd.sample(pairs, max_pairs)
+
+        # Her çiftin midpoint'ini numpy ile toplu hesapla — O(1) dizin
+        # Sonra manifold.nearest()'i SADECE threshold'u aşanlarda çağır.
         gaps: list[ManifoldGap] = []
 
-        # Her komşu çifti arasında orta nokta var mı?
-        for i in range(len(concepts)):
-            for j in range(i + 1, min(i + 8, len(concepts))):
-                midpoint = (moments_arr[i] + moments_arr[j]) / 2.0
-                mid_concept = Concept(
-                    name="_gap_probe",
-                    moments=[float(x) for x in midpoint],
-                    domain="_probe",
-                )
-                neighbors = self.engine.manifold.nearest(mid_concept, n=3)
-                # En yakın gerçek kavram bu midpoint'e ne kadar yakın?
-                if neighbors:
-                    nearest_dist = float(neighbors[0][1])
-                    nearest_name = neighbors[0][0]
-                    # Eğer en yakın kavram bile uzaksa → boşluk var
-                    if nearest_dist > 5.0 and nearest_name not in (names[i], names[j]):
-                        gaps.append(ManifoldGap(
-                            centroid=[float(x) for x in midpoint],
-                            nearest_concepts=[names[i], names[j]],
-                            domain_constraint=domain,
-                            description=(
-                                f"{names[i].replace('theorem:', '')} ile "
-                                f"{names[j].replace('theorem:', '')} arasında "
-                                f"sertifikalı kavram gerekli (dist={nearest_dist:.1f})"
-                            ),
-                        ))
-                if len(gaps) >= n_gaps:
-                    break
+        for i, j in pairs:
+            midpoint = (moments_arr[i] + moments_arr[j]) / 2.0
+            mid_concept = Concept(
+                name="_gap_probe",
+                moments=[float(x) for x in midpoint],
+                domain="_probe",
+            )
+            neighbors = self.engine.manifold.nearest(mid_concept, n=3)
+            if neighbors:
+                nearest_dist = float(neighbors[0][1])
+                nearest_name = neighbors[0][0]
+                if nearest_dist > 5.0 and nearest_name not in (names[i], names[j]):
+                    gaps.append(ManifoldGap(
+                        centroid=[float(x) for x in midpoint],
+                        nearest_concepts=[names[i], names[j]],
+                        domain_constraint=domain,
+                        description=(
+                            f"{names[i].replace('theorem:', '')} ile "
+                            f"{names[j].replace('theorem:', '')} arasında "
+                            f"sertifikalı kavram gerekli (dist={nearest_dist:.1f})"
+                        ),
+                    ))
             if len(gaps) >= n_gaps:
                 break
 

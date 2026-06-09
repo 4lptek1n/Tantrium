@@ -432,6 +432,85 @@ class Speaker:
 
         return " ".join(sentences)
 
+    # ─── Algı → dil köprüsü ──────────────────────────────────────────────────
+
+    @staticmethod
+    def _concept_family(name: str) -> str:
+        """Kavram adını ailesine indir: 'tribonacci_b100' → 'tribonacci'.
+
+        TAU komşuları çoğunlukla tek bir ailenin indeksli parçalarıdır
+        (algo:tribonacci_b0, _b1, _b10…). Dile dökerken tek aile sayılır.
+        """
+        import re
+        base = name.split(":", 1)[-1]
+        base = re.sub(r"_b?\d+$", "", base)
+        return base or name
+
+    _PERCEPT_BANDS: tuple[tuple[float, str], ...] = (
+        (0.10, "saf ve yoğun bir yapı — spektrumu tek bir bölgeye odaklı, saf bir ton gibi"),
+        (0.30, "yapılı ve çok-bileşenli — birkaç belirgin bileşen bir arada, bir akor gibi"),
+        (0.55, "karmaşık bir doku — birçok bileşen iç içe, belirgin tek yapı yok"),
+        (1.01, "neredeyse düz bir spektrum — gürültü gibi, ayırt edici yapı taşımıyor"),
+    )
+
+    _PERCEPT_VERB: dict[str, str] = {
+        "signal": "Bir sinyal algıladım",
+        "image":  "Bir görüntü gördüm",
+        "matrix": "Bir yapı okudum",
+    }
+
+    def _spectral_character(self, mu1: float) -> str:
+        for hi, phrase in self._PERCEPT_BANDS:
+            if mu1 < hi:
+                return phrase
+        return self._PERCEPT_BANDS[-1][1]
+
+    def describe_percept(
+        self,
+        run: "NetworkRun",
+        modality: str = "signal",
+        associations: list[str] | None = None,
+    ) -> str:
+        """Bir algı run'ını duyusal dile dök — görmek = anlatmak.
+
+        Spektral karakter (saf ton ↔ gürültü), grounding (N/23) ve
+        neyi hatırlattığı (TAU komşuları, çeşitlendirilmiş). Uydurmaz.
+        """
+        mu1 = float(run.obj.moments[1]) if len(run.obj.moments) > 1 else 0.0
+        verb = self._PERCEPT_VERB.get(modality, "Bir yapı okudum")
+        character = self._spectral_character(mu1)
+
+        lines = [f"{verb}: {character} (spektral entropi μ₁ = {mu1:.3f})."]
+
+        certified, total = run.certified_count, run.total
+        if certified == total:
+            lines.append(
+                f"Tümüyle grounded — {certified}/{total} paradigma sertifikalı; "
+                f"bu algı moment uzayında gerçek bir nokta."
+            )
+        elif certified == 0:
+            lines.append(
+                f"Bu algı varlık filtresinden geçmiyor (0/{total}) — moment "
+                f"dizisi pozitif yarı-tanımlı değil."
+            )
+        else:
+            lines.append(f"Kısmen grounded — {certified}/{total} paradigma sertifikalı.")
+
+        assoc = [self._concept_family(a) for a in (associations or []) if a]
+        if assoc:
+            seen = list(dict.fromkeys(assoc))[:3]
+            joined = ", ".join(seen[:-1]) + (" ve " + seen[-1] if len(seen) > 1 else seen[0])
+            lines.append(
+                f"Bu bana {joined} kavram(lar)ını hatırlatıyor — "
+                f"moment geometrileri benzer olduğu için, etiketten değil yapıdan."
+            )
+        else:
+            lines.append(
+                "Şu an bu algının manifoldda yakın bir çağrışımı yok — yalnız bir nokta."
+            )
+
+        return "\n".join(lines)
+
     # ─── Express a single named gap ───────────────────────────────────────
 
     def name_gap(self, paradigm_id: str, gap_name: str, obj_name: str) -> str:

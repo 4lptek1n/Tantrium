@@ -164,6 +164,220 @@ class AI:
         self._mol_gen = None   # lazy init
         self._certifier = None # lazy init
 
+    # ── Evrensel giriş noktası ───────────────────────────────────────────────
+
+    def __call__(
+        self,
+        *inputs: Any,
+        name: str | None = None,
+        learn: bool = False,
+        detail: str = "standard",
+    ) -> str:
+        """Evrensel giriş — ne verirsen anlasın, Türkçe dile döksün.
+
+        Tek girdi:
+          ai("EGFR")              → kavram sertifikası + Türkçe anlatım
+          ai("benzene güvenli?")  → soru → akıl yürüt + cevap
+          ai(tone(440))           → sinyal → algıla + hatırla + anlat
+          ai(noise_image())       → görüntü → algıla + hatırla + anlat
+          ai("c1ccccc1")          → SMILES → molekül sertifikası
+          ai(b"sifreli veri")     → bytes → kriptografik yapı okuması
+
+        İki girdi:
+          ai("CCO", "aspirin")    → transport: sertifikalı yol
+          ai(tone(440), "440Hz")  → sinyal + etiket → grounding
+        """
+        import numpy as np
+
+        if len(inputs) == 0:
+            return self.status()
+
+        # İki girdi
+        if len(inputs) == 2:
+            a, b = inputs
+            if isinstance(a, str) and isinstance(b, str):
+                return self._call_pair(a, b)
+            if not isinstance(a, str) and isinstance(b, str):
+                nm = name or b.replace(" ", "_")[:32]
+                return self.witness(a, modality=self._detect_modality(a), name=nm, learn=learn)
+            if not isinstance(b, str) and isinstance(a, str):
+                nm = name or a.replace(" ", "_")[:32]
+                return self.witness(b, modality=self._detect_modality(b), name=nm, learn=learn)
+
+        inp = inputs[0]
+
+        if isinstance(inp, bytes):
+            return self._call_bytes(inp)
+
+        if isinstance(inp, np.ndarray):
+            nm = name or f"percept_{abs(hash(inp.tobytes())) % 100000}"
+            return self.witness(inp, modality=self._detect_modality(inp), name=nm, learn=learn)
+
+        if isinstance(inp, str):
+            return self._call_text(inp, name=name, detail=detail)
+
+        return str(inp)
+
+    @staticmethod
+    def _detect_modality(data: Any) -> str:
+        import numpy as np
+        if isinstance(data, np.ndarray):
+            return "image" if data.ndim == 2 else "signal"
+        return "signal"
+
+    @staticmethod
+    def _looks_like_smiles_static(s: str) -> bool:
+        smiles_chars = set("CNOSPFClBrI[]()=#@/\\+1234567890-")
+        return 3 <= len(s) <= 200 and all(c in smiles_chars for c in s)
+
+    def _call_text(self, text: str, name: str | None = None, detail: str = "standard") -> str:
+        """Metin → SMILES / soru / kavram yönlendir."""
+        if self._looks_like_smiles_static(text):
+            return self._call_smiles(text, name=name)
+        is_question = (
+            text.strip().endswith("?")
+            or any(text.lower().startswith(w) for w in (
+                "ne ", "nedir", "nasıl", "neden", "kim ", "niye",
+                "what ", "how ", "why ", "who ", "when ",
+            ))
+        )
+        if is_question:
+            return self._call_question(text)
+        return self._call_concept(text, name=name, detail=detail)
+
+    def _call_concept(self, text: str, name: str | None = None, detail: str = "standard") -> str:
+        """Kavram sertifikası + manifold konumu + dil."""
+        from tantrium.core.semantic import Concept
+
+        nm = name or text[:64]
+        obj = self._engine.encoder.encode(text, name=nm)
+        run = self._engine.network.run(obj)
+
+        # Sertifika anlatımı
+        narrative = self._engine.speaker.narrate(run, detail="brief")
+
+        # Manifold komşuları — domain-çeşitli
+        concept = Concept(name=nm, moments=list(obj.moments), domain="input")
+        neighbors = self._engine.manifold.nearest(concept, n=30)
+        diverse = self._diverse_names([n for n, _ in neighbors], max_per_domain=2, total=4)
+        if diverse:
+            narrative += f"\n\nManifoldda en yakın: {', '.join(diverse)}"
+
+        return narrative
+
+    def _call_question(self, text: str) -> str:
+        """Soru → think → Türkçe cevap."""
+        result = self.think(text, depth=2)
+        if hasattr(result, "narrate"):
+            return result.narrate()
+        return str(result)
+
+    def _call_pair(self, a: str, b: str) -> str:
+        """İki kavram/molekül arası: transport veya karşılaştırma."""
+        a_smiles = self._looks_like_smiles_static(a)
+        b_smiles = self._looks_like_smiles_static(b)
+        use_smiles = a_smiles and b_smiles
+
+        try:
+            cert = self.transport(a, b, use_smiles=use_smiles)
+            status = "Sertifikalı" if getattr(cert, "certified", False) else "Sertifikasız"
+            dyadic = getattr(cert, "dyadic_status", "")
+            sturm = getattr(cert, "sturm_status", "")
+            lines = [f"Transport: {a} → {b}  [{status}]"]
+            if dyadic:
+                lines.append(f"  Dyadic: {dyadic}")
+            if sturm:
+                lines.append(f"  Sturm:  {sturm}")
+            # Karşılaştır
+            obj_a = self._engine.encoder.encode(a, name=a[:64])
+            obj_b = self._engine.encoder.encode(b, name=b[:64])
+            run_a = self._engine.network.run(obj_a)
+            run_b = self._engine.network.run(obj_b)
+            lines.append("")
+            lines.append(self._engine.speaker.compare(run_a, run_b))
+            return "\n".join(lines)
+        except Exception:
+            # Karşılaştırmayı fallback olarak yap
+            obj_a = self._engine.encoder.encode(a, name=a[:64])
+            obj_b = self._engine.encoder.encode(b, name=b[:64])
+            run_a = self._engine.network.run(obj_a)
+            run_b = self._engine.network.run(obj_b)
+            return self._engine.speaker.compare(run_a, run_b)
+
+    def _call_smiles(self, smiles: str, name: str | None = None) -> str:
+        """SMILES → molekül sertifikası + Türkçe."""
+        from tantrium.core.encoder import encode_smiles
+        nm = name or smiles[:32]
+        obj = encode_smiles(smiles, name=nm)
+        run = self._engine.network.run(obj)
+        return self._engine.speaker.narrate(run, detail="brief")
+
+    def _call_bytes(self, data: bytes) -> str:
+        """Bytes → kriptografik yapı okuması."""
+        from tantrium.perception.crypto import analyze, achilles
+        r = analyze(data, name="input")
+        ach = achilles(data, name="input")
+        lines = [r.summary(), "", ach.summary()]
+        return "\n".join(lines)
+
+    def _diverse_names(
+        self,
+        candidates: list[str],
+        max_per_domain: int = 1,
+        total: int = 5,
+    ) -> list[str]:
+        """Domain-çeşitli isim listesi — tek aileye/domain'e saplanmaz."""
+        from tantrium.language.speaker import Speaker
+        seen_domains: dict[str, int] = {}
+        result: list[str] = []
+        for c in candidates:
+            concept = self._engine.manifold.concepts.get(c)
+            domain = concept.domain if concept else "unknown"
+            family = Speaker._concept_family(c)
+            key = f"{domain}::{family}"
+            if seen_domains.get(key, 0) < max_per_domain:
+                seen_domains[key] = seen_domains.get(key, 0) + 1
+                result.append(c)
+            if len(result) >= total:
+                break
+        return result
+
+    def _diverse_neighbors(
+        self,
+        moments: list,
+        total: int = 4,
+        max_per_domain: int = 1,
+    ) -> list[str]:
+        """Manifolddan domain-çeşitli komşu getir.
+
+        sr-index tek bir cluster'a düşebilir (örn. tüm tribonacci ailesi).
+        Bu metot tüm manifoldu domain bazında tarar: her domain'den en yakın
+        kavramı bulur, sonra mesafeye göre sıralar. O(n) ama garantili çeşitli.
+        """
+        from tantrium.language.speaker import Speaker
+
+        q = [float(m) for m in moments]
+        k = len(q)
+
+        # Her domain için en yakın kavramı bul — tam tarama, garantili çeşitlilik
+        best_per_bucket: dict[str, tuple[float, str]] = {}
+
+        for nm, c in self._engine.manifold.concepts.items():
+            domain = c.domain or "unknown"
+            family = Speaker._concept_family(nm)
+            bucket = f"{domain}::{family}"
+            cm = c.moments
+            d = sum(
+                abs(q[i] - (float(cm[i]) if i < len(cm) else 0.0))
+                for i in range(k)
+            )
+            if bucket not in best_per_bucket or d < best_per_bucket[bucket][0]:
+                best_per_bucket[bucket] = (d, nm)
+
+        # Mesafeye göre sırala, ilk `total` al
+        sorted_best = sorted(best_per_bucket.values())
+        return [nm for _, nm in sorted_best[:total]]
+
     # ── Temel: sertifika + akıl yürütme ─────────────────────────────────────
 
     def ask(self, query: str) -> AskResult:
@@ -492,6 +706,35 @@ class AI:
             self._engine.note_new_concepts([name])
 
         return run
+
+    def witness(
+        self,
+        data,
+        modality: str = "signal",
+        name: str = "percept",
+        learn: bool = False,
+    ) -> str:
+        """Algıla ve gördüğünü/duyduğunu dile dök — algı→dil köprüsü.
+
+        perceive() ham sinyali moment uzayına çeker ama suskundur.
+        witness() o köprüyü kurar: algıyı çalıştırır, neyi hatırlattığını
+        (TAU komşuları, domain-çeşitli) toplar, Speaker ile Türkçe ifadeye çevirir.
+
+        Görmek = hatırlamak = anlatmak. Dönen metin yalnızca momentlerden okunur.
+
+        learn=True → percept manifolda kalıcılaşır, TAU komşuları gerçek belleğe örülür.
+
+        Döner: str — certified Türkçe duyusal anlatım.
+        """
+        run = self.perceive(data, modality=modality, name=name, learn=learn)
+
+        # Domain-çeşitli çağrışım — _diverse_neighbors manifoldu geniş tarar,
+        # her domain'den max 1 aile çeker (tribonacci kümesine saplanmaz).
+        associations = self._diverse_neighbors(list(run.obj.moments), total=4)
+
+        return self._engine.speaker.describe_percept(
+            run, modality=modality, associations=associations
+        )
 
     def rank(self, target: str, candidates: list[str] | None = None, top_n: int = 10) -> "object":
         """Rank candidates for a target via certified dyadic transport.
