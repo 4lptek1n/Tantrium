@@ -1370,6 +1370,110 @@ class AI:
             self._engine.auto_persist()
         return report
 
+    def run(
+        self,
+        cycles: int = 3,
+        time_limit_s: float = 600.0,
+        network: bool = False,
+        verbose: bool = True,
+    ) -> dict:
+        """Tam otonom döngü — sistemin kendi kendini büyütmesi.
+
+        Sıralı olarak hepsini çalıştırır:
+          1. blind_spots()      → kör noktaları tespit et
+          2. auto_research()    → algoritmik veri ile boşlukları doldur
+          3. close()            → zorunlu TAU geçişli kapanış
+          4. genesis()          → manifold boşluklarını konveks sentez ile kapat
+          5. prove()            → Research OS: açık teoremleri kanıtla
+          6. auto_persist()     → manifoldu kaydet
+
+        Her adımın çıktısı bir sonrakine bağlıdır:
+        blind_spots → araştırma hedeflerini bildirir;
+        close → yeni teoremlerden transitif kenarlar türetir;
+        genesis → prove'dan gelen yeni teoremlerle boşlukları doldurur.
+
+        network=True → OEIS API + PubChem canlı veri (daha zengin, daha yavaş)
+        network=False → algoritmik diziler (ağ bağımsız, hızlı)
+
+        Döner: dict — her adımın özeti
+        """
+        import time
+        t0 = time.monotonic()
+        report: dict = {}
+
+        def _log(msg: str) -> None:
+            if verbose:
+                elapsed = time.monotonic() - t0
+                print(f"  [{elapsed:5.1f}s] {msg}")
+
+        _log(f"Başlıyor — {len(self._engine.manifold.concepts):,} kavram, "
+             f"{sum(len(v) for v in self._engine.tau.edges.values()):,} TAU kenar")
+
+        # 1. Kör noktalar
+        spots = self.blind_spots(threshold=5)
+        report["blind_spots"] = len(spots)
+        _log(f"Kör nokta: {len(spots)}")
+
+        # 2. Otonom araştırma
+        _log("auto_research() başlıyor...")
+        r = self.auto_research(
+            max_cycles=cycles,
+            time_limit_s=min(time_limit_s * 0.4, 240.0),
+            network=network,
+        )
+        report["research_new_concepts"] = r.total_new_concepts
+        report["research_bridges"] = r.total_bridges
+        _log(f"auto_research: +{r.total_new_concepts} kavram, {r.total_bridges} köprü")
+
+        # 3. TAU geçişli kapanış
+        _log("close() başlıyor...")
+        nr = self.close(domain="math_kernel", inject=True)
+        report["new_edges"] = nr.edges_injected
+        _log(f"close: +{nr.edges_injected} zorunlu TAU kenar")
+
+        # 4. Manifold boşluk sentezi
+        _log("genesis() başlıyor...")
+        gr = self.genesis(max_gaps=5)
+        new_from_genesis = getattr(gr, "concepts_added", 0)
+        report["genesis_concepts"] = new_from_genesis
+        _log(f"genesis: +{new_from_genesis} yeni kavram")
+
+        # 5. Teorem kanıtlama
+        if time.monotonic() - t0 < time_limit_s * 0.85:
+            _log("prove() başlıyor...")
+            pr = self.prove(
+                max_cycles=min(cycles, 2),
+                time_limit_s=min(time_limit_s * 0.4, 200.0),
+            )
+            report["proved_concepts"] = pr.total_new_concepts
+            _log(f"prove: +{pr.total_new_concepts} kanıtlanan kavram")
+        else:
+            _log("prove(): zaman dolmak üzere, atlandı")
+            report["proved_concepts"] = 0
+
+        # 6. Kalıcılaştır
+        if self._persist:
+            saved = self._engine.auto_persist()
+            n_saved = saved[0] if isinstance(saved, tuple) else int(saved)
+            report["saved"] = n_saved
+            _log(f"Kaydedildi: {n_saved:,} kavram")
+
+        total_new = (
+            report["research_new_concepts"]
+            + report["genesis_concepts"]
+            + report["proved_concepts"]
+        )
+        report["total_new"] = total_new
+        report["elapsed_s"] = round(time.monotonic() - t0, 1)
+
+        n_now = len(self._engine.manifold.concepts)
+        e_now = sum(len(v) for v in self._engine.tau.edges.values())
+        _log(
+            f"Tamamlandı — {n_now:,} kavram, {e_now:,} TAU kenar  "
+            f"(+{total_new} yeni, {report['elapsed_s']}s)"
+        )
+        return report
+
     # ── Spektral Analiz ──────────────────────────────────────────────────────
 
     def spectrum(self, query: str) -> "object":
