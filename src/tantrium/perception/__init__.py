@@ -34,6 +34,7 @@ from tantrium.perception.encode import (
     encode_image,
     encode_matrix,
     encode_signal,
+    encode_signal_temporal,
     signal_autocorrelation,
 )
 from tantrium.perception.generate import (
@@ -58,6 +59,7 @@ from tantrium.perception.crypto import (
 
 __all__ = [
     "encode_signal",
+    "encode_signal_temporal",
     "encode_image",
     "encode_matrix",
     "signal_autocorrelation",

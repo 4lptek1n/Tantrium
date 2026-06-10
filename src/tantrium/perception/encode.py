@@ -157,6 +157,66 @@ def encode_signal(
     return CodexObject(name=name, moments=moments, structure=structure)
 
 
+def encode_signal_temporal(
+    samples: Sequence[float],
+    name: str = "signal",
+    n_windows: int = 8,
+    lags: int = 12,
+) -> CodexObject:
+    """Zamansal yapıyı KORUYAN sinyal kodlaması — otokorelasyon ZAMANI yok eder.
+
+    Standart encode_signal Wiener–Khinchin otokorelasyonu kullanır: zaman-kaydırma
+    değişmez (shift-invariant) → sinyalin NE ZAMAN değiştiğini göremez. Bir uyku
+    EEG'si ile uyanık EEG'si aynı global otokorelasyona ama farklı zamansal
+    EVRİME sahip olabilir.
+
+    Bu kodlama sinyali n_windows pencereye böler, her pencerenin μ₁ (spektral
+    karmaşıklık) değerini hesaplar → bu zaman-serisi sinyalin "zamansal imzası".
+    Sonra bu imzanın momentleri alınır: sinyal zamanla nasıl evriliyor?
+
+      düz sinyal → sabit pencere imzası → düşük zamansal varyans
+      evrilen sinyal (geçiş, patlama) → değişen imza → yüksek zamansal varyans
+
+    structure["temporal_signature"] pencere-başına spektral karmaşıklığı taşır.
+    """
+    arr = np.asarray(samples, dtype=float)
+    n = len(arr)
+    if n < n_windows * 2:
+        # Çok kısa — standart yola düş (lags sinyal boyunu aşmasın)
+        obj = encode_signal(samples, name=name, lags=max(1, min(lags, n - 1)))
+        obj.structure["temporal_signature"] = []
+        obj.structure["temporal_variance"] = 0.0
+        return obj
+
+    # Her pencerenin spektral karmaşıklığı (μ₁ benzeri: normalize enerji yayılımı)
+    win = n // n_windows
+    signature: list[float] = []
+    for w in range(n_windows):
+        chunk = arr[w * win:(w + 1) * win]
+        if len(chunk) < 2:
+            signature.append(0.0)
+            continue
+        rr = signal_autocorrelation(chunk, lags=min(lags, len(chunk) - 1))
+        # Normalize otokorelasyon enerjisi → pencere spektral karmaşıklığı
+        r0 = rr[0] if rr[0] != 0 else 1.0
+        spread = float(np.sum(np.abs(rr[1:])) / (abs(r0) * max(1, len(rr) - 1)))
+        signature.append(spread)
+
+    # Zamansal imzanın kendisi bir dizi → momentlerini al (encoder'ın hızlı yolu)
+    from tantrium.core.encoder import encode as _enc
+    sig_obj = _enc(signature, name=f"{name}_temporal")
+    moments = sig_obj.moments
+    structure = dict(sig_obj.structure)
+    structure.update({
+        "modality": "signal_temporal",
+        "temporal_signature": [round(s, 5) for s in signature],
+        "temporal_variance": round(float(np.var(signature)), 6),
+        "n_windows": n_windows,
+        "n_samples": n,
+    })
+    return CodexObject(name=name, moments=moments, structure=structure)
+
+
 # ─── Görüntü ─────────────────────────────────────────────────────────────────
 
 def encode_image(pixels, name: str = "image") -> CodexObject:

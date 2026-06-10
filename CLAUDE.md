@@ -129,6 +129,55 @@ nokta için komşu LİSTELEMEZ (yanıltıcı olur) — dürüstçe "anlamsız" d
 
 ---
 
+## Doğruluk Ekseni (Sertifikasyonun 3. Ekseni) — `core/truth.py`
+
+Topraklama "bağlı mı?" der, "DOĞRU mu?" demez — iyi bağlanmış YANLIŞ ifade
+GROUNDED çıkar. 3. eksen tutarlılığı ölçer:
+
+```
+A. TRANSPORT TUTARLILIĞI: komşulara CERTIFIED transport edilebiliyor mu?
+B. EMET ÇAPRAZ-KONTROL: kendi pipeline'ında çelişki var mı?
+→ CONSISTENT | CONTESTED | CONTRADICTORY
+```
+Tutarlılık doğruluğun gerekli (yeterli değil) koşuludur. `ai.truth("riemann")`.
+
+## Güven Kalibrasyonu — `core/confidence.py`
+
+4 ekseni (kapsama+margin+topraklama+doğruluk) ağırlıklı GEOMETRİK ortalamayla
+tek kalibre sayıya indirir — zayıf halka kuralı (bir eksen çökerse güven çöker).
+margin=0 cezalı DEĞİL (sıfır özdeğer PSD-geçerli, taban 0.3). `ai.confidence(x)`.
+
+## Ters Rekonstrüksiyon — `core/reconstruct.py`
+
+Encoder ileri (yapı→moment); bu ters (moment→ölçü). Gauss kuadratürü/Prony ile
+dμ=Σwᵢδ(x−xᵢ) geri kurar. "Moment yapıyı belirler" iddiasının YAPICI kanıtı +
+üretkenlik. Gerçek kavramda hata ~1e-9. `ai.reconstruct("EGFR")`.
+
+## Çakışma Avcısı — `core/collision.py`
+
+Çekirdek iddiayı SALDIRARAK test eder: iki farklı girdi aynı 8 momente çöküyor mu?
+BULGU: varsayılan metin encoder'ı ETİKET-KÖR — permütasyon yapıları ("pbjw"≈"hame",
+ikisi de 4-ayrı-karakter yol grafı) çakışır. Bu moment-teorisi hatası DEĞİL
+(Hamburger ölçü→moment teklik garantiler); encoder'ın girdi→ölçü çok-bire-bir
+oluşu. `_text_to_bigram_matrix(label_aware=True)` çözer (varsayılan KAPALI —
+depolanan manifold köşegensiz kuruldu, açmak ATP rezonansını kaydırır).
+`ai.collisions()`.
+
+## Kanonik Metrik — `core/metric.py`
+
+Üç-metrik tutarsızlığını (manifold L1 / transport dyadic / spectral W2) kapatır:
+KANONİK = spektral Wasserstein-2. L1 yalnızca hızlı ön-eleme (hüküm mercii değil).
+`manifold.distance(a, b)` ve `manifold.nearest(c, metric="spectral_w2")`.
+
+## Adaptif Derinlik + Zamansal Yapı
+
+`encoder.encode_adaptive()`: rekonstrüksiyon sadakati düşükse moment derinliğini
+8→16 artırır (belirsiz girdiyi derinleştir). `perception.encode_signal_temporal()`:
+otokorelasyon ZAMANI yok eder; bu pencere-bazlı zamansal imza ile sinyalin NE ZAMAN
+evrildiğini yakalar (sabit ton var=0.0, ton→gürültü geçişi var>0).
+
+---
+
 ## CertifiedTransport
 
 ```
@@ -185,8 +234,13 @@ ai(noise_image())                              # → str: görüntü → dil
 ai(b"\x00\xff...")                             # → str: kripto yapı analizi
 ai.run(cycles=3, time_limit_s=600)             # → dict: KAPALI DÖNGÜ (tüm büyüme adımları)
                                                #   blind_spots → auto_research → close → genesis → prove → persist
-ai.ask("EGFR")                                 # → AskResult (23 paradigma + topraklama ekseni)
+ai.ask("EGFR")                                 # → AskResult (4 eksen: 23 paradigma + topraklama + doğruluk + güven)
 ai.grounding("protein")                        # → GroundingCertificate (GROUNDED/WEAKLY/UNGROUNDED)
+ai.truth("riemann")                            # → TruthCertificate (3. eksen: CONSISTENT/CONTESTED/CONTRADICTORY)
+ai.confidence("protein")                        # → Confidence (4 ekseni tek kalibre sayıya indir)
+ai.reconstruct("EGFR")                         # → ReconstructedMeasure (TERS: moment→ölçü, Gauss kuadratürü)
+ai.collisions(n_samples=200)                   # → CollisionReport (çekirdek iddianın ampirik testi)
+ai.crossmodal()                                # → dict (ses/metin/molekül aynı uzayda mı, kanonik W2)
 ai.transport("CCO", "aspirin", use_smiles=True)# → TransportCertificate
 ai.rank("EGFR", top_n=10)                      # → TransportRanking
 ai.prove(max_cycles=2)                         # → LoopReport (kapalı döngü)
@@ -228,13 +282,23 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 
 ## Mevcut Durum
 
-- Kavram: 39,942 | TAU edge: 654,896+ | Paradigma: 23/23
-- Theorem graph: 97 node (PROVEN/CERTIFIED)
+- Kavram: 39,942+ | TAU edge: 654,896+ | Paradigma: 23/23
+- Sertifika eksenleri: 4 (23 paradigma + topraklama + doğruluk + kalibre güven)
+- Theorem graph: 97 node (PROVEN/CERTIFIED); proof_method ile dürüst (campaign vs dependency_closure)
 - ProofLoop: TAM KAPALI — subresultant_recurrence kampanyası çalışıyor
-- Algı katmanı: ses+görüntü grounding aktif (Wiener–Khinchin/Bochner momentleri)
+- Ters rekonstrüksiyon: moment→ölçü (Gauss kuadratürü), hata ~1e-9
+- Çakışma avcısı: çekirdek iddianın ampirik testi (encoder etiket-körlüğü bulundu+belgelendi)
+- Kanonik metrik: spektral W2 (üç-metrik tutarsızlığı kapandı)
+- Algı katmanı: ses+görüntü grounding + zamansal yapı (encode_signal_temporal)
 - Algı→dil köprüsü: `ai.witness()` gördüğünü dile döker (görmek=hatırlamak=anlatmak)
+- EEG: 256 kanal (4 dosya × 64), %97 certified — beyin dalgaları aynı moment uzayında
 - Kripto okuyucu: GIMEL Aşil topuğu zayıf şifreyi ZAYIN ekseninden yakalar (savunma)
-- Tests: 167 geçiyor
+- Tests: 215 geçiyor
+
+ÖNEMLİ (bilinen, ön-mevcut): depolanan manifold ESKİ [0,1] normalize rejimde
+kurulmuş; mevcut metin encoder'ı fresh sorgu için farklı rejim üretir. Bu
+benim değişikliğimden değil — fresh-vs-stored moment kayması ön-mevcut. Tam
+tutarlılık için 40k kavram + 654k edge yeniden kodlanmalı (büyük operasyon).
 
 ---
 
