@@ -459,31 +459,42 @@ class GradientParadigm(Paradigm):
 
 
 class CrossRatioParadigm(Paradigm):
-    """ט — Cross-Ratio Invariance: [a,b;c,d] = (a-c)(b-d)/((a-d)(b-c)).
-    This ratio is invariant under conformal (Möbius) transformations.
-    The fundamental invariant of perception and projective geometry.
+    """ט — Hankel Cross-Ratio (Favard teoremi / tce subresultant yapısı).
+
+    Moment dizisinin ortogonal polinom recurrence katsayısı:
+        b_n = D_{n-1}·D_{n+1} / D_n²,   D_n = det(n×n moment Hankel'i).
+    b_n > 0 ↔ üç-terimli recurrence pozitif ↔ ortogonal polinomlar gerçek
+    basit köklü ↔ moment dizisi gerçek bir pozitif ölçüden gelir (Favard).
+
+    Bu, tce'nin ρ_{d,j}=C·t^k·H_{d,j-2}·H_{d,j}/H_{d,j-1}² subresultant
+    cross-ratio'su ile birebir aynı projektif yapı — momentlere uygulanmış hâli.
+    Negatif b_n → pozitif ölçü yok → gerçek obstruction (sahte geçiş değil).
     """
     def verify(self, obj: CertifiableObject) -> ParadigmResult:
         pid = self.paradigm_id
-        quadruples = obj.structure.get("cross_ratio_quadruples", [])
-        if not quadruples:
-            return ParadigmResult(pid, "UNKNOWN", gap_name="NO_QUADRUPLES")
-        failures = []
-        for q in quadruples:
-            a, b, c, d = (Fraction(q[k]) for k in ["a", "b", "c", "d"])
-            if (a - d) == 0 or (b - c) == 0:
-                continue
-            cr = (a - c) * (b - d) / ((a - d) * (b - c))
-            if "expected_cr" in q:
-                if cr != Fraction(q["expected_cr"]):
-                    failures.append(q)
-        if failures:
+        cr_positive = obj.structure.get("cross_ratio_positive")
+        cross_ratios = obj.structure.get("subresultant_cross_ratios", [])
+        dets = obj.structure.get("hankel_determinants", [])
+        if cr_positive is None:
+            return ParadigmResult(pid, "UNKNOWN",
+                gap_name="HANKEL_CROSS_RATIO_NOT_COMPUTED",
+                evidence=["Hankel determinant dizisi üretilemedi — cross-ratio yok"])
+        if not cr_positive:
+            neg = [round(c, 6) for c in cross_ratios if c < 0]
             return ParadigmResult(pid, "BLOCKED",
-                gap_name="CROSS_RATIO_NOT_INVARIANT",
-                evidence=[f"{len(failures)} quadruples fail invariance"])
+                gap_name="HANKEL_CROSS_RATIO_NEGATIVE",
+                evidence=[
+                    f"negatif recurrence katsayısı b_n=D_{{n-1}}D_{{n+1}}/D_n²: {neg[:3]}",
+                    "moment dizisi Favard pozitifliğini ihlal ediyor — pozitif ölçü yok",
+                ],
+                certificate={"negative_cross_ratios": neg})
         return ParadigmResult(pid, "CERTIFIED",
-            evidence=[f"{len(quadruples)} quadruples — cross-ratio consistent"],
-            certificate={"quadruples_checked": len(quadruples)})
+            evidence=[
+                f"{len(cross_ratios)} recurrence katsayısı b_n ≥ 0 (Favard)",
+                f"Hankel determinantları D_n: {[round(d, 4) for d in dets[:4]]}",
+                "b_n=D_{n-1}D_{n+1}/D_n² ≥ 0 — pozitif ölçü (tce cross-ratio yapısı)",
+            ],
+            certificate={"cross_ratios": cross_ratios, "hankel_det_count": len(dets)})
 
 
 class RepairCostParadigm(Paradigm):

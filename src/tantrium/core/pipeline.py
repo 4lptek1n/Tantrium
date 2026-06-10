@@ -453,19 +453,36 @@ def stage_ancillary(
         state["actions"] = _actions
         state["chosen_action"] = f"use_moment_{_best_k}"
 
-    # TET — Cross-ratio: dört ardışık momentten
-    if len(moments) >= 4:
-        _a, _b, _c, _d = moments[0], moments[1], moments[2], moments[3]
-        if (_a - _d) != 0 and (_b - _c) != 0:
-            _cr = (_a - _c) * (_b - _d) / ((_a - _d) * (_b - _c))
-            state["cross_ratio_quadruples"] = [{
-                "a": str(_a), "b": str(_b), "c": str(_c), "d": str(_d),
-                "expected_cr": str(_cr),
-            }]
-        else:
-            state["cross_ratio_quadruples"] = []
-    else:
-        state["cross_ratio_quadruples"] = []
+    # TET — Hankel determinant cross-ratio (Favard teoremi / tce subresultant yapısı):
+    # b_n = D_{n-1}·D_{n+1} / D_n²,  D_n = det(n×n moment Hankel'i, H[i,j]=μ_{i+j}).
+    # b_n > 0 ↔ ortogonal polinomlar gerçek köklü ↔ moment dizisi pozitif bir
+    # ölçüden gelir (Favard). Bu, tce'nin ρ_{d,j}=C·t^k·H_{j-2}H_j/H_{j-1}²
+    # cross-ratio'su ile birebir aynı yapı — momentlere doğru uygulanmış hâli.
+    # Bozuk/sahte moment dizilerinde D_n işaret değiştirir → b_n < 0 → obstruction.
+    try:
+        import numpy as _np
+        _mu = [float(m) for m in moments]
+        _dets = [1.0]  # D_0 = 1 (boş Hankel)
+        for _nn in range(1, len(_mu) // 2 + 1):
+            _Hn = _np.array([[_mu[_i + _j] for _j in range(_nn)] for _i in range(_nn)])
+            _dets.append(float(_np.linalg.det(_Hn)))
+        _cross_ratios: list[float] = []
+        _all_positive = True
+        for _nn in range(1, len(_dets) - 1):
+            _den = _dets[_nn] ** 2
+            if abs(_den) > 1e-15:
+                _b = _dets[_nn - 1] * _dets[_nn + 1] / _den
+                _cross_ratios.append(_b)
+                if _b < -1e-9:
+                    _all_positive = False
+        state["hankel_determinants"] = _dets
+        state["subresultant_cross_ratios"] = _cross_ratios
+        state["cross_ratio_positive"] = _all_positive if _cross_ratios else None
+    except Exception:
+        # Hesaplanamadı — dürüst UNKNOWN (sahte değer YOK)
+        state["hankel_determinants"] = []
+        state["subresultant_cross_ratios"] = []
+        state["cross_ratio_positive"] = None
 
     # RESH — Kısmi iz: üst yarı eigenvalue toplamı = alt-sistem
     state["environment_trace"] = True
