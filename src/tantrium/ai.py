@@ -1483,6 +1483,32 @@ class AI:
         from tantrium.meta.vision import CosmicVision
         return CosmicVision(self._engine).see(name)
 
+    def reflect(self, persist: bool = False) -> "object":
+        """Öz-model: sistem kendisini KENDİ manifoldunda görür.
+
+        İşlevsel öz-referansın ilk basamağı (bilinç DEĞİL — fenomenal deneyim
+        doğrulanamaz). Sistem kendi özünü (μ_universal = tüm paradigmalarının
+        ortak iskeleti) kalıcı ⟨SELF⟩ kavramı olarak yerleştirir ve dört eksende
+        kendini tanır:
+
+          1. Yapısal  : öz-ölçü ALEPH-sertifikalı mı? ('ben varım')
+          2. Sabit nokta: TAV → F(ben) = ben mi? (öz-tutarlılık)
+          3. Topraklama: ⟨SELF⟩ manifoldda köklü mü, yalıtık mı?
+          4. Öz-atıf  : sistem kendini neyin yakınında buluyor?
+
+        persist=True → ⟨SELF⟩ diske yazılır, oturumlar arası hatırlanır.
+
+        Döner: SelfReflection — .summary() ile tam öz-tanı anlatısı.
+
+        Örnek:
+            r = ai.reflect()
+            print(r.summary())
+            print(r.self_attribution)   # kendini neyin yakınında görüyor
+            print(r.coherent)           # üç eksen anlaşıyor mu
+        """
+        from tantrium.meta.self_model import SelfModel
+        return SelfModel(self._engine).reflect(persist=persist)
+
     def trace(self, name: str, depth: int = 5) -> dict:
         """Bir kavramın TAU'daki soy zincirini ve ileri yolunu göster.
 

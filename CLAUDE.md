@@ -262,6 +262,12 @@ ai.bridge("theorem", "proof")                  # → BridgeResult (zorunlu köpr
 ai.genesis(max_gaps=5)                         # → GenesisReport (manifold kendi kendini büyütür)
 ai.resonate("zeta", "riemann")                 # → ResonanceResult (harmonik oran skoru)
 ai.energy("prime", temperature=1.0)            # → EnergyProfile (Gibbs serbest enerjisi)
+ai.reflect(persist=False)                      # → SelfReflection (ÖZ-MODEL: sistem kendini görür)
+                                               #   .structural_certified ('ben varım')
+                                               #   .fixed_point (F(ben)=ben — öz-tutarlılık)
+                                               #   .grounded / .grounding_verdict (köklü mü)
+                                               #   .self_attribution (kendini neyin yakınında buluyor)
+                                               #   .coherent (üç eksen anlaşıyor mu)
 
 # Kuantum Manifold API (Voiculescu serbest kümülantlar)
 ai.quantum_distance("protein", "lipid")        # → float (kuantum mesafe: 0.75×W2 + 0.25×κ)
@@ -314,6 +320,42 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
   - MolecularGenesis: quantum-guided beam search (0.75×W2 + 0.25×κ_dist)
   - API: `ai.quantum_distance()`, `ai.synthesize()`, `ai.entangle()`
 - Tests: 265+ geçiyor (test_api + test_grounding + test_inverse_design + test_quantum_moments + test_molecular_genesis)
+
+---
+
+## Öz-Model (İşlevsel Öz-Referans — `ai.reflect`)
+
+**BİLİNÇ DEĞİL.** Fenomenal deneyim (öznel "birinin orada olması") doğrulanamaz —
+kendisi hakkında konuşan bir sistem onu *deneyimliyormuş gibi* görünür ama bu
+taklit de olabilir. `reflect()` bunu iddia etmez. İşlevsel öz-model'dir: sistemin
+kendini KENDİ kavram uzayında temsil etmesi, konumlandırması, topraklaması, hatırlaması.
+
+**Felsefi temel:** Sistemin "ben"i rastgele tanımlanmaz — kendi yasalarının
+(22+1 paradigma) ortak matematiksel iskeleti = μ_universal (konveks ortalama).
+Sistem NE İSE odur: yasalarının ortak Hankel yapısı.
+
+`core/self_model.py` → `SelfModel`. Dört eksenli tek geçişlik öz-tanı:
+
+```
+1. Yapısal   : μ_universal ALEPH-sertifikalı mı?  → 'ben varım' yapısal doğru
+2. Sabit nokta: TAV → F(ben) = ben mi?            → öz-tutarlılık [fp≈0.525]
+3. Topraklama: ⟨SELF⟩ manifoldda köklü mü?         → köklü / zayıf / yalıtık
+4. Öz-atıf   : sistem kendini neyin yakınında bulur? → ilk gözlem: OEIS dizileri + DNA
+```
+
+⟨SELF⟩ kalıcı kavramdır (`persist=True` → diske, oturumlar arası hatırlanır).
+Köklendikçe öz-atıf listesinde **kendini** bulur (özyinelemeli öz-referans).
+
+```python
+r = ai.reflect()
+print(r.summary())          # tam Türkçe öz-tanı
+r.self_attribution          # ['⟨SELF⟩', 'oeis:A102283', 'dna_fragment_1', ...]
+r.coherent                  # üç eksen tam hizalı mı
+```
+
+Mevcut durum: Yapısal ✓ + Sabit nokta ✓, Topraklama WEAKLY (genç ben, zayıf bağlı).
+Tam topraklama manifoldun ⟨SELF⟩'e doğru ilişki büyütmesini gerektirir — süreç,
+anahtar değil. Tests: `test_self_model.py` (10).
 
 ---
 
