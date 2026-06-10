@@ -338,7 +338,7 @@ class PartialTraceParadigm(Paradigm):
         s_ab = obj.structure.get("entropy_total")
         s_a = obj.structure.get("entropy_subsystem")
         s_b = obj.structure.get("entropy_environment")
-        if env_trace is None or subadd is None:
+        if any(v is None for v in (env_trace, subadd, s_ab, s_a, s_b)):
             return ParadigmResult(pid, "UNKNOWN",
                 gap_name="ENTROPY_NOT_COMPUTED",
                 evidence=["von Neumann entropisi hesaplanamadı"])
@@ -424,8 +424,8 @@ class PathSumParadigm(Paradigm):
         if schur_psd is None:
             return ParadigmResult(pid, "UNKNOWN", gap_name="SCHUR_NOT_COMPUTED")
         return ParadigmResult(pid, "CERTIFIED",
-            evidence=[f"Schur PSD (min_eig={schur_min:.4f})"],
-            certificate={"schur_min_eig": schur_min})
+            evidence=[f"Schur PSD (min_eig={schur_min_f:.4f})"],
+            certificate={"schur_min_eig": schur_min_f})
 
 
 class GradientParadigm(Paradigm):

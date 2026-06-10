@@ -70,12 +70,9 @@ def stage_l05_bet_infocon(
         state["spectral_entropy"] = _entropy
         state["frobenius_preserved"] = _info_loss < 1e-6
     except Exception:
-        state["transformations"] = [
-            {"name": "gram_transform", "information_loss": 0},
-            {"name": "von_neumann_entropy", "information_loss": 0},
-        ]
-        state["spectral_entropy"] = 0.0
-        state["frobenius_preserved"] = True
+        state["transformations"] = []
+        state["spectral_entropy"] = None
+        state["frobenius_preserved"] = None
 
 
 # ─── L2.5 – DALET: Gerçek spektrum ──────────────────────────────────────────
@@ -362,7 +359,6 @@ def stage_l4_tav_heatflow(state: dict) -> None:
         state["fixed_point_iterations"] = _heat_iters
         state["fixed_point"] = _fp
         state["debruijn_newman_lambda"] = -_var0
-        state["tav_hamburger_unique"] = True
         # is_running: spektral varyans > 0 ↔ sistem aktif (trivial tek-nokta değil)
         state["is_running"] = _var0 > 1e-9
     except Exception:
@@ -370,7 +366,6 @@ def stage_l4_tav_heatflow(state: dict) -> None:
         state["fixed_point_iterations"] = []
         state["fixed_point"] = None
         state["debruijn_newman_lambda"] = None
-        state["tav_hamburger_unique"] = None
         state["is_running"] = None
 
 
@@ -664,7 +659,9 @@ def stage_l5_gimel_admission(
             _margins["HE"] = float(
                 min(-(_lyap[k + 1] - _lyap[k]) for k in range(len(_lyap) - 1))
             )
-        _margins["ZAYIN"] = float(state.get("schur_min_eigenvalue", 0.0))
+        _schur_min = state.get("schur_min_eigenvalue")
+        if _schur_min is not None:
+            _margins["ZAYIN"] = float(_schur_min)
         _tau_vals = list(state.get("tau_determinants", {}).values())
         if _tau_vals:
             _margins["TAU"] = float(min(_tau_vals))
