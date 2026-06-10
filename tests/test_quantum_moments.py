@@ -93,3 +93,19 @@ def test_to_moments_approx_roundtrip():
     assert len(approx) == 8
     assert abs(approx[1] - MU_SIMPLE[1]) < 1e-9, "μ₁ yeniden üretilmeli"
     assert abs(approx[2] - MU_SIMPLE[2]) < 1e-9, "μ₂ yeniden üretilmeli"
+
+
+def test_nearest_quantum_metric_wired():
+    """SemanticManifold.nearest(metric='quantum') → _nearest_quantum_vec yönlenir."""
+    from fractions import Fraction
+    from tantrium.core.semantic import Concept, SemanticManifold
+    m = SemanticManifold()
+    m.add(Concept(name="a", moments=[1.0, 0.3, 0.15, 0.08], domain="test", source="t"))
+    m.add(Concept(name="b", moments=[1.0, 0.31, 0.16, 0.09], domain="test", source="t"))
+    m.add(Concept(name="c", moments=[1.0, 0.9, 0.85, 0.8], domain="test", source="t"))
+    q = Concept(name="q", moments=[1.0, 0.3, 0.15, 0.08], domain="test", source="t")
+    hits = m.nearest(q, n=2, metric="quantum")
+    assert len(hits) <= 2
+    assert all(isinstance(d, Fraction) for _, d in hits)
+    # 'a' kuantum olarak en yakın olmalı (aynı momentler)
+    assert hits[0][0] == "a"

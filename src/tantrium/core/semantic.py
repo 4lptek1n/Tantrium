@@ -176,10 +176,21 @@ class SemanticManifold:
         metric="l1" (varsayılan): hızlı L1 ön-eleme — büyük manifoldda hız için.
         metric="spectral_w2": kanonik spektral Wasserstein (anlamsal hüküm için).
           L1 ile geniş aday kümesi seçilir, sonra kanonik W2 ile yeniden sıralanır.
+        metric="quantum": Voiculescu serbest kümülant mesafesi (0.7×W2 + 0.3×κ).
+          Klasik şekil + kuantum (halka/heteroatom) yapısı birlikte.
 
         Float path: 6748 kavram için Fraction L1 yerine float L1 — ~50x hızlı.
         Sonuçlar Fraction'a çevrilir (API uyumluluğu için).
         """
+        if metric == "quantum":
+            mu = [float(m) for m in concept.moments]
+            hits = self._nearest_quantum_vec(mu, top_k=n + 1)
+            out = []
+            for nm, d in hits:
+                if nm == concept.name:
+                    continue
+                out.append((nm, Fraction(d).limit_denominator(10 ** 6)))
+            return out[:n]
         if metric == "spectral_w2":
             # L1 ile geniş aday kümesi (3n), sonra kanonik W2 ile yeniden sırala
             from tantrium.core.metric import canonical_distance
