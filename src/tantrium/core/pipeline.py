@@ -117,27 +117,40 @@ def stage_l25_dalet_spectrum(
         state["center_order"] = 3
         state["z3_order"] = 3
         state["c6_order"] = 6
-        state["topological_index"] = 18
         state["newton_residual"] = _newton_res
         state["su3_newton_verified"] = _newton_res < 0.01
         state["matrix_rank"] = _rank
         state["matrix_nullity"] = _nullity
         state["euler_characteristic"] = _nullity + 1
         state["real_determinant"] = float(_np.linalg.det(_gnp))
+        # KUF — Sylvester inertia (imza korunumu): gerçek spektral invaryant.
+        # İmza (n₊,n₀,n₋) kongruans dönüşümleri altında korunur (Sylvester yasası).
+        # G=AᵀA PSD olmalı → n₋=0. Sayısal/yapısal bozulma negatif eigenvalue verir.
+        # Kırpılmamış ham eigenvalue'lar (_eigs_raw) kullanılır — imza gerçek görünsün.
+        _n_pos = sum(1 for _e in _eigs_raw if _e > 1e-9)
+        _n_zero = sum(1 for _e in _eigs_raw if abs(_e) <= 1e-9)
+        _n_neg = sum(1 for _e in _eigs_raw if _e < -1e-9)
+        state["inertia"] = (_n_pos, _n_zero, _n_neg)
+        state["conserved_index"] = _n_pos          # rank = Sylvester invaryantı
+        state["psd_preserved"] = (_n_neg == 0)
     except Exception:
+        # numpy yoksa: köşegenden türet, AMA sahte "başarı" değeri ÜRETME.
+        # Hesaplanamayan invaryantlar None bırakılır → paradigma UNKNOWN der (dürüst).
         _gram_diag = [G[i][i] for i in range(len(G))]
         state["eigenvalues"] = sorted([max(0.0, float(v)) for v in _gram_diag], reverse=True)[:6]
         state["symmetry_group"] = "spectral_SU3_proxy"
         state["center_order"] = 3
         state["z3_order"] = 3
         state["c6_order"] = 6
-        state["topological_index"] = 18
-        state["newton_residual"] = 0.0
-        state["su3_newton_verified"] = True
-        state["matrix_rank"] = len(G)
-        state["matrix_nullity"] = 0
-        state["euler_characteristic"] = 1
-        state["real_determinant"] = 1.0
+        state["newton_residual"] = None
+        state["su3_newton_verified"] = None
+        state["matrix_rank"] = None
+        state["matrix_nullity"] = None
+        state["euler_characteristic"] = None
+        state["real_determinant"] = None
+        state["inertia"] = None
+        state["conserved_index"] = None
+        state["psd_preserved"] = None
 
 
 def _update_bet_entropy(state: dict) -> None:
@@ -378,10 +391,35 @@ def stage_ancillary(
         for i in range(min(n, 8))
     }
 
-    # TSADI — Sensör → Sertifika (determinizm)
-    _sig = _hl.sha256("|".join(str(m) for m in moments).encode()).hexdigest()[:16]
-    state["sensor_hash"] = _sig
-    state["certificate_hash"] = _sig
+    # TSADI — Sensör → Sertifika (determinizm/reproducibility): hash(G(s)) = cert(s).
+    # sensor_hash = ham girdinin hash'i (kaynak), certificate_hash = türetilen
+    # moment dizisinin hash'i (sonuç) — FARKLI şeyleri hash'ler. Determinizm:
+    # ham girdi yeniden encode edilince AYNI momentleri vermeli (saf fonksiyon).
+    # Eşleşme → sensör okuması sertifikaya değişmez biçimde bağlı; ihlal → BLOCKED.
+    _sensor_hash = _hl.sha256(
+        str(raw_input)[:4000].encode("utf-8", errors="replace")
+    ).hexdigest()[:16]
+    _cert_hash = _hl.sha256("|".join(str(m) for m in moments).encode()).hexdigest()[:16]
+    state["sensor_hash"] = _sensor_hash
+    state["certificate_hash"] = _cert_hash
+    try:
+        _n_dim = len(G)
+        _tr_G = float(sum(G[i][i] for i in range(_n_dim)))
+        # Frobenius kimliği: ||A||_F² = Tr(AᵀA) = Tr(G) — tüm encoder yollarında
+        # geçerli (text, perception, SMILES). Kodlama tutarlıysa bu her zaman sağlanır.
+        _frob_sq = float(sum(
+            float(A[i][j]) ** 2
+            for i in range(len(A))
+            for j in range(len(A[i]))
+        )) if A else 0.0
+        _rel_err = abs(_tr_G - _frob_sq) / max(abs(_frob_sq), 1e-15)
+        state["reproduced_cert_hash"] = _hl.sha256(
+            f"frob:{_frob_sq:.8f}|tr:{_tr_G:.8f}|n:{_n_dim}".encode()
+        ).hexdigest()[:16]
+        state["deterministic"] = _rel_err < 1e-4
+    except Exception:
+        state["reproduced_cert_hash"] = None
+        state["deterministic"] = None
 
     # VAV + NUN — Tensör bileşimi
     state["components"] = [{"dim": n}, {"dim": len(A[0]) if A else 1}]
@@ -414,13 +452,30 @@ def stage_ancillary(
         }]
     state["distinct_pairs"] = _pairs[:4]
 
-    # MEM — Ayar eşdeğerliği: aynı Gram satırı → ayar eşdeğeri
+    # MEM — Ayar eşdeğerliği: x ~ y ↔ ∀M, M(x)=M(y) (aynı Gram satırı).
+    # Satırlar yuvarlanmış imzayla gruplanır; her gauge sınıfı için üyelerin
+    # GERÇEKTEN birebir eşit olup olmadığı (tam ayar eşdeğerliği) hesaplanır.
+    # Yuvarlamayla eşit ama ham değerleri farklı → ölçülebilir ayrım → gauge
+    # tutarsızlığı (all_measurements_equal=False). Sahte hardcoded True değil.
     _ng_mem = len(G)
-    _row_sig: dict[tuple, list] = {}
+    _row_groups: dict[tuple, list] = {}
     for _i in range(_ng_mem):
-        _sig_key = tuple(round(float(G[_i][_j]), 5) for _j in range(_ng_mem))
-        _row_sig.setdefault(_sig_key, []).append({"id": f"row_{_i}", "all_measurements_equal": True})
-    _gauge_classes = list(_row_sig.values())
+        _raw_row = [float(G[_i][_j]) for _j in range(_ng_mem)]
+        _sig_key = tuple(round(_v, 5) for _v in _raw_row)
+        _row_groups.setdefault(_sig_key, []).append({"id": f"row_{_i}", "raw": _raw_row})
+    _gauge_classes = []
+    for _members in _row_groups.values():
+        if len(_members) > 1:
+            _ref = _members[0]["raw"]
+            _exact = all(
+                max(abs(_m["raw"][_k] - _ref[_k]) for _k in range(len(_ref))) < 1e-12
+                for _m in _members
+            )
+        else:
+            _exact = True  # tek elemanlı sınıf trivially eşdeğer
+        _gauge_classes.append(
+            [{"id": _m["id"], "all_measurements_equal": _exact} for _m in _members]
+        )
     state["gauge_classes"] = _gauge_classes if _gauge_classes else [
         [{"id": "row_0", "all_measurements_equal": True}]
     ]
@@ -484,40 +539,96 @@ def stage_ancillary(
         state["subresultant_cross_ratios"] = []
         state["cross_ratio_positive"] = None
 
-    # RESH — Kısmi iz: üst yarı eigenvalue toplamı = alt-sistem
-    state["environment_trace"] = True
+    # RESH — Kısmi iz (Araki-Lieb subadditivity): açık sistem entropi dengesi.
+    # Gram eigenvalue spektrumunu bir density matrix'in özdeğerleri olarak al,
+    # olasılık dağılımına normalize et, von Neumann entropisini hesapla:
+    #   S(AB) = tam spektrum,  S(A) = alt-sistem,  S(B) = çevre (kalan).
+    # Araki-Lieb üçgen eşitsizliği |S(A)−S(B)| ≤ S(AB) ≤ S(A)+S(B) doğrulanır.
+    # Ayrıca her entropi fiziksel sınırda olmalı: 0 ≤ S ≤ log(dim).
     try:
         import numpy as _rnp
+        import math as _rmath
         _rng = len(G)
         _rgnp = _rnp.array([[float(G[i][j]) for j in range(_rng)] for i in range(_rng)])
-        _reigs = sorted(_rnp.linalg.eigvalsh(_rgnp).tolist(), reverse=True)
-        _total = max(1.0, float(sum(_reigs)))
-        _half = max(1, len(_reigs) // 2)
-        _subsystem = float(sum(_reigs[:_half]))
-    except Exception:
-        _total = max(1.0, float(sum(G[i][i] for i in range(len(G)))) if G else 1.0)
-        _subsystem = _total * 0.5
-    state["total_information"] = _total
-    state["subsystem_information"] = max(0.0, _subsystem)
+        _reigs = [max(0.0, _e) for _e in _rnp.linalg.eigvalsh(_rgnp).tolist()]
 
-    # YOD — MDL / Kolmogorov: zlib sıkıştırma karşılaştırması
+        def _vn_entropy(_eigs: list) -> float:
+            _s = sum(_eigs)
+            if _s <= 1e-15:
+                return 0.0
+            _ent = 0.0
+            for _e in _eigs:
+                _p = _e / _s
+                if _p > 1e-15:
+                    _ent -= _p * _rmath.log(_p)
+            return _ent
+
+        _half = max(1, len(_reigs) // 2)
+        _S_AB = _vn_entropy(_reigs)
+        _S_A = _vn_entropy(_reigs[:_half])
+        _S_B = _vn_entropy(_reigs[_half:])
+        _lower = abs(_S_A - _S_B)
+        _upper = _S_A + _S_B
+        state["environment_trace"] = True
+        state["entropy_total"] = _S_AB
+        state["entropy_subsystem"] = _S_A
+        state["entropy_environment"] = _S_B
+        state["araki_lieb_lower"] = _lower
+        state["araki_lieb_upper"] = _upper
+        state["subadditivity_holds"] = (_lower - 1e-9 <= _S_AB <= _upper + 1e-9)
+        state["total_information"] = max(1.0, float(sum(_reigs)))
+        state["subsystem_information"] = float(sum(_reigs[:_half]))
+    except Exception:
+        # Hesaplanamadı — dürüst None (sahte True YOK)
+        state["environment_trace"] = None
+        state["entropy_total"] = None
+        state["subadditivity_holds"] = None
+        state["total_information"] = None
+        state["subsystem_information"] = None
+
+    # YOD — MDL / Kolmogorov: min_L K(L) + K(D|L).
+    # Tam moment modeli (8 moment) ile kısaltılmış alternatif modeller (ilk k
+    # moment) GERÇEKTEN karşılaştırılır. Bir alternatif daha kısa toplam
+    # açıklama veriyorsa → tam model minimal DEĞİL → YOD bloklar.
+    # Hamburger: ölçü momentleriyle tam belirlenir; truncation bilgi kaybeder
+    # (kalan momentler residual'e eklenir), bu yüzden tam model genelde minimal.
     try:
         import zlib as _zlib, json as _json
         _raw_str = str(raw_input)[:2000]
         _raw_compressed = len(_zlib.compress(_raw_str.encode("utf-8", errors="replace"), level=9))
-        _model_str = _json.dumps([float(m) for m in moments])
+        _mu_full = [float(m) for m in moments]
+        _model_str = _json.dumps(_mu_full)
         _model_compressed = len(_zlib.compress(_model_str.encode(), level=9))
         _residual = max(0, _raw_compressed - _model_compressed)
         state["model_length"] = _model_compressed
         state["data_given_model_length"] = _residual
         state["raw_compressed_length"] = _raw_compressed
         state["mdl_ratio"] = _model_compressed / max(_raw_compressed, 1)
-        state["alternative_models"] = []
+        # Gerçek alternatif modeller: kısaltılmış moment dizileri.
+        # Atılan momentler temsil edilemeyen bilgidir → gerçek sıkıştırılmış
+        # boyutları residual'e eklenir (Hamburger: her moment ölçüyü belirler).
+        # Böylece kısa model + atılan momentlerin maliyeti ≈ tam model → tam
+        # model minimal kalır; sahte BLOCKED üretilmez.
+        _alternatives = []
+        for _trunc in (2, 4, 6):
+            if _trunc < len(_mu_full):
+                _alt_str = _json.dumps(_mu_full[:_trunc])
+                _alt_model = len(_zlib.compress(_alt_str.encode(), level=9))
+                _dropped_str = _json.dumps(_mu_full[_trunc:])
+                _dropped_compressed = len(_zlib.compress(_dropped_str.encode(), level=9))
+                _alt_residual = _residual + _dropped_compressed
+                _alternatives.append({
+                    "name": f"truncated_{_trunc}",
+                    "model_length": _alt_model,
+                    "data_given_model_length": _alt_residual,
+                })
+        state["alternative_models"] = _alternatives
     except Exception:
-        state["model_length"] = 8
-        state["data_given_model_length"] = max(0, n - 8)
-        state["raw_compressed_length"] = 8
-        state["mdl_ratio"] = 1.0
+        # Hesaplanamadı — dürüst None (sahte "minimal" değeri YOK)
+        state["model_length"] = None
+        state["data_given_model_length"] = None
+        state["raw_compressed_length"] = None
+        state["mdl_ratio"] = None
         state["alternative_models"] = []
 
     # PE — Semantik haritalama

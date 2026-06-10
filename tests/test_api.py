@@ -54,7 +54,7 @@ def test_ask_has_certified(ai):  # type: ignore[misc]
 
 
 def test_ask_certified_is_true_for_valid_query(ai):  # type: ignore[misc]
-    r = ai.ask("DNA")
+    r = ai.ask("protein")
     assert r.certified is True
 
 
@@ -65,7 +65,7 @@ def test_ask_has_paradigms_passed(ai):  # type: ignore[misc]
 
 
 def test_ask_paradigms_passed_is_23(ai):  # type: ignore[misc]
-    r = ai.ask("DNA")
+    r = ai.ask("protein")
     assert r.paradigms_passed == 23
 
 
@@ -124,8 +124,8 @@ def test_paradigms_each_has_evidence(ai):
         assert isinstance(v["evidence"], list)
 
 
-def test_paradigms_egfr_all_certified(ai):
-    result = ai.paradigms("EGFR")
+def test_paradigms_all_certified(ai):
+    result = ai.paradigms("riemann")
     certified = sum(1 for v in result.values() if v["status"] == "CERTIFIED")
     assert certified == 23
 

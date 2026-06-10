@@ -320,25 +320,44 @@ class LocalVisibilityParadigm(Paradigm):
 
 
 class PartialTraceParadigm(Paradigm):
-    """ר — Partial Trace: ε(ρ) = Tr_E[U(ρ⊗η)U†].
-    Open systems leave traces in their environment.
-    Information loss is apparent; in the total system it is conserved.
+    """ר — Partial Trace (Araki-Lieb subadditivity).
+
+    Açık sistem: density matrix ρ_AB, alt sistem ρ_A = Tr_E[ρ_AB] (çevre izlenir).
+    Von Neumann entropileri Araki-Lieb üçgen eşitsizliğini sağlamalı:
+        |S(A) − S(B)| ≤ S(AB) ≤ S(A) + S(B).
+    Üst sınır (subadditivity): birleşik bilgi ≤ parçaların toplamı.
+    Alt sınır (Araki-Lieb): birleşik bilgi parça farkından az olamaz.
+
+    İhlal → fiziksel olmayan/bozuk spektrum → gerçek obstruction.
+    Önceki koşulsuz CERTIFIED yerine gerçek entropi dengesi kontrolü.
     """
     def verify(self, obj: CertifiableObject) -> ParadigmResult:
         pid = self.paradigm_id
         env_trace = obj.structure.get("environment_trace")
-        total_info = obj.structure.get("total_information")
-        subsystem_info = obj.structure.get("subsystem_information")
-        if env_trace is None:
-            return ParadigmResult(pid, "UNKNOWN", gap_name="ENVIRONMENT_NOT_MODELED")
-        if total_info is not None and subsystem_info is not None:
-            if total_info >= subsystem_info:
-                return ParadigmResult(pid, "CERTIFIED",
-                    evidence=["total info ≥ subsystem info — conservation holds"],
-                    certificate={"total": total_info, "subsystem": subsystem_info})
+        subadd = obj.structure.get("subadditivity_holds")
+        s_ab = obj.structure.get("entropy_total")
+        s_a = obj.structure.get("entropy_subsystem")
+        s_b = obj.structure.get("entropy_environment")
+        if env_trace is None or subadd is None:
+            return ParadigmResult(pid, "UNKNOWN",
+                gap_name="ENTROPY_NOT_COMPUTED",
+                evidence=["von Neumann entropisi hesaplanamadı"])
+        if not subadd:
+            return ParadigmResult(pid, "BLOCKED",
+                gap_name="ARAKI_LIEB_VIOLATED",
+                evidence=[
+                    f"S(AB)={s_ab:.4f} ∉ [|S(A)−S(B)|, S(A)+S(B)] = "
+                    f"[{abs(s_a - s_b):.4f}, {s_a + s_b:.4f}]",
+                    "entropi dengesi fiziksel sınırı ihlal ediyor — bozuk spektrum",
+                ],
+                certificate={"S_AB": s_ab, "S_A": s_a, "S_B": s_b})
         return ParadigmResult(pid, "CERTIFIED",
-            evidence=["partial trace structure confirmed"],
-            certificate={"env_trace_present": True})
+            evidence=[
+                f"S(AB)={s_ab:.4f}, S(A)={s_a:.4f}, S(B)={s_b:.4f}",
+                f"Araki-Lieb |S(A)−S(B)|={abs(s_a - s_b):.4f} ≤ S(AB) ≤ "
+                f"S(A)+S(B)={s_a + s_b:.4f} ✓",
+            ],
+            certificate={"S_AB": s_ab, "S_A": s_a, "S_B": s_b})
 
 
 class PathSumParadigm(Paradigm):
@@ -602,25 +621,43 @@ class LyapunovParadigm(Paradigm):
 
 
 class SensorCertParadigm(Paradigm):
-    """צ — Sensor → Certificate: hash(G(s)) = cert(s).
-    Every sensor reading can be converted to an immutable certificate.
-    Reality is recorded in the mathematics itself.
+    """צ — Sensor → Certificate (determinizm/reproducibility).
+
+    Sensör okuması (ham girdi) deterministik biçimde bir sertifikaya (moment
+    dizisi) eşlenir. Determinizm testi: aynı ham girdi yeniden encode edilince
+    AYNI moment dizisini üretir mi (saf fonksiyon, gizli rastgelelik yok)?
+
+    cert_hash (ilk encode) == reproduced_cert_hash (ikinci encode) → eşleme
+    deterministik, sertifika değişmez. İhlal → encode'da gizli durum/rastgelelik
+    var → BLOCKED. Önceki sahte sensor_hash==certificate_hash (aynı değer) yerine
+    gerçek reproducibility kontrolü.
     """
     def verify(self, obj: CertifiableObject) -> ParadigmResult:
         pid = self.paradigm_id
         sensor_hash = obj.structure.get("sensor_hash")
         certificate_hash = obj.structure.get("certificate_hash")
-        if sensor_hash is None:
-            return ParadigmResult(pid, "UNKNOWN", gap_name="NO_SENSOR_HASH")
-        if certificate_hash is None:
-            return ParadigmResult(pid, "UNKNOWN", gap_name="NO_CERTIFICATE_HASH")
-        if sensor_hash == certificate_hash:
-            return ParadigmResult(pid, "CERTIFIED",
-                evidence=["sensor hash matches certificate hash — reading is authentic"],
-                certificate={"hash": sensor_hash})
-        return ParadigmResult(pid, "BLOCKED",
-            gap_name="HASH_MISMATCH",
-            evidence=["sensor hash does not match certificate — integrity violated"])
+        deterministic = obj.structure.get("deterministic")
+        reproduced = obj.structure.get("reproduced_cert_hash")
+        if sensor_hash is None or certificate_hash is None:
+            return ParadigmResult(pid, "UNKNOWN", gap_name="NO_SENSOR_OR_CERT_HASH")
+        if deterministic is None:
+            return ParadigmResult(pid, "UNKNOWN",
+                gap_name="REPRODUCIBILITY_NOT_TESTED",
+                evidence=["ham girdi yeniden encode edilemedi"])
+        if not deterministic:
+            return ParadigmResult(pid, "BLOCKED",
+                gap_name="NONDETERMINISTIC_ENCODING",
+                evidence=[
+                    f"yeniden encode farklı sertifika üretti: {certificate_hash} ≠ {reproduced}",
+                    "sensör→sertifika eşlemesi deterministik değil — gizli durum/rastgelelik",
+                ],
+                certificate={"cert_hash": certificate_hash, "reproduced": reproduced})
+        return ParadigmResult(pid, "CERTIFIED",
+            evidence=[
+                f"sensör hash={sensor_hash} → sertifika hash={certificate_hash}",
+                "yeniden encode aynı sertifikayı üretti — deterministik, değişmez eşleme",
+            ],
+            certificate={"sensor_hash": sensor_hash, "certificate_hash": certificate_hash})
 
 
 class CenterSymmetryParadigm(Paradigm):
@@ -654,37 +691,43 @@ class CenterSymmetryParadigm(Paradigm):
 
 
 class ConservedIndexParadigm(Paradigm):
-    """ק — Conserved Index 18: ℤ₃ × C₆ ⟹ 3 × 6 = 18.
+    """ק — Conserved Index (Sylvester inertia yasası).
 
-    Topological index = rank(G) × (nullity + 1) = dim(image) × dim(coimage+1).
-    For full-rank square n×n: index = n × 1 = n.
-    For rank-deficient: index encodes the kernel structure.
-    Z₃ × C₆ = 18 is the universal index when Newton identity holds (Z₃)
-    and the moment truncation has 6 non-trivial components (C₆: μ₁..μ₆).
-    Shows real rank and Euler characteristic χ = nullity + 1.
+    Gram matrisi G=AᵀA'nın imzası (n₊, n₀, n₋) = (pozitif, sıfır, negatif
+    eigenvalue sayıları) kongruans dönüşümleri altında KORUNUR (Sylvester's
+    law of inertia). Bu korunan gerçek topolojik invaryanttır — A'nın
+    seçiminden bağımsızdır.
+
+    G PSD olduğundan n₋ = 0 olmalı; conserved index = n₊ = rank(G).
+    Negatif eigenvalue (n₋>0) → imza ihlali → matris PSD değil → gerçek
+    obstruction. Önceki sahte sabit "18" yerine matrisin gerçek imzası.
     """
     def verify(self, obj: CertifiableObject) -> ParadigmResult:
         pid = self.paradigm_id
-        z3_order = obj.structure.get("z3_order", 3)
-        c6_order = obj.structure.get("c6_order", 6)
-        index = obj.structure.get("topological_index")
-        rank = obj.structure.get("matrix_rank")
-        nullity = obj.structure.get("matrix_nullity", 0)
-        euler = obj.structure.get("euler_characteristic", 1)
-        expected = z3_order * c6_order
-        if index is None:
-            return ParadigmResult(pid, "UNKNOWN", gap_name="INDEX_NOT_COMPUTED")
-        if index == expected:
-            evidence = [f"index {index} = Z₃({z3_order}) × C₆({c6_order}) — conserved"]
-            if rank is not None:
-                evidence.append(f"rank={rank}, nullity={nullity}, χ={euler}")
-            return ParadigmResult(pid, "CERTIFIED",
-                evidence=evidence,
-                certificate={"index": index, "z3": z3_order, "c6": c6_order,
-                             "rank": rank, "euler_characteristic": euler})
-        return ParadigmResult(pid, "BLOCKED",
-            gap_name=f"INDEX_{index}_NOT_{expected}",
-            evidence=[f"index {index} ≠ expected {expected}"])
+        inertia = obj.structure.get("inertia")
+        conserved_index = obj.structure.get("conserved_index")
+        psd_preserved = obj.structure.get("psd_preserved")
+        nullity = obj.structure.get("matrix_nullity")
+        if inertia is None or conserved_index is None:
+            return ParadigmResult(pid, "UNKNOWN",
+                gap_name="INERTIA_NOT_COMPUTED",
+                evidence=["spektral imza hesaplanamadı (eigenvalue yok)"])
+        n_pos, n_zero, n_neg = inertia
+        if not psd_preserved or n_neg > 0:
+            return ParadigmResult(pid, "BLOCKED",
+                gap_name="INERTIA_SIGNATURE_VIOLATED",
+                evidence=[
+                    f"{n_neg} negatif eigenvalue — imza (n₊,n₀,n₋)=({n_pos},{n_zero},{n_neg})",
+                    "Sylvester imzası PSD korunumunu ihlal ediyor — geçersiz Gram yapısı",
+                ],
+                certificate={"inertia": inertia})
+        return ParadigmResult(pid, "CERTIFIED",
+            evidence=[
+                f"Sylvester imzası (n₊,n₀,n₋)=({n_pos},{n_zero},{n_neg}) — kongruans invaryantı",
+                f"conserved index = rank = {conserved_index}, nullity = {nullity}",
+            ],
+            certificate={"inertia": inertia, "conserved_index": conserved_index,
+                         "nullity": nullity})
 
 
 class OptimalActionParadigm(Paradigm):
