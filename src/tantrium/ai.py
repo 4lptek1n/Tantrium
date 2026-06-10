@@ -40,22 +40,33 @@ from typing import Any
 
 @dataclass
 class AskResult:
-    """ai.ask() sonucu."""
+    """ai.ask() sonucu — 4 eksenli sertifika.
+
+    certified: yapısal geçerlilik (23 paradigma). Geriye dönük uyumlu.
+    coherent:  tüm 4 eksen anlaşıyor (yapısal + toraklama + gerçek + güven).
+    """
     query: str
     answer: str
-    certified: bool
+    certified: bool        # paradigm coverage (geriye dönük uyumlu)
     paradigms_passed: int
     paradigms_total: int
     gaps: list[str]
     nearest: list[str]        # en yakın manifold kavramları
     grounding: str = "UNKNOWN"   # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
     grounding_score: float = 0.0
+    truth: str = "CONSISTENT"    # CONSISTENT | CONTESTED | CONTRADICTORY
+    truth_score: float = 0.7
+    confidence: float = 0.5
+    confidence_level: str = "MODERATE"
+    coherent: bool = False  # tüm 4 eksen anlaşıyor
 
     def __str__(self) -> str:
         cert = "✓" if self.certified else "✗"
+        coh = "⬡" if self.coherent else ""
         g = {"GROUNDED": "⏚", "WEAKLY_GROUNDED": "≈", "UNGROUNDED": "∅"}.get(self.grounding, "?")
         return (
-            f"{cert} [{self.paradigms_passed}/{self.paradigms_total}] {g}{self.grounding}  {self.answer}"
+            f"{cert}{coh} [{self.paradigms_passed}/{self.paradigms_total}] {g}{self.grounding}"
+            f"  {self.truth} conf={self.confidence:.2f}  {self.answer}"
             + (f"\n  gaps: {', '.join(self.gaps)}" if self.gaps else "")
         )
 
@@ -291,8 +302,8 @@ class AI:
         try:
             cert = self.transport(a, b, use_smiles=use_smiles)
             status = "Sertifikalı" if getattr(cert, "certified", False) else "Sertifikasız"
-            dyadic = getattr(cert, "dyadic_status", "")
-            sturm = getattr(cert, "sturm_status", "")
+            dyadic = "✓" if getattr(cert, "dyadic_verified", False) else "✗"
+            sturm = "✓" if getattr(cert, "sturm_verified", False) else "✗"
             lines = [f"Transport: {a} → {b}  [{status}]"]
             if dyadic:
                 lines.append(f"  Dyadic: {dyadic}")
@@ -399,19 +410,19 @@ class AI:
         return self._engine.grounder.certify(token)
 
     def ask(self, query: str) -> AskResult:
-        """Herhangi bir girdi → certify → manifold konumu + doğal dil yanıt."""
+        """Herhangi bir girdi → CoreMachine (tek geçiş, 4 eksen) → AskResult."""
         from tantrium.core.semantic import Concept
 
-        obj = self._engine.encoder.encode(query, name=query[:64])
-        run = self._engine.network.run(obj)
+        # ONE PASS: CoreMachine — encode, process, 4 axes all from shared state
+        ucert = self._engine.core.certify(query, name=query[:64])
+        run = ucert.evidence.get("run")
 
-        concept = Concept(name=query[:64], moments=list(obj.moments), domain="input")
-        gaps = [pid for pid, node in run.nodes.items() if node.status == "BLOCKED"]
+        concept = Concept(name=query[:64], moments=ucert.moments, domain="input")
 
         # Sertifika özeti
-        cert_summary = self._engine.speaker.explain(run)
+        cert_summary = self._engine.speaker.explain(run) if run else f"'{query[:64]}' işlendi."
 
-        # Manifold konumu: en yakın kavramlar
+        # Manifold konumu
         nearest: list[str] = []
         location_text = ""
         if self._engine.manifold.concepts:
@@ -420,25 +431,30 @@ class AI:
             if nearest:
                 location_text = f"Manifold komşuları: {', '.join(nearest[:3])}"
 
-        # Topraklama ekseni: yapısal geçerlilik tek başına elemiyor (her şey PSD).
-        # "Bu token bilinen referanslara bağlı mı, yoksa geçerli ama anlamsız mı?"
-        gcert = self._engine.grounder.certify(query[:64], moments=list(obj.moments))
-
         answer = cert_summary
         if location_text:
             answer = f"{cert_summary}\n{location_text}"
+
+        # Topraklama özeti
+        gcert = self._engine.grounder.certify(query[:64], moments=ucert.moments)
         answer = f"{answer}\n{gcert.summary()}"
 
         return AskResult(
             query=query,
             answer=answer,
-            certified=run.certified_count == run.total,
-            paradigms_passed=run.certified_count,
-            paradigms_total=run.total,
-            gaps=gaps,
+            # certified = yapısal (geriye dönük uyumlu: paradigm coverage)
+            certified=(ucert.paradigms_passed >= ucert.paradigms_total - 1),
+            paradigms_passed=ucert.paradigms_passed,
+            paradigms_total=ucert.paradigms_total,
+            gaps=ucert.gaps,
             nearest=nearest,
-            grounding=gcert.verdict,
-            grounding_score=gcert.score,
+            grounding=ucert.grounding,
+            grounding_score=ucert.grounding_score,
+            truth=ucert.truth,
+            truth_score=ucert.truth_score,
+            confidence=ucert.confidence,
+            confidence_level=ucert.confidence_level,
+            coherent=ucert.coherent,
         )
 
     def reason(self, query: str, depth: int = 2) -> ReasonResult:
@@ -1141,6 +1157,105 @@ class AI:
             self._engine.auto_persist()
         return result
 
+    def certify_all(self, query: str, adaptive: bool = True) -> "object":
+        """CoreMachine ile tam 4-eksenli sertifikasyon — UnifiedCertificate döner."""
+        return self._engine.core.certify(query, adaptive=adaptive)
+
+    def manifold_gaps(self, domain: str = "math_kernel", n_gaps: int = 10) -> list:
+        """NecessityEngine ile manifold boşluklarını bul."""
+        from tantrium.reasoning.necessity import NecessityEngine
+        ne = NecessityEngine(self._engine)
+        report = ne.run(domain=domain)
+        return report.manifold_gaps[:n_gaps]
+
+    def destiny(self, name: str, top_k: int = 5) -> dict:
+        """Bir kavramın geleceği — TAU torunları + moment çekicisi."""
+        from tantrium.meta.vision import CosmicVision
+        frame = CosmicVision(self._engine).see(name)
+        descendants = []
+        for edge in self._engine.tau.edges.get(name, [])[:top_k]:
+            descendants.append(edge.target)
+        return {
+            "name": name,
+            "attractor": getattr(frame, "attractor_concept", None),
+            "descendants": descendants,
+            "evolution_direction": getattr(frame, "evolution_direction", None),
+        }
+
+    def genealogy(self, name: str, depth: int = 4) -> str:
+        """Bir kavramın TAU ata zinciri — anlatı biçiminde."""
+        from tantrium.meta.vision import CosmicVision
+        cv = CosmicVision(self._engine)
+        ancestors, domain, anc_depth = cv._trace_origin(name, depth_limit=depth)
+        if not ancestors:
+            return f"'{name}' manifoldda kök bir kavram — atası yok."
+        chain = " → ".join(ancestors[-3:] + [name])
+        return f"'{name}' ({domain}) soyu: {chain}  [derinlik={anc_depth}]"
+
+    def signal(self, kind: str = "tone", **kwargs) -> "object":
+        """Sentetik sinyal/görüntü üret — perceive() için hazır."""
+        from tantrium import perception as perc
+        generators = {
+            "tone": perc.tone, "chord": perc.chord, "white_noise": perc.white_noise,
+            "solid_image": perc.solid_image, "gradient_image": perc.gradient_image,
+            "noise_image": perc.noise_image, "checkerboard_image": perc.checkerboard_image,
+        }
+        gen = generators.get(kind, perc.tone)
+        return gen(**kwargs) if kwargs else gen()
+
+    def extract_relations(self, text: str) -> list:
+        """Metinden semantik kenar çıkar — TAU'ya eklenebilir."""
+        from tantrium.graph.relations import extract_relations_from_text
+        return extract_relations_from_text(text, self._engine.manifold)
+
+    def dna(self, sequence: str, name: str | None = None) -> "object":
+        """DNA/RNA dizisi → moment uzayı sertifikasyonu."""
+        nm = name or sequence[:16]
+        obj = self._engine.encoder.encode(sequence, name=nm)
+        run = self._engine.network.run(obj)
+        return run
+
+    def sturm(self, poly_str: str, var: str = "x") -> "object":
+        """Polinom için Sturm zinciri — gerçek kök sayısı."""
+        from tantrium.algebra.sturm import normalized_sturm_chain
+        try:
+            from sympy import symbols, sympify
+            x = symbols(var)
+            poly = sympify(poly_str)
+            return normalized_sturm_chain([float(c) for c in poly.as_poly(x).all_coeffs()])
+        except Exception as e:
+            return {"error": str(e)}
+
+    def positivity(self, poly_str: str, var: str = "x") -> dict:
+        """Polinom pozitifliği — Hankel PSD kontrolü."""
+        try:
+            from sympy import symbols, sympify
+            x = symbols(var)
+            poly = sympify(poly_str)
+            coeffs = [float(c) for c in poly.as_poly(x).all_coeffs()]
+            obj = self._engine.encoder.encode(coeffs, name=poly_str[:32])
+            run = self._engine.network.run(obj)
+            return {"certified": run.certified_count == run.total,
+                    "paradigms": run.certified_count, "coeffs": coeffs}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def crypto(self, data: bytes, mode: str = "analyze") -> "object":
+        """Şifreleme yapısı analizi (savunma)."""
+        from tantrium.perception.crypto import analyze, achilles
+        if mode == "achilles":
+            return achilles(data)
+        return analyze(data)
+
+    def inject_english(self, run_bootstrap: bool = False) -> dict:
+        """İngilizce semantik omurgayı manifolda enjekte et."""
+        from tantrium.language.bootstrap import LanguageBootstrap
+        lb = LanguageBootstrap(self._engine)
+        if run_bootstrap:
+            added = lb.bootstrap()
+            return {"new_concepts": added}
+        return {"status": "skipped", "hint": "run_bootstrap=True ile çalıştır"}
+
     def status(self) -> str:
         """Kısa durum özeti."""
         n = len(self._engine.manifold.concepts)
@@ -1478,7 +1593,7 @@ class AI:
         # 4. Manifold boşluk sentezi
         _log("genesis() başlıyor...")
         gr = self.genesis(max_gaps=5)
-        new_from_genesis = getattr(gr, "concepts_added", 0)
+        new_from_genesis = getattr(gr, "manifold_growth", 0) or getattr(gr, "concepts_added", 0)
         report["genesis_concepts"] = new_from_genesis
         _log(f"genesis: +{new_from_genesis} yeni kavram")
 

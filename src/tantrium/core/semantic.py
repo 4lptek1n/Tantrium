@@ -157,12 +157,33 @@ class SemanticManifold:
         self.concepts[concept.name] = concept
         return self
 
-    def nearest(self, concept: Concept, n: int = 5) -> list[tuple[str, Fraction]]:
-        """Find the n nearest concepts by moment distance (gradient flow direction).
+    def distance(self, name_a: str, name_b: str,
+                 metric: str = "spectral_w2") -> float:
+        """İki manifold kavramı arasındaki kanonik mesafe."""
+        from tantrium.core.metric import canonical_distance
+        ca = self.concepts.get(name_a)
+        cb = self.concepts.get(name_b)
+        if ca is None or cb is None:
+            return float("inf")
+        return canonical_distance(
+            [float(m) for m in ca.moments],
+            [float(m) for m in cb.moments],
+            metric=metric,
+        )
 
-        Float path: 6748 kavram için Fraction L1 yerine float L1 — ~50x hızlı.
-        Sonuçlar Fraction'a çevrilir (API uyumluluğu için).
+    def nearest(self, concept: Concept, n: int = 5,
+                metric: str = "l1") -> list[tuple[str, Fraction]]:
+        """Find the n nearest concepts by moment distance.
+
+        metric="l1"          — hızlı L1 (varsayılan, 40k kavram için ~50x hızlı)
+        metric="spectral_w2" — kanonik W2 (daha doğru, daha yavaş)
+        Float path: Fraction L1 yerine float L1 — ~50x hızlı.
         """
+        if metric == "spectral_w2":
+            results = self.nearest_spectral(concept, n=n)
+            return [(name, Fraction(d).limit_denominator(10 ** 6))
+                    for name, d in results]
+
         q = [float(m) for m in concept.moments]
         k = len(q)
         best: list[tuple[float, str]] = []

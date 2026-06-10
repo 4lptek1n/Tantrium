@@ -363,12 +363,14 @@ class ConceptSynthesizer:
                 source="genesis",
             )
 
-            # Certify
+            # Certify + gerçek ekseni kontrolü (tutarsız kavram manifolda girmesin)
             try:
                 obj = enc(fracs, name=concept_name)
                 run = self.engine.process(obj)
                 paradigms = run.certified_count
-                cert = paradigms >= 18
+                coherent = paradigms >= 18 and self._coherent_for_genesis(
+                    concept_name, mu_norm)
+                cert = coherent
 
                 if cert:
                     self.engine.manifold.add_unchecked(new_concept)
@@ -418,6 +420,15 @@ class ConceptSynthesizer:
             manifold_growth=manifold_after - manifold_before,
             new_tau_edges=tau_after - tau_before,
         )
+
+    def _coherent_for_genesis(self, name: str, moments: list[float]) -> bool:
+        """CONTRADICTORY kavramları reddet — öz-düzelten büyüme."""
+        try:
+            from tantrium.core.truth import TruthCertifier
+            tv = TruthCertifier(self.engine).certify(name, n_neighbors=3, moments=moments)
+            return tv.verdict != "CONTRADICTORY"
+        except Exception:
+            return True  # hata durumunda bloklamaz (fail-open)
 
     # ─── KEŞİF: gövde-dışı ekstrapolasyon (interpolasyon değil) ──────────────
 

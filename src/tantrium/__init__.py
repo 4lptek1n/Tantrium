@@ -1,6 +1,12 @@
 """Tantrium: structure-first symbolic discovery framework."""
 from tantrium.ai import AI, AskResult, MolResult, GenResult, ReasonResult, DiscoverResult
 from tantrium.core.engine import CertificationEngine
+from tantrium.core.unified import CoreMachine, UnifiedCertificate
+from tantrium.core.reconstruct import AtomicMeasure, reconstruct_measure, reconstruction_fidelity
+from tantrium.core.truth import TruthCertifier, TruthCertificate
+from tantrium.core.confidence import ConfidenceScore, calibrate
+from tantrium.core.metric import canonical_distance, spectral_w2, l1_distance
+from tantrium.core.collision import CollisionHunter, CollisionReport
 from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
 from tantrium.core.semantic import Concept, SemanticManifold
@@ -130,4 +136,19 @@ __all__ = [
     "encode_image",
     "encode_matrix",
     "signal_autocorrelation",
+    # CoreMachine (4 eksenli tekli geçiş)
+    "CoreMachine",
+    "UnifiedCertificate",
+    "AtomicMeasure",
+    "reconstruct_measure",
+    "reconstruction_fidelity",
+    "TruthCertifier",
+    "TruthCertificate",
+    "ConfidenceScore",
+    "calibrate",
+    "canonical_distance",
+    "spectral_w2",
+    "l1_distance",
+    "CollisionHunter",
+    "CollisionReport",
 ]

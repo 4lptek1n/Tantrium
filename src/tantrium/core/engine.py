@@ -95,6 +95,22 @@ class CertificationEngine:
         # "bilinen referanslara bağlı mı?" sorusunu cevaplar.
         from tantrium.core.grounding import GroundingCertifier
         self.grounder = GroundingCertifier(self)
+        self._core_machine = None    # lazy singleton
+
+    # ─── CoreMachine: tek geçiş, 4 eksen ──────────────────────────────────
+
+    @property
+    def core(self) -> "object":
+        """CoreMachine: ONE encode → ONE process → 4 axes. Lazy singleton."""
+        if self._core_machine is None:
+            from tantrium.core.unified import CoreMachine
+            self._core_machine = CoreMachine(self)
+        return self._core_machine
+
+    def certify_unified(self, input_data: object, name: str | None = None,
+                        adaptive: bool = True) -> "object":
+        """Kısa yol: engine.core.certify(input_data)."""
+        return self.core.certify(input_data, name=name, adaptive=adaptive)
 
     # ─── Core: process any object ──────────────────────────────────────────
 
