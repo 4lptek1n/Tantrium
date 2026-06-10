@@ -378,16 +378,21 @@ class PathSumParadigm(Paradigm):
 
         # L2.5: Schur complement check
         schur_psd = obj.structure.get("schur_psd")
-        schur_min = obj.structure.get("schur_min_eigenvalue", 0.0)
+        schur_min = obj.structure.get("schur_min_eigenvalue")
+        if schur_psd is None and schur_min is None:
+            return ParadigmResult(pid, "UNKNOWN", gap_name="SCHUR_NOT_COMPUTED")
+        schur_min_f = float(schur_min) if schur_min is not None else 0.0
         if schur_psd is False:
             return ParadigmResult(pid, "BLOCKED",
                 gap_name="SCHUR_COMPLEMENT_NEGATIVE",
-                evidence=[f"A − Q_hidden min eigenvalue = {schur_min:.6f} < 0",
+                evidence=[f"A − Q_hidden min eigenvalue = {schur_min_f:.6f} < 0",
                           "hidden topology reveals non-extendable moment sequence"],
-                certificate={"schur_min_eig": schur_min})
+                certificate={"schur_min_eig": schur_min_f})
 
         # L2: τ-determinant check (off-diagonal Hankel minors)
-        tau_ok = obj.structure.get("tau_all_nonneg", True)
+        tau_ok = obj.structure.get("tau_all_nonneg")
+        if tau_ok is None:
+            return ParadigmResult(pid, "UNKNOWN", gap_name="TAU_NOT_COMPUTED")
         if not tau_ok:
             taus = obj.structure.get("tau_determinants", {})
             neg = {k: round(v, 8) for k, v in taus.items() if v < -1e-9}
@@ -399,18 +404,18 @@ class PathSumParadigm(Paradigm):
 
         # LGV path sum identity (structural confirmation)
         path_weights = obj.structure.get("path_weights", [])
-        q_hidden = obj.structure.get("Q_hidden_trace", 0.0)
+        q_hidden = obj.structure.get("Q_hidden_trace") or 0.0
         if path_weights:
             path_sum = sum(Fraction(w) if not isinstance(w, Fraction) else w
                            for w in path_weights)
             return ParadigmResult(pid, "CERTIFIED",
                 evidence=[
-                    f"Schur A−Q_hidden ≥ 0 (min_eig={schur_min:.4f})",
+                    f"Schur A−Q_hidden ≥ 0 (min_eig={schur_min_f:.4f})",
                     f"τ-determinants all ≥ 0",
                     f"Q_hidden_trace={q_hidden:.4f}",
                 ],
                 certificate={
-                    "schur_min_eig": schur_min,
+                    "schur_min_eig": schur_min_f,
                     "Q_hidden_trace": q_hidden,
                     "path_sum": str(path_sum),
                     "tau_count": len(obj.structure.get("tau_determinants", {})),
@@ -577,8 +582,8 @@ class SpectralParadigm(Paradigm):
                           "Gram matrix not PSD — invalid encoding"])
 
         # L2 τ-determinants (off-diagonal Hankel minors)
-        tau_ok = obj.structure.get("tau_all_nonneg", True)
-        if not tau_ok:
+        tau_ok = obj.structure.get("tau_all_nonneg")
+        if tau_ok is not None and not tau_ok:
             taus = obj.structure.get("tau_determinants", {})
             neg = {k: round(v, 8) for k, v in taus.items() if v < -1e-9}
             return ParadigmResult(pid, "BLOCKED",

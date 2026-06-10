@@ -225,7 +225,7 @@ def stage_l2_zayin_hankel(
         state["tau_all_nonneg"] = all(v >= -1e-9 for v in _taus.values())
     except Exception:
         state["tau_determinants"] = {}
-        state["tau_all_nonneg"] = True
+        state["tau_all_nonneg"] = None
 
     # Schur tamamlayıcı
     try:
@@ -249,9 +249,9 @@ def stage_l2_zayin_hankel(
         state["schur_psd"] = _schur_min >= -1e-9
         state["Q_hidden_trace"] = float(_np.trace(_Q))
     except Exception:
-        state["schur_min_eigenvalue"] = 0.0
-        state["schur_psd"] = True
-        state["Q_hidden_trace"] = 0.0
+        state["schur_min_eigenvalue"] = None
+        state["schur_psd"] = None
+        state["Q_hidden_trace"] = None
 
     # LGV path_weights = diag(G); determinant = det(G) (DALET'ten alınır)
     _ng = len(G)
