@@ -50,12 +50,19 @@ class AskResult:
     nearest: list[str]        # en yakın manifold kavramları
     grounding: str = "UNKNOWN"   # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
     grounding_score: float = 0.0
+    truth: str = "UNKNOWN"       # CONSISTENT | CONTESTED | CONTRADICTORY (3. eksen)
+    truth_score: float = 0.0
+    confidence: float = 0.0      # kalibre edilmiş tek güven [0,1]
+    confidence_level: str = "UNCERTAIN"
 
     def __str__(self) -> str:
         cert = "✓" if self.certified else "✗"
         g = {"GROUNDED": "⏚", "WEAKLY_GROUNDED": "≈", "UNGROUNDED": "∅"}.get(self.grounding, "?")
+        t = {"CONSISTENT": "✓", "CONTESTED": "≈", "CONTRADICTORY": "✗"}.get(self.truth, "?")
         return (
-            f"{cert} [{self.paradigms_passed}/{self.paradigms_total}] {g}{self.grounding}  {self.answer}"
+            f"{cert} [{self.paradigms_passed}/{self.paradigms_total}] "
+            f"{g}{self.grounding} {t}{self.truth} "
+            f"güven={self.confidence:.2f}({self.confidence_level})  {self.answer}"
             + (f"\n  gaps: {', '.join(self.gaps)}" if self.gaps else "")
         )
 
@@ -398,6 +405,126 @@ class AI:
         """
         return self._engine.grounder.certify(token)
 
+    def truth(self, name: str, n_neighbors: int = 6) -> "object":
+        """Doğruluk ekseni (3.) — kavram komşularıyla TUTARLI mı, çelişiyor mu?
+
+        Topraklama "bağlı mı?" der; doğruluk "çevresiyle tutarlı mı?" der.
+        Transport tutarlılığı + EMET çapraz-kontrol → CONSISTENT/CONTESTED/CONTRADICTORY.
+
+        Döner: TruthCertificate
+        """
+        from tantrium.core.truth import TruthCertifier
+        return TruthCertifier(self._engine).certify(name, n_neighbors=n_neighbors)
+
+    def confidence(self, query: str) -> "object":
+        """Kalibre edilmiş tek güven — 4 ekseni (kapsama+margin+topraklama+doğruluk) birleştir.
+
+        "23/23 ama margin 0.001" ile "23/23 margin 0.4" farkını tek sayıya indirir.
+        Ağırlıklı geometrik ortalama: herhangi bir eksen çökerse güven çöker.
+
+        Döner: Confidence (value, level, weakest_axis, ...)
+        """
+        from tantrium.core.confidence import calibrate
+        obj = self._engine.encoder.encode(query, name=query[:64])
+        run = self._engine.process(obj)
+        gcert = self._engine.grounder.certify(query[:64], moments=list(obj.moments))
+        try:
+            from tantrium.core.truth import TruthCertifier
+            tcert = TruthCertifier(self._engine).certify(query[:64], moments=list(obj.moments))
+            truth_score = tcert.truth_score
+        except Exception:
+            truth_score = 0.5
+        coverage = run.certified_count / run.total if run.total else 0.0
+        margin = float(obj.structure.get("achilles_margin", 0.0) or 0.0)
+        return calibrate(coverage, margin, gcert.score, truth_score)
+
+    def reconstruct(self, query: str, max_atoms: int = 4) -> "object":
+        """Ters yön: moment dizisinden ölçüyü GERİ KUR (Gauss kuadratürü / Prony).
+
+        Encoder ileri yön (yapı→moment); bu ters yön (moment→ölçü).
+        dμ = Σ wᵢ·δ(x−xᵢ) atomik ölçüsünü geri kurar, sadakati ölçer.
+        "Moment yapıyı belirler" iddiasının yapıcı kanıtı — ve üretkenlik.
+
+        Döner: ReconstructedMeasure (support, weights, reconstruction_error, ...)
+        """
+        from tantrium.core.reconstruct import reconstruct_measure
+        obj = self._engine.encoder.encode(query, name=query[:64])
+        return reconstruct_measure(obj.moments, max_atoms=max_atoms)
+
+    def collisions(
+        self,
+        n_samples: int = 200,
+        epsilon: float = 1e-4,
+        seed: int = 0,
+    ) -> "object":
+        """Çakışma avı — çekirdek iddianın ampirik testi.
+
+        İki YAPISAL FARKLI girdi aynı 8 momente çöküyor mu? Sistemin kendi
+        ayırt-etme gücünü saldırarak test eder. Çakışma → adaptif derinlik
+        gereken nokta; çakışma yok → vaadin kanıtı.
+
+        Döner: CollisionReport (collisions, collision_rate, claim_holds, ...)
+        """
+        from tantrium.core.collision import CollisionHunter
+        return CollisionHunter(self._engine).hunt(
+            n_samples=n_samples, epsilon=epsilon, seed=seed
+        )
+
+    def crossmodal(self, pairs: list[tuple] | None = None) -> dict:
+        """Cross-modal sadakat koşumu — ses/metin/molekül AYNI uzayda mı?
+
+        Vaat: anlamca yakın farklı-modalite çiftler moment uzayında yakın oturur.
+        Her çift için kanonik (spektral W2) mesafe hesaplar, raporlar.
+
+        pairs: [(girdi_a, modalite_a, girdi_b, modalite_b, beklenen), ...]
+        None → yerleşik benchmark (saf ton↔düzen, gürültü↔kaos, ...).
+
+        Döner: dict — her çiftin mesafesi + benchmark özeti
+        """
+        from tantrium.core.metric import canonical_distance
+        from tantrium.perception import encode_signal, tone, white_noise
+
+        results = []
+        if pairs is None:
+            # Yerleşik benchmark: yapısal yakınlık beklentileriyle
+            t440 = [float(x) for x in tone(440)]
+            noise = [float(x) for x in white_noise(2000)]
+            cases = [
+                ("saf ton", t440, "signal", "düzen", None, "text", "yakın"),
+                ("saf ton", t440, "signal", "kaos", None, "text", "uzak"),
+                ("gürültü", noise, "signal", "kaos", None, "text", "yakın"),
+                ("gürültü", noise, "signal", "düzen", None, "text", "uzak"),
+            ]
+            for name_a, data_a, mod_a, name_b, data_b, mod_b, expect in cases:
+                if mod_a == "signal":
+                    obj_a = encode_signal(data_a, name=name_a)
+                    mu_a = list(obj_a.moments)
+                else:
+                    mu_a = list(self._engine.encoder.encode(name_a).moments)
+                if mod_b == "signal":
+                    obj_b = encode_signal(data_b, name=name_b)
+                    mu_b = list(obj_b.moments)
+                else:
+                    mu_b = list(self._engine.encoder.encode(name_b).moments)
+                d = canonical_distance(mu_a, mu_b)
+                results.append({
+                    "pair": f"{name_a}({mod_a}) ↔ {name_b}({mod_b})",
+                    "distance": round(d, 5),
+                    "expected": expect,
+                })
+        else:
+            for (a, mod_a, b, mod_b, expect) in pairs:
+                mu_a = list(self._engine.encoder.encode(a).moments)
+                mu_b = list(self._engine.encoder.encode(b).moments)
+                d = canonical_distance(mu_a, mu_b)
+                results.append({
+                    "pair": f"{a}({mod_a}) ↔ {b}({mod_b})",
+                    "distance": round(d, 5),
+                    "expected": expect,
+                })
+
+        return {"pairs": results, "metric": "spectral_w2"}
+
     def ask(self, query: str) -> AskResult:
         """Herhangi bir girdi → certify → manifold konumu + doğal dil yanıt."""
         from tantrium.core.semantic import Concept
@@ -424,6 +551,24 @@ class AI:
         # "Bu token bilinen referanslara bağlı mı, yoksa geçerli ama anlamsız mı?"
         gcert = self._engine.grounder.certify(query[:64], moments=list(obj.moments))
 
+        # Doğruluk ekseni (3.): komşularıyla tutarlı mı, çelişiyor mu?
+        from tantrium.core.truth import TruthCertifier
+        from tantrium.core.confidence import calibrate
+        try:
+            tcert = TruthCertifier(self._engine).certify(query[:64], moments=list(obj.moments))
+            truth_verdict, truth_score = tcert.verdict, tcert.truth_score
+        except Exception:
+            truth_verdict, truth_score = "UNKNOWN", 0.5
+
+        # Kalibre güven: 4 ekseni tek sayıya indir
+        coverage = run.certified_count / run.total if run.total else 0.0
+        margin = 0.0
+        try:
+            margin = float(obj.structure.get("achilles_margin", 0.0) or 0.0)
+        except Exception:
+            margin = 0.0
+        conf = calibrate(coverage, margin, gcert.score, truth_score)
+
         answer = cert_summary
         if location_text:
             answer = f"{cert_summary}\n{location_text}"
@@ -439,6 +584,10 @@ class AI:
             nearest=nearest,
             grounding=gcert.verdict,
             grounding_score=gcert.score,
+            truth=truth_verdict,
+            truth_score=truth_score,
+            confidence=conf.value,
+            confidence_level=conf.level,
         )
 
     def reason(self, query: str, depth: int = 2) -> ReasonResult:

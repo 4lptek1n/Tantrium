@@ -109,13 +109,22 @@ def _sequence_to_hankel_matrix(seq: Sequence[Fraction]) -> list[list[Fraction]]:
     ]
 
 
-def _text_to_bigram_matrix(text: str) -> list[list[Fraction]]:
+def _text_to_bigram_matrix(text: str, label_aware: bool = False) -> list[list[Fraction]]:
     """Text → character bigram transition matrix (row-normalized).
 
     A[i][j] = P(char j follows char i) in the text.
     This is a stochastic matrix — its spectral distribution encodes
     the topology of the language sample: which transitions are common,
     which structures repeat.
+
+    label_aware=True: köşegene küçük ağırlıklı karakter codepoint kimliği ekler,
+    satır yeniden normalize edilir (stokastik kalır). Bu, harf KİMLİĞİNİ
+    spektruma katar — "pbjw" ve "hame" (ikisi de 4 ayrı karakterli yol grafı)
+    aksi halde AYNI permütasyon spektrumuna, aynı momentlere çöker (çakışma).
+    VARSAYILAN KAPALI: depolanan manifold (40k kavram) köşegensiz kodlamayla
+    kurulmuş; açmak rezonans-topraklamayı kaydırır (örn. ATP). Çakışma avcısı
+    bu modu açıkça kullanarak harf-permütasyon çakışmasının çözülebilir
+    olduğunu gösterir — ana yol legacy uyumlu kalır.
     """
     chars = sorted(set(text))
     if not chars:
@@ -125,13 +134,27 @@ def _text_to_bigram_matrix(text: str) -> list[list[Fraction]]:
     counts: list[list[int]] = [[0] * n for _ in range(n)]
     for a, b in zip(text, text[1:]):
         counts[c2i[a]][c2i[b]] += 1
-    matrix: list[list[Fraction]] = []
-    for row in counts:
-        total = sum(row)
+    if not label_aware:
+        matrix: list[list[Fraction]] = []
+        for row in counts:
+            total = sum(row)
+            if total == 0:
+                matrix.append([Fraction(1, n)] * n)
+            else:
+                matrix.append([Fraction(v, total) for v in row])
+        return matrix
+    # label_aware: köşegene küçük codepoint kimliği + satır yeniden normalize
+    _IDENT_W = Fraction(1, 64)
+    matrix = []
+    for i, row in enumerate(counts):
+        ident = _IDENT_W * Fraction(min(ord(chars[i]), 0x2FFF), 0x3000)
+        frow = [Fraction(v) for v in row]
+        frow[i] += ident
+        total = sum(frow)
         if total == 0:
             matrix.append([Fraction(1, n)] * n)
         else:
-            matrix.append([Fraction(v, total) for v in row])
+            matrix.append([v / total for v in frow])
     return matrix
 
 
@@ -406,6 +429,48 @@ class UniversalEncoder:
         if names is None:
             names = [None] * len(inputs)
         return [self.encode(inp, nm) for inp, nm in zip(inputs, names)]
+
+    def encode_adaptive(
+        self,
+        input: Any,
+        name: str | None = None,
+        base_depth: int = 8,
+        max_depth: int = 16,
+        fidelity_target: float = 0.999,
+    ) -> CodexObject:
+        """Adaptif derinlikli kodlama — belirsiz girdide tohumu derinleştir.
+
+        8 sabit moment darboğazdır: iki farklı yapı 8'de çakışabilir.
+        Bu metod önce base_depth moment hesaplar, ölçünün NE KADAR İYİ
+        SABİTLENDİĞİNİ ölçer (rekonstrüksiyon sadakati). Sadakat düşükse
+        — yani momentler ölçüyü zayıf belirliyorsa — derinliği artırır.
+
+        Sinyal: reconstruction_fidelity (momentlerden ölçüyü geri kurup
+        momentleri yeniden hesapla, hata ne kadar küçükse o kadar belirli).
+
+        Sonuç structure["moment_depth"] kullanılan gerçek derinliği taşır.
+        """
+        from tantrium.core.reconstruct import reconstruct_measure
+
+        depth = base_depth
+        obj = self.encode(input, name) if base_depth == self.num_moments \
+            else UniversalEncoder(base_depth).encode(input, name)
+
+        rec = reconstruct_measure(obj.moments)
+        # İyi belirliyse derinleştirme gerekmiyor
+        import math
+        fidelity = math.exp(-rec.reconstruction_error * 100.0)
+
+        while fidelity < fidelity_target and depth < max_depth:
+            depth = min(max_depth, depth + 4)
+            obj = UniversalEncoder(depth).encode(input, name)
+            rec = reconstruct_measure(obj.moments)
+            fidelity = math.exp(-rec.reconstruction_error * 100.0)
+
+        obj.structure["moment_depth"] = depth
+        obj.structure["reconstruction_fidelity"] = round(fidelity, 6)
+        obj.structure["measure_rank"] = rec.rank
+        return obj
 
 
 def _infer_name(input: Any) -> str:
