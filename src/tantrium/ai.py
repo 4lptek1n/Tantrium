@@ -840,6 +840,27 @@ class AI:
         ms = MolecularSpace(self.engine)
         return ms.lineage(smiles, depth=depth)
 
+    def genesis_mol(
+        self,
+        target: str,
+        top_k: int = 6,
+        max_atoms: int = 16,
+        beam_width: int = 4,
+    ) -> "object":
+        """Moleküler Genesis — saf matematiksel türetim. Tahmin yok.
+
+        Hedef → momentler → Gauss-Bolyai spektral ölçü → yapı kılavuzu
+        → atom-atom beam search (W2 azaldıkça ilerle) → sertifika.
+
+        Benzerlik araması değil: matematiksel zorunluluktan türev.
+        target: protein, hastalık, SMILES, herhangi metin.
+        """
+        import warnings
+        warnings.filterwarnings("ignore")
+        from tantrium.core.molecular_genesis import MolecularGenesis
+        gen = MolecularGenesis(self.engine)
+        return gen.generate(target, top_k=top_k, max_atoms=max_atoms, beam_width=beam_width)
+
     def certify_list(
         self,
         target: str,
