@@ -535,10 +535,10 @@ class RepairCostParadigm(Paradigm):
                 gap_name=f"ACHILLES_{achilles.get('name', 'UNKNOWN')}",
                 evidence=[f"margin < 0 in {achilles.get('name')}: repair_cost={achilles.get('repair_cost'):.4f}"],
                 certificate={"achilles": achilles, "total": len(open_obstructions)})
-        achilles_name = obj.structure.get("achilles_paradigm", "UNKNOWN")
-        achilles_margin = obj.structure.get("achilles_margin", 0.0)
+        achilles_name = obj.structure.get("achilles_paradigm")
+        achilles_margin = obj.structure.get("achilles_margin")
         margins = obj.structure.get("paradigm_margins", {})
-        if not margins:
+        if achilles_margin is None and not margins:
             if "open_obstructions" not in obj.structure:
                 return ParadigmResult(pid, "UNKNOWN",
                     gap_name="REPAIR_COST_NOT_COMPUTED",
@@ -546,8 +546,9 @@ class RepairCostParadigm(Paradigm):
             return ParadigmResult(pid, "CERTIFIED",
                 evidence=["no open obstructions — system is closed"],
                 certificate={"obstruction_count": 0})
+        margin_str = f"{achilles_margin:.4f}" if achilles_margin is not None else "N/A"
         return ParadigmResult(pid, "CERTIFIED",
-            evidence=[f"Achilles = {achilles_name} (margin={achilles_margin:.4f})",
+            evidence=[f"Achilles = {achilles_name or 'N/A'} (margin={margin_str})",
                       f"all {len(margins)} margins ≥ 0"],
             certificate={"achilles_paradigm": achilles_name,
                          "achilles_margin": achilles_margin,
@@ -674,9 +675,11 @@ class CenterSymmetryParadigm(Paradigm):
         symmetry_group = obj.structure.get("symmetry_group")
         if symmetry_group is None:
             return ParadigmResult(pid, "UNKNOWN", gap_name="NO_SYMMETRY_GROUP")
-        newton_ok = obj.structure.get("su3_newton_verified", True)
-        newton_res = obj.structure.get("newton_residual", 0.0)
+        newton_ok = obj.structure.get("su3_newton_verified")
+        newton_res = obj.structure.get("newton_residual")
         center_order = obj.structure.get("center_order", 3)
+        if newton_ok is None:
+            return ParadigmResult(pid, "UNKNOWN", gap_name="NEWTON_NOT_COMPUTED")
         if not newton_ok:
             return ParadigmResult(pid, "BLOCKED",
                 gap_name="NEWTON_IDENTITY_VIOLATED",
@@ -766,13 +769,15 @@ class FixedPointParadigm(Paradigm):
     """
     def verify(self, obj: CertifiableObject) -> ParadigmResult:
         pid = self.paradigm_id
-        fixed_point_iterations = obj.structure.get("fixed_point_iterations", [])
-        is_running = obj.structure.get("is_running", False)
+        fixed_point_iterations = obj.structure.get("fixed_point_iterations") or []
+        is_running = obj.structure.get("is_running")
         lambda_db = obj.structure.get("debruijn_newman_lambda")
         if not fixed_point_iterations:
             return ParadigmResult(pid, "UNKNOWN", gap_name="NO_ITERATION_SEQUENCE")
         if len(fixed_point_iterations) < 2:
             return ParadigmResult(pid, "UNKNOWN", gap_name="INSUFFICIENT_ITERATIONS")
+        if is_running is None:
+            return ParadigmResult(pid, "UNKNOWN", gap_name="IS_RUNNING_NOT_COMPUTED")
         last = fixed_point_iterations[-1]
         prev = fixed_point_iterations[-2]
         converged = abs(last - prev) < 1e-10 if isinstance(last, float) else last == prev

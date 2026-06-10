@@ -129,7 +129,8 @@ def test_spectral_paradigm_certifies_encoded_text():
 
 
 def test_fixed_point_paradigm_certifies_encoded_text():
-    obj = encode("test")
+    # "test" is uniform → variance=0 → is_running=False → use non-uniform input
+    obj = encode("riemann")
     p = FixedPointParadigm("TAV", "Fixed Point", "L* = F(L*)", ["HE", "YOD"])
     result = p.verify(obj)
     assert result.status == "CERTIFIED"

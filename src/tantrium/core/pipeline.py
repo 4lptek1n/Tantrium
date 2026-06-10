@@ -363,13 +363,15 @@ def stage_l4_tav_heatflow(state: dict) -> None:
         state["fixed_point"] = _fp
         state["debruijn_newman_lambda"] = -_var0
         state["tav_hamburger_unique"] = True
-        state["is_running"] = True
+        # is_running: spektral varyans > 0 ↔ sistem aktif (trivial tek-nokta değil)
+        state["is_running"] = _var0 > 1e-9
     except Exception:
-        state["fixed_point_iterations"] = [0.5, 0.75, 0.875, 0.9375, 0.96875, 1.0]
-        state["fixed_point"] = 1.0
-        state["debruijn_newman_lambda"] = -1.0
-        state["tav_hamburger_unique"] = True
-        state["is_running"] = True
+        # Hesaplanamadı — sahte "başarı" değeri ÜRETME, dürüst None bırak.
+        state["fixed_point_iterations"] = []
+        state["fixed_point"] = None
+        state["debruijn_newman_lambda"] = None
+        state["tav_hamburger_unique"] = None
+        state["is_running"] = None
 
 
 # ─── Yardımcı paradigmalar ────────────────────────────────────────────────────
@@ -681,9 +683,10 @@ def stage_l5_gimel_admission(
         state["achilles_paradigm"] = _achilles
         state["achilles_margin"] = _achilles_margin
     except Exception:
+        # Hesaplanamadı — None bırak (sahte 1.0 değil).
         state["open_obstructions"] = []
-        state["achilles_paradigm"] = "ALEPH"
-        state["achilles_margin"] = 1.0
+        state["achilles_paradigm"] = None
+        state["achilles_margin"] = None
         state["paradigm_margins"] = {}
 
 

@@ -82,9 +82,9 @@ def test_certify_text_returns_certified_true(engine):  # type: ignore[misc]
 
 
 def test_certify_dna_passes(engine):  # type: ignore[misc]
-    # ATCGATCG has uniform transition matrix (all 4 bases balanced) → diffuse
-    # eigenvalue spectrum → passes RESH (Araki-Lieb subadditivity).
-    obj = encode("ATCGATCG")
+    # TTAGGCAATCGG: non-uniform transitions (variance>0 → TAV running) +
+    # diffuse enough spectrum (RESH subadditivity holds).
+    obj = encode("TTAGGCAATCGG")
     run = engine.network.run(obj)
     assert run.certified_count == run.total
 
