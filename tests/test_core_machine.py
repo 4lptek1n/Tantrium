@@ -66,13 +66,17 @@ def test_truth_certifier_consistent(ai):
     tc = TruthCertifier(ai._engine)
     result = tc.certify("prime")
     assert result.verdict in ("CONSISTENT", "CONTESTED")
-    assert 0.0 <= result.consistency_score <= 1.0
+    # truth_score is the field name (remote API)
+    score = getattr(result, "truth_score", getattr(result, "consistency_score", None))
+    assert score is not None
+    assert 0.0 <= score <= 1.0
 
 
 def test_confidence_calibration():
     """Tüm eksenler güçlüyse STRONG veya CERTAIN döndürmeli."""
     from tantrium.core.confidence import calibrate
-    conf = calibrate(structural=0.96, achilles=0.95, grounding=0.8, truth=0.9)
+    # Remote API: calibrate(coverage, margin, grounding, truth)
+    conf = calibrate(coverage=0.96, margin=0.15, grounding=0.8, truth=0.9)
     assert conf.level in ("CERTAIN", "STRONG")
     assert conf.value >= 0.7
 
