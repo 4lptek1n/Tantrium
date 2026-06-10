@@ -1424,7 +1424,12 @@ class AI:
             "noise_image": perc.noise_image, "checkerboard_image": perc.checkerboard_image,
         }
         gen = generators.get(kind, perc.tone)
-        return gen(**kwargs) if kwargs else gen()
+        if kwargs:
+            return gen(**kwargs)
+        # Defaults for each kind
+        defaults = {"tone": (440,), "chord": ([440, 550, 660],), "white_noise": ()}
+        args = defaults.get(kind, ())
+        return gen(*args) if args else gen()
 
     def extract_relations(self, text: str) -> list:
         """Metinden semantik kenar çıkar — TAU'ya eklenebilir."""
