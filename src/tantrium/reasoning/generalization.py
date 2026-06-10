@@ -76,8 +76,21 @@ class HankelGeneralizer:
         """
         ca = self.engine.manifold.concepts.get(name_a)
         cb = self.engine.manifold.concepts.get(name_b)
-        if ca is None or cb is None:
-            return None
+        # Auto-encode missing concepts so interpolate works on anything, not just manifold
+        if ca is None:
+            try:
+                raw = self.engine.encoder.encode(name_a, name=name_a[:64])
+                ca = Concept(name=name_a, moments=list(raw.moments), domain="input", source="auto_encode")
+                self.engine.manifold.add_unchecked(ca)
+            except Exception:
+                return None
+        if cb is None:
+            try:
+                raw = self.engine.encoder.encode(name_b, name=name_b[:64])
+                cb = Concept(name=name_b, moments=list(raw.moments), domain="input", source="auto_encode")
+                self.engine.manifold.add_unchecked(cb)
+            except Exception:
+                return None
 
         alpha = max(0.0, min(1.0, alpha))
         k = min(len(ca.moments), len(cb.moments))
@@ -100,8 +113,19 @@ class HankelGeneralizer:
         Uniform ağırlık: μ_C = (1/N)·Σ μᵢ
         PSD matrislerinin ortalaması PSD — Aleph garantisi korunur.
         """
-        concepts = [self.engine.manifold.concepts.get(n) for n in concept_names]
-        concepts = [c for c in concepts if c is not None]
+        resolved = []
+        for n in concept_names:
+            c = self.engine.manifold.concepts.get(n)
+            if c is None:
+                try:
+                    raw = self.engine.encoder.encode(n, name=n[:64])
+                    c = Concept(name=n, moments=list(raw.moments), domain="input", source="auto_encode")
+                    self.engine.manifold.add_unchecked(c)
+                except Exception:
+                    pass
+            if c is not None:
+                resolved.append(c)
+        concepts = resolved
         if len(concepts) < 2:
             return None
 

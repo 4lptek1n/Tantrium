@@ -353,6 +353,58 @@ class ProofLoop:
 
         return len(self.engine.manifold.concepts) - before
 
+    def ingest_campaign_candidates(self) -> int:
+        """Research OS kampanya sonuçlarından teorem adaylarını manifolda ekle.
+
+        results/research_os/candidates/*.json dosyalarındaki candidate_id +
+        conclusion alanlarını encode ederek manifolda ekler.
+        Zaten manifoldda olanlar atlanır (idempotent).
+
+        Döner: eklenen yeni kavram sayısı.
+        """
+        candidates_dir = _REPO_ROOT / "results" / "research_os" / "candidates"
+        if not candidates_dir.is_dir():
+            return 0
+
+        added = 0
+        for cfile in candidates_dir.glob("*.json"):
+            try:
+                with open(cfile) as f:
+                    data = json.load(f)
+            except Exception:
+                continue
+
+            # Birden fazla aday içerebilir (liste veya tekil dict)
+            items = data if isinstance(data, list) else [data]
+            for item in items:
+                cid = item.get("candidate_id") or item.get("theorem_id") or ""
+                conclusion = item.get("conclusion") or item.get("statement") or ""
+                if not cid:
+                    continue
+
+                concept_name = f"theorem_candidate:{cid}"
+                if concept_name in self.engine.manifold.concepts:
+                    continue
+
+                text = conclusion or cid.replace("_", " ")
+                try:
+                    from tantrium.core.semantic import Concept
+                    raw = self.engine.encoder.encode(text, name=concept_name)
+                    concept = Concept(
+                        name=concept_name,
+                        moments=list(raw.moments),
+                        domain="theorem_candidate",
+                        source=f"research_os:{cfile.stem}",
+                    )
+                    if concept.is_real():
+                        self.engine.manifold.add_unchecked(concept)
+                        self.engine.tau.add_edges_for(concept, self.engine.manifold, k=3)
+                        added += 1
+                except Exception:
+                    pass
+
+        return added
+
     def _read_theorem_graph_statuses(self) -> dict[str, str]:
         """Theorem graph'taki tüm node'ların durumunu oku (id → status)."""
         if not self.graph_path.exists():
@@ -395,6 +447,9 @@ class ProofLoop:
 
         # 4. Yeni teoremler → manifold
         self.sync_new_theorems()
+
+        # 4b. Teorem adayları → manifold (candidates/*.json)
+        self.ingest_campaign_candidates()
 
         # 5. Kalıcılık
         if len(self.engine.manifold.concepts) > concepts_before:

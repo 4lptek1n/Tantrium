@@ -761,6 +761,107 @@ class AI:
             run, modality=modality, associations=associations
         )
 
+    def perceive_eeg(
+        self,
+        path: str | None = None,
+        max_channels: int = 64,
+        learn: bool = True,
+    ) -> dict:
+        """EEG verilerini oku — tüm kanalları moment uzayına çek, manifolda ekle.
+
+        Her .edf dosyasındaki her kanalı encode_signal() ile işler.
+        EEG sinyali: otokorelasyon → Toeplitz → Gram → 8 moment (Bochner).
+        Aynı moment uzayı — kelimeler, moleküller ve şimdi beyin dalgaları bir arada.
+
+        path=None → eeg_data/ dizinini otomatik bul
+        learn=True → işlenen kanallar manifolda kalıcılaşır
+
+        Döner: dict — {n_files, n_channels_processed, n_concepts_added, certifications}
+        """
+        import os
+        from pathlib import Path
+        from tantrium.perception import encode_signal
+
+        # EEG verisi nerede?
+        if path is None:
+            # Proje kökünde eeg_data/ veya kullanıcının verdiği dizin
+            search_dirs = [
+                Path("/home/user/Tantrium/eeg_data"),
+                Path("eeg_data"),
+                Path("data/eeg"),
+            ]
+            path_obj = next((d for d in search_dirs if d.is_dir()), None)
+        else:
+            path_obj = Path(path)
+
+        if path_obj is None or not path_obj.exists():
+            return {"error": "EEG dizini bulunamadı", "n_files": 0}
+
+        edf_files = sorted(path_obj.glob("*.edf"))
+        if not edf_files:
+            return {"error": "EDF dosyası yok", "n_files": 0}
+
+        n_concepts_added = 0
+        n_channels_processed = 0
+        n_certifications = 0
+        files_processed = []
+
+        try:
+            import mne
+            mne.set_log_level("ERROR")
+        except ImportError:
+            return {"error": "mne kütüphanesi yok (pip install mne)", "n_files": 0}
+
+        for edf_path in edf_files:
+            try:
+                raw = mne.io.read_raw_edf(str(edf_path), preload=True, verbose=False)
+                data, _ = raw.get_data(return_times=True)
+                n_ch = min(data.shape[0], max_channels)
+                ch_names = raw.ch_names[:n_ch]
+                file_stem = edf_path.stem
+
+                for i in range(n_ch):
+                    signal = data[i].astype(float)
+                    ch_name = ch_names[i] if i < len(ch_names) else f"CH{i}"
+                    concept_name = f"eeg_{file_stem}_{ch_name}"
+
+                    obj = encode_signal(signal, name=concept_name)
+                    run = self._engine.process(obj)
+                    n_channels_processed += 1
+                    if run.certified_count >= 18:
+                        n_certifications += 1
+
+                    if learn and concept_name not in self._engine.manifold.concepts:
+                        from tantrium.core.semantic import Concept
+                        concept = Concept(
+                            name=concept_name,
+                            moments=list(obj.moments),
+                            domain="eeg",
+                            source=f"eeg:{file_stem}:{ch_name}",
+                        )
+                        self._engine.manifold.add_unchecked(concept)
+                        self._engine.tau.add_edges_for(concept, self._engine.manifold, k=5)
+                        self._engine.note_new_concepts([concept_name])
+                        n_concepts_added += 1
+
+                files_processed.append(file_stem)
+            except Exception as exc:
+                files_processed.append(f"{edf_path.stem}:HATA({exc})")
+
+        if learn and n_concepts_added > 0 and self._persist:
+            try:
+                self._engine.auto_persist()
+            except Exception:
+                pass
+
+        return {
+            "n_files": len(edf_files),
+            "files": files_processed,
+            "n_channels_processed": n_channels_processed,
+            "n_concepts_added": n_concepts_added,
+            "certifications": n_certifications,
+        }
+
     def rank(self, target: str, candidates: list[str] | None = None, top_n: int = 10) -> "object":
         """Rank candidates for a target via certified dyadic transport.
 
@@ -1453,6 +1554,16 @@ class AI:
         _log(f"Başlıyor — {len(self._engine.manifold.concepts):,} kavram, "
              f"{sum(len(v) for v in self._engine.tau.edges.values()):,} TAU kenar")
 
+        # 0. EEG duyusal grounding (varsa — ağsız, yerel)
+        _log("EEG grounding kontrol ediliyor...")
+        try:
+            eeg_r = self.perceive_eeg(learn=True)
+            report["eeg_concepts"] = eeg_r.get("n_concepts_added", 0)
+            _log(f"EEG: {eeg_r.get('n_files', 0)} dosya, +{eeg_r.get('n_concepts_added', 0)} kavram")
+        except Exception as _eeg_exc:
+            report["eeg_concepts"] = 0
+            _log(f"EEG atlandı: {_eeg_exc}")
+
         # 1. Kör noktalar
         spots = self.blind_spots(threshold=5)
         report["blind_spots"] = len(spots)
@@ -1503,7 +1614,8 @@ class AI:
             _log(f"Kaydedildi: {n_saved:,} kavram")
 
         total_new = (
-            report["research_new_concepts"]
+            report.get("eeg_concepts", 0)
+            + report["research_new_concepts"]
             + report["genesis_concepts"]
             + report["proved_concepts"]
         )
