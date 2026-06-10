@@ -263,7 +263,9 @@ class ProofLoop:
         nodes: dict = data.get("nodes", {})
         updated = 0
 
-        # 1. Kampanya sertifika → doğrudan node güncelle
+        # 1. Kampanya sertifika → doğrudan node güncelle.
+        #    proof_method="campaign_certificate" — Research OS kampanyası gerçek
+        #    bir sertifika üretti (kanıta en yakın sinyal).
         for campaign, status in statuses.items():
             if status not in _PROOF_LOOP_CERTIFIABLE:
                 continue
@@ -273,10 +275,13 @@ class ProofLoop:
                     nodes[node_id]["status"] = cert_status
                     # proof_status da güncelle — inject_math_kernel proof_status'ı önce okur
                     nodes[node_id]["proof_status"] = cert_status
+                    nodes[node_id]["proof_method"] = "campaign_certificate"
                     updated += 1
 
-        # 2. Bağımlılık tabanlı auto-certify: tüm dep'leri sertifikalı olan
-        #    conjectural node'ları certified_local yap (en fazla 2 iterasyon)
+        # 2. Bağımlılık tabanlı kapanış: tüm dep'leri sertifikalı olan node'lar.
+        #    DÜRÜSTLÜK: bu KANIT DEĞİL — yapısal akla yatkınlık (tüm önkoşullar
+        #    sağlandı ama node'un kendisi doğrudan kanıtlanmadı). proof_method
+        #    ile açıkça işaretlenir ki gerçek kanıttan ayırt edilebilsin.
         for _ in range(2):
             for node_id, node in nodes.items():
                 if node.get("status") in _INJECTED_STATUSES:
@@ -287,6 +292,11 @@ class ProofLoop:
                 if all(nodes.get(d, {}).get("status") in _INJECTED_STATUSES for d in deps):
                     nodes[node_id]["status"] = "certified_local"
                     nodes[node_id]["proof_status"] = "certified_local"
+                    # Gerçek kanıt değil — bağımlılık kapanışı. Dürüstçe işaretle.
+                    nodes[node_id]["proof_method"] = "dependency_closure"
+                    nodes[node_id]["proof_caveat"] = (
+                        "önkoşullar sertifikalı; node doğrudan kanıtlanmadı"
+                    )
                     updated += 1
 
         if updated:
@@ -353,6 +363,58 @@ class ProofLoop:
 
         return len(self.engine.manifold.concepts) - before
 
+    def ingest_campaign_candidates(self) -> int:
+        """Research OS kampanya sonuçlarından teorem adaylarını manifolda ekle.
+
+        results/research_os/candidates/*.json dosyalarındaki candidate_id +
+        conclusion alanlarını encode ederek manifolda ekler.
+        Zaten manifoldda olanlar atlanır (idempotent).
+
+        Döner: eklenen yeni kavram sayısı.
+        """
+        candidates_dir = _REPO_ROOT / "results" / "research_os" / "candidates"
+        if not candidates_dir.is_dir():
+            return 0
+
+        added = 0
+        for cfile in candidates_dir.glob("*.json"):
+            try:
+                with open(cfile) as f:
+                    data = json.load(f)
+            except Exception:
+                continue
+
+            # Birden fazla aday içerebilir (liste veya tekil dict)
+            items = data if isinstance(data, list) else [data]
+            for item in items:
+                cid = item.get("candidate_id") or item.get("theorem_id") or ""
+                conclusion = item.get("conclusion") or item.get("statement") or ""
+                if not cid:
+                    continue
+
+                concept_name = f"theorem_candidate:{cid}"
+                if concept_name in self.engine.manifold.concepts:
+                    continue
+
+                text = conclusion or cid.replace("_", " ")
+                try:
+                    from tantrium.core.semantic import Concept
+                    raw = self.engine.encoder.encode(text, name=concept_name)
+                    concept = Concept(
+                        name=concept_name,
+                        moments=list(raw.moments),
+                        domain="theorem_candidate",
+                        source=f"research_os:{cfile.stem}",
+                    )
+                    if concept.is_real():
+                        self.engine.manifold.add_unchecked(concept)
+                        self.engine.tau.add_edges_for(concept, self.engine.manifold, k=3)
+                        added += 1
+                except Exception:
+                    pass
+
+        return added
+
     def _read_theorem_graph_statuses(self) -> dict[str, str]:
         """Theorem graph'taki tüm node'ların durumunu oku (id → status)."""
         if not self.graph_path.exists():
@@ -395,6 +457,9 @@ class ProofLoop:
 
         # 4. Yeni teoremler → manifold
         self.sync_new_theorems()
+
+        # 4b. Teorem adayları → manifold (candidates/*.json)
+        self.ingest_campaign_candidates()
 
         # 5. Kalıcılık
         if len(self.engine.manifold.concepts) > concepts_before:

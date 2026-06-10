@@ -157,33 +157,46 @@ class SemanticManifold:
         self.concepts[concept.name] = concept
         return self
 
-    def distance(self, name_a: str, name_b: str,
-                 metric: str = "spectral_w2") -> float:
-        """İki manifold kavramı arasındaki kanonik mesafe."""
-        from tantrium.core.metric import canonical_distance
+    def distance(self, name_a: str, name_b: str, metric: str = "spectral_w2") -> float | None:
+        """İki kavram arasındaki KANONİK mesafe (varsayılan: spektral W2).
+
+        Tek tutarlı mesafe — manifold/transport/spectral üçlü tutarsızlığını kapatır.
+        İki kavram da manifoldda olmalı; biri yoksa None.
+        """
+        from tantrium.core.metric import distance as _metric_distance
         ca = self.concepts.get(name_a)
         cb = self.concepts.get(name_b)
         if ca is None or cb is None:
-            return float("inf")
-        return canonical_distance(
-            [float(m) for m in ca.moments],
-            [float(m) for m in cb.moments],
-            metric=metric,
-        )
+            return None
+        return _metric_distance(ca.moments, cb.moments, metric=metric)
 
-    def nearest(self, concept: Concept, n: int = 5,
-                metric: str = "l1") -> list[tuple[str, Fraction]]:
-        """Find the n nearest concepts by moment distance.
+    def nearest(self, concept: Concept, n: int = 5, metric: str = "l1") -> list[tuple[str, Fraction]]:
+        """Find the n nearest concepts by moment distance (gradient flow direction).
 
-        metric="l1"          — hızlı L1 (varsayılan, 40k kavram için ~50x hızlı)
-        metric="spectral_w2" — kanonik W2 (daha doğru, daha yavaş)
-        Float path: Fraction L1 yerine float L1 — ~50x hızlı.
+        metric="l1" (varsayılan): hızlı L1 ön-eleme — büyük manifoldda hız için.
+        metric="spectral_w2": kanonik spektral Wasserstein (anlamsal hüküm için).
+          L1 ile geniş aday kümesi seçilir, sonra kanonik W2 ile yeniden sıralanır.
+
+        Float path: 6748 kavram için Fraction L1 yerine float L1 — ~50x hızlı.
+        Sonuçlar Fraction'a çevrilir (API uyumluluğu için).
         """
         if metric == "spectral_w2":
-            results = self.nearest_spectral(concept, n=n)
-            return [(name, Fraction(d).limit_denominator(10 ** 6))
-                    for name, d in results]
+            # L1 ile geniş aday kümesi (3n), sonra kanonik W2 ile yeniden sırala
+            from tantrium.core.metric import canonical_distance
+            wide = self._nearest_l1(concept, n=max(n * 3, n + 5))
+            reranked = []
+            for nm, _ in wide:
+                c = self.concepts.get(nm)
+                if c is None:
+                    continue
+                d = canonical_distance(concept.moments, c.moments)
+                reranked.append((d, nm))
+            reranked.sort()
+            return [(nm, Fraction(d).limit_denominator(10 ** 6)) for d, nm in reranked[:n]]
+        return self._nearest_l1(concept, n)
 
+    def _nearest_l1(self, concept: Concept, n: int = 5) -> list[tuple[str, Fraction]]:
+        """Hızlı L1 en-yakın-komşu (iç ön-eleme yolu)."""
         q = [float(m) for m in concept.moments]
         k = len(q)
         best: list[tuple[float, str]] = []

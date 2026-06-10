@@ -119,6 +119,13 @@ class SelfCertResult:
     paradigms_certified: int
     paradigms_total: int
 
+    @property
+    def coverage(self) -> float:
+        """Paradigma kapsama oranı: paradigms_certified / paradigms_total."""
+        if self.paradigms_total == 0:
+            return 0.0
+        return self.paradigms_certified / self.paradigms_total
+
     def summary(self) -> str:
         lines = ["  ── Tav(Sistem) = Sistem? ──"]
         if self.tav_fixed_point:

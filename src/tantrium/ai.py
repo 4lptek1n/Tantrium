@@ -64,9 +64,11 @@ class AskResult:
         cert = "✓" if self.certified else "✗"
         coh = "⬡" if self.coherent else ""
         g = {"GROUNDED": "⏚", "WEAKLY_GROUNDED": "≈", "UNGROUNDED": "∅"}.get(self.grounding, "?")
+        t = {"CONSISTENT": "✓", "CONTESTED": "≈", "CONTRADICTORY": "✗"}.get(self.truth, "?")
         return (
-            f"{cert}{coh} [{self.paradigms_passed}/{self.paradigms_total}] {g}{self.grounding}"
-            f"  {self.truth} conf={self.confidence:.2f}  {self.answer}"
+            f"{cert}{coh} [{self.paradigms_passed}/{self.paradigms_total}] "
+            f"{g}{self.grounding} {t}{self.truth} "
+            f"conf={self.confidence:.2f}({self.confidence_level})  {self.answer}"
             + (f"\n  gaps: {', '.join(self.gaps)}" if self.gaps else "")
         )
 
@@ -408,6 +410,126 @@ class AI:
         GROUNDED (köklü/rezonans) | WEAKLY_GROUNDED | UNGROUNDED (anlamsız).
         """
         return self._engine.grounder.certify(token)
+
+    def truth(self, name: str, n_neighbors: int = 6) -> "object":
+        """Doğruluk ekseni (3.) — kavram komşularıyla TUTARLI mı, çelişiyor mu?
+
+        Topraklama "bağlı mı?" der; doğruluk "çevresiyle tutarlı mı?" der.
+        Transport tutarlılığı + EMET çapraz-kontrol → CONSISTENT/CONTESTED/CONTRADICTORY.
+
+        Döner: TruthCertificate
+        """
+        from tantrium.core.truth import TruthCertifier
+        return TruthCertifier(self._engine).certify(name, n_neighbors=n_neighbors)
+
+    def confidence(self, query: str) -> "object":
+        """Kalibre edilmiş tek güven — 4 ekseni (kapsama+margin+topraklama+doğruluk) birleştir.
+
+        "23/23 ama margin 0.001" ile "23/23 margin 0.4" farkını tek sayıya indirir.
+        Ağırlıklı geometrik ortalama: herhangi bir eksen çökerse güven çöker.
+
+        Döner: Confidence (value, level, weakest_axis, ...)
+        """
+        from tantrium.core.confidence import calibrate
+        obj = self._engine.encoder.encode(query, name=query[:64])
+        run = self._engine.process(obj)
+        gcert = self._engine.grounder.certify(query[:64], moments=list(obj.moments))
+        try:
+            from tantrium.core.truth import TruthCertifier
+            tcert = TruthCertifier(self._engine).certify(query[:64], moments=list(obj.moments))
+            truth_score = tcert.truth_score
+        except Exception:
+            truth_score = 0.5
+        coverage = run.certified_count / run.total if run.total else 0.0
+        margin = float(obj.structure.get("achilles_margin", 0.0) or 0.0)
+        return calibrate(coverage, margin, gcert.score, truth_score)
+
+    def reconstruct(self, query: str, max_atoms: int = 4) -> "object":
+        """Ters yön: moment dizisinden ölçüyü GERİ KUR (Gauss kuadratürü / Prony).
+
+        Encoder ileri yön (yapı→moment); bu ters yön (moment→ölçü).
+        dμ = Σ wᵢ·δ(x−xᵢ) atomik ölçüsünü geri kurar, sadakati ölçer.
+        "Moment yapıyı belirler" iddiasının yapıcı kanıtı — ve üretkenlik.
+
+        Döner: ReconstructedMeasure (support, weights, reconstruction_error, ...)
+        """
+        from tantrium.core.reconstruct import reconstruct_measure
+        obj = self._engine.encoder.encode(query, name=query[:64])
+        return reconstruct_measure(obj.moments, max_atoms=max_atoms)
+
+    def collisions(
+        self,
+        n_samples: int = 200,
+        epsilon: float = 1e-4,
+        seed: int = 0,
+    ) -> "object":
+        """Çakışma avı — çekirdek iddianın ampirik testi.
+
+        İki YAPISAL FARKLI girdi aynı 8 momente çöküyor mu? Sistemin kendi
+        ayırt-etme gücünü saldırarak test eder. Çakışma → adaptif derinlik
+        gereken nokta; çakışma yok → vaadin kanıtı.
+
+        Döner: CollisionReport (collisions, collision_rate, claim_holds, ...)
+        """
+        from tantrium.core.collision import CollisionHunter
+        return CollisionHunter(self._engine).hunt(
+            n_samples=n_samples, epsilon=epsilon, seed=seed
+        )
+
+    def crossmodal(self, pairs: list[tuple] | None = None) -> dict:
+        """Cross-modal sadakat koşumu — ses/metin/molekül AYNI uzayda mı?
+
+        Vaat: anlamca yakın farklı-modalite çiftler moment uzayında yakın oturur.
+        Her çift için kanonik (spektral W2) mesafe hesaplar, raporlar.
+
+        pairs: [(girdi_a, modalite_a, girdi_b, modalite_b, beklenen), ...]
+        None → yerleşik benchmark (saf ton↔düzen, gürültü↔kaos, ...).
+
+        Döner: dict — her çiftin mesafesi + benchmark özeti
+        """
+        from tantrium.core.metric import canonical_distance
+        from tantrium.perception import encode_signal, tone, white_noise
+
+        results = []
+        if pairs is None:
+            # Yerleşik benchmark: yapısal yakınlık beklentileriyle
+            t440 = [float(x) for x in tone(440)]
+            noise = [float(x) for x in white_noise(2000)]
+            cases = [
+                ("saf ton", t440, "signal", "düzen", None, "text", "yakın"),
+                ("saf ton", t440, "signal", "kaos", None, "text", "uzak"),
+                ("gürültü", noise, "signal", "kaos", None, "text", "yakın"),
+                ("gürültü", noise, "signal", "düzen", None, "text", "uzak"),
+            ]
+            for name_a, data_a, mod_a, name_b, data_b, mod_b, expect in cases:
+                if mod_a == "signal":
+                    obj_a = encode_signal(data_a, name=name_a)
+                    mu_a = list(obj_a.moments)
+                else:
+                    mu_a = list(self._engine.encoder.encode(name_a).moments)
+                if mod_b == "signal":
+                    obj_b = encode_signal(data_b, name=name_b)
+                    mu_b = list(obj_b.moments)
+                else:
+                    mu_b = list(self._engine.encoder.encode(name_b).moments)
+                d = canonical_distance(mu_a, mu_b)
+                results.append({
+                    "pair": f"{name_a}({mod_a}) ↔ {name_b}({mod_b})",
+                    "distance": round(d, 5),
+                    "expected": expect,
+                })
+        else:
+            for (a, mod_a, b, mod_b, expect) in pairs:
+                mu_a = list(self._engine.encoder.encode(a).moments)
+                mu_b = list(self._engine.encoder.encode(b).moments)
+                d = canonical_distance(mu_a, mu_b)
+                results.append({
+                    "pair": f"{a}({mod_a}) ↔ {b}({mod_b})",
+                    "distance": round(d, 5),
+                    "expected": expect,
+                })
+
+        return {"pairs": results, "metric": "spectral_w2"}
 
     def ask(self, query: str) -> AskResult:
         """Herhangi bir girdi → CoreMachine (tek geçiş, 4 eksen) → AskResult."""
@@ -776,6 +898,107 @@ class AI:
         return self._engine.speaker.describe_percept(
             run, modality=modality, associations=associations
         )
+
+    def perceive_eeg(
+        self,
+        path: str | None = None,
+        max_channels: int = 64,
+        learn: bool = True,
+    ) -> dict:
+        """EEG verilerini oku — tüm kanalları moment uzayına çek, manifolda ekle.
+
+        Her .edf dosyasındaki her kanalı encode_signal() ile işler.
+        EEG sinyali: otokorelasyon → Toeplitz → Gram → 8 moment (Bochner).
+        Aynı moment uzayı — kelimeler, moleküller ve şimdi beyin dalgaları bir arada.
+
+        path=None → eeg_data/ dizinini otomatik bul
+        learn=True → işlenen kanallar manifolda kalıcılaşır
+
+        Döner: dict — {n_files, n_channels_processed, n_concepts_added, certifications}
+        """
+        import os
+        from pathlib import Path
+        from tantrium.perception import encode_signal
+
+        # EEG verisi nerede?
+        if path is None:
+            # Proje kökünde eeg_data/ veya kullanıcının verdiği dizin
+            search_dirs = [
+                Path("/home/user/Tantrium/eeg_data"),
+                Path("eeg_data"),
+                Path("data/eeg"),
+            ]
+            path_obj = next((d for d in search_dirs if d.is_dir()), None)
+        else:
+            path_obj = Path(path)
+
+        if path_obj is None or not path_obj.exists():
+            return {"error": "EEG dizini bulunamadı", "n_files": 0}
+
+        edf_files = sorted(path_obj.glob("*.edf"))
+        if not edf_files:
+            return {"error": "EDF dosyası yok", "n_files": 0}
+
+        n_concepts_added = 0
+        n_channels_processed = 0
+        n_certifications = 0
+        files_processed = []
+
+        try:
+            import mne
+            mne.set_log_level("ERROR")
+        except ImportError:
+            return {"error": "mne kütüphanesi yok (pip install mne)", "n_files": 0}
+
+        for edf_path in edf_files:
+            try:
+                raw = mne.io.read_raw_edf(str(edf_path), preload=True, verbose=False)
+                data, _ = raw.get_data(return_times=True)
+                n_ch = min(data.shape[0], max_channels)
+                ch_names = raw.ch_names[:n_ch]
+                file_stem = edf_path.stem
+
+                for i in range(n_ch):
+                    signal = data[i].astype(float)
+                    ch_name = ch_names[i] if i < len(ch_names) else f"CH{i}"
+                    concept_name = f"eeg_{file_stem}_{ch_name}"
+
+                    obj = encode_signal(signal, name=concept_name)
+                    run = self._engine.process(obj)
+                    n_channels_processed += 1
+                    if run.certified_count >= 18:
+                        n_certifications += 1
+
+                    if learn and concept_name not in self._engine.manifold.concepts:
+                        from tantrium.core.semantic import Concept
+                        concept = Concept(
+                            name=concept_name,
+                            moments=list(obj.moments),
+                            domain="eeg",
+                            source=f"eeg:{file_stem}:{ch_name}",
+                        )
+                        self._engine.manifold.add_unchecked(concept)
+                        self._engine.tau.add_edges_for(concept, self._engine.manifold, k=5)
+                        self._engine.note_new_concepts([concept_name])
+                        n_concepts_added += 1
+
+                files_processed.append(file_stem)
+            except Exception as exc:
+                files_processed.append(f"{edf_path.stem}:HATA({exc})")
+
+        if learn and n_concepts_added > 0 and self._persist:
+            try:
+                self._engine.auto_persist()
+            except Exception:
+                pass
+
+        return {
+            "n_files": len(edf_files),
+            "files": files_processed,
+            "n_channels_processed": n_channels_processed,
+            "n_concepts_added": n_concepts_added,
+            "certifications": n_certifications,
+        }
 
     def rank(self, target: str, candidates: list[str] | None = None, top_n: int = 10) -> "object":
         """Rank candidates for a target via certified dyadic transport.
@@ -1568,6 +1791,16 @@ class AI:
         _log(f"Başlıyor — {len(self._engine.manifold.concepts):,} kavram, "
              f"{sum(len(v) for v in self._engine.tau.edges.values()):,} TAU kenar")
 
+        # 0. EEG duyusal grounding (varsa — ağsız, yerel)
+        _log("EEG grounding kontrol ediliyor...")
+        try:
+            eeg_r = self.perceive_eeg(learn=True)
+            report["eeg_concepts"] = eeg_r.get("n_concepts_added", 0)
+            _log(f"EEG: {eeg_r.get('n_files', 0)} dosya, +{eeg_r.get('n_concepts_added', 0)} kavram")
+        except Exception as _eeg_exc:
+            report["eeg_concepts"] = 0
+            _log(f"EEG atlandı: {_eeg_exc}")
+
         # 1. Kör noktalar
         spots = self.blind_spots(threshold=5)
         report["blind_spots"] = len(spots)
@@ -1618,7 +1851,8 @@ class AI:
             _log(f"Kaydedildi: {n_saved:,} kavram")
 
         total_new = (
-            report["research_new_concepts"]
+            report.get("eeg_concepts", 0)
+            + report["research_new_concepts"]
             + report["genesis_concepts"]
             + report["proved_concepts"]
         )

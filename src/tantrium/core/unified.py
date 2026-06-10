@@ -98,20 +98,23 @@ class CoreMachine:
             from tantrium.core.truth import TruthCertifier
             tcert = TruthCertifier(self._engine).certify(nm, moments=moments)
             truth = tcert.verdict
-            truth_score = tcert.consistency_score
+            truth_score = getattr(tcert, "truth_score",
+                                  getattr(tcert, "consistency_score", 0.7))
         else:
             truth, truth_score = "CONSISTENT", 0.7
 
         # ─── RECONSTRUCTION FIDELITY ──────────────────────────────────────────
-        from tantrium.core.reconstruct import reconstruction_fidelity
-        recon = reconstruction_fidelity(moments)
+        from tantrium.core.reconstruct import reconstruction_fidelity as _recon_fid
+        recon = _recon_fid(moments)
 
         # ─── AXIS 4: CONFIDENCE ───────────────────────────────────────────────
         from tantrium.core.confidence import calibrate
-        achilles_score = obj.structure.get("achilles_score", 0.0) if hasattr(obj, "structure") else 0.0
+        achilles_margin = 0.0
+        if hasattr(obj, "structure"):
+            achilles_margin = float(obj.structure.get("achilles_margin", 0.0) or 0.0)
         conf = calibrate(
-            structural=structural_score,
-            achilles=1.0 - float(achilles_score),
+            coverage=structural_score,
+            margin=achilles_margin,
             grounding=grounding_score,
             truth=truth_score,
         )
@@ -147,13 +150,13 @@ class CoreMachine:
     def _encode_adaptive(self, input_data: object, name: str) -> object:
         """8→16 moment derinliği, rekonstrüksiyon kalitesi düşükse."""
         try:
-            from tantrium.core.reconstruct import reconstruction_fidelity
+            from tantrium.core.reconstruct import reconstruction_fidelity as _rf
             from tantrium.core.encoder import UniversalEncoder
             obj = self._engine.encoder.encode(input_data, name=name)
-            fidelity = reconstruction_fidelity(list(obj.moments))
+            fidelity = _rf(list(obj.moments))
             if fidelity < 0.999 and len(obj.moments) < 16:
                 deeper = UniversalEncoder(16).encode(input_data, name=name)
-                if reconstruction_fidelity(list(deeper.moments)) > fidelity:
+                if _rf(list(deeper.moments)) > fidelity:
                     return deeper
             return obj
         except Exception:

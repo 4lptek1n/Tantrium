@@ -309,19 +309,49 @@ class ConceptSynthesizer:
     def genesis(self, max_gaps: int = 5, discover: bool = True) -> GenesisReport:
         """Manifold boşluklarını matematiksel zorunluluktan üretilen kavramlarla doldur.
 
-        İKİ MOD:
-          1. İNTERPOLASYON (boşluk doldurma): komşuların konveks kombosu — gövde İÇİ.
-          2. KEŞİF (discover=True): gövde DIŞINA ekstrapolasyon. Yeni nokta üret,
-             ama yalnızca HEM sertifika geçen HEM topraklananı tut. Yaratıcılık,
-             süzgeçle birlikte: gürültü değil, gerçek-ve-bağlı yeni yapı.
+        ÜÇ MOD (öncelik sırası):
+          1. TOPOLOJİ REHBERLİ: MomentTopology.named_frontiers() ile sistematik boşluk tespiti.
+             Grid'de komşusu olan ama boş olan hücreler — harita rehberliğinde keşif.
+          2. İNTERPOLASYON (boşluk doldurma): NecessityEngine gap'leri — gövde İÇİ.
+          3. KEŞİF (discover=True): gövde DIŞINA ekstrapolasyon. Yeni nokta üret,
+             ama yalnızca HEM sertifika geçen HEM topraklananı tut.
 
-        İnterpolasyon boşluk bulamazsa (doymuş manifold) keşif devreye girer —
-        yaratıcılık interpolasyondan keşfe terfi eder.
+        Topoloji rehberli mod bulgu üretmezse interpolasyon, o da bulamazsa keşif devreye girer.
         """
         from tantrium.reasoning.necessity import NecessityEngine
+        from tantrium.meta.topology import MomentTopology
         from tantrium.core.semantic import Concept
         from tantrium.core.encoder import encode as enc
+        from fractions import Fraction
 
+        # ── MOD 1: Topoloji rehberli gap tespiti (sistematik, harita tabanlı) ──
+        topology_gaps: list = []
+        try:
+            topo = MomentTopology(self.engine)
+            frontiers = topo.named_frontiers(top_n=max_gaps * 2)
+            for region in frontiers:
+                if len(topology_gaps) >= max_gaps:
+                    break
+                # Frontier merkezi: μ₁=cx, μ₂=cy → tam 8-boyutlu moment vektörü
+                cx = region.center[0] if region.center else 0.1
+                cy = region.center[1] if len(region.center) > 1 else 0.05
+                # Geriye kalan momentler: komşu kavramların ortalaması
+                neighbor_moments = []
+                for nm in region.concept_names[:4]:
+                    c = self.engine.manifold.concepts.get(nm)
+                    if c and len(c.moments) >= 8:
+                        neighbor_moments.append([float(m) for m in c.moments])
+                if not neighbor_moments:
+                    continue
+                avg_m = [sum(row[i] for row in neighbor_moments) / len(neighbor_moments) for i in range(8)]
+                avg_m[1] = cx  # μ₂ (index 1 after μ₀=1): topoloji koordinatı
+                avg_m[2] = cy  # μ₃ (index 2): topoloji koordinatı
+                avg_m[0] = 1.0  # normalize
+                topology_gaps.append((avg_m, region.concept_names[:3], region.named_unknown or f"TOPO_{region.region_id}"))
+        except Exception:
+            pass
+
+        # ── MOD 2: NecessityEngine gap tespiti (fallback) ──────────────────────
         ne = NecessityEngine(self.engine)
         report = ne.run(domain="math_kernel", inject=False, find_gaps=True)
         gaps = report.manifold_gaps[:max_gaps]
@@ -330,6 +360,77 @@ class ConceptSynthesizer:
         manifold_before = len(self.engine.manifold.concepts)
         tau_before = sum(len(v) for v in self.engine.tau.edges.values())
 
+        # ── MOD 1 İŞLEME: Topoloji boşluklarını kavrama dönüştür ─────────────
+        for (avg_m, topo_parents, name_hint) in topology_gaps:
+            if sum(1 for e in created if e.certified) >= max_gaps:
+                break
+            # İÇERİK TAŞIYAN isim: sentetik TOPO_id yerine GERÇEK komşulardan türet.
+            # Boş ⊕topo_42 noktası anlamsız hacim; iki gerçek ebeveynin kesişimi
+            # ise içerik taşır — domain'i de komşulardan miras alır.
+            parent_concepts = [
+                self.engine.manifold.concepts.get(p) for p in topo_parents
+            ]
+            parent_concepts = [c for c in parent_concepts if c is not None]
+            if len(parent_concepts) >= 2:
+                p1 = topo_parents[0][:12].replace(" ", "_").replace("/", "_")
+                p2 = topo_parents[1][:12].replace(" ", "_").replace("/", "_")
+                concept_name = f"⊕{p1}⋈{p2}"
+                # Domain'i ebeveynlerin çoğunluk domain'inden miras al
+                domains = [getattr(c, "domain", "synthesis") for c in parent_concepts]
+                inherited_domain = max(set(domains), key=domains.count) if domains else "topology"
+            elif topo_parents:
+                p1 = topo_parents[0][:18].replace(" ", "_").replace("/", "_")
+                concept_name = f"⊕{p1}_frontier"
+                inherited_domain = getattr(parent_concepts[0], "domain", "topology") \
+                    if parent_concepts else "topology"
+            else:
+                safe_hint = name_hint[:24].replace(" ", "_").replace("/", "_")
+                concept_name = f"⊕topo_{safe_hint}"
+                inherited_domain = "topology"
+
+            if concept_name in self.engine.manifold.concepts:
+                continue
+            # μ₀ normalize
+            if not avg_m or avg_m[0] <= 1e-9:
+                continue
+            norm = avg_m[0]
+            mu_norm = [m / norm for m in avg_m]
+
+            fracs = [Fraction(m).limit_denominator(10 ** 9) for m in mu_norm]
+            new_concept = Concept(
+                name=concept_name,
+                moments=fracs,
+                domain=inherited_domain,
+                source=f"genesis_topo({','.join(topo_parents[:2])})",
+            )
+            try:
+                obj = enc(fracs, name=concept_name)
+                run = self.engine.process(obj)
+                paradigms = run.certified_count
+                cert = paradigms >= 18
+                if cert:
+                    self.engine.manifold.add_unchecked(new_concept)
+                    self.engine.tau.add_node(new_concept)
+                    self.engine.tau.add_edges_for(new_concept, self.engine.manifold, k=3)
+                created.append(GenesisEntry(
+                    name=concept_name,
+                    moments=mu_norm,
+                    paradigms_passed=paradigms,
+                    gap_description=f"topoloji frontier: {name_hint}",
+                    nearest_parents=list(topo_parents),
+                    certified=cert,
+                ))
+            except Exception:
+                created.append(GenesisEntry(
+                    name=concept_name,
+                    moments=mu_norm,
+                    paradigms_passed=0,
+                    gap_description=f"topoloji frontier: {name_hint}",
+                    nearest_parents=list(topo_parents),
+                    certified=False,
+                ))
+
+        # ── MOD 2 İŞLEME: NecessityEngine boşluklarını doldur ────────────────
         for gap in gaps:
             centroid = gap.centroid
             parents = gap.nearest_concepts[:3]
@@ -415,7 +516,7 @@ class ConceptSynthesizer:
 
         return GenesisReport(
             concepts_created=created,
-            gaps_found=len(gaps),
+            gaps_found=len(topology_gaps) + len(gaps),
             gaps_filled=gaps_filled,
             manifold_growth=manifold_after - manifold_before,
             new_tau_edges=tau_after - tau_before,
@@ -727,14 +828,17 @@ class ConceptSynthesizer:
             pass
 
         certified_count = run.certified_count
+        already_in_manifold = name[:64] in self.engine.manifold.concepts
         can_manifest = (
             certified_count >= 20
             and grounding != "UNGROUNDED"
-            and name[:64] not in self.engine.manifold.concepts
         )
 
         manifested = False
-        if can_manifest:
+        if can_manifest and already_in_manifold:
+            # Already in manifold → already manifested, nothing to add
+            manifested = True
+        elif can_manifest:
             concept = Concept(
                 name=name[:64],
                 moments=list(obj.moments),
