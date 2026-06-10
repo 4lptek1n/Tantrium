@@ -277,7 +277,12 @@ def stage_l3_het_li(state: dict) -> None:
     _eigenvalues = state.get("eigenvalues", [])
     _positive_eigs = [e for e in _eigenvalues if e > 1e-10]
     if not _positive_eigs:
-        _positive_eigs = [1.0]
+        # Eigenvalue yok → Li hesaplanamaz (sahte [1.0] değil, dürüst None)
+        state["li_coefficients"] = []
+        state["li_positive"] = None
+        state["potential_values"] = {}
+        state["flows"] = []
+        return
 
     try:
         li_coeffs: list[float] = []
