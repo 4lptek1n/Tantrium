@@ -18,9 +18,16 @@ src/tantrium/          ← pip install -e . ile kurulu paket
     codex.py           ← 23 paradigma (verify() okur, hesaplamaz)
     pipeline.py        ← run_pipeline() L0-L7 sıralı hesaplama
     network.py         ← CertificationPipeline (topolojik DAG)
-    engine.py          ← CertificationEngine (orkestratör)
+    engine.py          ← CertificationEngine + engine.core (CoreMachine lazy)
+    unified.py         ← CoreMachine — TEK ÇEKİRDEK (4 eksen, tek geçiş)
+    truth.py           ← TruthCertifier — 3. eksen (komşu tutarlılık)
+    confidence.py      ← calibrate() — 4. eksen (ağırlıklı geometrik ort.)
+    reconstruct.py     ← reconstruct_measure() — Gauss kuadratur geri çıkarım
+    metric.py          ← spectral_w2 kanonik mesafe, l1_distance ön-filtre
+    collision.py       ← CollisionHunter — adversarial teklik testi
+    grounding.py       ← GroundingCertifier — 2. eksen (TAU kökü)
     transport.py       ← CertifiedTransport (dyadic+Sturm+Zeta)
-    semantic.py        ← SemanticManifold (40k kavram, L1 mesafe)
+    semantic.py        ← SemanticManifold (40k kavram, distance(), nearest(metric=))
   proof/               ← dyadic ispat ilkleri (pip'ten erişilir)
     dyadic_flow.py     ← solve_greedy (Fraction aritmetik)
     certificate.py     ← Cell, Certificate, TransportEdge
@@ -129,6 +136,38 @@ nokta için komşu LİSTELEMEZ (yanıltıcı olur) — dürüstçe "anlamsız" d
 
 ---
 
+## CoreMachine — Tek Çekirdek (4 Eksenli Tek Geçiş)
+
+**Eski sorun:** `ask()` 3×encode + 2×process yapıyordu — 90 metotlu kontrol paneli.
+**Çözüm:** `engine.core` → `CoreMachine` — ONE encode → ONE process → 4 eksen ORTAKLAŞAN durumdan.
+
+```
+girdi → encode (adaptive 8→16) → process (23 paradigma)
+       ↓           ↓                    ↓              ↓
+   Eksen 1:    Eksen 2:           Eksen 3:         Eksen 4:
+  Yapısal    Topraklama          Gerçek           Güven
+  (23 par.)   (TAU kökü)      (komşu tut.)    (geom.ort.)
+         ↓
+   coherent boolean (hepsi anlaşıyor mu?)
+```
+
+```python
+from tantrium.core.unified import CoreMachine, UnifiedCertificate
+core = engine.core      # lazy singleton
+cert = core.certify("EGFR")
+cert.paradigms_passed   # yapısal
+cert.grounding          # topraklama
+cert.truth              # gerçek
+cert.confidence         # güven
+cert.coherent           # hepsi tutarlı mı?
+```
+
+`ask()` CoreMachine kullanır. `certified` = yapısal (geriye dönük uyumlu), `coherent` = 4 eksen.
+
+**Genesis öz-düzeltici:** `_coherent_for_genesis()` → CONTRADICTORY kavramlar manifolda girmiyor.
+
+---
+
 ## CertifiedTransport
 
 ```
@@ -185,7 +224,12 @@ ai(noise_image())                              # → str: görüntü → dil
 ai(b"\x00\xff...")                             # → str: kripto yapı analizi
 ai.run(cycles=3, time_limit_s=600)             # → dict: KAPALI DÖNGÜ (tüm büyüme adımları)
                                                #   blind_spots → auto_research → close → genesis → prove → persist
-ai.ask("EGFR")                                 # → AskResult (23 paradigma + topraklama ekseni)
+ai.ask("EGFR")                                 # → AskResult (4 eksen: paradigma+topraklama+gerçek+güven)
+                                               #   .certified (yapısal, ger.dönük uyumlu)
+                                               #   .coherent (4 eksen tutarlı boolean)
+                                               #   .truth / .truth_score
+                                               #   .confidence / .confidence_level
+ai.certify_all("EGFR")                         # → UnifiedCertificate (CoreMachine tek geçiş)
 ai.grounding("protein")                        # → GroundingCertificate (GROUNDED/WEAKLY/UNGROUNDED)
 ai.transport("CCO", "aspirin", use_smiles=True)# → TransportCertificate
 ai.rank("EGFR", top_n=10)                      # → TransportRanking
@@ -194,6 +238,14 @@ ai.close(domain="math_kernel", inject=True)    # → NecessityReport
 ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, ...}
 ai.think("protein folding")                    # → ThinkingResult
 ai.discover("EGFR", top_k=5)                   # → molekül keşfi
+ai.manifold_gaps(domain="math_kernel")         # → list[ManifoldGap]
+ai.destiny("prime", top_k=5)                   # → {attractor, descendants, evolution_direction}
+ai.genealogy("protein", depth=4)               # → str (soy zinciri anlatısı)
+ai.signal("tone", freq=440)                    # → sinyal (perceive() için)
+ai.dna("ATCGATCG")                             # → CertificationRun (DNA→moment uzayı)
+ai.sturm("x^3 - 3*x + 1")                     # → Sturm zinciri
+ai.positivity("x^2 + 1")                       # → dict (Hankel PSD kontrolü)
+ai.crypto(b"\x00\xff...", mode="achilles")     # → AchillesReading (savunma)
 
 # Meta (tanrısal göz & sentez)
 ai.vision("prime")                             # → CosmicFrame (geçmiş/şimdi/gelecek)
@@ -230,11 +282,13 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 
 - Kavram: 39,942 | TAU edge: 654,896+ | Paradigma: 23/23
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
+- CoreMachine: TEK ÇEKİRDEK — 4 eksen tek geçişte (certified+grounding+truth+confidence)
+- Genesis öz-düzeltici: CONTRADICTORY kavramlar manifolda girmiyor (truth axis geçidi)
 - ProofLoop: TAM KAPALI — subresultant_recurrence kampanyası çalışıyor
 - Algı katmanı: ses+görüntü grounding aktif (Wiener–Khinchin/Bochner momentleri)
 - Algı→dil köprüsü: `ai.witness()` gördüğünü dile döker (görmek=hatırlamak=anlatmak)
 - Kripto okuyucu: GIMEL Aşil topuğu zayıf şifreyi ZAYIN ekseninden yakalar (savunma)
-- Tests: 167 geçiyor
+- Tests: 67+ geçiyor (test_api + test_grounding)
 
 ---
 
