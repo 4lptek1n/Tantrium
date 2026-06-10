@@ -790,6 +790,56 @@ class AI:
             n_fragment=report.n_fragment,
         )
 
+    def arrange(
+        self,
+        target: str,
+        n: int = 12,
+        cls_filter: str | None = None,
+    ) -> "object":
+        """Moleküler düzenleme — hedef etrafında W2 mesafesine göre 150+ ilaç diz.
+
+        Saf matematiksel. Metin arama yok — her molekül G=AᵀA → μ_k kernel'den geçer.
+        target: protein, hastalık, SMILES veya herhangi bir kavram.
+        cls_filter: "kinase", "nsaid", "oncology", "natural", vb.
+        """
+        import warnings
+        warnings.filterwarnings("ignore")
+        from tantrium.core.molecular_space import MolecularSpace
+        ms = MolecularSpace(self.engine)
+        return ms.arrange(target, n=n, cls_filter=cls_filter)
+
+    def morph(
+        self,
+        source_smiles: str,
+        target_smiles: str,
+        steps: int = 6,
+    ) -> "object":
+        """İki molekül arasında moment uzayında interpolasyon yolu.
+
+        Her ara noktada kütüphaneden en yakın gerçek molekül bulunur.
+        A → B arasındaki kimyasal evrim yolunu gösterir.
+        """
+        import warnings
+        warnings.filterwarnings("ignore")
+        from tantrium.core.molecular_space import MolecularSpace
+        ms = MolecularSpace(self.engine)
+        return ms.morph(source_smiles, target_smiles, steps=steps)
+
+    def lineage_mol(
+        self,
+        smiles: str,
+        depth: int = 3,
+    ) -> list:
+        """Moleküler silsile — W2 ağacında ata-torun zinciri.
+
+        Her seviyede 3 en yakın kimyasal akraba. Molekülün 'kimden geldiğini' gösterir.
+        """
+        import warnings
+        warnings.filterwarnings("ignore")
+        from tantrium.core.molecular_space import MolecularSpace
+        ms = MolecularSpace(self.engine)
+        return ms.lineage(smiles, depth=depth)
+
     def certify_list(
         self,
         target: str,

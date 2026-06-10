@@ -242,6 +242,10 @@ ai.discover("EGFR", top_k=5)                   # → molekül keşfi (Morgan mom
 ai.design("EGFR", top_k=10)                    # → DesignResult (TERS TRANSPORT: W2-minimal moleküller→3D SDF)
 ai.design("breast cancer HER2", top_k=8)       # → metin hedef → ilaç adayları
 ai.design("c1ccccc1", top_k=5)                 # → SMILES hedef → benzer yapılar
+ai.arrange("EGFR", n=12)                       # → ArrangementResult (150+ ilaç, saf W2 dizimi, metin yok)
+ai.arrange("EGFR", cls_filter="kinase")        # → sadece kinaz sınıfı
+ai.morph("CC(=O)Oc1ccccc1C(=O)O", "C#Cc...")  # → MorphResult (aspirin→erlotinib moment uzayı yolu)
+ai.lineage_mol("c1ccccc1", depth=3)            # → [[MolPoint]] (benzene ata-torun W2 ağacı)
 ai.manifold_gaps(domain="math_kernel")         # → list[ManifoldGap]
 ai.destiny("prime", top_k=5)                   # → {attractor, descendants, evolution_direction}
 ai.genealogy("protein", depth=4)               # → str (soy zinciri anlatısı)
@@ -293,6 +297,10 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - Algı→dil köprüsü: `ai.witness()` gördüğünü dile döker (görmek=hatırlamak=anlatmak)
 - Kripto okuyucu: GIMEL Aşil topuğu zayıf şifreyi ZAYIN ekseninden yakalar (savunma)
 - **InverseTransport**: hedef (protein/hastalık/SMILES) → W2-minimal moleküller → 3D SDF (3s, RDKit ETKDGv3)
+- **MolecularSpace**: 150+ ilaç kütüphanesi, saf W2 dizimi — arrange/morph/lineage_mol
+  - `arrange(EGFR)` → levodopa, lisinopril, methotrexate (kimyasal mantıklı sıralama)
+  - `morph(aspirin, erlotinib)` → moment uzayı yolu, t=0.25'te erlotinib
+  - cyclohexane W2=0.000 benzene (aynı yapısal imza — kernel doğru okuyor)
 - Tests: 239 geçiyor (test_api + test_grounding + test_inverse_design)
 
 ---

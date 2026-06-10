@@ -41,6 +41,7 @@ from tantrium.perception import (
     encode_signal, encode_image, encode_matrix, signal_autocorrelation,
 )
 from tantrium.core.inverse import InverseTransport, DesignCandidate, DesignReport
+from tantrium.core.molecular_space import MolecularSpace, MolPoint, ArrangementResult, MorphResult
 
 __all__ = [
     # Core SDK
@@ -54,6 +55,10 @@ __all__ = [
     "InverseTransport",
     "DesignCandidate",
     "DesignReport",
+    "MolecularSpace",
+    "MolPoint",
+    "ArrangementResult",
+    "MorphResult",
     "CertificationEngine",
     "CertificationPipeline",
     "CertificationRun",
