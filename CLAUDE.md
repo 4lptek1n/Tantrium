@@ -28,6 +28,7 @@ src/tantrium/          ← pip install -e . ile kurulu paket
     grounding.py       ← GroundingCertifier — 2. eksen (TAU kökü)
     transport.py       ← CertifiedTransport (dyadic+Sturm+Zeta)
     semantic.py        ← SemanticManifold (40k kavram, distance(), nearest(metric=))
+    inverse.py         ← InverseTransport — hedef→W2-minimal moleküller→3D SDF
   proof/               ← dyadic ispat ilkleri (pip'ten erişilir)
     dyadic_flow.py     ← solve_greedy (Fraction aritmetik)
     certificate.py     ← Cell, Certificate, TransportEdge
@@ -237,7 +238,10 @@ ai.prove(max_cycles=2)                         # → LoopReport (kapalı döngü
 ai.close(domain="math_kernel", inject=True)    # → NecessityReport
 ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, ...}
 ai.think("protein folding")                    # → ThinkingResult
-ai.discover("EGFR", top_k=5)                   # → molekül keşfi
+ai.discover("EGFR", top_k=5)                   # → molekül keşfi (Morgan moment uzayı)
+ai.design("EGFR", top_k=10)                    # → DesignResult (TERS TRANSPORT: W2-minimal moleküller→3D SDF)
+ai.design("breast cancer HER2", top_k=8)       # → metin hedef → ilaç adayları
+ai.design("c1ccccc1", top_k=5)                 # → SMILES hedef → benzer yapılar
 ai.manifold_gaps(domain="math_kernel")         # → list[ManifoldGap]
 ai.destiny("prime", top_k=5)                   # → {attractor, descendants, evolution_direction}
 ai.genealogy("protein", depth=4)               # → str (soy zinciri anlatısı)
@@ -280,7 +284,7 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 
 ## Mevcut Durum
 
-- Kavram: 39,942 | TAU edge: 654,896+ | Paradigma: 23/23
+- Kavram: 39,964+ | TAU edge: 655,000+ | Paradigma: 23/23
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
 - CoreMachine: TEK ÇEKİRDEK — 4 eksen tek geçişte (certified+grounding+truth+confidence)
 - Genesis öz-düzeltici: CONTRADICTORY kavramlar manifolda girmiyor (truth axis geçidi)
@@ -288,7 +292,8 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - Algı katmanı: ses+görüntü grounding aktif (Wiener–Khinchin/Bochner momentleri)
 - Algı→dil köprüsü: `ai.witness()` gördüğünü dile döker (görmek=hatırlamak=anlatmak)
 - Kripto okuyucu: GIMEL Aşil topuğu zayıf şifreyi ZAYIN ekseninden yakalar (savunma)
-- Tests: 67+ geçiyor (test_api + test_grounding)
+- **InverseTransport**: hedef (protein/hastalık/SMILES) → W2-minimal moleküller → 3D SDF (3s, RDKit ETKDGv3)
+- Tests: 239 geçiyor (test_api + test_grounding + test_inverse_design)
 
 ---
 

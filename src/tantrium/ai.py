@@ -156,6 +156,47 @@ class DiscoverResult:
         return "\n".join(lines)
 
 
+@dataclass
+class DesignResult:
+    """ai.design() — ters transport molekül tasarım sonucu."""
+    target: str
+    target_type: str
+    candidates: list  # list[DesignCandidate]
+    best: object | None
+    duration_s: float
+    n_manifold: int = 0
+    n_fragment: int = 0
+
+    @property
+    def smiles(self) -> str:
+        return self.best.smiles if self.best else ""
+
+    @property
+    def sdf(self) -> str:
+        return self.best.sdf_path if self.best else ""
+
+    @property
+    def w2(self) -> float:
+        return self.best.w2_distance if self.best else 0.0
+
+    def __str__(self) -> str:
+        if not self.best:
+            return f"✗ {self.target}: aday bulunamadı"
+        coh = "✓" if self.best.coherent else "~"
+        lines = [
+            f"{coh} {self.target} → {self.best.name}  [W2={self.best.w2_distance:.4f}]",
+            f"   SMILES: {self.best.smiles[:80]}",
+            f"   conf={self.best.confidence:.2f}  coherent={self.best.coherent}"
+            f"  [{self.best.paradigms_passed}/{self.best.paradigms_total}]"
+            f"  method={self.best.method}",
+        ]
+        if self.best.sdf_path:
+            lines.append(f"   3D: {self.best.sdf_path}")
+        lines.append(f"   Manifold: {self.n_manifold}  Fragment: {self.n_fragment}  "
+                     f"Süre: {self.duration_s:.1f}s")
+        return "\n".join(lines)
+
+
 # ─── Ana AI sınıfı ───────────────────────────────────────────────────────────
 
 class AI:
@@ -719,6 +760,34 @@ class AI:
             candidates=candidates,
             best=best,
             duration_s=report.duration_s,
+        )
+
+    def design(
+        self,
+        target: str,
+        top_k: int = 10,
+        out_dir: str = "results/molecules",
+        n_fragment_rounds: int = 2,
+    ) -> "DesignResult":
+        """Ters transport — hedef → W2-minimal moleküller → 3D SDF.
+
+        Manifold araması (L1→W2) + fragment mutasyonu + 4-eksen sertifika.
+        target: protein adı, hastalık işareti, SMILES veya herhangi metin.
+        """
+        import warnings
+        warnings.filterwarnings("ignore")
+        from tantrium.core.inverse import InverseTransport
+        inv = InverseTransport(self.engine)
+        report = inv.design(target, top_k=top_k, out_dir=out_dir,
+                            n_fragment_rounds=n_fragment_rounds)
+        return DesignResult(
+            target=report.target,
+            target_type=report.target_type,
+            candidates=report.candidates,
+            best=report.best,
+            duration_s=report.duration_s,
+            n_manifold=report.n_manifold,
+            n_fragment=report.n_fragment,
         )
 
     def certify_list(

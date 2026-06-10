@@ -1,5 +1,5 @@
 """Tantrium: structure-first symbolic discovery framework."""
-from tantrium.ai import AI, AskResult, MolResult, GenResult, ReasonResult, DiscoverResult
+from tantrium.ai import AI, AskResult, MolResult, GenResult, ReasonResult, DiscoverResult, DesignResult
 from tantrium.core.engine import CertificationEngine
 from tantrium.core.unified import CoreMachine, UnifiedCertificate
 from tantrium.core.reconstruct import ReconstructedMeasure, reconstruct_measure, reconstruction_fidelity
@@ -40,6 +40,7 @@ from tantrium.meta.synthesis import (
 from tantrium.perception import (
     encode_signal, encode_image, encode_matrix, signal_autocorrelation,
 )
+from tantrium.core.inverse import InverseTransport, DesignCandidate, DesignReport
 
 __all__ = [
     # Core SDK
@@ -49,6 +50,10 @@ __all__ = [
     "GenResult",
     "ReasonResult",
     "DiscoverResult",
+    "DesignResult",
+    "InverseTransport",
+    "DesignCandidate",
+    "DesignReport",
     "CertificationEngine",
     "CertificationPipeline",
     "CertificationRun",
