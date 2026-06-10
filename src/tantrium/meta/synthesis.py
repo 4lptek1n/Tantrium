@@ -364,9 +364,30 @@ class ConceptSynthesizer:
         for (avg_m, topo_parents, name_hint) in topology_gaps:
             if sum(1 for e in created if e.certified) >= max_gaps:
                 break
-            # İsim temizle: özel karakter yok, kısa tut
-            safe_hint = name_hint[:24].replace(" ", "_").replace("/", "_")
-            concept_name = f"⊕topo_{safe_hint}"
+            # İÇERİK TAŞIYAN isim: sentetik TOPO_id yerine GERÇEK komşulardan türet.
+            # Boş ⊕topo_42 noktası anlamsız hacim; iki gerçek ebeveynin kesişimi
+            # ise içerik taşır — domain'i de komşulardan miras alır.
+            parent_concepts = [
+                self.engine.manifold.concepts.get(p) for p in topo_parents
+            ]
+            parent_concepts = [c for c in parent_concepts if c is not None]
+            if len(parent_concepts) >= 2:
+                p1 = topo_parents[0][:12].replace(" ", "_").replace("/", "_")
+                p2 = topo_parents[1][:12].replace(" ", "_").replace("/", "_")
+                concept_name = f"⊕{p1}⋈{p2}"
+                # Domain'i ebeveynlerin çoğunluk domain'inden miras al
+                domains = [getattr(c, "domain", "synthesis") for c in parent_concepts]
+                inherited_domain = max(set(domains), key=domains.count) if domains else "topology"
+            elif topo_parents:
+                p1 = topo_parents[0][:18].replace(" ", "_").replace("/", "_")
+                concept_name = f"⊕{p1}_frontier"
+                inherited_domain = getattr(parent_concepts[0], "domain", "topology") \
+                    if parent_concepts else "topology"
+            else:
+                safe_hint = name_hint[:24].replace(" ", "_").replace("/", "_")
+                concept_name = f"⊕topo_{safe_hint}"
+                inherited_domain = "topology"
+
             if concept_name in self.engine.manifold.concepts:
                 continue
             # μ₀ normalize
@@ -379,8 +400,8 @@ class ConceptSynthesizer:
             new_concept = Concept(
                 name=concept_name,
                 moments=fracs,
-                domain="topology",
-                source="genesis_topo",
+                domain=inherited_domain,
+                source=f"genesis_topo({','.join(topo_parents[:2])})",
             )
             try:
                 obj = enc(fracs, name=concept_name)

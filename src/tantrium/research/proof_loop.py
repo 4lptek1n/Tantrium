@@ -263,7 +263,9 @@ class ProofLoop:
         nodes: dict = data.get("nodes", {})
         updated = 0
 
-        # 1. Kampanya sertifika → doğrudan node güncelle
+        # 1. Kampanya sertifika → doğrudan node güncelle.
+        #    proof_method="campaign_certificate" — Research OS kampanyası gerçek
+        #    bir sertifika üretti (kanıta en yakın sinyal).
         for campaign, status in statuses.items():
             if status not in _PROOF_LOOP_CERTIFIABLE:
                 continue
@@ -273,10 +275,13 @@ class ProofLoop:
                     nodes[node_id]["status"] = cert_status
                     # proof_status da güncelle — inject_math_kernel proof_status'ı önce okur
                     nodes[node_id]["proof_status"] = cert_status
+                    nodes[node_id]["proof_method"] = "campaign_certificate"
                     updated += 1
 
-        # 2. Bağımlılık tabanlı auto-certify: tüm dep'leri sertifikalı olan
-        #    conjectural node'ları certified_local yap (en fazla 2 iterasyon)
+        # 2. Bağımlılık tabanlı kapanış: tüm dep'leri sertifikalı olan node'lar.
+        #    DÜRÜSTLÜK: bu KANIT DEĞİL — yapısal akla yatkınlık (tüm önkoşullar
+        #    sağlandı ama node'un kendisi doğrudan kanıtlanmadı). proof_method
+        #    ile açıkça işaretlenir ki gerçek kanıttan ayırt edilebilsin.
         for _ in range(2):
             for node_id, node in nodes.items():
                 if node.get("status") in _INJECTED_STATUSES:
@@ -287,6 +292,11 @@ class ProofLoop:
                 if all(nodes.get(d, {}).get("status") in _INJECTED_STATUSES for d in deps):
                     nodes[node_id]["status"] = "certified_local"
                     nodes[node_id]["proof_status"] = "certified_local"
+                    # Gerçek kanıt değil — bağımlılık kapanışı. Dürüstçe işaretle.
+                    nodes[node_id]["proof_method"] = "dependency_closure"
+                    nodes[node_id]["proof_caveat"] = (
+                        "önkoşullar sertifikalı; node doğrudan kanıtlanmadı"
+                    )
                     updated += 1
 
         if updated:
