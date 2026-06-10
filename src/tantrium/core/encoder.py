@@ -400,7 +400,15 @@ class UniversalEncoder:
         matrix A and moments — the pipeline does the rest.
         """
         from tantrium.core.pipeline import run_pipeline
-        return run_pipeline(input, A, G, moments)
+        state = run_pipeline(input, A, G, moments)
+        try:
+            from tantrium.core.quantum_moments import FreeCumulants
+            state["free_cumulants"] = FreeCumulants.from_moments(
+                [float(m) for m in moments]
+            ).k
+        except Exception:
+            pass
+        return state
 
     def _to_matrix(self, input: Any) -> list[list[Fraction]]:
         if isinstance(input, (list, tuple)) and input:

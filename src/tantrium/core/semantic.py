@@ -424,6 +424,63 @@ class SemanticManifold:
         self._spec_mat = None
         self._spec_labels = None
 
+    # ─── Kuantum moment metotları ─────────────────────────────────────────────
+
+    def _get_quantum_sig(self, name: str) -> "object | None":
+        """Kavramın QuantumSignature'ını al (tembel hesaplama + cache)."""
+        c = self.concepts.get(name)
+        if c is None:
+            return None
+        from tantrium.core.quantum_moments import QuantumSignature
+        cache = getattr(self, "_cumulant_cache", None)
+        if cache is None:
+            self._cumulant_cache: dict[str, list[float]] = {}
+            cache = self._cumulant_cache
+        kappa = cache.get(name)
+        if kappa is not None:
+            from tantrium.core.quantum_moments import FreeCumulants
+            return QuantumSignature(
+                moments=[float(m) for m in c.moments],
+                cumulants=FreeCumulants(kappa),
+            )
+        sig = QuantumSignature.from_moments([float(m) for m in c.moments])
+        cache[name] = sig.cumulants.k
+        return sig
+
+    def _nearest_quantum_vec(
+        self,
+        mu: list[float],
+        top_k: int = 10,
+        gamma: float = 0.3,
+    ) -> list[tuple[str, float]]:
+        """Kuantum mesafeyle en yakın kavramlar: (1-γ)×W2_proxy + γ×κ_mesafe."""
+        from tantrium.core.quantum_moments import QuantumSignature
+        query = QuantumSignature.from_moments(mu)
+        results: list[tuple[str, float]] = []
+        for name in self.concepts:
+            sig = self._get_quantum_sig(name)
+            if sig is None:
+                continue
+            results.append((name, query.quantum_distance(sig, gamma=gamma)))
+        results.sort(key=lambda x: x[1])
+        return results[:top_k]
+
+    def quantum_bridges(self, name: str, top_k: int = 5) -> list[tuple[str, float]]:
+        """Klasik uzak ama kuantum yakın kavramlar — gizli matematiksel bağlantılar."""
+        sig_q = self._get_quantum_sig(name)
+        if sig_q is None:
+            return []
+        bridges: list[tuple[str, float]] = []
+        for cname in self.concepts:
+            if cname == name:
+                continue
+            sig_c = self._get_quantum_sig(cname)
+            if sig_c is None:
+                continue
+            if sig_q.is_entangled_with(sig_c):  # type: ignore[union-attr]
+                bridges.append((cname, sig_q.quantum_distance(sig_c)))  # type: ignore[union-attr]
+        return sorted(bridges, key=lambda x: x[1])[:top_k]
+
     def gauge_class(self, concept: Concept, tol: Fraction = Fraction(1, 1000)) -> list[str]:
         """Find all concepts gauge-equivalent to the given one (Mem).
         These are synonyms — different names, same referent.

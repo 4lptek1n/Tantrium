@@ -27,8 +27,9 @@ src/tantrium/          ← pip install -e . ile kurulu paket
     collision.py       ← CollisionHunter — adversarial teklik testi
     grounding.py       ← GroundingCertifier — 2. eksen (TAU kökü)
     transport.py       ← CertifiedTransport (dyadic+Sturm+Zeta)
-    semantic.py        ← SemanticManifold (40k kavram, distance(), nearest(metric=))
+    semantic.py        ← SemanticManifold (40k kavram, distance(), nearest(metric=), quantum_bridges())
     inverse.py         ← InverseTransport — hedef→W2-minimal moleküller→3D SDF
+    quantum_moments.py ← FreeCumulants (Voiculescu κ_k) + QuantumSignature (kuantum imza)
   proof/               ← dyadic ispat ilkleri (pip'ten erişilir)
     dyadic_flow.py     ← solve_greedy (Fraction aritmetik)
     certificate.py     ← Cell, Certificate, TransportEdge
@@ -262,6 +263,11 @@ ai.genesis(max_gaps=5)                         # → GenesisReport (manifold ken
 ai.resonate("zeta", "riemann")                 # → ResonanceResult (harmonik oran skoru)
 ai.energy("prime", temperature=1.0)            # → EnergyProfile (Gibbs serbest enerjisi)
 
+# Kuantum Manifold API (Voiculescu serbest kümülantlar)
+ai.quantum_distance("protein", "lipid")        # → float (kuantum mesafe: 0.75×W2 + 0.25×κ)
+ai.synthesize("protein", "kinase")             # → str (serbest toplam κ_A+κ_B → manifold kavramı)
+ai.entangle("prime", "zeta")                   # → dict (klasik_uzak + kuantum_yakın = gizli bağlantı)
+
 # Algı (duyusal grounding — ham sinyal AYNI moment uzayına)
 from tantrium.perception import tone, white_noise, noise_image
 ai.perceive(tone(440), modality="signal", name="t440")        # → CertificationRun
@@ -301,7 +307,50 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
   - `arrange(EGFR)` → levodopa, lisinopril, methotrexate (kimyasal mantıklı sıralama)
   - `morph(aspirin, erlotinib)` → moment uzayı yolu, t=0.25'te erlotinib
   - cyclohexane W2=0.000 benzene (aynı yapısal imza — kernel doğru okuyor)
-- Tests: 239 geçiyor (test_api + test_grounding + test_inverse_design)
+- **Kuantum Moment Katmanı** (Voiculescu serbest olasılık): FreeCumulants κ_k + QuantumSignature
+  - Encoder: her encoding artık `free_cumulants` üretiyor (yapısal + kuantum imza)
+  - SemanticManifold: `quantum_bridges()` — klasik uzak ama kuantum yakın kavramlar
+  - KnowledgeEdge: `quantum_dist` alanı (κ-mesafe)
+  - MolecularGenesis: quantum-guided beam search (0.75×W2 + 0.25×κ_dist)
+  - API: `ai.quantum_distance()`, `ai.synthesize()`, `ai.entangle()`
+- Tests: 265+ geçiyor (test_api + test_grounding + test_inverse_design + test_quantum_moments + test_molecular_genesis)
+
+---
+
+## Kuantum Moment Katmanı (Voiculescu Serbest Olasılık)
+
+Güç momentleri μ_k = Tr(G^k)/n **klasik (komütatif)** yapıdır. Serbest kümülantlar
+κ_k aynı G matrisinden çıkan **kuantum (non-komütatif)** yapıdır:
+
+```
+κ₁ = μ₁
+κ₂ = μ₂ − μ₁²
+κ₃ = μ₃ − 3μ₁μ₂ + 2μ₁³
+κ₄ = μ₄ − 4μ₁μ₃ − 3μ₂² + 12μ₁²μ₂ − 6μ₁⁴   (ring_indicator = |κ₄|)
+κ₅, κ₆  (Nica-Speicher Möbius formülü)
+```
+
+**Evrensel imza = μ_k + κ_k**: μ → şeklin merkezi, κ → şeklin kırılma/halka/heteroatom yapısı.
+
+**Additivity**: A ve B serbest bağımsız ise κ(A⊕B) = κ(A) + κ(B).
+Bu `synthesize()` API'sinin matematiksel temeli: iki kavramın serbest toplamı = yeni kavram.
+
+**Quantum distance** = (1-γ)×L1(μ_A,μ_B) + γ×L1(κ_A,κ_B)  (γ=0.3)
+
+**Entanglement** (matematiksel): klasik mesafe > 0.5 VE κ-mesafe < 0.2 → gizli yapısal bağlantı.
+
+```python
+from tantrium.core.quantum_moments import FreeCumulants, QuantumSignature
+
+k = FreeCumulants.from_moments([1.0, 0.3, 0.15, 0.08, 0.04, 0.02, 0.01, 0.005])
+k.ring_indicator()      # |κ₄| — halka yapısı
+k.hetero_indicator()    # |κ₃| — asimetri/heteroatom
+k.add(other_k)          # serbest toplam (additivity)
+
+sig = QuantumSignature.from_moments(mu)
+sig.quantum_distance(other_sig)          # blended mesafe
+sig.is_entangled_with(other_sig)         # gizli matematiksel bağlantı
+```
 
 ---
 

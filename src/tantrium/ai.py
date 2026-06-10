@@ -861,6 +861,64 @@ class AI:
         gen = MolecularGenesis(self.engine)
         return gen.generate(target, top_k=top_k, max_atoms=max_atoms, beam_width=beam_width)
 
+    # ── Kuantum Moment API ────────────────────────────────────────────────────
+
+    def quantum_distance(self, a: str, b: str) -> float:
+        """İki kavram/molekül arasındaki kuantum mesafe: (1-γ)×W2 + γ×κ_mesafe.
+
+        Klasik W2 mesafesine serbest kümülant düzeltmesi ekler.
+        a, b: kavram adı, metin, SMILES — herhangi girdi.
+        """
+        from tantrium.core.quantum_moments import QuantumSignature
+        mu_a = [float(m) for m in self.engine.encoder.encode(a).moments]
+        mu_b = [float(m) for m in self.engine.encoder.encode(b).moments]
+        return QuantumSignature.from_moments(mu_a).quantum_distance(
+            QuantumSignature.from_moments(mu_b)
+        )
+
+    def synthesize(self, concept_a: str, concept_b: str) -> str:
+        """Serbest toplam: κ_A + κ_B → manifolddaki en yakın kavram.
+
+        Voiculescu serbest bileşke: κ(A ⊕ B) = κ(A) + κ(B).
+        İki kavramın kuantum bileşkesine en yakın manifold noktasını bulur.
+        a, b: kavram adı, metin veya SMILES.
+        """
+        from tantrium.core.quantum_moments import FreeCumulants
+        ka = FreeCumulants.from_moments(
+            [float(m) for m in self.engine.encoder.encode(concept_a).moments]
+        )
+        kb = FreeCumulants.from_moments(
+            [float(m) for m in self.engine.encoder.encode(concept_b).moments]
+        )
+        k_sum = ka.add(kb)
+        approx_mu = k_sum.to_moments_approx()
+        hits = self.engine.manifold._nearest_quantum_vec(approx_mu, top_k=5)
+        if not hits:
+            return f"'{concept_a}' + '{concept_b}' için manifoldda eşleşme bulunamadı"
+        name, dist = hits[0]
+        return f"Serbest bileşke: '{name}'  (kuantum mesafe: {dist:.4f})"
+
+    def entangle(self, concept_a: str, concept_b: str) -> dict:
+        """Kuantum dolanıklık testi: klasik uzak ama kuantum yakın mı?
+
+        Klasik mesafe yüksek + κ-mesafe düşük → gizli matematiksel bağlantı.
+        Döner: {classical_dist, quantum_dist, kappa_dist, entangled, note}
+        """
+        from tantrium.core.quantum_moments import QuantumSignature
+        from tantrium.core.metric import l1_distance
+        mu_a = [float(m) for m in self.engine.encoder.encode(concept_a).moments]
+        mu_b = [float(m) for m in self.engine.encoder.encode(concept_b).moments]
+        sig_a = QuantumSignature.from_moments(mu_a)
+        sig_b = QuantumSignature.from_moments(mu_b)
+        entangled = sig_a.is_entangled_with(sig_b)
+        return {
+            "classical_dist": round(l1_distance(mu_a, mu_b), 5),
+            "quantum_dist":   round(sig_a.quantum_distance(sig_b), 5),
+            "kappa_dist":     round(sig_a.cumulants.distance(sig_b.cumulants), 5),
+            "entangled": entangled,
+            "note": "Gizli matematiksel bağlantı" if entangled else "Normal ayrışma",
+        }
+
     def certify_list(
         self,
         target: str,

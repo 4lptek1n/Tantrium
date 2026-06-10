@@ -43,6 +43,7 @@ from tantrium.perception import (
 from tantrium.core.inverse import InverseTransport, DesignCandidate, DesignReport
 from tantrium.core.molecular_space import MolecularSpace, MolPoint, ArrangementResult, MorphResult
 from tantrium.core.molecular_genesis import MolecularGenesis, GenesisCandidate, GenesisReport as MolGenesisReport
+from tantrium.core.quantum_moments import FreeCumulants, QuantumSignature
 
 __all__ = [
     # Core SDK
@@ -162,4 +163,11 @@ __all__ = [
     "l1_distance",
     "CollisionHunter",
     "CollisionReport",
+    # Molecular Genesis
+    "MolecularGenesis",
+    "GenesisCandidate",
+    "MolGenesisReport",
+    # Quantum moments
+    "FreeCumulants",
+    "QuantumSignature",
 ]

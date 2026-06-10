@@ -44,6 +44,7 @@ class KnowledgeEdge:
     target: str
     distance: float
     paradigm: str = "ALEPH"  # certifying paradigm
+    quantum_dist: float = 0.0  # κ-mesafe (serbest kümülant uzaklığı)
 
 
 # ─── TAU Graph ────────────────────────────────────────────────────────────────

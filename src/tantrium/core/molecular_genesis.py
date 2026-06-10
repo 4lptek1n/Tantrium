@@ -115,8 +115,14 @@ class MolecularGenesis:
             from tantrium.domains.spectral import moments_to_spectral
             target_spec = moments_to_spectral(target_moments, name=target[:20])
 
-        # Spektral imzadan başlangıç kılavuzu çıkar
+        # Spektral imzadan başlangıç kılavuzu çıkar + serbest kümülant takviyesi
         guide = self._read_spectral_guide(target_moments)
+        q_guide = self._quantum_guide(target_moments)
+        # Kuantum rehberi spectral rehberi sertleştirir (override değil, OR)
+        if q_guide["ring_content"]:
+            guide["ring_content"] = True
+        if q_guide["needs_hetero"]:
+            guide["needs_hetero"] = True
 
         # Beam search: atom-atom inşa
         candidates, total_steps = self._beam_grow(
@@ -249,6 +255,43 @@ class MolecularGenesis:
             "weights": weights,
         }
 
+    @staticmethod
+    def _quantum_guide(moments: list[float]) -> dict:
+        """Serbest kümülantlardan yapı rehberi — klasik spectral kılavuzun takviyesi.
+
+        κ₄ → halka/dallanma (non-Gaussianity)
+        |κ₃| → asimetri → heteroatom ihtiyacı
+        """
+        try:
+            from tantrium.core.quantum_moments import FreeCumulants
+            kappa = FreeCumulants.from_moments(moments)
+            return {
+                "ring_content": kappa.ring_indicator() > 0.08,
+                "needs_hetero": kappa.hetero_indicator() > 0.04,
+            }
+        except Exception:
+            return {"ring_content": False, "needs_hetero": False}
+
+    def _quantum_score(self, smi: str, target_moments: list[float], target_spec) -> float:
+        """Kuantum-ağırlıklı skor: 0.75×spektral_W2 + 0.25×κ_mesafe.
+
+        Spektral W2 moleküler topolojiyi okur; κ-mesafe yapısal asimetri/halka
+        bilgisini ekler. İkisi birlikte daha doğru rehberlik sağlar.
+        """
+        spec = self._mol_spec(smi)
+        if spec is None:
+            return float("inf")
+        w2 = self._w2(spec, target_spec)
+        try:
+            from tantrium.core.quantum_moments import FreeCumulants
+            mu_smi = [spec.moment(k) for k in range(min(8, len(target_moments)))]
+            kd = FreeCumulants.from_moments(mu_smi).distance(
+                FreeCumulants.from_moments(target_moments)
+            )
+        except Exception:
+            kd = 0.0
+        return 0.75 * w2 + 0.25 * kd
+
     # ── Beam search: atom-atom inşa ─────────────────────────────────────────
 
     def _beam_grow(
@@ -269,11 +312,13 @@ class MolecularGenesis:
 
         # Başlangıç: CC (2 atom) — en küçük anlamlı moleküler Laplacian
         start_smi = "CC"
-        start_spec = self._mol_spec(start_smi)
-        if start_spec is None:
-            from tantrium.domains.spectral import SpectralMeasure
-            start_spec = SpectralMeasure(eigenvalues=[1.0], weights=[1.0], name="CC")
-        start_w2 = self._w2(start_spec, target_spec)
+        start_w2 = self._quantum_score(start_smi, target_moments, target_spec)
+        if start_w2 == float("inf"):
+            start_spec = self._mol_spec(start_smi)
+            if start_spec is None:
+                from tantrium.domains.spectral import SpectralMeasure
+                start_spec = SpectralMeasure(eigenvalues=[1.0], weights=[1.0], name="CC")
+            start_w2 = self._w2(start_spec, target_spec)
 
         # Beam: [(smiles, w2, steps)]
         beam: list[tuple[str, float, int]] = [(start_smi, start_w2, 0)]
@@ -310,12 +355,11 @@ class MolecularGenesis:
                         continue
                     seen.add(ext_smi)
 
-                    # Moleküler Laplacian spektrumu ile W2 hesapla
-                    ext_spec = self._mol_spec(ext_smi)
-                    if ext_spec is None:
+                    # Kuantum-ağırlıklı skor: spektral W2 + κ-mesafe
+                    ext_score = self._quantum_score(ext_smi, target_moments, target_spec)
+                    if ext_score == float("inf"):
                         continue
-                    ext_w2 = self._w2(ext_spec, target_spec)
-                    next_beam.append((ext_smi, ext_w2, base_steps + 1))
+                    next_beam.append((ext_smi, ext_score, base_steps + 1))
 
             # En iyi beam_width'i tut — W2'ye göre sırala
             next_beam.sort(key=lambda x: x[1])
