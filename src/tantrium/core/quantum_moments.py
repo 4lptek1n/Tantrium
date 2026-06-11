@@ -58,6 +58,18 @@ class FreeCumulants:
         """Serbest toplam κ(A ⊕ B) = κ(A) + κ(B). Kuantum kompozisyon."""
         return FreeCumulants([a + b for a, b in zip(self.k, other.k)])
 
+    def subtract(self, other: "FreeCumulants") -> "FreeCumulants":
+        """Serbest dekonvolüsyon κ(A ⊟ B) = κ(A) − κ(B). Additif yasanın TERSİ.
+
+        Eğer hastalık ⊞ molekül = sağlıklı isteniyorsa (additivity), o zaman
+        molekül = sağlıklı ⊟ hastalık. Bu '23 paradigmayı tersten çalıştırmak':
+        hedef imzadan, onu üretecek bileşeni geri çıkar.
+        """
+        n = max(len(self.k), len(other.k))
+        a = self.k + [0.0] * (n - len(self.k))
+        b = other.k + [0.0] * (n - len(other.k))
+        return FreeCumulants([a[i] - b[i] for i in range(n)])
+
     def distance(self, other: "FreeCumulants") -> float:
         """L1 mesafe — kümülant uzayında."""
         return sum(abs(a - b) for a, b in zip(self.k, other.k)) / max(len(self.k), 1)

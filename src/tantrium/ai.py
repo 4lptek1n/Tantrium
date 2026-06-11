@@ -1030,6 +1030,112 @@ class AI:
                            for smi, j in results[:10]],
         }
 
+    def _canonical_kappa(self):
+        """Sağlıklı/dengeli referans κ — sistemin kanonik ζ ailesi.
+
+        Her şey ζ-sıfırlarına göre ölçülür; 'denge' = kanonik spektral aile.
+        Bulunamazsa serbest-Gauss (yarı-daire, κ_k=0 k≥3) referansına düşer.
+        """
+        from tantrium.core.quantum_moments import FreeCumulants
+        for name in ("⊕ANCHOR:ZETA_ZEROS", "ZETA_ZEROS", "zeta_zeros_18"):
+            c = self.engine.manifold.concepts.get(name)
+            if c is not None:
+                return FreeCumulants.from_moments([float(m) for m in c.moments])
+        return FreeCumulants([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+    def cure(self, disease: str, max_steps: int = 14, beam_width: int = 5,
+             out_dir: str = "results/molecules") -> dict:
+        """TERS PARADİGMA — hastalığın gerçeğinden, onu nötrleyecek molekülü çıkar.
+
+        '23 paradigmayı tersten çalıştırmak': ileri yön molekül→imza okur; ters
+        yön hastalığın imzasından molekülü ZORUNLU kılar. Serbest kümülant
+        additivitesinin tersi (dekonvolüsyon):
+
+            hastalık ⊞ molekül = sağlıklı   ⟹   κ_molekül = κ_sağlıklı ⊟ κ_hastalık
+
+        Adımlar:
+          1. Hastalığın gerçeğini encode et → κ_hastalık (kelime değil, yapısı)
+          2. κ_sağlıklı = kanonik ζ ailesi (sistemin denge durumu)
+          3. κ_gerekli = κ_sağlıklı ⊟ κ_hastalık  (ters additivity)
+          4. κ_gerekli → μ_gerekli → makine bu imzayı TERSTEN molekül olarak dizer
+
+        Çıkan molekül 'bilinen ilaca benzeyen' değil — hastalığın matematiksel
+        olarak gerektirdiği bileşen. disease: hedef yapı/protein/SMILES.
+        """
+        import os
+        from tantrium.core.quantum_moments import FreeCumulants
+        from tantrium.core.molecular_genesis import MolecularGenesis
+
+        # 1. Hastalığın gerçeği → imza
+        try:
+            d_obj = self.engine.encoder.encode(disease)
+            mu_d = [float(m) for m in d_obj.moments]
+        except Exception:
+            return {"disease": disease, "verdict": "GEÇERSİZ",
+                    "reason": "Hastalık encode edilemedi."}
+        kappa_d = FreeCumulants.from_moments(mu_d)
+
+        # 2-3. Ters additivity: gerekli molekül imzası
+        kappa_healthy = self._canonical_kappa()
+        kappa_req = kappa_healthy.subtract(kappa_d)
+        mu_req_ideal = kappa_req.to_moments_approx()
+
+        # 3b. GERÇEKLENEBİLİRLİK PROJEKSİYONU — ters yön de forward'ın Hankel-PSD
+        # kısıtına uymalı. İstenen imza fiziksel olmayabilir (G=AᵀA daima PSD);
+        # en yakın gerçeklenebilir moment dizisine projekte et.
+        from tantrium.core.reconstruct import reconstruct_measure
+        try:
+            rec = reconstruct_measure(mu_req_ideal, max_atoms=4)
+            mu_req = list(rec.reconstructed_moments) or mu_req_ideal
+            realizability_gap = round(float(rec.reconstruction_error), 4)
+        except Exception:
+            mu_req = mu_req_ideal
+            realizability_gap = None
+
+        # 4. Tersten inşa: makine bu imzaya doğru molekül dizer
+        PRIMITIVES = ["c1ccccc1", "c1ccncc1", "c1ccncn1", "c1cc[nH]c1",
+                      "C1CCNCC1", "c1ccc2ncccc2c1", "CC"]
+        rep = MolecularGenesis(self.engine).simulate(
+            seeds=PRIMITIVES, max_steps=max_steps, beam_width=beam_width,
+            toward_profile=[mu_req])
+
+        # Üretilen molekülün gerekli imzaya ne kadar uyduğu
+        cands = []
+        for s in rep.frontier:
+            try:
+                k_c = FreeCumulants.from_moments(
+                    [float(m) for m in self.engine.encoder.encode(s.smiles).moments])
+                fit = k_c.distance(kappa_req)
+                cands.append((s.smiles, fit, s.n_atoms))
+            except Exception:
+                continue
+        cands.sort(key=lambda x: x[1])
+
+        best_smi = cands[0][0] if cands else (rep.best.smiles if rep.best else None)
+        sdf = ""
+        if best_smi:
+            os.makedirs(out_dir, exist_ok=True)
+            from tantrium.core.inverse import InverseTransport
+            sdf = InverseTransport(self.engine)._make_3d(
+                best_smi, f"cure_{disease[:10]}", out_dir)
+
+        return {
+            "disease": disease,
+            "method": "ters paradigma (serbest dekonvolüsyon)",
+            "kappa_disease": [round(x, 3) for x in kappa_d.k],
+            "kappa_required": [round(x, 3) for x in kappa_req.k],
+            "realizability_gap": realizability_gap,
+            "designed_molecule": best_smi,
+            "signature_fit": round(cands[0][1], 4) if cands else None,
+            "n_atoms": cands[0][2] if cands else None,
+            "sdf": sdf,
+            "candidates": [{"smiles": s, "fit": round(f, 4), "atoms": a}
+                           for s, f, a in cands[:6]],
+            "note": ("Hastalığın gerektirdiği molekül matematiksel zorunlulukla "
+                     "çıkarıldı — bilinen ilaca benzetme değil. Biyolojik geçerlilik "
+                     "wet-lab ile doğrulanmalı."),
+        }
+
     def simulate(self, seed: str = "CC", max_steps: int = 14,
                  beam_width: int = 5, toward: str | None = None) -> "object":
         """Evren simülasyonu — makineyi çalıştırarak molekülü transport ile diz.

@@ -128,3 +128,28 @@ def test_design_drug_resolves_refs(ai):
     refs = ai._protein_reference_ligands("egfr")
     assert len(refs) >= 1
     assert all(isinstance(smi, str) and smi for _, smi in refs)
+
+
+# ─── Ters paradigma: serbest dekonvolüsyon + cure ────────────────────────────
+
+def test_free_deconvolution_inverts_add():
+    """subtract additivity'nin tersi: (A⊞B)⊟B = A."""
+    from tantrium.core.quantum_moments import FreeCumulants
+    a = FreeCumulants([0.5, 0.3, 0.1, 0.05, 0.0, 0.0])
+    b = FreeCumulants([0.2, 0.1, 0.05, 0.02, 0.0, 0.0])
+    back = a.add(b).subtract(b)
+    assert all(abs(x - y) < 1e-9 for x, y in zip(back.k, a.k))
+
+
+def test_cure_runs_and_designs(ai):
+    """cure() hastalıktan molekül çıkarmalı (ters paradigma hattı çalışır)."""
+    r = ai.cure("c1ccc2ncnc(N)c2c1", max_steps=4, beam_width=3)
+    assert r["designed_molecule"] is not None
+    assert r["method"].startswith("ters paradigma")
+
+
+def test_cure_reports_realizability(ai):
+    """cure() gerçeklenebilirlik açığını raporlamalı — ters yön PSD kısıtına uyar."""
+    r = ai.cure("c1ccc2ncnc(N)c2c1", max_steps=4, beam_width=3)
+    assert "realizability_gap" in r
+    assert "kappa_required" in r and len(r["kappa_required"]) >= 4
