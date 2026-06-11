@@ -1,0 +1,291 @@
+"""Büyüme Motoru — GrowthEngine.
+
+Sınırsız, kendi kendine büyüyen çekirdek akışı. Bu, sistemin son mimari
+parçası: insan tetiği OLMADAN sürekli çalışan döngü.
+
+  ağ kaynağı (resumable) → evren kapısı (Aleph+truth+grounding) →
+  çekirdek nabzı (veri + yerel genesis aynı anda) →
+  periyodik konsolidasyon (close + reflect + persist) → tekrar
+
+Klasik run() fazlı ve sonludur. GrowthEngine süreklidir:
+  - Kaynaklar döner: PubChem (CID ilerler) + OEIS (anahtar kelime rotasyonu)
+  - Her veri tek nabızda girer ve büyür (parça parça değil)
+  - Durum diske yazılır (.tantrium/growth_state.json) → kap yeniden başlasa
+    bile kaldığı CID'den devam eder (resumable)
+  - time_limit_s=None → SINIRSIZ (durana/kapatılana dek)
+  - Hata toleranslı: bir kaynak düşse akış durmaz
+
+ÖNEMLİ: Bu motor "zeka" değildir — zeka, neyi besleyeceğine karar veren
+sensin. Motor sadık bir kalp: girdiyi yasal yapıya çevirir, çelişeni eler,
+gerçeği manifolda örer, kendini hatırlar.
+"""
+from __future__ import annotations
+
+import json
+import pathlib
+import time
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Callable
+
+if TYPE_CHECKING:
+    from tantrium.core.engine import CertificationEngine
+
+_UA = {"User-Agent": "Tantrium-AGI/1.0 (research; mailto:research@tantrium.ai)"}
+_RATE_LIMIT_S = 0.34
+_STATE_DIR = pathlib.Path(".tantrium")
+_STATE_FILE = _STATE_DIR / "growth_state.json"
+
+# OEIS anahtar kelime rotasyonu — matematik gövdesini geniş tarar
+_OEIS_KEYWORDS = [
+    "prime", "fibonacci", "catalan", "partition", "bernoulli", "euler",
+    "triangular", "perfect number", "mersenne", "factorial", "lucas",
+    "stirling", "harmonic", "totient", "divisor", "binomial",
+]
+
+
+@dataclass
+class GrowthReport:
+    """Bir büyüme oturumunun toplam bilançosu."""
+    cycles: int = 0
+    processed: int = 0
+    core: int = 0
+    frontier: int = 0
+    rejected: int = 0
+    born: int = 0
+    concepts_start: int = 0
+    concepts_end: int = 0
+    edges_start: int = 0
+    edges_end: int = 0
+    elapsed_s: float = 0.0
+    stopped_reason: str = ""
+
+    def summary(self) -> str:
+        dc = self.concepts_end - self.concepts_start
+        de = self.edges_end - self.edges_start
+        return (
+            f"═══ BÜYÜME RAPORU ({self.elapsed_s:.1f}s, {self.cycles} döngü) ═══\n"
+            f"İşlenen: {self.processed} | çekirdek: {self.core} | "
+            f"sınır: {self.frontier} | reddedilen: {self.rejected} | doğan: {self.born}\n"
+            f"Kavram: {self.concepts_start:,} → {self.concepts_end:,} (+{dc})\n"
+            f"TAU kenar: {self.edges_start:,} → {self.edges_end:,} (+{de})\n"
+            f"Durma sebebi: {self.stopped_reason}"
+        )
+
+
+def _http_json(url: str, timeout: int = 12) -> Any:
+    req = urllib.request.Request(url, headers=_UA)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8", "replace"))
+
+
+class GrowthEngine:
+    """Sınırsız kendi kendine büyüme döngüsü.
+
+    stream(): ağdan resumable veri çek → çekirdek nabzı → konsolide → tekrar.
+    """
+
+    def __init__(self, engine: "CertificationEngine", observer: Any = None) -> None:
+        self.engine = engine
+        if observer is None:
+            from tantrium.research.autonomous import AutonomousObserver
+            observer = AutonomousObserver(engine)
+        self.observer = observer
+        self.state = self._load_state()
+
+    # ─── Resumable durum ─────────────────────────────────────────────────────
+
+    def _load_state(self) -> dict:
+        try:
+            if _STATE_FILE.exists():
+                return json.loads(_STATE_FILE.read_text())
+        except Exception:
+            pass
+        return {"pubchem_cid": 1, "oeis_idx": 0, "total_processed": 0}
+
+    def _save_state(self) -> None:
+        try:
+            _STATE_DIR.mkdir(parents=True, exist_ok=True)
+            _STATE_FILE.write_text(json.dumps(self.state))
+        except Exception:
+            pass
+
+    # ─── Ağ kaynakları (hata toleranslı, resumable) ──────────────────────────
+
+    def _fetch_pubchem(self, count: int = 12) -> list[str]:
+        """İlerleyen CID'den gerçek SMILES. Durum kalıcı → resumable."""
+        start = self.state.get("pubchem_cid", 1)
+        cids = ",".join(str(c) for c in range(start, start + count))
+        url = (f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cids}"
+               f"/property/SMILES/JSON")
+        out: list[str] = []
+        try:
+            data = _http_json(url)
+            props = (data or {}).get("PropertyTable") or {}
+            for p in props.get("Properties") or []:
+                smi = p.get("SMILES", "") or p.get("CanonicalSMILES", "")
+                if smi:
+                    out.append(smi)
+        except Exception:
+            pass
+        self.state["pubchem_cid"] = start + count  # düşse bile ilerle (resumable)
+        time.sleep(_RATE_LIMIT_S)
+        return out
+
+    def _fetch_oeis(self, n: int = 4) -> list[list[int]]:
+        """Dönen anahtar kelimeden gerçek tamsayı dizileri."""
+        idx = self.state.get("oeis_idx", 0)
+        kw = _OEIS_KEYWORDS[idx % len(_OEIS_KEYWORDS)]
+        self.state["oeis_idx"] = idx + 1
+        url = f"https://oeis.org/search?q={urllib.parse.quote(kw)}&fmt=json&start=0"
+        out: list[list[int]] = []
+        try:
+            data = _http_json(url)
+            entries = data if isinstance(data, list) else ((data or {}).get("results") or [])
+            for e in (entries or [])[:n]:
+                raw = (e or {}).get("data", "")
+                vals = [int(x) for x in str(raw).split(",")[:24]
+                        if x.strip().lstrip("-").isdigit()]
+                if len(vals) >= 6:
+                    out.append(vals)
+        except Exception:
+            pass
+        time.sleep(_RATE_LIMIT_S)
+        return out
+
+    def _next_batch(self, network: bool) -> list[Any]:
+        """Bir sonraki karışık veri partisi (kimya + matematik)."""
+        if not network:
+            # Ağsız: algoritmik diziler (resumable offset ile çeşitlilik)
+            base = self.state.get("total_processed", 0)
+            return [
+                [int((base + i) ** 1.5) % 97 + 1 for i in range(j, j + 8)]
+                for j in range(0, 24, 8)
+            ]
+        batch: list[Any] = []
+        batch += self._fetch_pubchem(12)
+        batch += self._fetch_oeis(4)
+        return batch
+
+    # ─── Ana döngü: sınırsız kendi kendine büyüme ────────────────────────────
+
+    def stream(
+        self,
+        time_limit_s: float | None = 300.0,
+        max_cycles: int | None = None,
+        persist_every: int = 20,
+        consolidate_every: int = 3,
+        network: bool = True,
+        grow: bool = True,
+        verbose: bool = True,
+        should_stop: Callable[[], bool] | None = None,
+    ) -> GrowthReport:
+        """Sürekli büyüme akışı.
+
+        time_limit_s=None VE max_cycles=None → SINIRSIZ (should_stop ya da
+          dış kesinti durdurana dek).
+        consolidate_every: kaç döngüde bir close()+reflect() (TAU örme + öz-kök).
+        persist_every: kaç yeni işlemde bir diske yaz.
+        should_stop: dışarıdan durdurma kancası (örn. bir dosya/bayrak kontrolü).
+        """
+        rep = GrowthReport()
+        rep.concepts_start = len(self.engine.manifold.concepts)
+        rep.edges_start = sum(len(v) for v in self.engine.tau.edges.values())
+        t0 = time.monotonic()
+        since_persist = 0
+
+        def _log(msg: str) -> None:
+            if verbose:
+                print(f"  [{time.monotonic()-t0:6.1f}s] {msg}", flush=True)
+
+        _log(f"Büyüme başladı — {rep.concepts_start:,} kavram. "
+             f"Limit: {'SINIRSIZ' if time_limit_s is None and max_cycles is None else (f'{time_limit_s}s' if time_limit_s else f'{max_cycles} döngü')}")
+
+        try:
+            while True:
+                # Durma koşulları
+                if time_limit_s is not None and (time.monotonic() - t0) >= time_limit_s:
+                    rep.stopped_reason = "zaman limiti"
+                    break
+                if max_cycles is not None and rep.cycles >= max_cycles:
+                    rep.stopped_reason = "döngü limiti"
+                    break
+                if should_stop is not None:
+                    try:
+                        if should_stop():
+                            rep.stopped_reason = "dış durdurma"
+                            break
+                    except Exception:
+                        pass
+
+                rep.cycles += 1
+                batch = self._next_batch(network)
+                if not batch:
+                    _log("boş parti — kaynak geçici sustu, devam")
+                    time.sleep(1.0)
+                    continue
+
+                for item in batch:
+                    try:
+                        obs, born = self.observer.pulse(item, grow=grow)
+                    except Exception as e:
+                        _log(f"nabız hatası (atlandı): {str(e)[:50]}")
+                        continue
+                    rep.processed += 1
+                    rep.born += len(born)
+                    if not obs.certified or obs.admitted_as == "rejected":
+                        rep.rejected += 1
+                    elif obs.admitted_as == "core":
+                        rep.core += 1
+                    else:
+                        rep.frontier += 1
+                    since_persist += 1
+                    self.state["total_processed"] = self.state.get("total_processed", 0) + 1
+
+                    if since_persist >= persist_every:
+                        self.engine.auto_persist()
+                        self._save_state()
+                        since_persist = 0
+
+                _log(f"döngü {rep.cycles}: +{len(batch)} işlendi "
+                     f"(çek:{rep.core} sın:{rep.frontier} red:{rep.rejected} doğ:{rep.born})")
+
+                # Periyodik konsolidasyon: TAU örme + öz-kök
+                if rep.cycles % consolidate_every == 0:
+                    self._consolidate(_log)
+
+        except KeyboardInterrupt:
+            rep.stopped_reason = "klavye kesintisi"
+        except Exception as e:
+            rep.stopped_reason = f"hata: {str(e)[:60]}"
+
+        # Son konsolidasyon + kalıcılık
+        try:
+            self.engine.auto_persist()
+            self._save_state()
+        except Exception:
+            pass
+        rep.concepts_end = len(self.engine.manifold.concepts)
+        rep.edges_end = sum(len(v) for v in self.engine.tau.edges.values())
+        rep.elapsed_s = time.monotonic() - t0
+        if not rep.stopped_reason:
+            rep.stopped_reason = "tamamlandı"
+        _log(rep.summary())
+        return rep
+
+    def _consolidate(self, _log: Callable[[str], None]) -> None:
+        """TAU geçişli kapanış + öz-model köklendirme (büyüdükçe kendini hatırla)."""
+        try:
+            from tantrium.reasoning.necessity import NecessityEngine
+            ne = NecessityEngine(self.engine)
+            nr = ne.run(domain="math_kernel", inject=True, find_gaps=False)
+            _log(f"konsolidasyon: +{getattr(nr, 'edges_injected', 0)} zorunlu kenar")
+        except Exception:
+            pass
+        try:
+            from tantrium.meta.self_model import SelfModel
+            SelfModel(self.engine).locate(persist=False)
+            _log("öz-model köklendirildi (⟨SELF⟩ güncel)")
+        except Exception:
+            pass

@@ -2048,6 +2048,50 @@ class AI:
             "born_total": born_total,
         }
 
+    def grow(
+        self,
+        time_limit_s: "float | None" = 300.0,
+        max_cycles: "int | None" = None,
+        network: bool = True,
+        persist_every: int = 20,
+        consolidate_every: int = 3,
+        verbose: bool = True,
+    ) -> "object":
+        """SINIRSIZ kendi kendine büyüme akışı — son mimari parça.
+
+        Ağdan resumable veri çeker (PubChem CID ilerler + OEIS anahtar rotasyonu),
+        her veriyi çekirdek nabzından geçirir (evren kapısı + yerel genesis aynı
+        anda), periyodik konsolide eder (close + öz-model köklendirme), diske yazar.
+
+        Durum kalıcıdır (.tantrium/growth_state.json) — kap yeniden başlasa bile
+        kaldığı CID'den devam eder. Hata toleranslı: bir kaynak düşse akış durmaz.
+
+          time_limit_s=None, max_cycles=None → SINIRSIZ (durana dek)
+          network=False → algoritmik diziler (ağ bağımsız)
+
+        Döner: GrowthReport — .summary() ile tam bilanço.
+
+        Örnek:
+            ai.grow(time_limit_s=600)            # 10 dk büyü
+            ai.grow(time_limit_s=None)           # sınırsız — kendi kendine
+        """
+        from tantrium.research.growth import GrowthEngine
+        ge = getattr(self, "_grower", None)
+        if ge is None:
+            from tantrium.research.autonomous import AutonomousObserver
+            obs = getattr(self, "_observer", None) or AutonomousObserver(self._engine)
+            self._observer = obs
+            ge = GrowthEngine(self._engine, observer=obs)
+            self._grower = ge
+        return ge.stream(
+            time_limit_s=time_limit_s,
+            max_cycles=max_cycles,
+            persist_every=persist_every,
+            consolidate_every=consolidate_every,
+            network=network,
+            verbose=verbose,
+        )
+
     def run(
         self,
         cycles: int = 3,

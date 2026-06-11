@@ -22,6 +22,7 @@ from tantrium.reasoning.necessity import NecessityReport, NecessaryEdge, Manifol
 from tantrium.reasoning.reasoner import ChainStep, ReasoningResult, GraphReasoner
 from tantrium.reasoning.planner import Plan, PlanStep, Planner
 from tantrium.research.autonomous import Observation, AutonomousObserver
+from tantrium.research.growth import GrowthEngine, GrowthReport
 from tantrium.research.explorer import ExplorationObjective, ExplorationResult
 from tantrium.research.goal import Goal, GoalManifold
 from tantrium.research.actor import Action, ActionResult
@@ -91,6 +92,8 @@ __all__ = [
     "LoopCycle",
     "Observation",
     "AutonomousObserver",
+    "GrowthEngine",
+    "GrowthReport",
     "ExplorationObjective",
     "ExplorationResult",
     "Goal",

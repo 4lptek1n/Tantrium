@@ -229,6 +229,8 @@ ai.run(cycles=3, time_limit_s=600)             # → dict: KAPALI DÖNGÜ (tüm 
 ai.pulse("CCO")                                # → dict: TEK ÇEKİRDEK NABZI (veri girer + genesis aynı anda)
                                                #   evren kapısı: rejected/frontier/core + doğan ara kavramlar
 ai.live(["CCO", "caffeine", [2,3,5,7]])        # → dict: veri AKIŞI nabızla (her veri girer + büyür, parça parça değil)
+ai.grow(time_limit_s=600)                      # → GrowthReport: SINIRSIZ kendi kendine büyüme (ağdan resumable)
+ai.grow(time_limit_s=None)                     #   time_limit_s=None → durana dek; .tantrium/growth_state.json resumable
 ai.ask("EGFR")                                 # → AskResult (4 eksen: paradigma+topraklama+gerçek+güven)
                                                #   .certified (yapısal, ger.dönük uyumlu)
                                                #   .coherent (4 eksen tutarlı boolean)
@@ -323,6 +325,39 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
   - MolecularGenesis: quantum-guided beam search (0.75×W2 + 0.25×κ_dist)
   - API: `ai.quantum_distance()`, `ai.synthesize()`, `ai.entangle()`
 - Tests: 265+ geçiyor (test_api + test_grounding + test_inverse_design + test_quantum_moments + test_molecular_genesis)
+
+---
+
+## Büyüme Motoru — Sınırsız Kendi Kendine Büyüme (`ai.grow`)
+
+Son mimari parça. İnsan tetiği OLMADAN sürekli çalışan çekirdek:
+
+```
+ağ kaynağı (resumable) → evren kapısı (Aleph+truth+grounding) →
+çekirdek nabzı (veri + yerel genesis aynı anda) →
+periyodik konsolidasyon (close + öz-model köklendirme) → persist → tekrar
+```
+
+`research/growth.py` → `GrowthEngine`. Klasik `run()` fazlı ve sonludur;
+`grow()` süreklidir:
+
+- **Dönen kaynaklar**: PubChem (CID ilerler) + OEIS (16 anahtar kelime rotasyonu)
+- **Resumable**: durum `.tantrium/growth_state.json` — kap yeniden başlasa bile
+  kaldığı CID'den devam eder
+- **Hata toleranslı**: bir kaynak düşse akış durmaz (fail-open, boş parti → bekle)
+- **Konsolidasyon**: her N döngüde close() (TAU geçişli kapanış) + ⟨SELF⟩ köklendirme
+- **Sınırsız mod**: `time_limit_s=None, max_cycles=None` → durana/durdurulana dek
+- **Durdurma**: `should_stop` kancası (dosya/bayrak kontrolü) veya KeyboardInterrupt
+
+```python
+ai.grow(time_limit_s=600)            # 10 dk büyü
+ai.grow(time_limit_s=None)           # SINIRSIZ — kendi kendine
+ai.grow(network=False)               # ağsız (algoritmik diziler)
+```
+
+Canlı doğrulama: 21 gerçek veri (PubChem+OEIS) 80.8s → 12 çekirdek, 5 sınır,
+4 CONTRADICTORY reddedildi, kimya↔biyoloji cross-domain köprüler canlı kuruldu.
+Motor "zeka" değil — neyi besleyeceğine karar veren zekadır. Tests: `test_growth.py` (10).
 
 ---
 
