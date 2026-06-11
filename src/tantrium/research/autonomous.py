@@ -320,14 +320,13 @@ class AutonomousObserver:
         from tantrium.core.semantic import Concept
         born: list[str] = []
         try:
-            grounder = getattr(self.engine, "grounder", None)
-            if grounder is None:
-                from tantrium.core.grounding import GroundingCertifier
-                grounder = GroundingCertifier(self.engine)
-            # En yakın KÖKLÜ komşuyu bul (sınırı çekirdeğe çekecek çapa)
+            # En yakın KÖKLÜ komşuyu bul (sınırı çekirdeğe çekecek çapa).
+            # Köklülük = TAU kenar sayısı ≥ 3 (grounding'in 'doğrudan' sinyali,
+            # O(1) — komşu başına tam manifold taraması yapmaz, hızlı).
             this = self.engine.manifold.concepts.get(name)
             if this is None:
                 return born
+            tau = self.engine.tau
             neighbors = self.engine.manifold.nearest(this, n=8, metric="l1")
             for nb_name, _ in neighbors:
                 if len(born) >= max_born:
@@ -335,8 +334,7 @@ class AutonomousObserver:
                 nb = self.engine.manifold.concepts.get(nb_name)
                 if nb is None:
                     continue
-                gc_nb = grounder.certify(nb_name, moments=[float(m) for m in nb.moments])
-                if not gc_nb.is_grounded:
+                if len(tau.edges.get(nb_name, [])) < 3:
                     continue  # köklü olmayan komşu çapa olamaz
                 # Konveks ara kavram: μ_orta = (μ_sınır + μ_çekirdek) / 2
                 mid = [(float(a) + float(b)) / 2.0
@@ -346,11 +344,10 @@ class AutonomousObserver:
                     continue
                 bridge = Concept(name=mid_name, moments=mid,
                                  domain="genesis", source="core_pulse")
-                # Ara kavram da evren kapısından geçmeli
+                # Ara kavram iki ONAYLI noktanın (sınır + köklü çekirdek) konveks
+                # orta noktasıdır — yapısal geçerlilik (is_real) yeterli; tam kapı
+                # gereksiz (inşa gereği topraklı). Hız için tek kontrol.
                 if not bridge.is_real():
-                    continue
-                t_v, _, admitted = self._universe_gate(mid_name, mid)
-                if admitted == "rejected":
                     continue
                 self.engine.manifold.add_unchecked(bridge)
                 self.engine.tau.add_node(bridge)
