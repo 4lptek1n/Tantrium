@@ -248,6 +248,8 @@ ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, 
                                                #   Backward BFS: erlotinib→INHIBITS→egfr→ACTIVATES→ras→CAUSES→tumor
                                                #   Moment-alias BFS: "ras pathway" ≈ "ras" köprüsü (manifold.nearest)
                                                #   Entity normalization: "RAS pathway" → "ras" (suffix stripping)
+                                               #   Örnek: causal_chain("inflammation") → aspirin, ibuprofen
+                                               #   Kausal kenarlar (INHIBITS/ACTIVATES/CAUSES) TAU'ya kalıcı kaydedilir
 ai.explain("EGFR", why="tumor growth")        # → str: sertifika + nedensel yol
 ai.think("protein folding")                    # → ThinkingResult
 ai.discover("EGFR", top_k=5)                   # → molekül keşfi (Morgan moment uzayı)
@@ -319,7 +321,7 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 
 ## Mevcut Durum
 
-- Kavram: 42,500+ | TAU edge: 669,000+ | Paradigma: 23/23
+- Kavram: 43,282 | TAU edge: 672,062 | Paradigma: 23/23
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
 - CoreMachine: TEK ÇEKİRDEK — 4 eksen tek geçişte (certified+grounding+truth+confidence)
 - Genesis öz-düzeltici: CONTRADICTORY kavramlar manifolda girmiyor (truth axis geçidi)
