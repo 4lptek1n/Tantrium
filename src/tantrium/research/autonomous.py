@@ -52,15 +52,19 @@ class Observation:
     admitted_as: str = "core"                # core | frontier | rejected
     grounding_verdict: str = ""              # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
     truth_verdict: str = ""                  # CONSISTENT | CONTESTED | CONTRADICTORY
+    paradigms_passed: int = 0                # kaç/23 paradigma sertifikaladı (1. eksen)
+    paradigms_total: int = 23
 
     def summary(self) -> str:
         if not self.certified:
-            return f"∅ {self.name}: ALEPH reddetti — gerçek değil"
+            return (f"∅ {self.name}: yapısal red "
+                    f"[{self.paradigms_passed}/{self.paradigms_total} paradigma] — gerçek değil")
         if self.admitted_as == "rejected":
             return f"✗ {self.name}: çelişki ({self.truth_verdict}) — korunum ihlali, reddedildi"
         flag = "YENİ" if self.is_new else "bilinen"
         zone = "🜨çekirdek" if self.admitted_as == "core" else "◌sınır"
-        s = f"✓ {self.name} [{flag}|{zone}] → çapa: {self.nearest_anchor} (W₂={self.anchor_distance:.4e})"
+        par = f"{self.paradigms_passed}/{self.paradigms_total}"
+        s = f"✓ {self.name} [{flag}|{zone}|{par}] → çapa: {self.nearest_anchor} (W₂={self.anchor_distance:.4e})"
         if self.bridges:
             br = ", ".join(f"{n}({d})" for n, d, _ in self.bridges[:3])
             s += f"  | köprü: {br}"
@@ -108,11 +112,20 @@ class AutonomousObserver:
             source="autonomous",
         )
 
-        # 2. SERTİFİKALA — Aleph filtresi (1. eksen: yapısal varlık)
-        certified = concept.is_real()
+        # 2. SERTİFİKALA — TAM 23 PARADİGMA (sadece Aleph değil).
+        #   Encode zaten 23 paradigmayı hesaplar; eski kapı yalnız Aleph'i okuyup
+        #   diğer 22'yi atıyordu. Doğrusu: aynı encode edilmiş nesne üzerinde tam
+        #   işlemi çalıştır, certified_count oku (1. eksen = yapısal bütünlük).
         moments_f = [float(m) for m in concept.moments]
-        if not certified:
-            obs = Observation(name=obs_name, certified=False, is_new=False, moments=moments_f)
+        paradigms_passed, paradigms_total = self._full_paradigm_count(codex_obj)
+        # Aleph zorunlu ön-koşul + yapısal eşik (zayıf yapı = gerçek değil)
+        aleph_ok = concept.is_real()
+        structurally_real = aleph_ok and paradigms_passed >= (paradigms_total - 3)
+        if not structurally_real:
+            obs = Observation(
+                name=obs_name, certified=False, is_new=False, moments=moments_f,
+                paradigms_passed=paradigms_passed, paradigms_total=paradigms_total,
+            )
             self.observations.append(obs)
             return obs
 
@@ -128,6 +141,7 @@ class AutonomousObserver:
                 name=obs_name, certified=True, is_new=False, moments=moments_f,
                 admitted_as="rejected", truth_verdict=truth_verdict,
                 grounding_verdict=grounding_verdict,
+                paradigms_passed=paradigms_passed, paradigms_total=paradigms_total,
             )
             self.observations.append(obs)
             return obs
@@ -170,6 +184,8 @@ class AutonomousObserver:
             admitted_as=admitted_as,
             grounding_verdict=grounding_verdict,
             truth_verdict=truth_verdict,
+            paradigms_passed=paradigms_passed,
+            paradigms_total=paradigms_total,
         )
         self.observations.append(obs)
 
@@ -181,6 +197,21 @@ class AutonomousObserver:
                 self._since_persist = 0
 
         return obs
+
+    # ─── Tam paradigma sayımı: 23 paradigmanın hepsi (sadece Aleph değil) ───────
+
+    def _full_paradigm_count(self, codex_obj: Any) -> tuple[int, int]:
+        """Encode edilmiş nesne üzerinde TAM işlemi çalıştır, 23 paradigmanın
+        kaçının sertifikaladığını oku. Aynı obje — yeniden encode yok.
+
+        fail-open: işlem yapılamazsa (paradigms_total, paradigms_total) döner ki
+        akış durmasın (yapısal eşik bloklamaz).
+        """
+        try:
+            run = self.engine.network.run(codex_obj)
+            return int(run.certified_count), int(run.total)
+        except Exception:
+            return 23, 23
 
     # ─── Evren kapısı: yapı + topraklama + gerçek ───────────────────────────────
 
