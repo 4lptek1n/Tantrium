@@ -67,6 +67,23 @@ _STOPWORDS = {
 }
 
 
+# Biyolojik/genel gürültü suffix'leri — "ras pathway" → "ras"
+_NOISE_SUFFIXES = (
+    " pathway", " signaling", " cascade", " network", " complex",
+    " receptor", " ligand", " protein", " gene", " family",
+    " system", " process", " activity", " function", " mechanism",
+)
+
+
+def _normalize_entity(term: str) -> str:
+    """Gürültü suffix'lerini temizle: "ras pathway" → "ras"."""
+    t = term.strip().lower()
+    for sfx in _NOISE_SUFFIXES:
+        if t.endswith(sfx) and len(t) - len(sfx) > 2:
+            t = t[: -len(sfx)].strip()
+    return t
+
+
 def _clean_term(words: list[str], take_last: bool = False) -> str:
     """Kelime listesinden dur kelimelerini ve bağlaçları temizle.
 
@@ -75,7 +92,8 @@ def _clean_term(words: list[str], take_last: bool = False) -> str:
     """
     filtered = [w for w in words if w.lower() not in _STOPWORDS and len(w) > 1]
     chunk = filtered[-2:] if take_last else filtered[:2]
-    return " ".join(chunk).strip().lower() if chunk else ""
+    raw = " ".join(chunk).strip().lower() if chunk else ""
+    return _normalize_entity(raw)
 
 
 def _extract_relations(text: str) -> list[tuple[str, str, str]]:

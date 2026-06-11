@@ -948,6 +948,31 @@ class AI:
             except Exception:
                 pass
 
+        # Moment uzayı yakın kavramlar: string ≠ moment — "ras" ve "ras pathway"
+        # aynı yapısal imzaya sahipse aynı kavram sayılabilir.
+        def _moment_aliases(name: str, thr: float = 0.12) -> set[str]:
+            """name'e moment uzayında yakın kavramları bul (manifold.nearest API)."""
+            try:
+                neighbors = self._engine.manifold.nearest(name, n=8)
+                aliases: set[str] = {name}
+                for n_name, dist in neighbors:
+                    if float(dist) < thr:
+                        aliases.add(n_name)
+                return aliases
+            except Exception:
+                return {name}
+
+        # Ters harita için tüm alias'ları önceden indexle (reverse'de "ras pathway" var)
+        # reverse_alias: bir kavramın tüm alias'larına bakar
+        def _parents_with_aliases(node: str) -> list[tuple[str, str]]:
+            parents = list(reverse.get(node, []))
+            for alias in _moment_aliases(node):
+                if alias != node:
+                    for par, rel in reverse.get(alias, []):
+                        if (par, rel) not in parents:
+                            parents.append((par, rel))
+            return parents
+
         # Ters kenar haritası: kime giden kenarlar var? (backward BFS için)
         reverse: dict[str, list[tuple[str, str]]] = {}  # target → [(source, paradigm)]
         for src, edges in tau.edges.items():
@@ -966,7 +991,8 @@ class AI:
             if node in visited:
                 continue
             visited.add(node)
-            parents = reverse.get(node, [])
+            # Hem string eşleşme hem moment-uzayı alias'lar
+            parents = _parents_with_aliases(node)
             if not parents and len(path) > 1:
                 found_paths.append(path[:])
                 actionable.add(node)
