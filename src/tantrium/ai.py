@@ -940,6 +940,9 @@ class AI:
 
         _CAUSAL = {"CAUSES", "ACHIEVES", "ACTIVATES", "INHIBITS", "USES"}
 
+        # Goal normalizasyonu: causal kenarlar lowercase kaydedilir
+        goal_lower = goal.strip().lower()
+
         # İlk adım: goal kavramını bul veya en yakın encode et
         if goal not in self._engine.manifold.concepts:
             try:
@@ -983,7 +986,9 @@ class AI:
         # Backward BFS
         found_paths: list[list] = []
         actionable: set[str] = set()
-        queue: list[tuple[str, list]] = [(goal, [goal])]
+        # Both original and lowercase — causal relations are stored lowercase
+        start_nodes = list({goal, goal_lower})
+        queue: list[tuple[str, list]] = [(n, [n]) for n in start_nodes]
         visited: set[str] = set()
 
         while queue and len(found_paths) < 12:
