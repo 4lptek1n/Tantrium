@@ -919,6 +919,123 @@ class AI:
             "note": "Gizli matematiksel bağlantı" if entangled else "Normal ayrışma",
         }
 
+    # ── Evren simülasyonu: makineyi çalıştırarak ilaç üret ───────────────────
+
+    def simulate(self, seed: str = "CC", max_steps: int = 14,
+                 beam_width: int = 5, toward: str | None = None) -> "object":
+        """Evren simülasyonu — makineyi çalıştırarak molekülü transport ile diz.
+
+        Hafızadan benzer arama YOK. Her atom-ekleme adımı CertifiedTransport ile
+        yargılanır: sturm-PSD (gerçek-ölçü geçidi) + dyadic (sertifika bonusu) +
+        zeta (Riemann ζ derinliği = sürekli yön). Makinenin kendisi molekülü
+        sıfırdan inşa eder, sonsuza dek ilerletir.
+
+        seed: başlangıç SMILES   toward: opsiyonel yön (gradyan, eşleşme değil)
+        """
+        from tantrium.core.molecular_genesis import MolecularGenesis
+        return MolecularGenesis(self.engine).simulate(
+            seed=seed, max_steps=max_steps, beam_width=beam_width, toward=toward)
+
+    def judge_binding(self, candidate: str, protein: str, top_refs: int = 8) -> dict:
+        """İşe yarar mı? — üretilen molekülü proteinin bilinen ligandlarına karşı
+        KUANTUM dolanıklık + yapısal sertifika ile yargıla.
+
+        Hafıza-similarity DEĞİL. Protein word-encode EDİLMEZ (o hataya düşmez).
+        Proteinin bilinen ligandları (TAU INHIBITS/ACTIVATES kenarları) gerçek
+        SMILES'a çözümlenir → κ-imza referans profili. Aday bu profille kuantum
+        dolanık (klasik uzak ama κ yakın = gizli yapısal akrabalık) ve yapısal
+        sertifikalıysa 'işe yarar' yargısı alır.
+
+        candidate: SMILES   protein: hedef adı (egfr, bcr-abl, ...)
+        """
+        from tantrium.core.quantum_moments import QuantumSignature
+        from tantrium.core.molecular_space import DRUG_LIBRARY
+
+        name2smi = {n.lower(): smi for n, smi, _ in DRUG_LIBRARY}
+        name2cls = {n.lower(): cls for n, _, cls in DRUG_LIBRARY}
+        prot = protein.lower().strip()
+        tau = self.engine.tau
+
+        # 1. Proteinin bilinen ligandları (TAU INHIBITS/ACTIVATES/TARGETS)
+        ligand_names: list[str] = []
+        for src, elist in tau.edges.items():
+            for e in elist:
+                tgt = getattr(e, "target", "")
+                par = getattr(e, "paradigm", "")
+                if str(tgt).lower() == prot and par in (
+                        "INHIBITS", "ACTIVATES", "TARGETS", "BINDS"):
+                    ligand_names.append(str(src).lower())
+
+        # 2. İsimleri gerçek SMILES'a çözümle (kütüphane); yoksa sınıf-temelli geri düş
+        ref_smiles: list[tuple[str, str]] = []
+        ref_cls = None
+        for nm in dict.fromkeys(ligand_names):
+            if nm in name2smi:
+                ref_smiles.append((nm, name2smi[nm]))
+                ref_cls = ref_cls or name2cls.get(nm)
+        if not ref_smiles and ref_cls:
+            ref_smiles = [(n.lower(), s) for n, s, c in DRUG_LIBRARY if c == ref_cls][:top_refs]
+
+        if not ref_smiles:
+            return {
+                "candidate": candidate, "protein": protein,
+                "verdict": "BİLİNMİYOR",
+                "reason": f"'{protein}' için SMILES'a çözümlenebilen bilinen ligand yok — "
+                          f"yargılamak için referans gerekiyor.",
+                "n_refs": 0,
+            }
+
+        # 3. Aday κ-imzası (moleküler encode — kelime değil)
+        try:
+            cand_sig = QuantumSignature.from_moments(
+                [float(m) for m in self.engine.encoder.encode(candidate).moments])
+        except Exception:
+            return {"candidate": candidate, "protein": protein,
+                    "verdict": "GEÇERSİZ", "reason": "Aday encode edilemedi.", "n_refs": 0}
+
+        # 4. Referans profille kuantum karşılaştırma
+        best = None
+        n_entangled = 0
+        for nm, smi in ref_smiles[:top_refs]:
+            try:
+                ref_sig = QuantumSignature.from_moments(
+                    [float(m) for m in self.engine.encoder.encode(smi).moments])
+            except Exception:
+                continue
+            qd = cand_sig.quantum_distance(ref_sig)
+            kd = cand_sig.cumulants.distance(ref_sig.cumulants)
+            ent = cand_sig.is_entangled_with(ref_sig)
+            if ent:
+                n_entangled += 1
+            if best is None or qd < best[1]:
+                best = (nm, qd, kd, ent)
+
+        # 5. Yapısal sertifika + grounding
+        gc = self.grounding(candidate)
+        try:
+            run = self.engine.network.run(self.engine.encoder.encode(candidate))
+            paradigms = f"{run.certified_count}/{run.total}"
+            structural_ok = run.certified_count >= run.total - 1
+        except Exception:
+            paradigms, structural_ok = "?", False
+
+        nearest_name, nearest_qd, nearest_kd, _ = best
+        # Yargı: en yakın referansa κ-yakın VEYA dolanık + yapısal geçerli
+        works = structural_ok and (n_entangled >= 1 or nearest_kd < 0.15)
+        verdict = "İŞE YARAYABİLİR" if works else "İŞE YARAMAZ"
+
+        return {
+            "candidate": candidate, "protein": protein, "verdict": verdict,
+            "n_refs": len(ref_smiles), "n_entangled": n_entangled,
+            "nearest_ligand": nearest_name,
+            "quantum_dist_to_nearest": round(nearest_qd, 4),
+            "kappa_dist_to_nearest": round(nearest_kd, 4),
+            "structural": paradigms, "grounding": gc.verdict,
+            "reason": (f"En yakın bilinen ligand '{nearest_name}' "
+                       f"(κ={nearest_kd:.3f}); {n_entangled} referansla kuantum dolanık; "
+                       f"yapısal {paradigms}."),
+        }
+
     def causal_chain(self, goal: str, depth: int = 4) -> dict:
         """Hedefe giden nedensel zinciri geriye doğru izle.
 

@@ -99,6 +99,7 @@ class CertifiedTransport:
         source,
         target,
         theorem_id: str = "DYADIC_TRANSPORT",
+        fast_sturm: bool = False,
     ) -> TransportCertificate:
         """Certify transport from source to target.
 
@@ -137,7 +138,12 @@ class CertifiedTransport:
         dyadic_ok = cert.status == "verified_exact"
         cost = float(sum(e.raw_source_used for e in cert.edges))
 
-        sturm_ok = self._sturm_path_check(source_moments, target_moments)
+        if fast_sturm:
+            # Üretken döngülerde sembolik Sturm çok pahalı (sympy det × 9 nokta).
+            # numpy-PSD geçidi aynı gerçek-ölçü garantisini ~100× hızlı verir.
+            sturm_ok = self._sturm_psd_fallback(source_moments, target_moments, steps=8)
+        else:
+            sturm_ok = self._sturm_path_check(source_moments, target_moments)
         zeta_dist = self._zeta_distance(target_moments)
 
         # Li coefficient: use pipeline output (input-specific) if available

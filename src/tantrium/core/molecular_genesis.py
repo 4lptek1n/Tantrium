@@ -48,6 +48,58 @@ class GenesisCandidate:
 
 
 @dataclass
+class SimStep:
+    """Evren simülasyonunda tek bir transport-sertifikalı ilerleme adımı."""
+    smiles: str
+    n_atoms: int
+    certified: bool          # dyadic ∧ sturm — tam gerçek adım
+    dyadic: bool
+    sturm: bool
+    zeta: float              # Riemann ζ ailesine derinlik
+    cost: float
+
+
+@dataclass
+class SimulationReport:
+    """Makinenin kendisini çalıştırarak dizdiği molekül soyu.
+
+    Hafıza araması yok — her adım CertifiedTransport ile yargılandı.
+    """
+    seed: str
+    lineage: list[SimStep]                 # tohum→son: ilerleme yolu
+    frontier: list[SimStep]                # son beam (sürdürülebilir uçlar)
+    best: SimStep | None                   # en düşük-ζ sertifikalı uç
+    certified_steps: int                   # kaç adım dyadic∧sturm geçti
+    total_steps: int
+    duration_s: float
+
+    def summary(self) -> str:
+        lines = [
+            "",
+            "  ════════════════════════════════════════════════════════════",
+            "  Tantrium Evren Simülasyonu — Transport ile Molekül Dizilimi",
+            f"  Tohum: {self.seed}  →  {len(self.lineage)} adım soy",
+            f"  Sertifikalı adım (dyadic∧sturm): {self.certified_steps}/{self.total_steps}",
+            f"  Süre: {self.duration_s:.1f}s",
+            "  ────────────────────────────────────────────────────────────",
+        ]
+        for i, s in enumerate(self.lineage):
+            mark = "✓" if s.certified else ("~" if s.sturm else "✗")
+            lines.append(
+                f"  {i:2}. {mark} {s.smiles:<32} "
+                f"[{s.n_atoms} atom]  ζ={s.zeta:.3f}  "
+                f"dyadic={'✓' if s.dyadic else '·'} sturm={'✓' if s.sturm else '·'}"
+            )
+        if self.best:
+            lines += [
+                "  ────────────────────────────────────────────────────────────",
+                f"  EN DERİN SERTİFİKALI UÇ: {self.best.smiles}  (ζ={self.best.zeta:.4f})",
+            ]
+        lines.append("  ════════════════════════════════════════════════════════════")
+        return "\n".join(lines)
+
+
+@dataclass
 class GenesisReport:
     target: str
     target_moments: list[float]
@@ -147,6 +199,150 @@ class MolecularGenesis:
             best=best,
             duration_s=round(time.time() - t0, 1),
             total_steps=total_steps,
+        )
+
+    # ── Evren simülasyonu: transport ile molekül dizilimi ────────────────────
+
+    def simulate(
+        self,
+        seed: str = "CC",
+        max_steps: int = 18,
+        beam_width: int = 5,
+        toward: str | None = None,
+    ) -> "SimulationReport":
+        """Makineyi çalıştırarak molekülü transport ile diz — hafıza araması YOK.
+
+        Her atom-ekleme adımı CertifiedTransport ile yargılanır:
+          sturm-PSD  → yol gerçek ölçü manifoldunda mı (hayali ara nokta yok) — SERT GEÇİT
+          dyadic     → tam rasyonel kütle örtüşmesi (sertifikalı gerçek adım) — TERCİH bonusu
+          zeta       → Riemann ζ ailesine derinlik (sürekli yön)
+
+        Sert dyadic geçidi her heteroatomu eler (üretim alkana çöker); bu yüzden
+        dyadic bir bonustur, sturm geçittir, zeta yöndür. Beam çeşitliliği
+        (en iyi hetero + en iyi halka uçları korunur) çöküşü engeller.
+
+        toward verilirse o SMILES'a doğru W2 ikincil yön olarak eklenir
+        (yine de hafızadan eşleşme değil — sadece gradyan).
+        """
+        import time
+        from tantrium.core.encoder import encode
+        from tantrium.core.transport import CertifiedTransport
+        from rdkit import Chem
+
+        t0 = time.time()
+        ct = CertifiedTransport(self.engine)
+
+        toward_moments = None
+        if toward is not None:
+            try:
+                toward_moments = [float(m) for m in encode(toward).moments]
+            except Exception:
+                toward_moments = None
+
+        from tantrium.core.metric import canonical_distance
+        _enc_cache: dict[str, object] = {}
+
+        def _enc(smi: str):
+            o = _enc_cache.get(smi)
+            if o is None:
+                o = encode(smi)
+                _enc_cache[smi] = o
+            return o
+
+        _tw_cache: dict[str, float] = {}
+
+        def _step_cert(base_obj, ext_smi: str) -> SimStep | None:
+            try:
+                ext_obj = _enc(ext_smi)
+                tc = ct.certify(base_obj, ext_obj, fast_sturm=True)
+                m = Chem.MolFromSmiles(ext_smi)
+                n_atoms = m.GetNumAtoms() if m else 0
+                return SimStep(
+                    smiles=ext_smi, n_atoms=n_atoms,
+                    certified=tc.certified, dyadic=tc.dyadic_verified,
+                    sturm=tc.sturm_verified, zeta=tc.zeta_distance,
+                    cost=tc.transport_cost,
+                )
+            except Exception:
+                return None
+
+        def _score(s: SimStep) -> tuple:
+            # 1) sertifikalı (dyadic∧sturm) önce  2) düşük-ζ  3) toward-W2 (varsa)
+            tw = 0.0
+            if toward_moments is not None:
+                tw = _tw_cache.get(s.smiles)
+                if tw is None:
+                    try:
+                        tw = canonical_distance(
+                            [float(x) for x in _enc(s.smiles).moments], toward_moments)
+                    except Exception:
+                        tw = 0.0
+                    _tw_cache[s.smiles] = tw
+            return (0 if s.certified else 1, s.zeta, tw)
+
+        # Tohum adımı
+        seed_step = SimStep(
+            smiles=seed, n_atoms=Chem.MolFromSmiles(seed).GetNumAtoms() if Chem.MolFromSmiles(seed) else 0,
+            certified=True, dyadic=True, sturm=True, zeta=0.0, cost=0.0,
+        )
+        beam: list[SimStep] = [seed_step]
+        lineage: list[SimStep] = [seed_step]
+        seen: set[str] = {seed}
+        certified_steps = 0
+        total_steps = 0
+
+        for _ in range(max_steps):
+            cands: list[SimStep] = []
+            for base in beam:
+                base_obj = _enc(base.smiles)
+                exts = self._get_extensions(
+                    base.smiles, base.n_atoms, ring_content=True, needs_hetero=True)
+                total_steps += len(exts)
+                for ext in exts:
+                    if ext in seen:
+                        continue
+                    seen.add(ext)
+                    st = _step_cert(base_obj, ext)
+                    if st is None or not st.sturm:
+                        continue  # sturm = sert geçit: gerçek olmayan yolu ele
+                    cands.append(st)
+
+            if not cands:
+                break
+
+            cands.sort(key=_score)
+
+            # Beam çeşitliliği: en iyi N + en iyi hetero + en iyi halka uçları
+            def _has_hetero(smi: str) -> bool:
+                return any(c in smi for c in "NOSFnos") or "Cl" in smi
+            def _has_ring(smi: str) -> bool:
+                return any(ch.isdigit() for ch in smi)
+
+            chosen: list[SimStep] = cands[:beam_width]
+            for pred in (_has_hetero, _has_ring):
+                if not any(pred(s.smiles) for s in chosen):
+                    extra = next((s for s in cands if pred(s.smiles)), None)
+                    if extra is not None:
+                        chosen.append(extra)
+
+            beam = chosen
+            best_step = cands[0]
+            lineage.append(best_step)
+            if best_step.certified:
+                certified_steps += 1
+
+        # En derin sertifikalı uç (yoksa en düşük-ζ sturm uç)
+        cert_ends = [s for s in beam if s.certified] or beam
+        best = min(cert_ends, key=lambda s: s.zeta) if cert_ends else None
+
+        return SimulationReport(
+            seed=seed,
+            lineage=lineage,
+            frontier=beam,
+            best=best,
+            certified_steps=certified_steps,
+            total_steps=total_steps,
+            duration_s=round(time.time() - t0, 1),
         )
 
     # ── Hedef kodlama ────────────────────────────────────────────────────────
