@@ -191,6 +191,8 @@ class SemanticManifold:
                     continue
                 out.append((nm, Fraction(d).limit_denominator(10 ** 6)))
             return out[:n]
+        if metric == "extended":
+            return self._nearest_l1_extended(concept, n)
         if metric == "spectral_w2":
             # L1 ile geniş aday kümesi (3n), sonra kanonik W2 ile yeniden sırala
             from tantrium.core.metric import canonical_distance
@@ -223,6 +225,43 @@ class SemanticManifold:
                 best.append((d, name))
                 if len(best) == n:
                     best.sort(reverse=True)  # max-heap simulation: largest at [0]
+            elif d < best[0][0]:
+                best[0] = (d, name)
+                best.sort(reverse=True)
+
+        best.sort()
+        return [(name, Fraction(d).limit_denominator(10 ** 6)) for d, name in best]
+
+    def _nearest_l1_extended(
+        self, concept: "Concept", n: int = 5, text_weight: float = 0.10
+    ) -> list[tuple[str, Fraction]]:
+        """L1 moment mesafesi + metin boyutu tiebreaker (uzunluk + çeşitlilik).
+
+        text_weight=0.10 (10%): temel moment geometrisi korunur, metin özelliği
+        hafifçe blendlenir. Farklı uzunluk veya karakter çeşitliliğindeki
+        çakışmaları çözmeye yardımcı olur; aynı uzunluk+çeşitlilik çakışmaları
+        (protein/glucose) için label_aware encoding gerekir.
+        """
+        from tantrium.core.encoder import _text_extra_dims
+        q = [float(m) for m in concept.moments]
+        q_text = _text_extra_dims(concept.name)
+        k = len(q)
+        best: list[tuple[float, str]] = []
+
+        for name, c in self.concepts.items():
+            if name == concept.name:
+                continue
+            cm = c.moments
+            d_moment = sum(
+                abs(q[i] - (float(cm[i]) if i < len(cm) else 0.0)) for i in range(k)
+            )
+            c_text = _text_extra_dims(name)
+            d_text = abs(q_text[0] - c_text[0]) + abs(q_text[1] - c_text[1])
+            d = (1.0 - text_weight) * d_moment + text_weight * d_text
+            if len(best) < n:
+                best.append((d, name))
+                if len(best) == n:
+                    best.sort(reverse=True)
             elif d < best[0][0]:
                 best[0] = (d, name)
                 best.sort(reverse=True)

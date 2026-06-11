@@ -14,7 +14,7 @@
 src/tantrium/          ← pip install -e . ile kurulu paket
   ai.py                ← tantrium.AI() — SDK girişi
   core/
-    encoder.py         ← girdi→moments (domain-blind)
+    encoder.py         ← girdi→moments (domain-blind) + _text_extra_dims()
     codex.py           ← 23 paradigma (verify() okur, hesaplamaz)
     pipeline.py        ← run_pipeline() L0-L7 sıralı hesaplama
     network.py         ← CertificationPipeline (topolojik DAG)
@@ -27,7 +27,7 @@ src/tantrium/          ← pip install -e . ile kurulu paket
     collision.py       ← CollisionHunter — adversarial teklik testi
     grounding.py       ← GroundingCertifier — 2. eksen (TAU kökü)
     transport.py       ← CertifiedTransport (dyadic+Sturm+Zeta)
-    semantic.py        ← SemanticManifold (40k kavram, distance(), nearest(metric=), quantum_bridges())
+    semantic.py        ← SemanticManifold (40k kavram, distance(), nearest(metric=), quantum_bridges(), _nearest_l1_extended())
     inverse.py         ← InverseTransport — hedef→W2-minimal moleküller→3D SDF
     quantum_moments.py ← FreeCumulants (Voiculescu κ_k) + QuantumSignature (kuantum imza)
   proof/               ← dyadic ispat ilkleri (pip'ten erişilir)
@@ -246,10 +246,9 @@ ai.close(domain="math_kernel", inject=True)    # → NecessityReport
 ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, "causal_relations": k, ...}
 ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}
                                                #   Backward BFS: erlotinib→INHIBITS→egfr→ACTIVATES→ras→CAUSES→tumor
-                                               #   Moment-alias BFS: "ras pathway" ≈ "ras" köprüsü (manifold.nearest)
-                                               #   Entity normalization: "RAS pathway" → "ras" (suffix stripping)
-                                               #   Örnek: causal_chain("inflammation") → aspirin, ibuprofen
-                                               #   Kausal kenarlar (INHIBITS/ACTIVATES/CAUSES) TAU'ya kalıcı kaydedilir
+ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}
+                                               #   Forward BFS: erlotinib→INHIBITS→egfr→ACTIVATES→ras→... son etkiler
+                                               #   causal_chain() geri, what_if() ileri — tamamlayıcı çift
 ai.explain("EGFR", why="tumor growth")        # → str: sertifika + nedensel yol
 ai.think("protein folding")                    # → ThinkingResult
 ai.discover("EGFR", top_k=5)                   # → molekül keşfi (Morgan moment uzayı)
@@ -313,6 +312,7 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
    Şu an label + TAU bağlantıları semantic farkı taşır. `_text_to_bigram_matrix(label_aware=True)` sadece CollisionHunter'da.
 7. **Causal chain entity linking**: "ras pathway" ≠ "ras" string olarak ama `_normalize_entity()` suffix'leri kaldırır.
    Yeni `_extract_relations()` extraction'da normalize eder; eski TAU'daki "pathway" suffix'li kavramlar normalize edilmez.
+9. **`nearest(metric="extended")` tiebreaker**: 10% metin boyutu ağırlığı FARKLI uzunluk/çeşitliliği çözer. Aynı uzunluk+çeşitlilik çakışmaları (protein/glucose) için `label_aware=True` encoding gerekir.
 8. **Grounding — bridge kavramlar çapa olamaz**: 42k+ doymuş manifoldda `⟨bridge:...⟩` genesis köprüleri rezonans çapası
    olunca çöp stringler GROUNDED çıkıyordu. `_RESONANCE_RADIUS=0.3`, bridge hariç, `_RESONANCE_MIN_GROUNDED=4` ile düzeltildi.
    `zzzqqqwwwvvv` gibi tekrarlı harfli stringler organik asitlerle moment çakışması yaşayabilir (encoder collision uzantısı).
@@ -340,7 +340,10 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
   - KnowledgeEdge: `quantum_dist` alanı (κ-mesafe)
   - MolecularGenesis: quantum-guided beam search (0.75×W2 + 0.25×κ_dist)
   - API: `ai.quantum_distance()`, `ai.synthesize()`, `ai.entangle()`
-- Tests: 275+ geçiyor (test_api + test_grounding + test_inverse_design + test_quantum_moments + test_molecular_genesis + test_causal_chain)
+- **Forward Causal Reasoning**: `ai.what_if(concept, depth)` — ileri BFS (erlotinib → ne olur?), `causal_chain()`'in tamamlayıcısı
+- **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin boyutu tiebreaker (uzunluk+çeşitlilik); `_text_extra_dims()` encoder'da
+- **Büyüme Kaynakları**: 4 kaynak → 7 kaynak: +KEGG (sinyal yolağı genleri) +ChEMBL (biyoaktif SMILES) +PubMed (kausal öğrenim)
+- Tests: 290+ geçiyor (test_api + test_grounding + test_inverse_design + test_quantum_moments + test_molecular_genesis + test_causal_chain + test_what_if + test_extended_nearest)
 
 ---
 
@@ -357,7 +360,7 @@ periyodik konsolidasyon (close + öz-model köklendirme) → persist → tekrar
 `research/growth.py` → `GrowthEngine`. Klasik `run()` fazlı ve sonludur;
 `grow()` süreklidir:
 
-- **Dönen kaynaklar**: PubChem (CID ilerler) + OEIS (16 anahtar kelime rotasyonu)
+- **Dönen kaynaklar**: PubChem + ChEMBL (kimya) + UniProt + KEGG (biyoloji) + OEIS (matematik) + Wikipedia (web) + PubMed (biyomedikal) — 7 kaynak
 - **Resumable**: durum `.tantrium/growth_state.json` — kap yeniden başlasa bile
   kaldığı CID'den devam eder
 - **Hata toleranslı**: bir kaynak düşse akış durmaz (fail-open, boş parti → bekle)

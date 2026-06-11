@@ -158,6 +158,31 @@ def _text_to_bigram_matrix(text: str, label_aware: bool = False) -> list[list[Fr
     return matrix
 
 
+def _text_extra_dims(text: str) -> list[float]:
+    """Metin token için ek sinyal boyutları: uzunluk + karakter çeşitliliği.
+
+    Bu boyutlar moment vektörünün YERİNE GEÇMEZ — tamamlayıcıdır.
+    Aynı moment imzasına düşen token'ları ayırt eden hafif sinyal:
+      [0] uzunluk_norm = min(len, 50) / 50   → kısa/uzun ayrımı
+      [1] çeşitlilik_norm = unique_chars / len → tekrarlı/zengin doku
+
+    Özel token'lar (⟨...⟩, sayısal, ':' içerenler) sıfır döner.
+    Not: protein/glucose gibi (7 harf, tam çeşitlilik) temel çakışmalar
+    için `label_aware=True` modu gerekir; bu boyutlar FARKLI uzunluk ve
+    çeşitlilikteki çakışmaları çözer.
+    """
+    if not text or not isinstance(text, str):
+        return [0.0, 0.0]
+    if text.startswith("⟨") or ":" in text:
+        return [0.0, 0.0]
+    clean = text.strip()
+    if not clean:
+        return [0.0, 0.0]
+    len_norm = min(len(clean), 50) / 50.0
+    diversity_norm = len(set(clean.lower())) / max(len(clean), 1)
+    return [len_norm, diversity_norm]
+
+
 def _tokens_to_cooccurrence_matrix(
     tokens: list[str], window: int = 2
 ) -> list[list[Fraction]]:

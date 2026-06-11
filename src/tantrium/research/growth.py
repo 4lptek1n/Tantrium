@@ -285,8 +285,138 @@ class GrowthEngine:
         time.sleep(_RATE_LIMIT_S)
         return out
 
+    def _fetch_kegg(self, n: int = 4) -> list[str]:
+        """KEGG REST API: sinyal yolağı genleri + bileşik isimleri."""
+        _KEGG_PATHWAYS = [
+            "hsa04010",  # MAPK signaling pathway
+            "hsa04151",  # PI3K-Akt signaling pathway
+            "hsa04210",  # Apoptosis
+            "hsa04110",  # Cell cycle
+            "hsa04012",  # ErbB signaling pathway
+            "hsa04350",  # TGF-beta signaling
+            "hsa04630",  # JAK-STAT signaling
+            "hsa04310",  # Wnt signaling pathway
+        ]
+        kegg_idx = self.state.get("kegg_idx", 0)
+        topic = _KEGG_PATHWAYS[kegg_idx % len(_KEGG_PATHWAYS)]
+        self.state["kegg_idx"] = kegg_idx + 1
+        out: list[str] = []
+        try:
+            url = f"https://rest.kegg.jp/get/{topic}"
+            req = urllib.request.Request(url, headers=_UA)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                text = resp.read().decode("utf-8", errors="replace")
+            for line in text.split("\n"):
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                # NAME satırı: yolak ismi
+                if line.startswith("NAME"):
+                    name_val = stripped.split(None, 1)[1] if " " in stripped else ""
+                    if name_val:
+                        out.append(name_val[:80])
+                # GENE satırları: gen isimleri
+                elif line.startswith("GENE") or (line.startswith(" ") and out):
+                    # "  7157      TP53; tumor protein p53" biçimi
+                    parts = stripped.split(";")
+                    for part in parts:
+                        tokens = part.strip().split()
+                        for tok in tokens:
+                            tok = tok.strip(".,;()")
+                            if 2 < len(tok) < 20 and tok.replace("-", "").isalpha():
+                                out.append(tok)
+                                break
+            # Öğrenme: NAME + kısa açıklama var mı?
+            desc = "\n".join(l for l in text.split("\n")
+                             if l.startswith("DESCRIPTION") or l.startswith("NAME"))
+            if desc:
+                try:
+                    self.ai.learn(desc[:400])
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        time.sleep(_RATE_LIMIT_S)
+        return [x for x in dict.fromkeys(out) if x][:n]
+
+    def _fetch_chembl(self, n: int = 5) -> list[str]:
+        """ChEMBL REST API: biyoaktif küçük molekül SMILES."""
+        chembl_offset = self.state.get("chembl_offset", 0)
+        url = (f"https://www.ebi.ac.uk/chembl/api/data/molecule"
+               f"?format=json&limit={n}&offset={chembl_offset}"
+               f"&molecule_properties__mw_freebase__lte=500"
+               f"&molecule_type=Small+molecule")
+        out: list[str] = []
+        try:
+            data = _http_json(url)
+            for mol in (data or {}).get("molecules", []):
+                smiles = ((mol or {}).get("molecule_structures") or {}).get(
+                    "canonical_smiles", ""
+                )
+                if smiles and len(smiles) < 200:
+                    out.append(smiles)
+            self.state["chembl_offset"] = chembl_offset + n
+        except Exception:
+            pass
+        time.sleep(_RATE_LIMIT_S)
+        return out
+
+    def _fetch_pubmed(self, n: int = 3) -> list[str]:
+        """PubMed E-utilities: makale başlıkları + kausal kenar öğrenimi.
+
+        ai.learn() ile özetten CAUSES/INHIBITS/ACTIVATES kenarları çıkarılır.
+        Kavram listesi olarak makale başlıkları döner.
+        """
+        _PUBMED_QUERIES = [
+            "EGFR+inhibitor+cancer",
+            "kinase+signaling+pathway",
+            "protein+phosphorylation+mechanism",
+            "drug+target+interaction",
+            "tumor+suppressor+gene",
+            "mTOR+inhibitor+rapamycin",
+            "BRCA1+DNA+repair",
+            "p53+apoptosis+cancer",
+        ]
+        pm_idx = self.state.get("pubmed_idx", 0)
+        query = _PUBMED_QUERIES[pm_idx % len(_PUBMED_QUERIES)]
+        self.state["pubmed_idx"] = pm_idx + 1
+        out: list[str] = []
+        try:
+            search_url = (
+                f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+                f"?db=pubmed&term={query}&retmax={n}&retmode=json"
+            )
+            search_data = _http_json(search_url)
+            pmids = ((search_data or {}).get("esearchresult") or {}).get("idlist", [])
+            if pmids:
+                ids_str = ",".join(pmids[:n])
+                fetch_url = (
+                    f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+                    f"?db=pubmed&id={ids_str}&rettype=abstract&retmode=text"
+                )
+                req = urllib.request.Request(fetch_url, headers=_UA)
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    abstract_text = resp.read().decode("utf-8", errors="replace")
+                if abstract_text and len(abstract_text) > 100:
+                    # Kausal kenar öğrenimi
+                    try:
+                        self.ai.learn(abstract_text[:2000])
+                    except Exception:
+                        pass
+                    # Başlık satırlarını kavram olarak döndür
+                    for line in abstract_text.split("\n"):
+                        line = line.strip()
+                        if 10 < len(line) < 120 and not line.startswith("PMID"):
+                            out.append(line)
+                            if len(out) >= n:
+                                break
+        except Exception:
+            pass
+        time.sleep(_RATE_LIMIT_S)
+        return out
+
     def _next_batch(self, network: bool) -> list[Any]:
-        """Bir sonraki karışık veri partisi: kimya + biyoloji + matematik + web (4 kaynak)."""
+        """Bir sonraki karışık veri partisi: 7 kaynak (kimya×2 + biyoloji×2 + matematik + web + biyomedikal)."""
         if not network:
             # Ağsız: algoritmik diziler (resumable offset ile çeşitlilik)
             base = self.state.get("total_processed", 0)
@@ -295,10 +425,13 @@ class GrowthEngine:
                 for j in range(0, 24, 8)
             ]
         batch: list[Any] = []
-        batch += self._fetch_pubchem(10)   # kimya: molekül SMILES
-        batch += self._fetch_uniprot(8)    # biyoloji: protein dizileri
+        batch += self._fetch_pubchem(8)    # kimya: PubChem SMILES
+        batch += self._fetch_chembl(4)     # kimya: ChEMBL biyoaktif moleküller
+        batch += self._fetch_uniprot(6)    # biyoloji: UniProt protein dizileri
+        batch += self._fetch_kegg(4)       # biyoloji: KEGG yolak genleri
         batch += self._fetch_oeis(4)       # matematik: tamsayı dizileri
-        batch += self._fetch_web(6)        # web: boşluk-güdümlü Wikipedia kavramları
+        batch += self._fetch_web(5)        # web: boşluk-güdümlü Wikipedia kavramları
+        batch += self._fetch_pubmed(3)     # biyomedikal: PubMed kausal öğrenim
         return batch
 
     # ─── Ana döngü: sınırsız kendi kendine büyüme ────────────────────────────
