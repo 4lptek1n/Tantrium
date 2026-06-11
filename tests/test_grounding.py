@@ -47,7 +47,7 @@ def test_random_garbage_ungrounded_message_is_honest(ai):
 def test_garbage_and_concept_get_different_verdicts(ai):
     """Çöp ile köklü kavram FARKLI yargı almalı — eski hata buydu (ikisi de 23/23)."""
     concept = ai.grounding("receptor")
-    garbage = ai.grounding("zzzqqqwwwvvv")
+    garbage = ai.grounding("blorgmuffin")
     assert concept.verdict == "GROUNDED"
     assert garbage.verdict != "GROUNDED"
 

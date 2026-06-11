@@ -39,13 +39,13 @@ if TYPE_CHECKING:
 _GROUNDED_NEIGHBOR_MIN_EDGES = 3
 # Rezonans için taranacak aday komşu sayısı
 _RESONANCE_K = 30
-# Rezonans yarıçapı (L1): bunun ötesindeki komşular "rezonans" sayılmaz.
-# Doymuş manifoldda ham komşuluk ayırmaz; sıkı yarıçap gürültüyü eler.
-_RESONANCE_RADIUS = 0.5
+# Rezonans yarıçapı (L1): 42k+ doymuş manifoldda 0.5 çok geniş — çöp bile komşu bulur.
+# Bridge kavramlar yapay ara nokta olduğundan hariç tutulur; 0.3 gerçek rezonansı ölçer.
+_RESONANCE_RADIUS = 0.3
 # Tutarlı küme için baskın domain'in köklü komşular içindeki minimum oranı
 _COHERENCE_MIN_RATIO = 0.5
 # Rezonansla GROUNDED demek için gereken minimum sıkı-köklü komşu sayısı
-_RESONANCE_MIN_GROUNDED = 2
+_RESONANCE_MIN_GROUNDED = 4
 
 
 @dataclass
@@ -126,6 +126,8 @@ class GroundingCertifier:
         for name, dist in neighbors:
             if float(dist) > _RESONANCE_RADIUS:
                 continue  # yarıçap dışı — rezonans değil
+            if name.startswith("⟨bridge:"):
+                continue  # genesis köprüleri yapay ara nokta — çapa olmaz
             # komşunun kendi topraklanmışlığı: kaç kenarı var?
             n_edges = len(tau.edges.get(name, []))
             if n_edges >= _GROUNDED_NEIGHBOR_MIN_EDGES:
