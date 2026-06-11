@@ -311,6 +311,9 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
    Şu an label + TAU bağlantıları semantic farkı taşır. `_text_to_bigram_matrix(label_aware=True)` sadece CollisionHunter'da.
 7. **Causal chain entity linking**: "ras pathway" ≠ "ras" string olarak ama `_normalize_entity()` suffix'leri kaldırır.
    Yeni `_extract_relations()` extraction'da normalize eder; eski TAU'daki "pathway" suffix'li kavramlar normalize edilmez.
+8. **Grounding — bridge kavramlar çapa olamaz**: 42k+ doymuş manifoldda `⟨bridge:...⟩` genesis köprüleri rezonans çapası
+   olunca çöp stringler GROUNDED çıkıyordu. `_RESONANCE_RADIUS=0.3`, bridge hariç, `_RESONANCE_MIN_GROUNDED=4` ile düzeltildi.
+   `zzzqqqwwwvvv` gibi tekrarlı harfli stringler organik asitlerle moment çakışması yaşayabilir (encoder collision uzantısı).
 
 ---
 
