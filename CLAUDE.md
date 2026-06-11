@@ -242,7 +242,12 @@ ai.transport("CCO", "aspirin", use_smiles=True)# → TransportCertificate
 ai.rank("EGFR", top_n=10)                      # → TransportRanking
 ai.prove(max_cycles=2)                         # → LoopReport (kapalı döngü)
 ai.close(domain="math_kernel", inject=True)    # → NecessityReport
-ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, ...}
+ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, "causal_relations": k, ...}
+ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}
+                                               #   Backward BFS: erlotinib→INHIBITS→egfr→ACTIVATES→ras→CAUSES→tumor
+                                               #   Moment-alias BFS: "ras pathway" ≈ "ras" köprüsü (manifold.nearest)
+                                               #   Entity normalization: "RAS pathway" → "ras" (suffix stripping)
+ai.explain("EGFR", why="tumor growth")        # → str: sertifika + nedensel yol
 ai.think("protein folding")                    # → ThinkingResult
 ai.discover("EGFR", top_k=5)                   # → molekül keşfi (Morgan moment uzayı)
 ai.design("EGFR", top_k=10)                    # → DesignResult (TERS TRANSPORT: W2-minimal moleküller→3D SDF)
@@ -300,12 +305,17 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 3. `from tantrium.research_os import ...` → ModuleNotFoundError. subprocess kullan.
 4. `inject_math_kernel()` idempotent — mevcut kavramları geçer.
 5. `transport.py` artık `tantrium.proof.dyadic_flow` import eder (`tantrium.transport` değil).
+6. **Encoder collision**: `protein` = `glucose` = aynı moment (her ikisi 7 unique char, path grafı → aynı spektrum).
+   Label OLMADAN ayrılamaz. Çözüm: `label_aware=True` (40k manifold yeniden encode gerektirir — kırıcı değişiklik).
+   Şu an label + TAU bağlantıları semantic farkı taşır. `_text_to_bigram_matrix(label_aware=True)` sadece CollisionHunter'da.
+7. **Causal chain entity linking**: "ras pathway" ≠ "ras" string olarak ama `_normalize_entity()` suffix'leri kaldırır.
+   Yeni `_extract_relations()` extraction'da normalize eder; eski TAU'daki "pathway" suffix'li kavramlar normalize edilmez.
 
 ---
 
 ## Mevcut Durum
 
-- Kavram: 39,964+ | TAU edge: 655,000+ | Paradigma: 23/23
+- Kavram: 42,000+ | TAU edge: 665,000+ | Paradigma: 23/23
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
 - CoreMachine: TEK ÇEKİRDEK — 4 eksen tek geçişte (certified+grounding+truth+confidence)
 - Genesis öz-düzeltici: CONTRADICTORY kavramlar manifolda girmiyor (truth axis geçidi)
