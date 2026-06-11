@@ -91,15 +91,23 @@ class GroundingCertifier:
     # ── Doğrudan topraklama: TAU düğüm + kenar ───────────────────────────────
 
     def _direct_grounding(self, token: str) -> tuple[bool, int]:
-        """Token doğrudan TAU'da köklü mü? (manifoldda_mı, toplam_kenar)."""
+        """Token doğrudan TAU'da köklü mü? (manifoldda_mı, toplam_kenar).
+
+        Kausal kenarlar normalize edilmiş (lowercase) kayıtlı. Hem orijinal
+        hem lowercase kontrol edilir.
+        """
         tau = self.engine.tau
-        edges_out = len(tau.edges.get(token, []))
+        token_lower = token.lower()
+        edges_out = (len(tau.edges.get(token, [])) +
+                     (len(tau.edges.get(token_lower, [])) if token_lower != token else 0))
         edges_in = 0
         for _src, edge_list in tau.edges.items():
             for e in edge_list:
-                if e.target == token:
+                if e.target == token or e.target == token_lower:
                     edges_in += 1
-        in_manifold = token in self.engine.manifold.concepts
+        # Manifold: orijinal VEYA lowercase kayıtlı mı?
+        in_manifold = (token in self.engine.manifold.concepts or
+                       token_lower in self.engine.manifold.concepts)
         return in_manifold, edges_out + edges_in
 
     # ── Rezonans topraklama: komşuluğun topraklanmışlığı + tutarlılığı ────────
@@ -164,20 +172,26 @@ class GroundingCertifier:
         g_neighbors, coherence, dom, grounded_names = self._resonance_grounding(probe)
 
         # ── Yargı mantığı ──
-        # 1. Doğrudan köklü düğüm → kesin GROUNDED (sistem bu token'ı öğrenmiş)
+        # Temel kural: GROUNDED = sistem bu token'ı aktif olarak öğrenmiş.
+        # 27k+ yeniden-encode edilmiş text manifoldda L1 mesafeler 0.0001-0.01
+        # ölçeğine indi. Rezonans (0.3 radius) artık her string için geçer —
+        # güvenilmez. İki sağlam sinyale iniyoruz:
+        #   1. Doğrudan TAU kenarı (= sistem bunu öğrendi)
+        #   2. Manifoldda in_manifold=True (= sistem bunu işledi/kodladı)
         if direct_edges >= _GROUNDED_NEIGHBOR_MIN_EDGES:
+            # 1. Doğrudan köklü düğüm → kesin GROUNDED
             verdict = "GROUNDED"
             score = min(1.0, 0.6 + direct_edges / 100.0)
-        # 2. Bilinmeyen token: sıkı yarıçapta köklü + tutarlı kümeye rezonans
-        elif g_neighbors >= _RESONANCE_MIN_GROUNDED and coherence >= _COHERENCE_MIN_RATIO:
-            verdict = "GROUNDED"
-            score = 0.4 + 0.4 * coherence
-        # 3. Tek bir köklü komşuya yakın — zayıf, anlamı belirsiz
-        elif g_neighbors >= 1:
+        elif direct_edges >= 1:
+            # 2. Az kenarlı ama bilinen kavram → zayıf topraklı
             verdict = "WEAKLY_GROUNDED"
-            score = 0.2 + 0.2 * coherence
-        # 4. Yalıtık — yapısal geçerli ama hiçbir köklü kavrama yakın değil
+            score = 0.3 + 0.1 * min(direct_edges, 3) / 3.0
+        elif in_manifold and g_neighbors >= 1:
+            # 3. Manifoldda kayıtlı ve komşuları var — zayıf
+            verdict = "WEAKLY_GROUNDED"
+            score = 0.2 + 0.1 * coherence
         else:
+            # 4. Ne manifoldda ne kenar — yalıtık/bilinmeyen
             verdict = "UNGROUNDED"
             score = 0.0
 

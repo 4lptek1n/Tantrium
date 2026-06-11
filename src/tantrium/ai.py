@@ -2759,10 +2759,10 @@ class AI:
             ("erlotinib", "INHIBITS", "egfr"),
             ("gefitinib", "INHIBITS", "egfr"),
             ("egfr", "ACTIVATES", "ras"),
-            ("ras", "CAUSES", "tumor cell proliferation"),
+            ("ras", "CAUSES", "tumor cell"),
             ("aspirin", "INHIBITS", "cyclooxygenase"),
             ("imatinib", "INHIBITS", "bcr-abl"),
-            ("p53", "INHIBITS", "tumor cell proliferation"),
+            ("p53", "INHIBITS", "tumor cell"),
         ]
         test_facts = facts or _DEFAULT
         tau = self._engine.tau

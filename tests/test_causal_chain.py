@@ -95,10 +95,11 @@ def test_causal_chain_single_hop(ai_with_causal):
 
 
 def test_causal_chain_multi_hop(ai_with_causal):
+    """En az 1 çok-adımlı (depth>=3) zincir bulunmalı."""
     r = ai_with_causal.causal_chain("tumor cell proliferation", depth=8)
     assert r["n_paths"] >= 1
-    best = r["chains"][0]
-    assert best["depth"] >= 3
+    # BFS en kısa zinciri önce döndürür; çok-adımlı zincir listede bir yerdedir
+    assert any(ch["depth"] >= 3 for ch in r["chains"])
 
 
 def test_causal_chain_finds_erlotinib(ai_with_causal):

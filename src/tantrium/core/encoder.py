@@ -447,7 +447,7 @@ class UniversalEncoder:
         if isinstance(input, str):
             if len(input) <= 1:
                 return [[Fraction(1)]]
-            return _text_to_bigram_matrix(input)
+            return _text_to_bigram_matrix(input, label_aware=True)
         if isinstance(input, dict):
             return _dict_to_adjacency_matrix(input)
         if isinstance(input, (int, float)):
@@ -455,7 +455,7 @@ class UniversalEncoder:
             return _numbers_to_matrix(seq)
         if isinstance(input, Fraction):
             return _numbers_to_matrix([input])
-        return _text_to_bigram_matrix(str(input))
+        return _text_to_bigram_matrix(str(input), label_aware=True)
 
     def encode_batch(self, inputs: list[Any], names: list[str] | None = None) -> list[CodexObject]:
         """Encode multiple inputs in one call."""
