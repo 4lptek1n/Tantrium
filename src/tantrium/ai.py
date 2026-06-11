@@ -940,7 +940,12 @@ class AI:
 
         _CAUSAL = {"CAUSES", "ACHIEVES", "ACTIVATES", "INHIBITS", "USES"}
 
-        # Goal normalizasyonu: causal kenarlar lowercase kaydedilir
+        # Goal normalizasyonu: causal kenarlar lowercase + normalize kaydedilir
+        try:
+            from tantrium.research.autonomous import _normalize_entity
+            goal_normalized = _normalize_entity(goal.strip().lower())
+        except ImportError:
+            goal_normalized = goal.strip().lower()
         goal_lower = goal.strip().lower()
 
         # İlk adım: goal kavramını bul veya en yakın encode et
@@ -986,8 +991,8 @@ class AI:
         # Backward BFS
         found_paths: list[list] = []
         actionable: set[str] = set()
-        # Both original and lowercase — causal relations are stored lowercase
-        start_nodes = list({goal, goal_lower})
+        # Both original and lowercase and entity-normalized — causal kenarlar normalize kaydedilir
+        start_nodes = list({goal, goal_lower, goal_normalized})
         queue: list[tuple[str, list]] = [(n, [n]) for n in start_nodes]
         visited: set[str] = set()
 

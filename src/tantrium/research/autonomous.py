@@ -73,8 +73,9 @@ _NOISE_SUFFIXES = (
     " receptor", " ligand", " protein", " gene", " family",
     " system", " process", " activity", " function", " mechanism",
     " activation", " inhibition", " phosphorylation", " expression",
-    " regulation", " response", " production",
+    " regulation", " response", " production", " proliferation",
     " enzyme", " kinase", " factor", " domain", " subunit",
+    " formation", " degradation", " synthesis", " metabolism",
 )
 
 
