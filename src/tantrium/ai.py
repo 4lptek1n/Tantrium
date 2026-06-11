@@ -2072,7 +2072,7 @@ class AI:
 
         return results
 
-    def synthesize(self, concept: str, facts: dict) -> str:
+    def narrate_facts(self, concept: str, facts: dict) -> str:
         """TAU kenarlarından akıcı Türkçe paragraf üret.
 
         facts: {"IS_A": ["araç", "yöntem"], "ACHIEVES": ["kararlılık"], ...}

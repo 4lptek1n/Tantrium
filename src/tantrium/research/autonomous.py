@@ -60,6 +60,24 @@ _CAUSAL_VERB_MAP: list[tuple[str, str]] = [
 _COMPILED_VERBS = [(_re.compile(p, _re.IGNORECASE), rel) for p, rel in _CAUSAL_VERB_MAP]
 
 
+_STOPWORDS = {
+    "and", "or", "but", "which", "that", "the", "a", "an",
+    "in", "on", "at", "to", "of", "for", "with", "by", "its",
+    "this", "these", "those", "also", "then", "thus",
+}
+
+
+def _clean_term(words: list[str], take_last: bool = False) -> str:
+    """Kelime listesinden dur kelimelerini ve bağlaçları temizle.
+
+    take_last=True  → fiilin öncesi (özne): son 2 anlamlı kelime
+    take_last=False → fiilin sonrası (nesne): ilk 2 anlamlı kelime
+    """
+    filtered = [w for w in words if w.lower() not in _STOPWORDS and len(w) > 1]
+    chunk = filtered[-2:] if take_last else filtered[:2]
+    return " ".join(chunk).strip().lower() if chunk else ""
+
+
 def _extract_relations(text: str) -> list[tuple[str, str, str]]:
     """Metinden (özne, ilişki_türü, nesne) üçlülerini çıkar.
 
@@ -67,28 +85,27 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
     Sonuç: TAU'ya CAUSES/INHIBITS/ACTIVATES kenarları olarak eklenir.
     """
     relations: list[tuple[str, str, str]] = []
+    # Önce bağlaç "and" üzerinden alt cümlelere ayır
     sentences = _re.split(r"[.!?;]", text)
     for sent in sentences:
-        sent = sent.strip()
-        if len(sent) < 6:
-            continue
-        for pat, rel_type in _COMPILED_VERBS:
-            m = pat.search(sent)
-            if not m:
+        # "X verb Y and Z verb W" → ["X verb Y", "Z verb W"]
+        sub_sents = _re.split(r"\band\b", sent, flags=_re.IGNORECASE)
+        for sub in sub_sents:
+            sub = sub.strip()
+            if len(sub) < 5:
                 continue
-            before = sent[:m.start()].strip()
-            after = sent[m.end():].strip()
-            # Özne: fiilin öncesindeki son 1-3 kelime (virgül/parantez al)
-            subj_words = _re.sub(r"[,;\"'()]", "", before).split()[-3:]
-            # Nesne: fiilin sonrasındaki ilk 1-3 kelime
-            obj_words = _re.sub(r"[,;\"'()]", "", after).split()[:3]
-            if not subj_words or not obj_words:
-                continue
-            subj = " ".join(subj_words).strip().lower()
-            obj  = " ".join(obj_words).strip().lower()
-            # Gürültü filtresi: çok kısa veya çok uzun = anlamsız
-            if 2 < len(subj) < 60 and 2 < len(obj) < 60:
-                relations.append((subj, rel_type, obj))
+            for pat, rel_type in _COMPILED_VERBS:
+                m = pat.search(sub)
+                if not m:
+                    continue
+                before = _re.sub(r"[,;\"'()]", " ", sub[:m.start()]).split()
+                after  = _re.sub(r"[,;\"'()]", " ", sub[m.end():]).split()
+                # Son 2 anlamlı kelime = özne, ilk 2 anlamlı kelime = nesne
+                subj = _clean_term(before[-4:], take_last=True)
+                obj  = _clean_term(after[:4],  take_last=False)
+                if 2 < len(subj) < 50 and 2 < len(obj) < 50:
+                    relations.append((subj, rel_type, obj))
+                break  # her alt cümleden tek ilişki
     return relations
 
 
