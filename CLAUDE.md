@@ -116,9 +116,10 @@ alıyordu. Sertifika tek başına ELEMİYORDU. Anlam karakterlerde değil —
 ```
 1. DOĞRUDAN: token TAU'da köklü düğüm mü? (çıkan+gelen kenar ≥ 3)
    protein=137, energy=160, EGFR=20 köklü ; çöp=0 topraksız
-2. REZONANS: bilinmeyen token sıkı yarıçapta (L1 ≤ 0.5) köklü + tutarlı
-   kümeye mi düşüyor? (ham komşuluk YETMEZ — 40k yoğun manifoldda her nokta
+2. REZONANS: bilinmeyen token sıkı yarıçapta (L1 ≤ 0.3) köklü + tutarlı
+   kümeye mi düşüyor? (ham komşuluk YETMEZ — 42k doymuş manifoldda her nokta
    bir komşuya yakın; yarıçap gürültüyü eler)
+   Bridge kavramlar (⟨bridge:...⟩) çapa olamaz — yapay ara nokta, gerçek bilgi değil.
 ```
 
 Yargı: `GROUNDED` (köklü/rezonans) | `WEAKLY_GROUNDED` (tek komşu, belirsiz)
@@ -315,7 +316,7 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 
 ## Mevcut Durum
 
-- Kavram: 42,000+ | TAU edge: 665,000+ | Paradigma: 23/23
+- Kavram: 42,500+ | TAU edge: 669,000+ | Paradigma: 23/23
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
 - CoreMachine: TEK ÇEKİRDEK — 4 eksen tek geçişte (certified+grounding+truth+confidence)
 - Genesis öz-düzeltici: CONTRADICTORY kavramlar manifolda girmiyor (truth axis geçidi)
@@ -334,7 +335,7 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
   - KnowledgeEdge: `quantum_dist` alanı (κ-mesafe)
   - MolecularGenesis: quantum-guided beam search (0.75×W2 + 0.25×κ_dist)
   - API: `ai.quantum_distance()`, `ai.synthesize()`, `ai.entangle()`
-- Tests: 265+ geçiyor (test_api + test_grounding + test_inverse_design + test_quantum_moments + test_molecular_genesis)
+- Tests: 275+ geçiyor (test_api + test_grounding + test_inverse_design + test_quantum_moments + test_molecular_genesis + test_causal_chain)
 
 ---
 
