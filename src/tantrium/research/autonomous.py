@@ -72,6 +72,8 @@ _NOISE_SUFFIXES = (
     " pathway", " signaling", " cascade", " network", " complex",
     " receptor", " ligand", " protein", " gene", " family",
     " system", " process", " activity", " function", " mechanism",
+    " activation", " inhibition", " phosphorylation", " expression",
+    " signaling", " regulation", " response", " production",
 )
 
 
