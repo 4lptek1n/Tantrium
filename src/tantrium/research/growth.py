@@ -233,12 +233,12 @@ class GrowthEngine:
                 titles = (data[1] if isinstance(data, list) and len(data) > 1 else [])
 
                 for title in titles[:2]:
-                    # Sayfa: kategoriler + bağlantılar (kavram isimleri)
                     t = urllib.parse.quote(str(title)[:120])
+                    # Sayfa: kategoriler + bağlantılar + kısa özet (extracts)
                     url2 = (f"https://en.wikipedia.org/w/api.php"
-                            f"?action=query&prop=categories|links"
-                            f"&titles={t}&format=json"
-                            f"&cllimit=8&pllimit=12&redirects=1")
+                            f"?action=query&prop=categories|links|extracts"
+                            f"&titles={t}&format=json&exintro=1&exsentences=3"
+                            f"&explaintext=1&cllimit=8&pllimit=12&redirects=1")
                     page_data = _http_json(url2)
                     pages = ((page_data or {}).get("query") or {}).get("pages") or {}
                     for pid, page in pages.items():
@@ -259,6 +259,13 @@ class GrowthEngine:
                             lname = link.get("title", "").strip()
                             if lname and len(lname) < 60 and not lname.startswith(("Wikipedia:", "Help:", "File:")):
                                 concepts_list.append(lname)
+                        # Sayfa özeti → kausal ilişki çıkar (manifolda ham metin olarak EKLENMEZ)
+                        extract = str(page.get("extract") or "").strip()
+                        if extract and len(extract) > 50:
+                            try:
+                                self.ai.learn(extract)
+                            except Exception:
+                                pass
                     time.sleep(_RATE_LIMIT_S)
 
             except Exception:
