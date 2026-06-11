@@ -2517,6 +2517,337 @@ class AI:
             return latest if latest is not None else SessionMemory.new()
         return session
 
+    # ── Analoji, hipotez, görselleştirme, rapor ──────────────────────────────
+
+    def analogy(self, a: str, b: str, c: str, top_k: int = 5) -> list[tuple[str, float]]:
+        """A:B :: C:? — iki yönlü analoji akıl yürütmesi.
+
+        Birincil: TAU graf tabanlı — a ve b arasındaki TAU ilişki türünü bulur,
+        aynı ilişkiyi c üzerinde uygular. "erlotinib:egfr :: imatinib:?" →
+        erlotinib INHIBITS egfr, imatinib INHIBITS ??? → "bcr-abl".
+
+        Fallback: moment vektör aritmetiği (TAU-kök filtreli).
+        """
+        from tantrium.core.semantic import Concept
+        tau = self._engine.tau
+        exclude = {a, b, c, a.lower(), b.lower(), c.lower()}
+
+        # ── Birincil: TAU ilişki tutarlılığı ───────────────────────────────
+        a_edges = tau.edges.get(a, []) + tau.edges.get(a.lower(), [])
+        a_to_b_rels: list[str] = []
+        for e in a_edges:
+            if e.target.lower() == b.lower():
+                a_to_b_rels.append(e.paradigm)
+        if not a_to_b_rels:
+            for e in tau.edges.get(b, []) + tau.edges.get(b.lower(), []):
+                if e.target.lower() == a.lower():
+                    a_to_b_rels.append("_INV_" + e.paradigm)
+
+        results_tau: list[tuple[str, float]] = []
+        if a_to_b_rels:
+            for rel in dict.fromkeys(a_to_b_rels):
+                inv = rel.startswith("_INV_")
+                base_rel = rel[5:] if inv else rel
+                c_edges = tau.edges.get(c, []) + tau.edges.get(c.lower(), [])
+                if inv:
+                    for src, edges in tau.edges.items():
+                        for e in edges:
+                            if e.paradigm == base_rel and e.target.lower() == c.lower():
+                                if src not in exclude:
+                                    results_tau.append((src, 0.0))
+                else:
+                    for e in c_edges:
+                        if e.paradigm == base_rel and e.target not in exclude:
+                            results_tau.append((e.target, 0.0))
+            if results_tau:
+                seen: set[str] = set()
+                deduped = []
+                for nm, d in results_tau:
+                    if nm not in seen:
+                        seen.add(nm)
+                        deduped.append((nm, d))
+                return deduped[:top_k]
+
+        # ── Fallback: moment vektör aritmetiği (TAU-kök filtreli) ──────────
+        enc = self._engine.encoder.encode
+        mu_a = [float(m) for m in enc(a, name=a).moments]
+        mu_b = [float(m) for m in enc(b, name=b).moments]
+        mu_c = [float(m) for m in enc(c, name=c).moments]
+        n = min(len(mu_a), len(mu_b), len(mu_c))
+        target = [max(0.0, min(1.0, mu_b[i] - mu_a[i] + mu_c[i])) for i in range(n)]
+        probe = Concept(name=f"_analogy::{a}:{b}:{c}", moments=target, domain="_probe")
+        candidates = self._engine.manifold.nearest(probe, n=top_k * 8)
+
+        def _ok(nm: str) -> bool:
+            if nm in exclude or nm.startswith("⟨") or ":" in nm:
+                return False
+            if any(ch in nm for ch in ("(", ")", "=", "#", "@", "[", "]", "/", "\\")):
+                return False
+            return len(tau.edges.get(nm, [])) >= 1 and 2 <= len(nm) <= 80
+
+        return [(nm, float(d)) for nm, d in candidates if _ok(nm)][:top_k]
+
+    def hypothesize(self, concept: str, depth: int = 3) -> dict:
+        """Bilinen kausal zincirlerden transitif hipotezler üret.
+
+        "A INHIBITS B, B ACTIVATES C" → Hipotez: "A INHIBITS C (via B)"
+        Transitif kurallar: INHIBITS∘ACTIVATES=INHIBITS, ACTIVATES∘INHIBITS=INHIBITS, vs.
+
+        Döner: {concept, hypotheses:[{hypothesis, via, chain, confidence}], n}
+        """
+        _TRANS: dict[tuple[str, str], str] = {
+            ("INHIBITS", "ACTIVATES"): "INHIBITS",
+            ("INHIBITS", "CAUSES"):    "INHIBITS",
+            ("INHIBITS", "INHIBITS"):  "ACTIVATES",
+            ("ACTIVATES", "ACTIVATES"):"ACTIVATES",
+            ("ACTIVATES", "CAUSES"):   "CAUSES",
+            ("ACTIVATES", "INHIBITS"): "INHIBITS",
+            ("CAUSES", "CAUSES"):      "CAUSES",
+            ("CAUSES", "ACTIVATES"):   "CAUSES",
+        }
+        fwd = self.what_if(concept, depth=depth)
+        hypotheses: list[dict] = []
+        seen: set[tuple] = set()
+        for chain in fwd["chains"]:
+            path = chain["path"]
+            for i in range(0, len(path) - 4, 2):
+                a_node = path[i]
+                rel1   = path[i + 1]
+                b_node = path[i + 2]
+                rel2   = path[i + 3]
+                c_node = path[i + 4]
+                derived = _TRANS.get((str(rel1), str(rel2)))
+                if derived:
+                    key = (a_node, derived, c_node)
+                    if key not in seen:
+                        seen.add(key)
+                        conf = 0.85 if chain["depth"] <= 2 else 0.55
+                        hypotheses.append({
+                            "hypothesis": f"{a_node} {derived} {c_node}",
+                            "via": b_node,
+                            "chain": f"{a_node} -{rel1}→ {b_node} -{rel2}→ {c_node}",
+                            "confidence": round(conf, 2),
+                        })
+        return {
+            "concept": concept,
+            "hypotheses": sorted(hypotheses, key=lambda h: -h["confidence"])[:10],
+            "n": len(hypotheses),
+            "note": (f"{len(hypotheses)} geçici hipotez üretildi"
+                     if hypotheses else
+                     "Yeterli kausal zincir yok — ai.learn() ile öğret"),
+        }
+
+    def visualize_causal(self, concept: str, depth: int = 4,
+                         mode: str = "ascii") -> str:
+        """Kausal etki haritasını görselleştir.
+
+        mode="ascii" (varsayılan): terminal ağacı
+        mode="dot":  Graphviz DOT formatı (PNG için: dot -Tpng -o out.png)
+        mode="both": ikisi birden, "---" ile ayrılmış
+        """
+        fwd = self.what_if(concept, depth=depth)
+        _SYM = {"INHIBITS": "⊣", "ACTIVATES": "→", "CAUSES": "⇒",
+                "USES": "·→", "ACHIEVES": "✓→"}
+
+        def _ascii() -> str:
+            lines = [f"⟨{concept}⟩ — Kausal Etki Haritası", ""]
+            if not fwd["chains"]:
+                return lines[0] + "\n  (kenar yok — ai.learn ile öğret)"
+            seen: set = set()
+            for chain in fwd["chains"]:
+                path = chain["path"]
+                for i in range(0, len(path) - 2, 2):
+                    a_n, rel, b_n = path[i], path[i + 1], path[i + 2]
+                    key = (a_n, rel, b_n)
+                    if key not in seen:
+                        seen.add(key)
+                        indent = "  " * (i // 2)
+                        sym = _SYM.get(str(rel), "→")
+                        lines.append(f"{indent}{a_n}  {sym}  {b_n}  [{rel}]")
+            if fwd["effects"]:
+                lines += ["", "Nihai etkiler: " + ", ".join(fwd["effects"][:6])]
+            return "\n".join(lines)
+
+        def _dot() -> str:
+            _COLOR = {"INHIBITS": "red", "ACTIVATES": "green",
+                      "CAUSES": "blue", "USES": "gray"}
+            lines = ['digraph causal {', '  rankdir=LR;',
+                     '  node [shape=box fontname="Helvetica"];']
+            seen: set = set()
+            for chain in fwd["chains"]:
+                path = chain["path"]
+                for i in range(0, len(path) - 2, 2):
+                    a_n, rel, b_n = path[i], path[i + 1], path[i + 2]
+                    key = (a_n, rel, b_n)
+                    if key not in seen:
+                        seen.add(key)
+                        col = _COLOR.get(str(rel), "black")
+                        lines.append(
+                            f'  "{a_n}" -> "{b_n}" '
+                            f'[label="{rel}" color={col} fontcolor={col}];'
+                        )
+            lines.append("}")
+            return "\n".join(lines)
+
+        if mode == "dot":
+            return _dot()
+        if mode == "both":
+            return _ascii() + "\n\n---\n\n" + _dot()
+        return _ascii()
+
+    def report(self, topic: str, depth: int = 3) -> str:
+        """Konu hakkında yapılandırılmış Türkçe araştırma raporu.
+
+        Sertifikasyon + topraklama + nedensel zincirler + hipotezler
+        + kuantum bağlantılar tek belgede.
+        """
+        cert = self.ask(topic)
+        bwd  = self.causal_chain(topic, depth=depth)
+        fwd  = self.what_if(topic, depth=depth)
+        hyp  = self.hypothesize(topic, depth=depth)
+        grnd = self.grounding(topic)
+
+        lines: list[str] = [
+            f"# {topic}  —  Tantrium Araştırma Raporu",
+            "",
+            "## Sertifikasyon",
+            f"- Yapısal : {'✓' if cert.certified else '✗'} ({cert.paradigms_passed}/{cert.paradigms_total} paradigma)",
+            f"- Topraklama : {cert.grounding}  (skor {cert.grounding_score:.2f})",
+            f"- Gerçeklik  : {cert.truth}  (skor {cert.truth_score:.2f})",
+            f"- Güven      : {cert.confidence_level}  ({cert.confidence:.2f})",
+            "",
+        ]
+
+        # Kausal arka plan
+        if bwd["n_paths"] > 0:
+            lines += ["## Nedensel Arka Plan (Geriye BFS)"]
+            for ch in bwd["chains"][:4]:
+                lines.append("- " + " → ".join(str(x) for x in ch["path"]))
+            if bwd["actionable"]:
+                lines += ["", f"Müdahale noktaları: {', '.join(bwd['actionable'][:5])}"]
+            lines.append("")
+
+        # İleriye etki
+        if fwd["n_paths"] > 0:
+            lines += ["## Nedensel Etki (İleriye BFS)"]
+            for ch in fwd["chains"][:4]:
+                lines.append("- " + " → ".join(str(x) for x in ch["path"]))
+            if fwd["effects"]:
+                lines += ["", f"Son etkiler: {', '.join(fwd['effects'][:5])}"]
+            lines.append("")
+
+        # Hipotezler
+        if hyp["n"] > 0:
+            lines += ["## Yeni Hipotezler"]
+            for h in hyp["hypotheses"][:5]:
+                lines.append(f"- {h['hypothesis']}  (güven {h['confidence']:.0%}, ara: {h['via']})")
+            lines.append("")
+
+        # Topraklama özeti
+        lines += ["## Topraklama", grnd.summary(), ""]
+
+        return "\n".join(lines)
+
+    def benchmark(self, facts: list[tuple[str, str, str]] | None = None) -> dict:
+        """Bilinen olgulara karşı kausal bilgiyi sına.
+
+        facts: [(kaynak, ilişki, hedef), ...] listesi.
+        Varsayılan: dahili biyoloji gerçekleri.
+        Döner: {score, correct, total, failures:[...]}
+        """
+        _DEFAULT: list[tuple[str, str, str]] = [
+            ("erlotinib", "INHIBITS", "egfr"),
+            ("gefitinib", "INHIBITS", "egfr"),
+            ("egfr", "ACTIVATES", "ras"),
+            ("ras", "CAUSES", "tumor cell proliferation"),
+            ("aspirin", "INHIBITS", "cyclooxygenase"),
+            ("imatinib", "INHIBITS", "bcr-abl"),
+            ("p53", "INHIBITS", "tumor cell proliferation"),
+        ]
+        test_facts = facts or _DEFAULT
+        tau = self._engine.tau
+        _CAUSAL = {"CAUSES", "ACTIVATES", "INHIBITS"}
+        # Build forward index
+        fwd_idx: dict[str, set[tuple[str, str]]] = {}
+        for src, edges in tau.edges.items():
+            for e in edges:
+                if e.paradigm in _CAUSAL:
+                    fwd_idx.setdefault(src, set()).add((e.paradigm, e.target))
+
+        correct = 0
+        failures: list[dict] = []
+        for src, rel, tgt in test_facts:
+            edges = fwd_idx.get(src.lower(), set()) | fwd_idx.get(src, set())
+            hit = any(r == rel and t in {tgt, tgt.lower()} for r, t in edges)
+            if hit:
+                correct += 1
+            else:
+                failures.append({"fact": f"{src} {rel} {tgt}", "found": False})
+
+        total = len(test_facts)
+        return {
+            "score": round(correct / max(total, 1), 3),
+            "correct": correct,
+            "total": total,
+            "failures": failures,
+            "note": f"{correct}/{total} bilinen olgu doğrulandı",
+        }
+
+    def consolidate(self, threshold: float = 0.015, dry_run: bool = True) -> dict:
+        """Manifolddaki çok yakın kavramları tespit et (opsiyonel: birleştir).
+
+        threshold: L1 mesafe eşiği (varsayılan 0.015 — çok yakın çiftler)
+        dry_run=True: sadece raporla, değiştirme (güvenli başlangıç).
+
+        Döner: {pairs_found, merged (0 if dry_run), sample_pairs}
+        """
+        manifold = self._engine.manifold
+        concepts_list = list(manifold.concepts.items())
+        n = len(concepts_list)
+        pairs: list[tuple[str, str, float]] = []
+        # Sadece kısa string token'ları karşılaştır (bridge/oeis/uniprot atla)
+        candidates = [
+            (nm, c) for nm, c in concepts_list
+            if not nm.startswith("⟨") and ":" not in nm and len(nm) < 40
+        ]
+        # O(n²) ama sadece candidates üzerinde ve erken dur
+        for i, (nm_a, c_a) in enumerate(candidates):
+            if len(pairs) > 200:
+                break
+            q = [float(m) for m in c_a.moments]
+            k = len(q)
+            for nm_b, c_b in candidates[i + 1:i + 500]:
+                cm = c_b.moments
+                d = sum(abs(q[j] - (float(cm[j]) if j < len(cm) else 0.0))
+                        for j in range(k))
+                if d < threshold:
+                    pairs.append((nm_a, nm_b, round(d, 5)))
+        pairs.sort(key=lambda x: x[2])
+        merged = 0
+        if not dry_run:
+            tau = self._engine.tau
+            for nm_a, nm_b, _ in pairs[:50]:
+                # nm_b'ye gelen tüm kenarları nm_a'ya yönlendir
+                for src, edges in list(tau.edges.items()):
+                    for e in edges:
+                        if e.target == nm_b:
+                            e.target = nm_a
+                # nm_a'dan nm_b'ye giden kenarları kaldır
+                tau.edges[nm_a] = [e for e in tau.edges.get(nm_a, [])
+                                    if e.target != nm_b]
+                # nm_b'yi manifolddan çıkar
+                manifold.concepts.pop(nm_b, None)
+                merged += 1
+        return {
+            "pairs_found": len(pairs),
+            "merged": merged,
+            "dry_run": dry_run,
+            "sample_pairs": [(a, b, d) for a, b, d in pairs[:10]],
+            "note": (f"{len(pairs)} çok-yakın çift bulundu"
+                     + (" (dry_run — değişiklik yok)" if dry_run else
+                        f", {merged} birleştirildi")),
+        }
+
     # ── Engine'e doğrudan erişim ─────────────────────────────────────────────
 
     @property

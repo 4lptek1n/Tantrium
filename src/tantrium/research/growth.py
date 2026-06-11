@@ -415,8 +415,64 @@ class GrowthEngine:
         time.sleep(_RATE_LIMIT_S)
         return out
 
+    def _fetch_wikidata(self, n: int = 6) -> list[str]:
+        """Wikidata SPARQL: biyomedikal typed triples → TAU'ya IS_A/PART_OF/TREATS kenarları.
+
+        SPARQL sorgusu ilaç→hedef→hastalık üçlülerini çeker;
+        kavram adları manifolda, ilişkiler TAU'ya CAUSES/INHIBITS olarak eklenir.
+        """
+        _WIKIDATA_SPARQL = (
+            "https://query.wikidata.org/sparql?format=json&query="
+        )
+        # İlaçlar ve hedefleri: ilaç -tedavi eder→ hastalık
+        _QUERIES = [
+            # drug → treats → disease
+            """SELECT ?drugLabel ?diseaseLabel WHERE {
+  ?drug wdt:P31 wd:Q12140 .
+  ?drug wdt:P2175 ?disease .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }
+} LIMIT 10""",
+            # gene → associated_with → disease
+            """SELECT ?geneLabel ?diseaseLabel WHERE {
+  ?gene wdt:P31 wd:Q7187 .
+  ?gene wdt:P2293 ?disease .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }
+} LIMIT 10""",
+        ]
+        wikidata_idx = self.state.get("wikidata_idx", 0)
+        query = _QUERIES[wikidata_idx % len(_QUERIES)]
+        self.state["wikidata_idx"] = wikidata_idx + 1
+        out: list[str] = []
+        try:
+            url = _WIKIDATA_SPARQL + urllib.parse.quote(query)
+            req = urllib.request.Request(
+                url, headers={**_UA, "Accept": "application/sparql-results+json"}
+            )
+            import json as _json
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = _json.loads(resp.read().decode())
+            bindings = (data or {}).get("results", {}).get("bindings", [])
+            for b in bindings[:n]:
+                vals = [v.get("value", "") for v in b.values()]
+                for val in vals:
+                    if val and len(val) < 60:
+                        out.append(val)
+                # Kausal kenar öğrenimi: "X treats Y" → ai.learn
+                labels = [b.get(k, {}).get("value", "") for k in b.keys()]
+                if len(labels) >= 2 and labels[0] and labels[1]:
+                    try:
+                        # Relation type from query index
+                        rel_word = "treats" if "disease" in query else "associated with"
+                        self.ai.learn(f"{labels[0]} {rel_word} {labels[1]}.")
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        time.sleep(_RATE_LIMIT_S * 2)  # Wikidata rate limit daha kısıtlı
+        return [x for x in dict.fromkeys(out) if x][:n]
+
     def _next_batch(self, network: bool) -> list[Any]:
-        """Bir sonraki karışık veri partisi: 7 kaynak (kimya×2 + biyoloji×2 + matematik + web + biyomedikal)."""
+        """Bir sonraki karışık veri partisi: 8 kaynak."""
         if not network:
             # Ağsız: algoritmik diziler (resumable offset ile çeşitlilik)
             base = self.state.get("total_processed", 0)
@@ -432,6 +488,7 @@ class GrowthEngine:
         batch += self._fetch_oeis(4)       # matematik: tamsayı dizileri
         batch += self._fetch_web(5)        # web: boşluk-güdümlü Wikipedia kavramları
         batch += self._fetch_pubmed(3)     # biyomedikal: PubMed kausal öğrenim
+        batch += self._fetch_wikidata(4)   # ontoloji: Wikidata typed triples
         return batch
 
     # ─── Ana döngü: sınırsız kendi kendine büyüme ────────────────────────────

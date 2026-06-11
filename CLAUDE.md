@@ -244,11 +244,15 @@ ai.rank("EGFR", top_n=10)                      # → TransportRanking
 ai.prove(max_cycles=2)                         # → LoopReport (kapalı döngü)
 ai.close(domain="math_kernel", inject=True)    # → NecessityReport
 ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, "causal_relations": k, ...}
-ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}
-                                               #   Backward BFS: erlotinib→INHIBITS→egfr→ACTIVATES→ras→CAUSES→tumor
-ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}
-                                               #   Forward BFS: erlotinib→INHIBITS→egfr→ACTIVATES→ras→... son etkiler
-                                               #   causal_chain() geri, what_if() ileri — tamamlayıcı çift
+ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}  [Geri BFS]
+ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}   [İleri BFS]
+ai.analogy("erlotinib", "egfr", "imatinib")   # → [("bcr-abl", 0.0)]  TAU ilişki tutarlılığı
+ai.hypothesize("erlotinib", depth=3)           # → {concept, hypotheses:[{hypothesis, via, chain, confidence}], n}
+ai.visualize_causal("erlotinib", mode="ascii") # → str  ASCII kausal ağaç
+ai.visualize_causal("erlotinib", mode="dot")   # → str  Graphviz DOT formatı
+ai.report("EGFR", depth=3)                     # → str  Türkçe araştırma raporu (sertifikasyon + kausal + hipotez)
+ai.benchmark()                                 # → {score, correct, total, failures}  bilinen olgular
+ai.consolidate(threshold=0.02, dry_run=True)   # → {pairs_found, merged, sample_pairs}  manifold tekilleştirme
 ai.explain("EGFR", why="tumor growth")        # → str: sertifika + nedensel yol
 ai.think("protein folding")                    # → ThinkingResult
 ai.discover("EGFR", top_k=5)                   # → molekül keşfi (Morgan moment uzayı)
@@ -341,9 +345,16 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
   - MolecularGenesis: quantum-guided beam search (0.75×W2 + 0.25×κ_dist)
   - API: `ai.quantum_distance()`, `ai.synthesize()`, `ai.entangle()`
 - **Forward Causal Reasoning**: `ai.what_if(concept, depth)` — ileri BFS (erlotinib → ne olur?), `causal_chain()`'in tamamlayıcısı
-- **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin boyutu tiebreaker (uzunluk+çeşitlilik); `_text_extra_dims()` encoder'da
-- **Büyüme Kaynakları**: 4 kaynak → 7 kaynak: +KEGG (sinyal yolağı genleri) +ChEMBL (biyoaktif SMILES) +PubMed (kausal öğrenim)
-- Tests: 290+ geçiyor (test_api + test_grounding + test_inverse_design + test_quantum_moments + test_molecular_genesis + test_causal_chain + test_what_if + test_extended_nearest)
+- **Analoji Motoru**: `ai.analogy(a, b, c)` — TAU-tabanlı birincil (erlotinib:egfr::imatinib:?→bcr-abl) + moment fallback
+- **Hipotez Üretimi**: `ai.hypothesize(concept)` — transitif kausal çıkarım (A INHIBITS B, B ACTIVATES C → A INHIBITS C)
+- **Kausal Görselleştirme**: `ai.visualize_causal(concept, mode=ascii|dot|both)` — ASCII ağaç + Graphviz DOT
+- **Araştırma Raporu**: `ai.report(topic)` — sertifikasyon + kausal + hipotez tek belgede
+- **Benchmark**: `ai.benchmark(facts)` — bilinen olgulara karşı kausal TAU doğrulama
+- **Manifold Tekilleştirme**: `ai.consolidate(threshold, dry_run)` — çok yakın kavramları tespit/birleştir
+- **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
+- **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
+- **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
+- Tests: 363 geçiyor
 
 ---
 
@@ -360,7 +371,7 @@ periyodik konsolidasyon (close + öz-model köklendirme) → persist → tekrar
 `research/growth.py` → `GrowthEngine`. Klasik `run()` fazlı ve sonludur;
 `grow()` süreklidir:
 
-- **Dönen kaynaklar**: PubChem + ChEMBL (kimya) + UniProt + KEGG (biyoloji) + OEIS (matematik) + Wikipedia (web) + PubMed (biyomedikal) — 7 kaynak
+- **Dönen kaynaklar**: PubChem + ChEMBL (kimya) + UniProt + KEGG (biyoloji) + OEIS (matematik) + Wikipedia (web) + PubMed + Wikidata (ontoloji) — 8 kaynak
 - **Resumable**: durum `.tantrium/growth_state.json` — kap yeniden başlasa bile
   kaldığı CID'den devam eder
 - **Hata toleranslı**: bir kaynak düşse akış durmaz (fail-open, boş parti → bekle)
