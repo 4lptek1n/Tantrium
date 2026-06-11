@@ -114,14 +114,19 @@ class QuantumSignature:
         other: "QuantumSignature",
         gamma: float = 0.3,
     ) -> float:
-        """Kuantum mesafe: (1-γ)×W2_proxy + γ×κ_mesafe.
+        """Kuantum mesafe: (1-γ)×tanh_L1 + γ×κ_mesafe.
 
         γ=0.3: güç momentleri dominant kalır, κ yönlendirir.
-        W2_proxy olarak L1 mesafe kullanılır (spektral W2 için
-        tam SpectralMeasure gerekli; bu hızlı yaklaşımdır).
+        tanh squashing: üstel büyüyen yüksek-dereceli momentleri [0,1]'e
+        sıkıştırır. FreeCumulants.distance() zaten per-dim normalize.
+        Sonuç [0, ~1.3] aralığında (saf farklı kavramlar için ~1.0).
         """
-        from tantrium.core.metric import l1_distance
-        w2 = l1_distance(self.moments, other.moments)
+        import math
+        a = self.moments
+        b = other.moments
+        n = min(len(a), len(b))
+        w2 = sum(abs(math.tanh(float(a[i])) - math.tanh(float(b[i])))
+                 for i in range(n)) / max(n, 1)
         kd = self.cumulants.distance(other.cumulants)
         return (1.0 - gamma) * w2 + gamma * kd
 
@@ -136,7 +141,10 @@ class QuantumSignature:
         Bu çiftin klasik W2 mesafesi eşiğin üstünde ama κ mesafesi
         eşiğin altında olduğunda "gizli matematiksel bağlantı" var.
         """
-        from tantrium.core.metric import l1_distance
-        classical = l1_distance(self.moments, other.moments)
+        import math
+        a, b = self.moments, other.moments
+        n = min(len(a), len(b))
+        classical = sum(abs(math.tanh(float(a[i])) - math.tanh(float(b[i])))
+                        for i in range(n)) / max(n, 1)
         quantum = self.cumulants.distance(other.cumulants)
         return classical > classical_thr and quantum < quantum_thr
