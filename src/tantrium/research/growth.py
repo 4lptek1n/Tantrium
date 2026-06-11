@@ -190,8 +190,96 @@ class GrowthEngine:
         time.sleep(_RATE_LIMIT_S)
         return out
 
+    def _fetch_web(self, n: int = 5) -> list[str]:
+        """Manifold boşluklarına göre Wikipedia'dan kavramlar çek.
+
+        Sistem ne bilmediğini biliyor (gaps). O boşlukları Wikipedia'da arar,
+        başlık + kategoriler + bağlantı isimleri döndürür. Ham metin değil —
+        temiz kavram adları. Sistem kendi kör noktalarını doldurur.
+        """
+        # Hangi boşluğu araştıracağız?
+        web_idx = self.state.get("web_gap_idx", 0)
+        concepts_list: list[str] = []
+
+        try:
+            from tantrium.reasoning.necessity import NecessityEngine
+            ne = NecessityEngine(self.engine)
+            gaps = ne.find_manifold_gaps(domain="math_kernel", top_k=12)
+            if not gaps:
+                # Gaps yoksa manifolddan rastgele sınır kavramı al
+                tau = self.engine.tau
+                causal = {"CAUSES", "INHIBITS", "ACTIVATES"}
+                frontier = [
+                    s for s, edges in tau.edges.items()
+                    if any(e.paradigm in causal for e in edges)
+                    and len(tau.edges.get(s, [])) < 5
+                ]
+                gaps_labels = frontier[web_idx % max(len(frontier), 1): web_idx % max(len(frontier), 1) + 3] if frontier else []
+            else:
+                idx = web_idx % len(gaps)
+                gaps_labels = [g.concept_a for g in gaps[idx:idx + 3]]
+        except Exception:
+            gaps_labels = ["mathematics", "biochemistry", "topology"]
+
+        self.state["web_gap_idx"] = web_idx + 1
+
+        for query in gaps_labels[:3]:
+            try:
+                # Wikipedia OpenSearch — ilgili başlıkları bul
+                q = urllib.parse.quote(str(query)[:80])
+                url = (f"https://en.wikipedia.org/w/api.php"
+                       f"?action=opensearch&search={q}&limit=3&format=json")
+                data = _http_json(url)
+                titles = (data[1] if isinstance(data, list) and len(data) > 1 else [])
+
+                for title in titles[:2]:
+                    # Sayfa: kategoriler + bağlantılar (kavram isimleri)
+                    t = urllib.parse.quote(str(title)[:120])
+                    url2 = (f"https://en.wikipedia.org/w/api.php"
+                            f"?action=query&prop=categories|links"
+                            f"&titles={t}&format=json"
+                            f"&cllimit=8&pllimit=12&redirects=1")
+                    page_data = _http_json(url2)
+                    pages = ((page_data or {}).get("query") or {}).get("pages") or {}
+                    for pid, page in pages.items():
+                        if pid == "-1":
+                            continue
+                        # Sayfa başlığı
+                        concepts_list.append(str(page.get("title", "")))
+                        # Kategoriler: "Category:Kinase inhibitors" → "kinase inhibitors"
+                        _SKIP = ("All ", "Articles ", "Wikipedia ", "Pages ", "CS1 ",
+                                 "Webarchive", "Use ", "Short description")
+                        for cat in (page.get("categories") or [])[:8]:
+                            cname = cat.get("title", "").replace("Category:", "").strip()
+                            if (cname and len(cname) < 60
+                                    and not any(cname.startswith(s) for s in _SKIP)):
+                                concepts_list.append(cname)
+                        # Bağlantı başlıkları (linked Wikipedia pages)
+                        for link in (page.get("links") or [])[:6]:
+                            lname = link.get("title", "").strip()
+                            if lname and len(lname) < 60 and not lname.startswith(("Wikipedia:", "Help:", "File:")):
+                                concepts_list.append(lname)
+                    time.sleep(_RATE_LIMIT_S)
+
+            except Exception:
+                pass
+
+        # Tekrarları kaldır, boşları at, max n
+        seen: set[str] = set()
+        out: list[str] = []
+        for c in concepts_list:
+            c = c.strip()
+            if c and c not in seen and len(c) > 3:
+                seen.add(c)
+                out.append(c)
+            if len(out) >= n:
+                break
+
+        time.sleep(_RATE_LIMIT_S)
+        return out
+
     def _next_batch(self, network: bool) -> list[Any]:
-        """Bir sonraki karışık veri partisi: kimya + biyoloji + matematik (3'ü de)."""
+        """Bir sonraki karışık veri partisi: kimya + biyoloji + matematik + web (4 kaynak)."""
         if not network:
             # Ağsız: algoritmik diziler (resumable offset ile çeşitlilik)
             base = self.state.get("total_processed", 0)
@@ -203,6 +291,7 @@ class GrowthEngine:
         batch += self._fetch_pubchem(10)   # kimya: molekül SMILES
         batch += self._fetch_uniprot(8)    # biyoloji: protein dizileri
         batch += self._fetch_oeis(4)       # matematik: tamsayı dizileri
+        batch += self._fetch_web(6)        # web: boşluk-güdümlü Wikipedia kavramları
         return batch
 
     # ─── Ana döngü: sınırsız kendi kendine büyüme ────────────────────────────
