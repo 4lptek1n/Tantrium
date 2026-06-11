@@ -80,6 +80,21 @@ def _http_json(url: str, timeout: int = 12) -> Any:
         return json.loads(r.read().decode("utf-8", "replace"))
 
 
+def _http_json_link(url: str, timeout: int = 15) -> tuple[Any, str | None]:
+    """JSON + Link header 'next' URL (UniProt cursor sayfalaması için)."""
+    req = urllib.request.Request(url, headers=_UA)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        body = json.loads(r.read().decode("utf-8", "replace"))
+        link = r.headers.get("Link", "") or ""
+    next_url = None
+    for part in link.split(","):
+        if 'rel="next"' in part:
+            s, e = part.find("<"), part.find(">")
+            if s != -1 and e != -1:
+                next_url = part[s + 1:e]
+    return body, next_url
+
+
 class GrowthEngine:
     """Sınırsız kendi kendine büyüme döngüsü.
 
@@ -154,8 +169,29 @@ class GrowthEngine:
         time.sleep(_RATE_LIMIT_S)
         return out
 
+    def _fetch_uniprot(self, size: int = 8, organism: int = 9606) -> list[str]:
+        """Reviewed (Swiss-Prot) protein dizileri. Cursor durumu resumable."""
+        cursor = self.state.get("uniprot_cursor")
+        if not cursor:
+            q = urllib.parse.quote(f"reviewed:true AND organism_id:{organism}")
+            cursor = (f"https://rest.uniprot.org/uniprotkb/search?query={q}"
+                      f"&format=json&size={min(size, 100)}"
+                      f"&fields=accession,sequence,length")
+        out: list[str] = []
+        try:
+            data, next_url = _http_json_link(cursor)
+            for entry in (data or {}).get("results", []):
+                seq = ((entry or {}).get("sequence") or {}).get("value", "")
+                if seq and len(seq) >= 20:
+                    out.append(seq)
+            self.state["uniprot_cursor"] = next_url  # düşse None → baştan
+        except Exception:
+            pass
+        time.sleep(_RATE_LIMIT_S)
+        return out
+
     def _next_batch(self, network: bool) -> list[Any]:
-        """Bir sonraki karışık veri partisi (kimya + matematik)."""
+        """Bir sonraki karışık veri partisi: kimya + biyoloji + matematik (3'ü de)."""
         if not network:
             # Ağsız: algoritmik diziler (resumable offset ile çeşitlilik)
             base = self.state.get("total_processed", 0)
@@ -164,8 +200,9 @@ class GrowthEngine:
                 for j in range(0, 24, 8)
             ]
         batch: list[Any] = []
-        batch += self._fetch_pubchem(12)
-        batch += self._fetch_oeis(4)
+        batch += self._fetch_pubchem(10)   # kimya: molekül SMILES
+        batch += self._fetch_uniprot(8)    # biyoloji: protein dizileri
+        batch += self._fetch_oeis(4)       # matematik: tamsayı dizileri
         return batch
 
     # ─── Ana döngü: sınırsız kendi kendine büyüme ────────────────────────────
