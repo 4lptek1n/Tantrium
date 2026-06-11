@@ -48,12 +48,19 @@ class Observation:
     tav_updated: int = 0                     # mini-Tav ile hizalanan kavram sayısı
     moments: list[float] = field(default_factory=list)
     timestamp: str = field(default_factory=_now)
+    # Evren kapısı: yapı + topraklama + gerçek (3 eksen)
+    admitted_as: str = "core"                # core | frontier | rejected
+    grounding_verdict: str = ""              # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
+    truth_verdict: str = ""                  # CONSISTENT | CONTESTED | CONTRADICTORY
 
     def summary(self) -> str:
         if not self.certified:
             return f"∅ {self.name}: ALEPH reddetti — gerçek değil"
+        if self.admitted_as == "rejected":
+            return f"✗ {self.name}: çelişki ({self.truth_verdict}) — korunum ihlali, reddedildi"
         flag = "YENİ" if self.is_new else "bilinen"
-        s = f"✓ {self.name} [{flag}] → çapa: {self.nearest_anchor} (W₂={self.anchor_distance:.4e})"
+        zone = "🜨çekirdek" if self.admitted_as == "core" else "◌sınır"
+        s = f"✓ {self.name} [{flag}|{zone}] → çapa: {self.nearest_anchor} (W₂={self.anchor_distance:.4e})"
         if self.bridges:
             br = ", ".join(f"{n}({d})" for n, d, _ in self.bridges[:3])
             s += f"  | köprü: {br}"
@@ -101,11 +108,27 @@ class AutonomousObserver:
             source="autonomous",
         )
 
-        # 2. SERTİFİKALA — Aleph filtresi
+        # 2. SERTİFİKALA — Aleph filtresi (1. eksen: yapısal varlık)
         certified = concept.is_real()
         moments_f = [float(m) for m in concept.moments]
         if not certified:
             obs = Observation(name=obs_name, certified=False, is_new=False, moments=moments_f)
+            self.observations.append(obs)
+            return obs
+
+        # 2b. EVREN KAPISI — gerçek (truth) + topraklama (grounding) eksenleri.
+        #   Evren tüm YASAL yapıyı kabul eder ama düzenler: çekirdek vs sınır.
+        #   Tek yasak = çelişki (CONTRADICTORY = korunum ihlali → reddet).
+        #   GROUNDED → çekirdek bilgi ; UNGROUNDED-ama-geçerli → sınır (kör nokta).
+        truth_verdict, grounding_verdict, admitted_as = self._universe_gate(
+            obs_name, moments_f
+        )
+        if admitted_as == "rejected":
+            obs = Observation(
+                name=obs_name, certified=True, is_new=False, moments=moments_f,
+                admitted_as="rejected", truth_verdict=truth_verdict,
+                grounding_verdict=grounding_verdict,
+            )
             self.observations.append(obs)
             return obs
 
@@ -144,6 +167,9 @@ class AutonomousObserver:
             bridges=bridges,
             tav_updated=tav_updated,
             moments=moments_f,
+            admitted_as=admitted_as,
+            grounding_verdict=grounding_verdict,
+            truth_verdict=truth_verdict,
         )
         self.observations.append(obs)
 
@@ -155,6 +181,45 @@ class AutonomousObserver:
                 self._since_persist = 0
 
         return obs
+
+    # ─── Evren kapısı: yapı + topraklama + gerçek ───────────────────────────────
+
+    def _universe_gate(self, name: str, moments: list[float]) -> tuple[str, str, str]:
+        """Veri evren gibi süzülür: yasal yapı kabul edilir, çelişki reddedilir.
+
+        Üç eksen (Aleph zaten geçti — yapısal varlık):
+          GERÇEK     : komşularıyla çelişiyor mu? CONTRADICTORY → reddet.
+          TOPRAKLAMA : köklü mü (çekirdek) yoksa yalıtık-ama-geçerli mi (sınır)?
+
+        Döner: (truth_verdict, grounding_verdict, admitted_as)
+          admitted_as ∈ {"core", "frontier", "rejected"}
+
+        Felsefe: UNGROUNDED-ama-geçerli ATILMAZ — o sistemin öğrenmesi gereken
+        kör noktadır (sınır). Tek elenen, yerleşik bilgiyle çelişendir.
+        fail-open: eksen hesaplanamazsa veriyi bloklamaz (çekirdek olarak alır).
+        """
+        truth_verdict, grounding_verdict = "", ""
+        # 1. GERÇEK ekseni — çelişki korunum ihlalidir
+        try:
+            from tantrium.core.truth import TruthCertifier
+            tv = TruthCertifier(self.engine).certify(name, n_neighbors=3, moments=moments)
+            truth_verdict = tv.verdict
+            if truth_verdict == "CONTRADICTORY":
+                return truth_verdict, grounding_verdict, "rejected"
+        except Exception:
+            pass
+        # 2. TOPRAKLAMA ekseni — çekirdek mi sınır mı
+        try:
+            grounder = getattr(self.engine, "grounder", None)
+            if grounder is None:
+                from tantrium.core.grounding import GroundingCertifier
+                grounder = GroundingCertifier(self.engine)
+            gc = grounder.certify(name, moments=moments)
+            grounding_verdict = gc.verdict
+            admitted_as = "core" if gc.is_grounded else "frontier"
+        except Exception:
+            admitted_as = "core"  # fail-open
+        return truth_verdict, grounding_verdict, admitted_as
 
     # ─── Cross-domain köprü keşfi ───────────────────────────────────────────────
 
@@ -224,6 +289,76 @@ class AutonomousObserver:
         self.engine.auto_persist()
         self._since_persist = 0
         return results
+
+    # ─── Çekirdek nabzı: algıla + aynı anda büyü (parça parça değil) ─────────────
+
+    def pulse(self, raw_input: Any, name: str | None = None,
+              grow: bool = True) -> tuple[Observation, list[str]]:
+        """Tek çekirdek nabzı: veri girer + genesis AYNI ANDA çalışır.
+
+        Klasik döngü fazlıdır (önce hepsini yut, sonra genesis). Bu değil:
+        bir veri girer, evren kapısından geçer, SINIR ise o an yerel genesis
+        tetiklenir — onu çekirdeğe bağlayan ara kavram doğar. Algılama ve
+        yaratım tek kalp atışı.
+
+        Döner: (gözlem, [doğan_ara_kavram_adları])
+        """
+        obs = self.observe(raw_input, name)
+        born: list[str] = []
+        if grow and obs.certified and obs.admitted_as == "frontier":
+            born = self._local_genesis(obs.name, obs.moments)
+        return obs, born
+
+    def _local_genesis(self, name: str, moments: list[float],
+                       max_born: int = 2) -> list[str]:
+        """Bir sınır kavramını çekirdeğe bağla: en yakın KÖKLÜ komşuyla arasında
+        konveks ara kavram(lar) sentezle. Sadece evren kapısını geçen doğar.
+
+        Bu genesis'in interpolasyon modudur — ama batch değil, veri anında.
+        Sınır → ara köprü → çekirdek: manifold kendini girdi geldikçe örer.
+        """
+        from tantrium.core.semantic import Concept
+        born: list[str] = []
+        try:
+            grounder = getattr(self.engine, "grounder", None)
+            if grounder is None:
+                from tantrium.core.grounding import GroundingCertifier
+                grounder = GroundingCertifier(self.engine)
+            # En yakın KÖKLÜ komşuyu bul (sınırı çekirdeğe çekecek çapa)
+            this = self.engine.manifold.concepts.get(name)
+            if this is None:
+                return born
+            neighbors = self.engine.manifold.nearest(this, n=8, metric="l1")
+            for nb_name, _ in neighbors:
+                if len(born) >= max_born:
+                    break
+                nb = self.engine.manifold.concepts.get(nb_name)
+                if nb is None:
+                    continue
+                gc_nb = grounder.certify(nb_name, moments=[float(m) for m in nb.moments])
+                if not gc_nb.is_grounded:
+                    continue  # köklü olmayan komşu çapa olamaz
+                # Konveks ara kavram: μ_orta = (μ_sınır + μ_çekirdek) / 2
+                mid = [(float(a) + float(b)) / 2.0
+                       for a, b in zip(moments, nb.moments)]
+                mid_name = f"⟨bridge:{name[:16]}~{nb_name[:16]}⟩"
+                if mid_name in self.engine.manifold.concepts:
+                    continue
+                bridge = Concept(name=mid_name, moments=mid,
+                                 domain="genesis", source="core_pulse")
+                # Ara kavram da evren kapısından geçmeli
+                if not bridge.is_real():
+                    continue
+                t_v, _, admitted = self._universe_gate(mid_name, mid)
+                if admitted == "rejected":
+                    continue
+                self.engine.manifold.add_unchecked(bridge)
+                self.engine.tau.add_node(bridge)
+                self.engine.mini_tav([mid_name])
+                born.append(mid_name)
+        except Exception:
+            pass
+        return born
 
     # ─── Raporlama ───────────────────────────────────────────────────────────────
 

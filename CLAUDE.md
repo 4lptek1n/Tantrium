@@ -226,6 +226,9 @@ ai(noise_image())                              # → str: görüntü → dil
 ai(b"\x00\xff...")                             # → str: kripto yapı analizi
 ai.run(cycles=3, time_limit_s=600)             # → dict: KAPALI DÖNGÜ (tüm büyüme adımları)
                                                #   blind_spots → auto_research → close → genesis → prove → persist
+ai.pulse("CCO")                                # → dict: TEK ÇEKİRDEK NABZI (veri girer + genesis aynı anda)
+                                               #   evren kapısı: rejected/frontier/core + doğan ara kavramlar
+ai.live(["CCO", "caffeine", [2,3,5,7]])        # → dict: veri AKIŞI nabızla (her veri girer + büyür, parça parça değil)
 ai.ask("EGFR")                                 # → AskResult (4 eksen: paradigma+topraklama+gerçek+güven)
                                                #   .certified (yapısal, ger.dönük uyumlu)
                                                #   .coherent (4 eksen tutarlı boolean)
@@ -320,6 +323,41 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
   - MolecularGenesis: quantum-guided beam search (0.75×W2 + 0.25×κ_dist)
   - API: `ai.quantum_distance()`, `ai.synthesize()`, `ai.entangle()`
 - Tests: 265+ geçiyor (test_api + test_grounding + test_inverse_design + test_quantum_moments + test_molecular_genesis)
+
+---
+
+## Evren Kapısı + Çekirdek Nabzı (`ai.pulse` / `ai.live`)
+
+**Sorun:** Veri ingest yolu (`AutonomousObserver.observe`) manifolda eklemeden
+önce SADECE Aleph (yapısal) filtresini uyguluyordu. Çöp `xqzwvbnmkjhgfd` 23/23
+Aleph geçip giriyordu — topraklama ve gerçek eksenleri ingest'te yoktu.
+
+**Çözüm — Evren kapısı (`_universe_gate`):** Veri evren gibi süzülür. Evren tüm
+YASAL yapıyı kabul eder ama düzenler; tek yasak çelişkidir (korunum ihlali).
+
+```
+1. Aleph     (yapı)       : G=AᵀA PSD — geçti (encode)
+2. Truth     (gerçek)     : CONTRADICTORY → REDDET (yerleşik bilgiyle çatışma)
+3. Grounding (topraklama) : GROUNDED → çekirdek ; UNGROUNDED-ama-geçerli → sınır
+```
+
+Üç bölge: `core` (köklü bilgi) | `frontier` (geçerli ama bağsız = kör nokta,
+ATILMAZ) | `rejected` (çelişki). Küratörlü kaynaktan (PubChem/OEIS) gelen veri
+zaten gerçek — orada topraklama "gerçek mi?"yi değil "bağlı mı?"yı söyler.
+
+**Çekirdek nabzı (`pulse`):** Klasik döngü fazlıdır (önce yut, sonra genesis).
+pulse() değil — bir veri girer, kapıdan geçer, SINIR ise O AN yerel genesis
+tetiklenir: sınır kavramı en yakın KÖKLÜ komşuya bağlayan konveks ara kavram
+doğar (o da kapıdan geçerse). Algılama ve yaratım tek kalp atışı.
+
+```python
+ai.pulse("CCO")     # {'admitted_as':'frontier', 'born':['⟨bridge:CCO~oeis:..⟩', ...]}
+ai.live([...])      # akış: her veri girer + büyür  {'core','frontier','rejected','born_total'}
+```
+
+DÜRÜST SINIR: kapı CONTRADICTORY'yi eler ve çekirdek/sınır ayırır — ama yoğun
+40k manifoldda rastgele string gürültüsünü UNGROUNDED'a düşürmez (her nokta bir
+komşuya yakın). Güvenilir kaynaktan sorun değil. Tests: `test_universe_gate.py` (9).
 
 ---
 

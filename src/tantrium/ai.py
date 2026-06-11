@@ -1981,6 +1981,73 @@ class AI:
             self._engine.auto_persist()
         return report
 
+    def pulse(self, data: "Any", name: str | None = None, grow: bool = True) -> dict:
+        """Tek çekirdek nabzı: veri girer + genesis AYNI ANDA çalışır.
+
+        Klasik döngü fazlıdır (önce yut, sonra genesis). pulse() değil: bir veri
+        girer, evren kapısından geçer (Aleph + topraklama + gerçek), SINIR ise o
+        an yerel genesis tetiklenir — onu çekirdeğe bağlayan ara kavram doğar.
+        Algılama ve yaratım tek kalp atışı, parça parça değil.
+
+        Evren kapısı:
+          rejected = CONTRADICTORY (yerleşik bilgiyle çelişir — korunum ihlali)
+          frontier = geçerli ama bağsız (kör nokta → yerel genesis bağlar)
+          core     = köklü, çekirdek bilgi
+
+        Döner: {"name", "admitted_as", "grounding", "truth", "born": [ara kavramlar]}
+        """
+        from tantrium.research.autonomous import AutonomousObserver
+        obs_engine = getattr(self, "_observer", None)
+        if obs_engine is None:
+            obs_engine = AutonomousObserver(self._engine)
+            self._observer = obs_engine
+        o, born = obs_engine.pulse(data, name=name, grow=grow)
+        return {
+            "name": o.name,
+            "admitted_as": o.admitted_as,
+            "grounding": o.grounding_verdict,
+            "truth": o.truth_verdict,
+            "born": born,
+            "certified": o.certified,
+        }
+
+    def live(self, inputs: "list[Any]", grow: bool = True,
+             verbose: bool = True) -> dict:
+        """Bir veri akışını çekirdek nabzıyla işle — her veri girer + büyür.
+
+        run()'ın fazlı döngüsünün aksine, her girdi anında evren kapısından geçip
+        yerel genesis tetikler. Manifold akış geldikçe canlı örülür.
+
+        Döner: {"processed", "core", "frontier", "rejected", "born_total"}
+        """
+        from tantrium.research.autonomous import AutonomousObserver
+        obs_engine = getattr(self, "_observer", None)
+        if obs_engine is None:
+            obs_engine = AutonomousObserver(self._engine)
+            self._observer = obs_engine
+        core = frontier = rejected = born_total = 0
+        for inp in inputs:
+            o, born = obs_engine.pulse(inp, grow=grow)
+            born_total += len(born)
+            if not o.certified or o.admitted_as == "rejected":
+                rejected += 1
+            elif o.admitted_as == "core":
+                core += 1
+            else:
+                frontier += 1
+            if verbose:
+                bs = f"  +{len(born)} ara" if born else ""
+                print(f"  {o.summary()}{bs}")
+        if self._persist:
+            self._engine.auto_persist()
+        return {
+            "processed": len(inputs),
+            "core": core,
+            "frontier": frontier,
+            "rejected": rejected,
+            "born_total": born_total,
+        }
+
     def run(
         self,
         cycles: int = 3,
