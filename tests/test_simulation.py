@@ -78,3 +78,53 @@ def test_judge_returns_keys(ai):
     erlotinib = "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1"
     r = ai.judge_binding(erlotinib, "egfr")
     assert {"candidate", "protein", "verdict", "reason"}.issubset(r.keys())
+
+
+# ─── Paradigma-matematik imzası: 'geçti' değil, hesaplanan SAYILAR ───────────
+
+def test_paradigm_signature_intensive(ai):
+    """Paradigma imzası farklı boyuttaki moleküller için karşılaştırılabilir vektör."""
+    from tantrium.core.encoder import encode
+    from tantrium.core.metric import paradigm_signature
+    s1 = paradigm_signature(encode("CCO").structure)
+    s2 = paradigm_signature(encode("c1ccccc1").structure)
+    assert len(s1) == len(s2) and len(s1) > 10
+
+
+def test_paradigm_distance_same_class_closer(ai):
+    """İki kinaz inhibitörü, kinaz-dışı bir molekülden paradigma-matematik olarak yakın."""
+    from tantrium.core.encoder import encode
+    from tantrium.core.metric import paradigm_distance
+    erlotinib = encode("C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1").structure
+    gefitinib = encode("COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1").structure
+    ethanol = encode("CCO").structure
+    assert paradigm_distance(erlotinib, gefitinib) < paradigm_distance(erlotinib, ethanol)
+
+
+def test_judge_uses_paradigm_distance(ai):
+    """Yargı paradigma-matematik mesafesini raporlamalı (sertifika sayısı değil)."""
+    erlotinib = "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1"
+    r = ai.judge_binding(erlotinib, "egfr")
+    assert "paradigm_dist_to_nearest" in r
+    assert r["paradigm_dist_to_nearest"] < ai._PARADIGM_WORKS_THR
+
+
+def test_judge_generalizes_to_class(ai):
+    """Referansta OLMAYAN ama aynı sınıf (imatinib) işe yarayabilir çıkmalı."""
+    imatinib = "Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1"
+    r = ai.judge_binding(imatinib, "egfr")
+    assert r["verdict"] == "İŞE YARAYABİLİR"
+
+
+# ─── Kapalı döngü: design_drug ───────────────────────────────────────────────
+
+def test_design_drug_unknown_protein(ai):
+    r = ai.design_drug("nonexistent_protein_xyz_999", max_steps=2, beam_width=2)
+    assert r["verdict"] == "BİLİNMİYOR"
+
+
+def test_design_drug_resolves_refs(ai):
+    """EGFR için referans ligandlar SMILES'a çözülmeli."""
+    refs = ai._protein_reference_ligands("egfr")
+    assert len(refs) >= 1
+    assert all(isinstance(smi, str) and smi for _, smi in refs)

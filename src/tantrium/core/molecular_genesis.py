@@ -209,6 +209,8 @@ class MolecularGenesis:
         max_steps: int = 18,
         beam_width: int = 5,
         toward: str | None = None,
+        toward_profile: list[list[float]] | None = None,
+        seeds: list[str] | None = None,
     ) -> "SimulationReport":
         """Makineyi çalıştırarak molekülü transport ile diz — hafıza araması YOK.
 
@@ -221,12 +223,15 @@ class MolecularGenesis:
         dyadic bir bonustur, sturm geçittir, zeta yöndür. Beam çeşitliliği
         (en iyi hetero + en iyi halka uçları korunur) çöküşü engeller.
 
-        toward verilirse o SMILES'a doğru W2 ikincil yön olarak eklenir
-        (yine de hafızadan eşleşme değil — sadece gradyan).
+        toward verilirse o SMILES'a doğru W2 ikincil yön olarak eklenir.
+        toward_profile (referans ligand moment vektörleri) verilirse KAPALI DÖNGÜ:
+        makine bu kuantum (κ) profile doğru büyür — biyolojik yön. Transport+sturm
+        gerçeklik geçidi, κ-profil yön. Böylece makine 'işe yarayan bölgeye' ilerler.
         """
         import time
         from tantrium.core.encoder import encode
         from tantrium.core.transport import CertifiedTransport
+        from tantrium.core.quantum_moments import FreeCumulants
         from rdkit import Chem
 
         t0 = time.time()
@@ -238,6 +243,15 @@ class MolecularGenesis:
                 toward_moments = [float(m) for m in encode(toward).moments]
             except Exception:
                 toward_moments = None
+
+        # Kapalı döngü: referans ligand κ-imzaları (biyolojik yön hedefi)
+        profile_kappa: list[FreeCumulants] = []
+        if toward_profile:
+            for mu in toward_profile:
+                try:
+                    profile_kappa.append(FreeCumulants.from_moments([float(x) for x in mu]))
+                except Exception:
+                    continue
 
         from tantrium.core.metric import canonical_distance
         _enc_cache: dict[str, object] = {}
@@ -266,8 +280,24 @@ class MolecularGenesis:
             except Exception:
                 return None
 
+        _kp_cache: dict[str, float] = {}
+
+        def _kappa_to_profile(smi: str) -> float:
+            """Adayın κ-imzasının referans profile en yakın mesafesi (biyolojik yön)."""
+            if not profile_kappa:
+                return 0.0
+            v = _kp_cache.get(smi)
+            if v is None:
+                try:
+                    kc = FreeCumulants.from_moments(
+                        [float(x) for x in _enc(smi).moments])
+                    v = min(kc.distance(pk) for pk in profile_kappa)
+                except Exception:
+                    v = float("inf")
+                _kp_cache[smi] = v
+            return v
+
         def _score(s: SimStep) -> tuple:
-            # 1) sertifikalı (dyadic∧sturm) önce  2) düşük-ζ  3) toward-W2 (varsa)
             tw = 0.0
             if toward_moments is not None:
                 tw = _tw_cache.get(s.smiles)
@@ -278,16 +308,30 @@ class MolecularGenesis:
                     except Exception:
                         tw = 0.0
                     _tw_cache[s.smiles] = tw
+            if profile_kappa:
+                # KAPALI DÖNGÜ: 1) κ-profile yakınlık (biyolojik yön — birincil)
+                #   2) sertifikalı transport adımı (gerçeklik)  3) ζ derinliği
+                return (_kappa_to_profile(s.smiles), 0 if s.certified else 1, s.zeta, tw)
+            # Açık keşif: 1) sertifikalı  2) düşük-ζ  3) toward-W2
             return (0 if s.certified else 1, s.zeta, tw)
 
-        # Tohum adımı
-        seed_step = SimStep(
-            smiles=seed, n_atoms=Chem.MolFromSmiles(seed).GetNumAtoms() if Chem.MolFromSmiles(seed) else 0,
-            certified=True, dyadic=True, sturm=True, zeta=0.0, cost=0.0,
-        )
-        beam: list[SimStep] = [seed_step]
-        lineage: list[SimStep] = [seed_step]
-        seen: set[str] = {seed}
+        # Tohum(lar): tek atom-zinciri VEYA kimyasal primitif kümesi (halkalar).
+        # Çoklu tohum makinenin ilaç uzayına ulaşmasını sağlar — primitif atom kadar
+        # temel; cevap molekülü DEĞİL, makine onu primitiften inşa eder.
+        seed_list = [s for s in (seeds or [seed]) if Chem.MolFromSmiles(s) is not None]
+        if not seed_list:
+            seed_list = ["CC"]
+        beam: list[SimStep] = []
+        seen: set[str] = set()
+        for sd in seed_list:
+            seen.add(sd)
+            beam.append(SimStep(
+                smiles=sd, n_atoms=Chem.MolFromSmiles(sd).GetNumAtoms(),
+                certified=True, dyadic=True, sturm=True, zeta=0.0, cost=0.0))
+        # κ-profil varsa tohumları da profile yakınlığa göre sırala
+        if profile_kappa:
+            beam.sort(key=lambda s: _kappa_to_profile(s.smiles))
+        lineage: list[SimStep] = [beam[0]]
         certified_steps = 0
         total_steps = 0
 

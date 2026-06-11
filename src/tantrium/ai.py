@@ -921,6 +921,115 @@ class AI:
 
     # ── Evren simülasyonu: makineyi çalıştırarak ilaç üret ───────────────────
 
+    def _protein_reference_ligands(self, protein: str, top_refs: int = 8
+                                   ) -> list[tuple[str, str]]:
+        """Proteinin bilinen ligandlarını gerçek SMILES'a çözümle.
+
+        Protein word-encode EDİLMEZ. TAU'daki INHIBITS/ACTIVATES kenarları →
+        ligand isimleri → ilaç kütüphanesinden SMILES. Hiçbiri çözülemezse
+        terapötik sınıf üzerinden geri düşer. Boş liste = referans yok (dürüst).
+        """
+        from tantrium.core.molecular_space import DRUG_LIBRARY
+        name2smi = {n.lower(): smi for n, smi, _ in DRUG_LIBRARY}
+        name2cls = {n.lower(): cls for n, _, cls in DRUG_LIBRARY}
+        prot = protein.lower().strip()
+        tau = self.engine.tau
+
+        ligand_names: list[str] = []
+        for _src, elist in tau.edges.items():
+            for e in elist:
+                tgt = str(getattr(e, "target", "")).lower()
+                par = getattr(e, "paradigm", "")
+                if tgt == prot and par in ("INHIBITS", "ACTIVATES", "TARGETS", "BINDS"):
+                    ligand_names.append(str(_src).lower())
+
+        ref: list[tuple[str, str]] = []
+        ref_cls = None
+        for nm in dict.fromkeys(ligand_names):
+            if nm in name2smi:
+                ref.append((nm, name2smi[nm]))
+                ref_cls = ref_cls or name2cls.get(nm)
+        if not ref and ref_cls:
+            ref = [(n.lower(), s) for n, s, c in DRUG_LIBRARY if c == ref_cls][:top_refs]
+        return ref[:top_refs]
+
+    def design_drug(self, protein: str, max_steps: int = 16, beam_width: int = 6,
+                    out_dir: str = "results/molecules") -> dict:
+        """KAPALI DÖNGÜ ilaç keşfi — makine işe yarayan molekülü ÜRETENE kadar ilerler.
+
+        Determinist hat: hafıza araması yok, rastgelelik yok.
+          1. Protein → bilinen ligand SMILES → κ-profil (biyolojik yön hedefi)
+          2. simulate(): makine atom-atom molekülü κ-profile DOĞRU diziyor;
+             transport (sturm/dyadic/zeta) gerçeklik geçidi, paradigmalar yapı.
+          3. Her uç judge_binding ile yargılanır; işe yarayanlara 3D SDF üretilir.
+
+        Üretim ve yargı artık ayrık değil — yargı sinyali (κ-profil) üretimin yönü.
+        """
+        import os
+        refs = self._protein_reference_ligands(protein)
+        if not refs:
+            return {"protein": protein, "verdict": "BİLİNMİYOR",
+                    "reason": f"'{protein}' için referans ligand yok — yön kurulamıyor.",
+                    "candidates": []}
+
+        profile = []
+        for _nm, smi in refs:
+            try:
+                profile.append([float(m) for m in self.engine.encoder.encode(smi).moments])
+            except Exception:
+                continue
+
+        # Kimyasal primitifler — atom kadar temel başlangıç yapıları.
+        # Makine bunları κ-profile DOĞRU inşa eder; cevap molekülü değil, tohum.
+        PRIMITIVES = [
+            "c1ccccc1",    # benzen
+            "c1ccncc1",    # piridin
+            "c1ccncn1",    # pirimidin (kinaz çekirdeği motifi)
+            "c1cc[nH]c1",  # pirol
+            "C1CCNCC1",    # piperidin
+            "c1ccc2ncccc2c1",  # kinolin
+        ]
+        from tantrium.core.molecular_genesis import MolecularGenesis
+        rep = MolecularGenesis(self.engine).simulate(
+            seeds=PRIMITIVES, max_steps=max_steps, beam_width=beam_width,
+            toward_profile=profile)
+
+        # Uçları + soyu yargıla, işe yarayanları topla
+        seen: set[str] = set()
+        results = []
+        for s in (rep.frontier + list(reversed(rep.lineage))):
+            if s.smiles in seen:
+                continue
+            seen.add(s.smiles)
+            j = self.judge_binding(s.smiles, protein)
+            results.append((s.smiles, j))
+
+        results.sort(key=lambda r: r[1].get("paradigm_dist_to_nearest", 9e9))
+        works = [(smi, j) for smi, j in results if j["verdict"] == "İŞE YARAYABİLİR"]
+
+        os.makedirs(out_dir, exist_ok=True)
+        from tantrium.core.inverse import InverseTransport
+        inv = InverseTransport(self.engine)
+        for smi, j in works[:5]:
+            j["sdf_path"] = inv._make_3d(smi, f"design_{smi[:12]}", out_dir)
+
+        best = (works[0] if works else results[0]) if results else None
+        return {
+            "protein": protein,
+            "n_refs": len(refs),
+            "reference_ligands": [n for n, _ in refs],
+            "verdict": "İŞE YARAYAN ADAY ÜRETİLDİ" if works else "İŞE YARAYAN ÜRETİLEMEDİ",
+            "n_candidates": len(results),
+            "n_works": len(works),
+            "best": {"smiles": best[0], **best[1]} if best else None,
+            "candidates": [{"smiles": smi, "verdict": j["verdict"],
+                            "paradigm_dist": j.get("paradigm_dist_to_nearest"),
+                            "kappa": j.get("kappa_dist_to_nearest"),
+                            "nearest_ligand": j.get("nearest_ligand"),
+                            "sdf": j.get("sdf_path", "")}
+                           for smi, j in results[:10]],
+        }
+
     def simulate(self, seed: str = "CC", max_steps: int = 14,
                  beam_width: int = 5, toward: str | None = None) -> "object":
         """Evren simülasyonu — makineyi çalıştırarak molekülü transport ile diz.
@@ -936,46 +1045,27 @@ class AI:
         return MolecularGenesis(self.engine).simulate(
             seed=seed, max_steps=max_steps, beam_width=beam_width, toward=toward)
 
+    # Paradigma-matematik mesafe eşiği: kinaz-içi çiftler ≤2.0, kinaz-dışı ≥3.1.
+    # 2.5 = boşluğun ortası — 'aynı terapötik tür' ile 'farklı' arasını ayırır.
+    _PARADIGM_WORKS_THR = 2.5
+
     def judge_binding(self, candidate: str, protein: str, top_refs: int = 8) -> dict:
-        """İşe yarar mı? — üretilen molekülü proteinin bilinen ligandlarına karşı
-        KUANTUM dolanıklık + yapısal sertifika ile yargıla.
+        """İşe yarar mı? — adayı proteinin bilinen ligandlarına karşı
+        PARADİGMA-MATEMATİK mesafesi ile yargıla.
 
-        Hafıza-similarity DEĞİL. Protein word-encode EDİLMEZ (o hataya düşmez).
-        Proteinin bilinen ligandları (TAU INHIBITS/ACTIVATES kenarları) gerçek
-        SMILES'a çözümlenir → κ-imza referans profili. Aday bu profille kuantum
-        dolanık (klasik uzak ama κ yakın = gizli yapısal akrabalık) ve yapısal
-        sertifikalıysa 'işe yarar' yargısı alır.
+        Sertifika 'geçti/✓' SAYMAZ — paradigmaların hesapladığı SAYILARI kullanır:
+        özdeğer spektrumu (DALET), Lyapunov (HE), Li katsayıları (HET), de
+        Bruijn-Newman Λ (TAV), alt-resultant, Schur, spektral entropi → ölçek-
+        bağımsız imza. Aday bu imzada bilinen bir ligandla 'aynı tür' çıkarsa
+        (mesafe < eşik) işe yarar. κ-kuantum mesafesi ikincil sinyal.
 
+        Protein word-encode EDİLMEZ — ligandları gerçek SMILES'a çözümlenir.
         candidate: SMILES   protein: hedef adı (egfr, bcr-abl, ...)
         """
         from tantrium.core.quantum_moments import QuantumSignature
-        from tantrium.core.molecular_space import DRUG_LIBRARY
+        from tantrium.core.metric import paradigm_distance
 
-        name2smi = {n.lower(): smi for n, smi, _ in DRUG_LIBRARY}
-        name2cls = {n.lower(): cls for n, _, cls in DRUG_LIBRARY}
-        prot = protein.lower().strip()
-        tau = self.engine.tau
-
-        # 1. Proteinin bilinen ligandları (TAU INHIBITS/ACTIVATES/TARGETS)
-        ligand_names: list[str] = []
-        for src, elist in tau.edges.items():
-            for e in elist:
-                tgt = getattr(e, "target", "")
-                par = getattr(e, "paradigm", "")
-                if str(tgt).lower() == prot and par in (
-                        "INHIBITS", "ACTIVATES", "TARGETS", "BINDS"):
-                    ligand_names.append(str(src).lower())
-
-        # 2. İsimleri gerçek SMILES'a çözümle (kütüphane); yoksa sınıf-temelli geri düş
-        ref_smiles: list[tuple[str, str]] = []
-        ref_cls = None
-        for nm in dict.fromkeys(ligand_names):
-            if nm in name2smi:
-                ref_smiles.append((nm, name2smi[nm]))
-                ref_cls = ref_cls or name2cls.get(nm)
-        if not ref_smiles and ref_cls:
-            ref_smiles = [(n.lower(), s) for n, s, c in DRUG_LIBRARY if c == ref_cls][:top_refs]
-
+        ref_smiles = self._protein_reference_ligands(protein, top_refs)
         if not ref_smiles:
             return {
                 "candidate": candidate, "protein": protein,
@@ -985,55 +1075,51 @@ class AI:
                 "n_refs": 0,
             }
 
-        # 3. Aday κ-imzası (moleküler encode — kelime değil)
+        # Aday: paradigma matematik imzası + κ imzası (moleküler encode — kelime değil)
         try:
-            cand_sig = QuantumSignature.from_moments(
-                [float(m) for m in self.engine.encoder.encode(candidate).moments])
+            cand_obj = self.engine.encoder.encode(candidate)
+            cand_struct = cand_obj.structure
+            cand_sig = QuantumSignature.from_moments([float(m) for m in cand_obj.moments])
         except Exception:
             return {"candidate": candidate, "protein": protein,
                     "verdict": "GEÇERSİZ", "reason": "Aday encode edilemedi.", "n_refs": 0}
 
-        # 4. Referans profille kuantum karşılaştırma
-        best = None
-        n_entangled = 0
+        # Her referans ligandla paradigma-matematik + κ mesafesi
+        best = None  # (name, paradigm_dist, kappa_dist)
         for nm, smi in ref_smiles[:top_refs]:
             try:
+                ref_obj = self.engine.encoder.encode(smi)
+                pd = paradigm_distance(cand_struct, ref_obj.structure)
                 ref_sig = QuantumSignature.from_moments(
-                    [float(m) for m in self.engine.encoder.encode(smi).moments])
+                    [float(m) for m in ref_obj.moments])
+                kd = cand_sig.cumulants.distance(ref_sig.cumulants)
             except Exception:
                 continue
-            qd = cand_sig.quantum_distance(ref_sig)
-            kd = cand_sig.cumulants.distance(ref_sig.cumulants)
-            ent = cand_sig.is_entangled_with(ref_sig)
-            if ent:
-                n_entangled += 1
-            if best is None or qd < best[1]:
-                best = (nm, qd, kd, ent)
+            if best is None or pd < best[1]:
+                best = (nm, pd, kd)
 
-        # 5. Yapısal sertifika + grounding
+        if best is None:
+            return {"candidate": candidate, "protein": protein, "verdict": "GEÇERSİZ",
+                    "reason": "Referans imzaları hesaplanamadı.", "n_refs": len(ref_smiles)}
+
+        nearest_name, nearest_pd, nearest_kd = best
         gc = self.grounding(candidate)
-        try:
-            run = self.engine.network.run(self.engine.encoder.encode(candidate))
-            paradigms = f"{run.certified_count}/{run.total}"
-            structural_ok = run.certified_count >= run.total - 1
-        except Exception:
-            paradigms, structural_ok = "?", False
 
-        nearest_name, nearest_qd, nearest_kd, _ = best
-        # Yargı: en yakın referansa κ-yakın VEYA dolanık + yapısal geçerli
-        works = structural_ok and (n_entangled >= 1 or nearest_kd < 0.15)
+        # YARGI: paradigmaların kendi matematiğinde 'aynı tür' mü?
+        works = nearest_pd < self._PARADIGM_WORKS_THR
         verdict = "İŞE YARAYABİLİR" if works else "İŞE YARAMAZ"
 
         return {
             "candidate": candidate, "protein": protein, "verdict": verdict,
-            "n_refs": len(ref_smiles), "n_entangled": n_entangled,
+            "n_refs": len(ref_smiles),
             "nearest_ligand": nearest_name,
-            "quantum_dist_to_nearest": round(nearest_qd, 4),
+            "paradigm_dist_to_nearest": round(nearest_pd, 4),
             "kappa_dist_to_nearest": round(nearest_kd, 4),
-            "structural": paradigms, "grounding": gc.verdict,
-            "reason": (f"En yakın bilinen ligand '{nearest_name}' "
-                       f"(κ={nearest_kd:.3f}); {n_entangled} referansla kuantum dolanık; "
-                       f"yapısal {paradigms}."),
+            "grounding": gc.verdict,
+            "reason": (f"En yakın bilinen ligand '{nearest_name}': paradigma-matematik "
+                       f"mesafesi {nearest_pd:.3f} (eşik {self._PARADIGM_WORKS_THR}); "
+                       f"κ={nearest_kd:.3f}. "
+                       f"{'Aynı yapısal tür.' if works else 'Farklı tür.'}"),
         }
 
     def causal_chain(self, goal: str, depth: int = 4) -> dict:
