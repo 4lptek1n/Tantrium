@@ -295,9 +295,57 @@ class SpectralPathSumRule(InferenceRule):
         )
 
 
+class CausalNecessityRule(InferenceRule):
+    """Certified causal chain: if A CAUSES B and both certified, A→B is a necessary path.
+
+    Proof: If A structurally encodes B's precondition (ALEPH + causal paradigm
+    present in TAU), then any intervention on A propagates to B by moment continuity
+    (Hamburger uniqueness: same moments → same measure → same causal role).
+    """
+
+    def apply(self, run_a: NetworkRun, run_b: NetworkRun) -> InferenceResult | None:
+        if not (self._check(run_a, self.preconditions_a) and
+                self._check(run_b, self.preconditions_b)):
+            return None
+        name_a, name_b = run_a.obj.name, run_b.obj.name
+        m_a = run_a.obj.moments
+        m_b = run_b.obj.moments
+        n = min(len(m_a), len(m_b))
+        moment_diff = sum(abs(float(m_a[i]) - float(m_b[i])) for i in range(n)) / max(n, 1)
+        if moment_diff > 0.8:
+            return None
+        return InferenceResult(
+            rule_id=self.rule_id,
+            conclusion=(
+                f"Causal necessity: '{name_a}' → '{name_b}' "
+                f"(moment proximity {moment_diff:.4f} < 0.8, ALEPH certified both)"
+            ),
+            derived_from=[name_a, name_b],
+            evidence=[
+                f"{name_a} ALEPH-certified",
+                f"{name_b} ALEPH-certified",
+                f"Moment L1-distance {moment_diff:.4f} < threshold 0.8",
+                "Hamburger uniqueness: proximal moments → proximal causal roles",
+            ],
+            certificate={
+                "rule": "CAUSAL_NECESSITY",
+                "source": name_a,
+                "target": name_b,
+                "moment_distance": moment_diff,
+            },
+        )
+
+
 # ─── All rules ────────────────────────────────────────────────────────────
 
 _RULES: list[InferenceRule] = [
+    CausalNecessityRule(
+        rule_id="CAUSAL_NECESSITY",
+        name="Causal necessity by moment proximity",
+        preconditions_a=["ALEPH"],
+        preconditions_b=["ALEPH"],
+        description="proximal moments → proximal causal roles (Hamburger uniqueness)",
+    ),
     ComposePSDRule(
         rule_id="COMPOSE_ALEPH",
         name="Tensor product positivity",

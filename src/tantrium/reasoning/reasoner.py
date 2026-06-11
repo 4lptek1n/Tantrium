@@ -31,16 +31,27 @@ if TYPE_CHECKING:
 # (kenar_1, kenar_2, türetilen_kenar)
 # A -e1→ B  ve  B -e2→ C  ise  A -türetilen→ C  çıkar
 _CHAIN_RULES: list[tuple[str, str, str]] = [
-    ("IS_A",     "IS_A",     "IS_A"),
-    ("IS_A",     "ACHIEVES", "ACHIEVES"),
-    ("IS_A",     "REQUIRES", "REQUIRES"),
-    ("IS_A",     "USES",     "USES"),
-    ("USES",     "ACHIEVES", "ACHIEVES"),
-    ("USES",     "USES",     "USES"),
-    ("COMPOSED", "IS_A",     "COMPOSED"),
+    ("IS_A",      "IS_A",      "IS_A"),
+    ("IS_A",      "ACHIEVES",  "ACHIEVES"),
+    ("IS_A",      "REQUIRES",  "REQUIRES"),
+    ("IS_A",      "USES",      "USES"),
+    ("IS_A",      "CAUSES",    "CAUSES"),
+    ("IS_A",      "INHIBITS",  "INHIBITS"),
+    ("IS_A",      "ACTIVATES", "ACTIVATES"),
+    ("USES",      "ACHIEVES",  "ACHIEVES"),
+    ("USES",      "USES",      "USES"),
+    ("COMPOSED",  "IS_A",      "COMPOSED"),
+    # Nedensel zincirleme
+    ("CAUSES",    "CAUSES",    "CAUSES"),     # A→B→C ⟹ A→C
+    ("CAUSES",    "ACHIEVES",  "ACHIEVES"),   # araç → amaca ulaşır
+    ("ACTIVATES", "CAUSES",    "CAUSES"),     # aktivasyon nedensellik üretir
+    ("ACTIVATES", "ACHIEVES",  "ACHIEVES"),
+    ("INHIBITS",  "CAUSES",    "INHIBITS"),   # inhibisyon nedensel zinciri keser
+    ("USES",      "CAUSES",    "CAUSES"),
 ]
 
-_SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
+_SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
+             "CAUSES", "INHIBITS", "ACTIVATES"}
 
 
 # ─── Veri yapıları ────────────────────────────────────────────────────────────
@@ -277,12 +288,15 @@ class GraphReasoner:
             by_p.setdefault(s.paradigm, []).append((s.target, s.derived))
 
         verb_map = {
-            "IS_A":     "bir türüdür",
-            "USES":     "kullanır",
-            "ACHIEVES": "elde eder / ulaşır",
-            "REQUIRES": "gerektirir",
-            "DEFINES":  "tanımlar",
-            "COMPOSED": "bileşenleri",
+            "IS_A":      "bir türüdür",
+            "USES":      "kullanır",
+            "ACHIEVES":  "elde eder / ulaşır",
+            "REQUIRES":  "gerektirir",
+            "DEFINES":   "tanımlar",
+            "COMPOSED":  "bileşenleri",
+            "CAUSES":    "neden olur",
+            "INHIBITS":  "engeller / baskılar",
+            "ACTIVATES": "aktive eder / tetikler",
         }
 
         # Check if these are proxy (via a neighbor) or direct

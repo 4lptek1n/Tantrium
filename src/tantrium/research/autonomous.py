@@ -33,6 +33,65 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# ─── Metinden ilişki çıkarma (metin → CAUSES/INHIBITS/ACTIVATES kenarları) ────
+
+import re as _re
+
+_CAUSAL_VERB_MAP: list[tuple[str, str]] = [
+    (r"\binhibits?\b",    "INHIBITS"),
+    (r"\bblocks?\b",      "INHIBITS"),
+    (r"\bsuppresses?\b",  "INHIBITS"),
+    (r"\brepresses?\b",   "INHIBITS"),
+    (r"\bdownregulates?\b","INHIBITS"),
+    (r"\bcauses?\b",      "CAUSES"),
+    (r"\binduces?\b",     "CAUSES"),
+    (r"\bcontrols?\b",    "CAUSES"),
+    (r"\bregulates?\b",   "CAUSES"),
+    (r"\bdrives?\b",      "CAUSES"),
+    (r"\bactivates?\b",   "ACTIVATES"),
+    (r"\bpromotes?\b",    "ACTIVATES"),
+    (r"\bstimulates?\b",  "ACTIVATES"),
+    (r"\bupregulates?\b", "ACTIVATES"),
+    (r"\btargets?\b",     "INHIBITS"),
+    (r"\bbinds?\b",       "CAUSES"),
+    (r"\brequires?\b",    "REQUIRES"),
+    (r"\bneeds?\b",       "REQUIRES"),
+]
+_COMPILED_VERBS = [(_re.compile(p, _re.IGNORECASE), rel) for p, rel in _CAUSAL_VERB_MAP]
+
+
+def _extract_relations(text: str) -> list[tuple[str, str, str]]:
+    """Metinden (özne, ilişki_türü, nesne) üçlülerini çıkar.
+
+    Basit örüntü: "X [fiil] Y" — NLP gerektirmez, anahtar kelime eşleme.
+    Sonuç: TAU'ya CAUSES/INHIBITS/ACTIVATES kenarları olarak eklenir.
+    """
+    relations: list[tuple[str, str, str]] = []
+    sentences = _re.split(r"[.!?;]", text)
+    for sent in sentences:
+        sent = sent.strip()
+        if len(sent) < 6:
+            continue
+        for pat, rel_type in _COMPILED_VERBS:
+            m = pat.search(sent)
+            if not m:
+                continue
+            before = sent[:m.start()].strip()
+            after = sent[m.end():].strip()
+            # Özne: fiilin öncesindeki son 1-3 kelime (virgül/parantez al)
+            subj_words = _re.sub(r"[,;\"'()]", "", before).split()[-3:]
+            # Nesne: fiilin sonrasındaki ilk 1-3 kelime
+            obj_words = _re.sub(r"[,;\"'()]", "", after).split()[:3]
+            if not subj_words or not obj_words:
+                continue
+            subj = " ".join(subj_words).strip().lower()
+            obj  = " ".join(obj_words).strip().lower()
+            # Gürültü filtresi: çok kısa veya çok uzun = anlamsız
+            if 2 < len(subj) < 60 and 2 < len(obj) < 60:
+                relations.append((subj, rel_type, obj))
+    return relations
+
+
 # ─── Gözlem sonucu ────────────────────────────────────────────────────────────
 
 @dataclass
@@ -189,7 +248,11 @@ class AutonomousObserver:
         )
         self.observations.append(obs)
 
-        # 6. KAYDET — eşikte kalıcılık
+        # 6. İLİŞKİ ÇIKAR — metin girdisinden CAUSES/INHIBITS/ACTIVATES kenarları
+        if isinstance(raw_input, str) and len(raw_input) > 20:
+            self._inject_relations(raw_input, obs_name)
+
+        # 7. KAYDET — eşikte kalıcılık
         if is_new:
             self._since_persist += 1
             if self._since_persist >= self.persist_every:
@@ -284,6 +347,49 @@ class AutonomousObserver:
                 self._add_bridge_edge(concept.name, nb_name, w2)
 
         return bridges[:5]
+
+    def _inject_relations(self, text: str, context_name: str) -> None:
+        """Metinden çıkarılan ilişkileri TAU'ya ekle.
+
+        Her (özne, fiil, nesne) üçlüsü için:
+          - Özne ve nesneyi manifolda ekle (eğer yoksa minimal Concept)
+          - Aralarına CAUSES/INHIBITS/ACTIVATES kenarı koy
+        Bu, sistemin okuduğu metinden nedensel ağ örmesini sağlar.
+        """
+        from tantrium.graph.knowledge_graph import KnowledgeEdge
+        from tantrium.core.semantic import Concept
+
+        relations = _extract_relations(text)
+        if not relations:
+            return
+
+        for subj, rel_type, obj in relations[:8]:  # max 8 ilişki / metin
+            # Her iki kavramı manifolda ekle (yoksa)
+            for cname in (subj, obj):
+                if cname not in self.engine.manifold.concepts:
+                    try:
+                        codex = self.engine.encoder.encode(cname)
+                        c = Concept(
+                            name=cname,
+                            moments=list(codex.moments),
+                            domain="relation",
+                            source="text_extraction",
+                        )
+                        if c.is_real():
+                            self.engine.manifold.add_unchecked(c)
+                            self.engine.tau.add_node(c)
+                    except Exception:
+                        pass
+
+            # İlişki kenarını TAU'ya ekle (idempotent)
+            edges = self.engine.tau.edges.setdefault(subj, [])
+            already = any(e.target == obj and e.paradigm == rel_type for e in edges)
+            if not already:
+                edges.append(KnowledgeEdge(
+                    source=subj, target=obj,
+                    distance=0.0, paradigm=rel_type,
+                ))
+                self.engine.tau._dirty = True
 
     def _add_bridge_edge(self, a: str, b: str, distance: float) -> None:
         """TAU'ya çift yönlü SPECTRAL_BRIDGE edge ekle (idempotent)."""

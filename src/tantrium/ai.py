@@ -919,6 +919,99 @@ class AI:
             "note": "Gizli matematiksel bağlantı" if entangled else "Normal ayrışma",
         }
 
+    def causal_chain(self, goal: str, depth: int = 4) -> dict:
+        """Hedefe giden nedensel zinciri geriye doğru izle.
+
+        TAU'daki CAUSES, INHIBITS, ACTIVATES, ACHIEVES kenarlarını takip ederek
+        hangi kavramların/eylemlerin hedefe yol açtığını bulur.
+
+        Döner:
+          {
+            "goal": str,
+            "chains": [{"path": [A, rel, B, rel, C], "depth": int}],
+            "actionable": [str],   # yaprak node'lar — doğrudan müdahale noktaları
+            "n_paths": int,
+          }
+        """
+        from tantrium.reasoning.reasoner import GraphReasoner
+
+        tau = self._engine.tau
+        reasoner = GraphReasoner(self._engine)
+
+        _CAUSAL = {"CAUSES", "ACHIEVES", "ACTIVATES", "INHIBITS", "USES"}
+
+        # İlk adım: goal kavramını bul veya en yakın encode et
+        if goal not in self._engine.manifold.concepts:
+            try:
+                self._engine.encoder.encode(goal)
+                _ = self.ask(goal)  # manifolda ekle
+            except Exception:
+                pass
+
+        # Ters kenar haritası: kime giden kenarlar var? (backward BFS için)
+        reverse: dict[str, list[tuple[str, str]]] = {}  # target → [(source, paradigm)]
+        for src, edges in tau.edges.items():
+            for e in edges:
+                if e.paradigm in _CAUSAL:
+                    reverse.setdefault(e.target, []).append((src, e.paradigm))
+
+        # Backward BFS
+        found_paths: list[list] = []
+        actionable: set[str] = set()
+        queue: list[tuple[str, list]] = [(goal, [goal])]
+        visited: set[str] = set()
+
+        while queue and len(found_paths) < 12:
+            node, path = queue.pop(0)
+            if node in visited:
+                continue
+            visited.add(node)
+            parents = reverse.get(node, [])
+            if not parents and len(path) > 1:
+                found_paths.append(path[:])
+                actionable.add(node)
+                continue
+            for parent, rel in parents[:4]:
+                new_path = [parent, rel] + path
+                if len(new_path) <= depth * 2 + 1:
+                    queue.append((parent, new_path))
+                    if not reverse.get(parent):
+                        actionable.add(parent)
+
+        # Forward chaining ekle: goal'ın TAU'daki doğrudan komşuları
+        direct_achievers = [
+            e.source for src, edges in tau.edges.items()
+            for e in edges
+            if e.target == goal and e.paradigm in {"ACHIEVES", "CAUSES", "ACTIVATES"}
+        ]
+        for da in direct_achievers[:5]:
+            if not any(goal in str(p) for p in found_paths):
+                found_paths.append([da, "ACHIEVES", goal])
+                actionable.add(da)
+
+        # GraphReasoner forward zinciri de ekle
+        try:
+            rr = reasoner.query(goal, depth=2)
+            for step in rr.chains[:3]:
+                if step.paradigm in _CAUSAL:
+                    found_paths.append([step.source, step.paradigm, step.target])
+        except Exception:
+            pass
+
+        chains = [{"path": p, "depth": len(p) // 2} for p in found_paths[:8]]
+
+        return {
+            "goal": goal,
+            "chains": chains,
+            "actionable": sorted(actionable)[:10],
+            "n_paths": len(chains),
+            "note": (
+                f"{len(chains)} nedensel yol bulundu, {len(actionable)} müdahale noktası"
+                if chains else
+                "TAU'da nedensel kenar yok — önce metinler öğrenilmeli (ai.learn)"
+            ),
+        }
+
     def certify_list(
         self,
         target: str,
@@ -965,18 +1058,54 @@ class AI:
     # ── Öğrenme ───────────────────────────────────────────────────────────────
 
     def learn(self, text: str) -> dict:
-        """Metin öğret → manifolda ekle.
+        """Metin öğret → manifolda ekle + nedensel ilişkileri TAU'ya yaz.
 
-        Döner: {"new_concepts": n, "already_known": n, "relations": n, "persisted": bool}
+        Döner: {"new_concepts": n, "already_known": n, "relations": n,
+                "causal_relations": n, "persisted": bool}
         """
         from tantrium.language.bootstrap import LanguageBootstrap
+        from tantrium.research.autonomous import _extract_relations, AutonomousObserver
+        from tantrium.graph.knowledge_graph import KnowledgeEdge
+        from tantrium.core.semantic import Concept
+
         bs = LanguageBootstrap(self._engine, window=3, min_freq=1)
         r = bs.auto_learn(text)
         mem = self._engine.note_new_concepts(r.taught, relations_added=r.relations_added)
+
+        # Metinden nedensel ilişkileri çıkar ve TAU'ya ekle
+        relations = _extract_relations(text)
+        causal_added = 0
+        obs = AutonomousObserver(self._engine)
+        for subj, rel_type, obj in relations[:10]:
+            for cname in (subj, obj):
+                if cname not in self._engine.manifold.concepts:
+                    try:
+                        codex = self._engine.encoder.encode(cname)
+                        c = Concept(
+                            name=cname,
+                            moments=list(codex.moments),
+                            domain="relation",
+                            source="learn",
+                        )
+                        if c.is_real():
+                            self._engine.manifold.add_unchecked(c)
+                            self._engine.tau.add_node(c)
+                    except Exception:
+                        pass
+            edges = self._engine.tau.edges.setdefault(subj, [])
+            already = any(e.target == obj and e.paradigm == rel_type for e in edges)
+            if not already:
+                edges.append(KnowledgeEdge(
+                    source=subj, target=obj, distance=0.0, paradigm=rel_type,
+                ))
+                self._engine.tau._dirty = True
+                causal_added += 1
+
         return {
             "new_concepts": r.new_concepts,
             "already_known": len(r.already_known),
             "relations": r.relations_added,
+            "causal_relations": causal_added,
             "persisted": mem.get("persisted", False),
         }
 
@@ -1810,17 +1939,46 @@ class AI:
         run = self._engine.network.run(obj)
         return self._engine.speaker.narrate(run, detail=detail)
 
-    def explain(self, query: str) -> str:
+    def explain(self, query: str, why: str | None = None) -> str:
         """Bir kavramı certified olgulardan oluşan paragrafla açıkla.
 
-        ask()'tan farkı: Türkçe değil, İngilizce; certify+manifest değil
-        pure natural language explanation.
+        why verilirse nedensel zincir de gösterilir:
+          ai.explain('erlotinib', why='cancer')
+          → erlotinib'in sertifikası + kanser'e nedensel bağlantısı
 
-        Döner: str — certified açıklama paragrafı
+        Döner: str — certified açıklama + (opsiyonel) nedensel yol
         """
         obj = self._engine.encoder.encode(query, name=query[:64])
         run = self._engine.network.run(obj)
-        return self._engine.speaker.explain(run)
+        base = self._engine.speaker.explain(run)
+
+        if not why:
+            return base
+
+        lines = [base, f"\n--- '{query}' → '{why}' nedensel analiz ---"]
+        try:
+            from tantrium.reasoning.planner import Planner
+            from tantrium.research.goal import Goal
+
+            chain = self.causal_chain(why, depth=4)
+            relevant = [
+                p for p in chain["chains"]
+                if query.lower() in " ".join(str(x).lower() for x in p["path"])
+            ]
+            if relevant:
+                for p in relevant[:3]:
+                    lines.append("  " + " → ".join(str(x) for x in p["path"]))
+            else:
+                why_moments = list(self._engine.encoder.encode(why).moments)
+                goal_obj = Goal(name=why, moments=why_moments)
+                plan = Planner(self._engine).plan(
+                    goal_obj, known_concepts=[query], max_steps=4
+                )
+                lines.append(plan.summary())
+        except Exception as exc:
+            lines.append(f"(Yol bulunamadı: {exc})")
+
+        return "\n".join(lines)
 
     def paradigms(self, query: str) -> dict:
         """Her paradigmanın durumunu ve kanıt detayını döndür.

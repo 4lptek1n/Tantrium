@@ -20,7 +20,8 @@ if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
     from tantrium.research.goal import Goal
 
-_SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
+_SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
+             "CAUSES", "INHIBITS", "ACTIVATES"}
 
 
 @dataclass
@@ -35,14 +36,18 @@ class PlanStep:
 
     def describe(self) -> str:
         verb = {
-            "IS_A": "türü olduğunu öğren",
-            "USES": "kullandığını öğren",
-            "ACHIEVES": "elde ettiğini öğren",
-            "REQUIRES": "gerektirdiğini öğren",
-            "DEFINES": "tanımladığını öğren",
-            "COMPOSED": "bileşenini öğren",
-            "SPECTRAL_BRIDGE": "spektral köprüyü keşfet",
-            "ALEPH": "manifoldda konumunu bul",
+            "IS_A":           "türü olduğunu öğren",
+            "USES":           "kullandığını öğren",
+            "ACHIEVES":       "elde ettiğini öğren",
+            "REQUIRES":       "gerektirdiğini öğren",
+            "DEFINES":        "tanımladığını öğren",
+            "COMPOSED":       "bileşenini öğren",
+            "SPECTRAL_BRIDGE":"spektral köprüyü keşfet",
+            "QUANTUM_BRIDGE": "kuantum köprüsünü keşfet",
+            "CAUSES":         "nedenini izle",
+            "INHIBITS":       "engelleyiciyi belirle",
+            "ACTIVATES":      "aktivatörü takip et",
+            "ALEPH":          "manifoldda konumunu bul",
         }.get(self.paradigm, "incele")
         return (
             f"  Adım {self.step_num}: '{self.concept}' — {verb}  "
