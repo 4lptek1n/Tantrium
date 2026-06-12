@@ -95,16 +95,21 @@ class FreeCumulants:
         return all(abs(ki) < 1e-6 for ki in self.k[2:])
 
     def to_moments_approx(self) -> list[float]:
-        """Yaklaşık ters dönüşüm κ → μ (düşük derecede tam, yüksekte yaklaşık)."""
-        k = self.k + [0.0] * max(0, 6 - len(self.k))
+        """Klasik moment-kümülant ters dönüşüm κ → μ (μ₀..μ₆ tam, μ₇≈0)."""
+        k = (self.k + [0.0] * 6)[:6]
+        k1, k2, k3, k4, k5, k6 = k
         return [
             1.0,
-            k[0],
-            k[1] + k[0] ** 2,
-            k[2] + 3 * k[0] * k[1] + k[0] ** 3,
-            (k[3] + 4 * k[0] * k[2] + 3 * k[1] ** 2
-             + 6 * k[0] ** 2 * k[1] + k[0] ** 4),
-            0.0, 0.0, 0.0,
+            k1,
+            k2 + k1**2,
+            k3 + 3*k1*k2 + k1**3,
+            k4 + 4*k1*k3 + 3*k2**2 + 6*k1**2*k2 + k1**4,
+            (k5 + 5*k1*k4 + 10*k2*k3 + 10*k1**2*k3
+             + 15*k1*k2**2 + 10*k1**3*k2 + k1**5),
+            (k6 + 6*k1*k5 + 15*k2*k4 + 10*k3**2 + 15*k1**2*k4
+             + 60*k1*k2*k3 + 20*k1**3*k3 + 15*k2**3
+             + 45*k1**2*k2**2 + 15*k1**4*k2 + k1**6),
+            0.0,  # μ₇: κ₇ hesaplanmıyor
         ]
 
 

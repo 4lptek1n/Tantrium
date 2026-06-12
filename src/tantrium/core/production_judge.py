@@ -108,7 +108,9 @@ class ProductionCertificate:
             lines.append("  6 eksen:")
             for a in self.axes:
                 mark = "✓" if a.ok else "✗"
-                soft = " (yumuşak)" if a.name == "grounding" else ""
+                is_soft = (a.name == "grounding" or
+                           (a.name == "structural" and self.target_kind == "disease"))
+                soft = " (yumuşak)" if is_soft else ""
                 lines.append(f"    {mark} {a.name:<11} {a.value:.4f}"
                              f" / {a.threshold if a.threshold != float('inf') else '—'}"
                              f"  {a.detail}{soft}")
@@ -255,10 +257,11 @@ class ProductionJudge:
 
     def judge_all_axes(self, smiles: str, mu_req: list[float],
                        profiles: list[list[float]], kappa_thr: float,
-                       ref_smiles: list[str] | None = None
+                       ref_smiles: list[str] | None = None,
+                       structural_soft: bool = False
                        ) -> tuple[list[AxisVerdict], bool]:
         """Adayı 6 eksende yargıla. Aday BİR kez encode edilir, yeniden kullanılır.
-        coherent = 5 HARD eksen (grounding YUMUŞAK, veto yok)."""
+        coherent = HARD eksenler (grounding YUMUŞAK; structural_soft=True ise structural da yumuşak)."""
         import math
         from tantrium.core.metric import paradigm_distance
         from tantrium.core.quantum_moments import QuantumSignature
@@ -333,7 +336,10 @@ class ProductionJudge:
         except Exception:
             axes.append(AxisVerdict("grounding", False, 0.0, float("inf"), "UNGROUNDED"))
 
-        # coherent = 5 HARD eksen (grounding hariç)
-        hard = [a for a in axes if a.name != "grounding"]
+        # coherent = HARD eksenler (grounding hariç; hastalık hedefinde structural da yumuşak)
+        soft_names = {"grounding"}
+        if structural_soft:
+            soft_names.add("structural")
+        hard = [a for a in axes if a.name not in soft_names]
         coherent = all(a.ok for a in hard)
         return axes, coherent

@@ -24,6 +24,34 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
 
+# Protein → bilinen inhibitör isimleri (TAU kenarı yokken statik geri düşme)
+_PROTEIN_DIRECT_MAP: dict[str, list[str]] = {
+    "egfr":   ["erlotinib", "gefitinib", "afatinib", "osimertinib"],
+    "her2":   ["lapatinib", "afatinib"],
+    "braf":   ["vemurafenib", "sorafenib"],
+    "kit":    ["imatinib", "sunitinib"],
+    "src":    ["dasatinib", "bosutinib", "imatinib"],
+    "abl":    ["imatinib", "dasatinib", "bosutinib"],
+    "akt":    ["ipatasertib", "capivasertib"],
+    "akt1":   ["ipatasertib", "capivasertib"],
+    "mek":    ["trametinib", "cobimetinib"],
+    "mek1":   ["trametinib", "cobimetinib"],
+    "jak":    ["ruxolitinib", "tofacitinib", "baricitinib"],
+    "jak2":   ["ruxolitinib", "tofacitinib", "baricitinib"],
+    "jak1":   ["tofacitinib", "baricitinib"],
+    "parp":   ["olaparib", "niraparib", "rucaparib"],
+    "parp1":  ["olaparib", "niraparib", "rucaparib"],
+    "cdk4":   ["palbociclib", "ribociclib", "abemaciclib"],
+    "cdk6":   ["palbociclib", "ribociclib", "abemaciclib"],
+    "alk":    ["alectinib", "brigatinib", "crizotinib"],
+    "mtor":   ["everolimus", "temsirolimus"],
+    "vegfr":  ["sorafenib", "sunitinib", "vandetanib"],
+    "vegfr2": ["sorafenib", "sunitinib", "vandetanib"],
+    "stat3":  ["sorafenib", "sunitinib"],
+    "btk":    ["ibrutinib"],
+    "pdgfr":  ["imatinib", "sorafenib", "sunitinib"],
+}
+
 _PRIMITIVES = [
     "c1ccccc1",        # benzen
     "c1ccncc1",        # piridin
@@ -286,7 +314,8 @@ class ProductionEngine:
 
         for c in scored[:top_k]:
             axes_obj, coherent = judge.judge_all_axes(
-                c["smiles"], mu_req, profiles, kappa_thr, ref_smiles_list)
+                c["smiles"], mu_req, profiles, kappa_thr, ref_smiles_list,
+                structural_soft=(kind == "disease"))
             c["axes"] = [{"name": a.name, "ok": a.ok, "value": round(a.value, 4),
                           "threshold": a.threshold, "detail": a.detail}
                          for a in axes_obj]
@@ -640,6 +669,14 @@ class ProductionEngine:
             if nm in name2smi:
                 ref.append((nm, name2smi[nm]))
                 ref_cls = ref_cls or name2cls.get(nm)
+        # Statik harita ile tamamla (TAU eksik veya yetersiz olduğunda)
+        seen = {nm for nm, _ in ref}
+        if prot in _PROTEIN_DIRECT_MAP:
+            for nm in _PROTEIN_DIRECT_MAP[prot]:
+                if nm not in seen and nm in name2smi:
+                    ref.append((nm, name2smi[nm]))
+                    ref_cls = ref_cls or name2cls.get(nm)
+                    seen.add(nm)
         if not ref and ref_cls:
             ref = [(n.lower(), s) for n, s, c in DRUG_LIBRARY if c == ref_cls][:top_refs]
         return ref[:top_refs]

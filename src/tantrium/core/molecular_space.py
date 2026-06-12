@@ -46,6 +46,33 @@ DRUG_LIBRARY: list[tuple[str, str, str]] = [
     ("vemurafenib",     "CCCS(=O)(=O)Nc1ccc(F)c(C(=O)c2c[nH]c3ncc(-c4ccc(Cl)cc4)cc23)c1", "kinase"),
     ("vandetanib",      "COc1cc2c(Nc3ccc(Br)cc3F)ncnc2cc1OCC(F)F",                "kinase"),
     ("osimertinib",     "C=CC(=O)Nc1cc(-n2c(C)c(Nc3nccc(N(C)CCN(C)C)n3)cc2=O)c(OC)cc1", "kinase"),
+    # --- SRC kinaz inhibitörleri ---
+    ("dasatinib",       "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1", "kinase"),
+    ("bosutinib",       "COc1cc(Nc2ncnc3cc(OCC)c(OCC)cc23)c(Cl)cc1Cl",             "kinase"),
+    # --- AKT kinaz inhibitörleri ---
+    ("ipatasertib",     "C[C@@H]1CCN2C(=O)c3c(Nc4ccc(CN5CCOCC5)cc4F)ncnc3C[C@@H]12", "kinase"),
+    ("capivasertib",    "N#Cc1ccc(N2C[C@@H](NC(=O)c3cc(F)c(F)c(F)c3)[C@@H]2CO)cc1", "kinase"),
+    # --- MEK inhibitörleri ---
+    ("trametinib",      "COc1cc2c(cc1I)nc(N)c2C(=O)N1CC[C@@H](O)C1",              "kinase"),
+    ("cobimetinib",     "C[C@@H]1CNC(=O)c2cc(Nc3ccc(I)cc3F)c(F)cn2[C@H]1C",      "kinase"),
+    # --- JAK inhibitörleri ---
+    ("ruxolitinib",     "C[C@@H](CC#N)n1cc(-c2ncnc3[nH]ccc23)cn1",                "kinase"),
+    ("tofacitinib",     "CC1CCN(C(=O)CC#N)CC1N(C)c1ncnc2[nH]ccc12",              "kinase"),
+    ("baricitinib",     "CS(=O)(=O)c1ccc(-n2cc(C3CCN(C(=O)C#N)CC3)cn2)cc1",       "kinase"),
+    # --- PARP inhibitörleri ---
+    ("olaparib",        "O=C1CCc2cc(C(=O)N3CCN(c4ncc(F)cc4)CC3)ccc2N1",           "kinase"),
+    ("niraparib",       "O=C1NC2=CC=CC=C2C1CC1=CC=C(C2CCNCC2)C=C1",               "kinase"),
+    ("rucaparib",       "NCC1=CC=CC2=CN=C3CCCC3=C12",                              "kinase"),
+    # --- CDK4/6 inhibitörleri ---
+    ("palbociclib",     "CC1=C(C(=O)Nc2ncnc3[nH]ccc23)C=CN1",                     "kinase"),
+    ("ribociclib",      "CC1=NC(=CC1=O)Nc2nccc(n2)N3CCNCC3",                      "kinase"),
+    ("abemaciclib",     "CC1=NC(NC2=NC=NC3=CC(N4CCN(C)CC4)=CC=C23)=NC(C)=C1",     "kinase"),
+    # --- ALK inhibitörleri ---
+    ("alectinib",       "COc1cc2c(cc1OCC1CCCC1)C(C)(C)CCC2=O",                    "kinase"),
+    ("brigatinib",      "Cc1cc(Nc2nccc(-c3cn(C)c4ccccc34)n2)c(OC)cc1N1CCC(N2CCCC2=O)CC1", "kinase"),
+    # --- mTOR inhibitörleri ---
+    ("everolimus",      "COC1CC(=O)CC(CC(CC(=O)C(CC(CC(OC(=O)C(CC(C1OC)OC)C)C)O)C)C(=O)O)OC", "kinase"),
+    ("temsirolimus",    "COC1CC(=O)CC(CC(CC(=O)C(CC(CC(OC(=O)C(CC(C1OC)OC)C)C)O)C)C(=O)OCC(O)CO)OC", "kinase"),
     # --- NSAID / ağrı kesiciler ---
     ("aspirin",         "CC(=O)Oc1ccccc1C(=O)O",                                  "nsaid"),
     ("ibuprofen",       "CC(C)Cc1ccc(cc1)C(C)C(=O)O",                             "nsaid"),

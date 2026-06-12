@@ -921,13 +921,43 @@ class AI:
 
     # ── Evren simülasyonu: makineyi çalıştırarak ilaç üret ───────────────────
 
+    # Statik protein→bilinen-inhibitör haritası (TAU eksikse geri düşme)
+    _PROTEIN_DIRECT_MAP: dict[str, list[str]] = {
+        "egfr":   ["erlotinib", "gefitinib", "afatinib", "osimertinib"],
+        "her2":   ["lapatinib", "afatinib"],
+        "braf":   ["vemurafenib", "sorafenib"],
+        "kit":    ["imatinib", "sunitinib"],
+        "src":    ["dasatinib", "bosutinib", "imatinib"],
+        "abl":    ["imatinib", "dasatinib", "bosutinib"],
+        "akt":    ["ipatasertib", "capivasertib"],
+        "akt1":   ["ipatasertib", "capivasertib"],
+        "mek":    ["trametinib", "cobimetinib"],
+        "mek1":   ["trametinib", "cobimetinib"],
+        "jak":    ["ruxolitinib", "tofacitinib", "baricitinib"],
+        "jak2":   ["ruxolitinib", "tofacitinib", "baricitinib"],
+        "jak1":   ["tofacitinib", "baricitinib"],
+        "parp":   ["olaparib", "niraparib", "rucaparib"],
+        "parp1":  ["olaparib", "niraparib", "rucaparib"],
+        "cdk4":   ["palbociclib", "ribociclib", "abemaciclib"],
+        "cdk6":   ["palbociclib", "ribociclib", "abemaciclib"],
+        "alk":    ["alectinib", "brigatinib", "crizotinib"],
+        "mtor":   ["everolimus", "temsirolimus"],
+        "vegfr":  ["sorafenib", "sunitinib", "vandetanib"],
+        "vegfr2": ["sorafenib", "sunitinib", "vandetanib"],
+        "stat3":  ["sorafenib", "sunitinib"],
+        "btk":    ["ibrutinib"],
+        "pdgfr":  ["imatinib", "sorafenib", "sunitinib"],
+        "ret":    ["vandetanib", "cabozantinib"],
+    }
+
     def _protein_reference_ligands(self, protein: str, top_refs: int = 8
                                    ) -> list[tuple[str, str]]:
         """Proteinin bilinen ligandlarını gerçek SMILES'a çözümle.
 
         Protein word-encode EDİLMEZ. TAU'daki INHIBITS/ACTIVATES kenarları →
         ligand isimleri → ilaç kütüphanesinden SMILES. Hiçbiri çözülemezse
-        terapötik sınıf üzerinden geri düşer. Boş liste = referans yok (dürüst).
+        _PROTEIN_DIRECT_MAP statik haritasına, oradan da terapötik sınıfa düşer.
+        Boş liste = referans yok (dürüst).
         """
         from tantrium.core.molecular_space import DRUG_LIBRARY
         name2smi = {n.lower(): smi for n, smi, _ in DRUG_LIBRARY}
@@ -949,6 +979,16 @@ class AI:
             if nm in name2smi:
                 ref.append((nm, name2smi[nm]))
                 ref_cls = ref_cls or name2cls.get(nm)
+
+        # Statik harita ile tamamla (TAU eksik veya yetersiz olduğunda)
+        seen = {n for n, _ in ref}
+        if prot in self._PROTEIN_DIRECT_MAP:
+            for nm in self._PROTEIN_DIRECT_MAP[prot]:
+                if nm not in seen and nm in name2smi:
+                    ref.append((nm, name2smi[nm]))
+                    ref_cls = ref_cls or name2cls.get(nm)
+                    seen.add(nm)
+
         if not ref and ref_cls:
             ref = [(n.lower(), s) for n, s, c in DRUG_LIBRARY if c == ref_cls][:top_refs]
         return ref[:top_refs]
