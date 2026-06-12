@@ -324,7 +324,17 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **İş:** `compute_transitive_closure` (A→B→C ⟹ A→C zorunlu; REQUIRES/ACHIEVES/COMPOSED/IS_A
   kenarları, BFS/DFS, TAU'ya enjekte), `find_manifold_gaps` (teorem çiftleri moment-orta-noktası,
   en yakın kavram uzaksa boşluk), `run`. `close()` ve growth `_consolidate` bunu çağırır.
+- **#10:** `find_manifold_gaps` = GapFinder'ın "geometric" sinyali (DEĞİŞMEDİ, native çağrılabilir).
 - **Tekrar:** TAU geçişi reasoner ile İLİŞKİLİ ama farklı semantik (aynı-tip kapanış vs tipli çıkarım). Birleştirilmez.
+
+### ✅ reasoning/gap_finder.py — TEK boşluk dispatcher [#10 dedup ÇÖZÜLDÜ 2026-06]
+- **İş:** `GapFinder(engine).find(signal=)` — 4 boşluk-tespit sinyalini additive facade arkasına alır:
+  geometric (necessity) · anchor (paradigm.blind_spots) · recorded (explorer.scan_frontier) · grid
+  (topology.analyze) · all (birleşik, priority sıralı). Normalize `Gap(signal,name,description,location,
+  priority,raw)`. `ai.gaps()` buna yönlenir.
+- **Güç:** 4 ALGORİTMA da KORUNDU — orijinal metotlar değişmedi, native çağrılabilir; `Gap.raw`
+  orijinal nesneyi (ManifoldGap/dict/ExplorationObjective/MathRegion) taşır. fail-open ("all").
+- **Tekrar:** Birleşme = tek kapı + normalize görünüm; en küçük ortak paydaya indirgeme DEĞİL. Tests: 8.
 
 ### ✅ reasoning/reasoner.py — tipli forward-chaining (GraphReasoner)
 - **İş:** `query` (`_CHAIN_RULES`: IS_A+ACHIEVES→ACHIEVES, CAUSES+CAUSES→CAUSES... türetilen
@@ -528,7 +538,7 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 | ✅ | ~~3D-SDF: `inverse._make_3d` ≈ `certifier._smiles_to_sdf` (ETKDGv3 seed=42)~~ **ÇÖZÜLDÜ** | `core/molecular_3d.embed_3d_sdf` (prefix/props/remove_hs parametreli); ikisi de delege |
 | 8 | Konveks-moment-kombo: `reasoner.compose`+`generalization.interpolate/derive/blend`+`autonomous._local_genesis`+`synthesis.bridge/genesis` | Synthesizer tek konveks-çekirdek (motorlar/API korunur) |
 | ✅ | ~~Veri-çekme: `ingest`/`researcher`/`growth` fetch_* (UniProt/PubChem/OEIS)~~ **TRANSPORT ÇÖZÜLDÜ** | `research/net.http_get_json(_link)` ortak HTTP ilkeli; 3 modül delege. Parse mantığı modül-başına KORUNDU (çıktı şekilleri farklı) |
-| 10 | Boşluk-tespiti 4 yer: `necessity`(geometrik) `paradigm.blind_spots`(çapa) `explorer.scan_frontier`(kayıtlı) `topology`(grid) | GapFinder birliği (4 sinyal de korunur) |
+| ✅ | ~~Boşluk-tespiti 4 yer: `necessity`(geometrik) `paradigm.blind_spots`(çapa) `explorer.scan_frontier`(kayıtlı) `topology`(grid)~~ **ÇÖZÜLDÜ** | `reasoning/gap_finder.GapFinder.find(signal=)` additive dispatcher; 4 metot DEĞİŞMEDİ, `Gap.raw` orijinali taşır |
 | — | 4 döngü: `proof_loop`/`explorer`/`researcher`/`growth.stream` | Cognition iskeleti + pluggable strateji (HER strateji korunur) |
 | ✅ | ~~`ai.ask` çift-encode (CoreMachine'i atlayıp ayrı grounder)~~ **F2b ÇÖZÜLDÜ** | gcert evidence'ta stash, ask yeniden kullanır |
 | — | Encode kapıları: dağınık `_encode_target` (inverse/genesis/space) | tek Encoder.encode yönlendirme (math zaten tek) |

@@ -2082,11 +2082,21 @@ class AI:
         return self._engine.core.certify(query, adaptive=adaptive)
 
     def manifold_gaps(self, domain: str = "math_kernel", n_gaps: int = 10) -> list:
-        """NecessityEngine ile manifold boşluklarını bul."""
+        """NecessityEngine ile manifold boşluklarını bul (geometrik sinyal)."""
         from tantrium.reasoning.necessity import NecessityEngine
         ne = NecessityEngine(self._engine)
         report = ne.run(domain=domain)
         return report.manifold_gaps[:n_gaps]
+
+    def gaps(self, signal: str = "all", **kw) -> list:
+        """TEK boşluk-tespit girişi (#10): 4 sinyali GapFinder ile birleştirir.
+
+        signal: "geometric" (teorem midpoint) | "anchor" (çapa zayıflığı) |
+                "recorded" (geçmiş kayıt) | "grid" (boş moment hücresi) | "all".
+        Her sinyal KORUNUR; Gap.raw orijinal nesneyi taşır.
+        """
+        from tantrium.reasoning.gap_finder import GapFinder
+        return GapFinder(self._engine).find(signal=signal, **kw)
 
     def destiny(self, name: str, top_k: int = 5) -> dict:
         """Bir kavramın geleceği — TAU torunları + moment çekicisi."""

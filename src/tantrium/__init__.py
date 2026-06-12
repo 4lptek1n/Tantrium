@@ -19,6 +19,7 @@ from tantrium.research.proof_loop import ProofLoop, LoopReport, LoopCycle
 from tantrium.reasoning.thinker import ThinkingResult, ThinkingLevel
 from tantrium.reasoning.generalization import DerivedConcept, HankelGeneralizer
 from tantrium.reasoning.necessity import NecessityReport, NecessaryEdge, ManifoldGap
+from tantrium.reasoning.gap_finder import Gap, GapFinder
 from tantrium.reasoning.reasoner import ChainStep, ReasoningResult, GraphReasoner
 from tantrium.reasoning.planner import Plan, PlanStep, Planner
 from tantrium.research.autonomous import Observation, AutonomousObserver
@@ -118,6 +119,8 @@ __all__ = [
     "NecessityReport",
     "NecessaryEdge",
     "ManifoldGap",
+    "Gap",
+    "GapFinder",
     "DerivedConcept",
     "HankelGeneralizer",
     "ChainStep",

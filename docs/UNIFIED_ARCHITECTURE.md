@@ -320,7 +320,8 @@ operate(reason|produce|synthesize) → infer → genesis → prove → persist
 | **F5** | L5 Cognition: döngü iskeleti (strateji-pluggable); Ingestor (#9); GapFinder (#10); encoder N-gram/position-hash (manifold migrasyonu). | ⏳ bekliyor | yüksek | growth+proof_loop+research |
 | **F6** | L6 facade namespace + proxy; serve.py. `engine.grow` bağlama golden testi. ~~3D-SDF util~~ (#7 ✅ `molecular_3d.embed_3d_sdf` ile tamam). | ⏳ bekliyor | orta | API smoke + serve + engine.grow golden |
 | **dedup#7** | **[TAMAMLANDI 2026-06]** 3D-SDF tek util: `core/molecular_3d.embed_3d_sdf` (parametreli: prefix/props/remove_hs). `inverse._make_3d`+`certifier._smiles_to_sdf` delege. | ✅ TAMAM | düşük | molecular_3d (7) + inverse_design + genesis ✓ |
-| **dedup#9** | **[TAMAMLANDI 2026-06]** HTTP-JSON transport tek ilkel: `research/net.http_get_json(_link)` (timeout/UA/errors param). `ingest`/`growth`/`researcher` üçü de delege; parse mantığı modül-başına KORUNDU. | ✅ TAMAM | düşük | net (7, mock'lu) + growth ✓ |
+| **dedup#9** | **[TAMAMLANDI 2026-06]** HTTP-JSON transport tek ilkel: `research/net.http_get_json(_link)` (timeout/UA/errors param). `ingest`/`growth`/`researcher` üçü de delege; parse mantığı modül-başına KORUNDU. | ✅ TAMAM | düşük | net (7, mock'lu) + growth 17 ✓ |
+| **dedup#10** | **[TAMAMLANDI 2026-06]** GapFinder tek dispatcher: `reasoning/gap_finder.GapFinder.find(signal=)` (geometric/anchor/recorded/grid/all). 4 metot DEĞİŞMEDİ (additive facade), `Gap.raw` orijinali taşır. `ai.gaps()`. | ✅ TAMAM | düşük | gap_finder (8) + advanced_reasoning + paradigms (47) ✓ |
 
 **Sıra kuralı:** alttan üste (L0→L6). **Tamamlanan:** F0 (NC Möbius κ) + F0b (bounded_kappa_distance tek imza) + F2 (flywheel) + F2b (ask tek grounding geçişi) + F3-çekirdek (admit() tek yol + parity testi). Encoder collision (`protein`==`glucose`) F5'e ertelendi (manifold migrasyonu gerektirir).
 
