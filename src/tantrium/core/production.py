@@ -586,12 +586,12 @@ class ProductionEngine:
 
     @staticmethod
     def _structural_kappa_distance(mu_a: list[float], mu_b: list[float]) -> float:
-        """Yapısal κ₂,κ₃,κ₄ mesafesi — tanh-sınırlı, ölçek-kararlı [0,3]."""
-        import math
-        from tantrium.core.quantum_moments import FreeCumulants
-        ka = FreeCumulants.from_moments(mu_a).k
-        kb = FreeCumulants.from_moments(mu_b).k
-        return sum(abs(math.tanh(ka[i]) - math.tanh(kb[i])) for i in (1, 2, 3))
+        """Yapısal κ₂,κ₃,κ₄ mesafesi — kanonik bounded_kappa_distance'a delege.
+
+        Merkez κ₁ hariç (include_mean=False): yol-fit ekseni. Tek imza L0'da.
+        """
+        from tantrium.core.quantum_moments import bounded_kappa_distance
+        return bounded_kappa_distance(mu_a, mu_b, include_mean=False)
 
     def _sturm_path_pivot_min(self, src: list[float], tgt: list[float],
                               steps: int = 8) -> tuple[bool, float]:

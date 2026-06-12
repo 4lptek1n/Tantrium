@@ -311,18 +311,18 @@ operate(reason|produce|synthesize) → infer → genesis → prove → persist
 | Faz | İş | Durum | Risk | Test kapısı |
 |-----|----|-------|------|-------------|
 | **F0** | **[TAMAMLANDI 2026-06]** NC Möbius serbest kümülantlar (`quantum_moments.py`): gerçek Nica-Speicher κ₄ formülü (NC partiküler −2κ₂², klasik Leonov-Shiryaev −3κ₂² değil). `R_transform(z)`, `free_entropy(mu)`, roundtrip tam. 10 yeni test. | ✅ TAMAM | düşük | 23 test `test_quantum_moments.py` ✓ |
-| **F0b** | L0 konsolidasyon: Sturm (`exact=True` VARSAYILAN korunur) + mesafe dispatcher + `bounded_kappa_distance`. Girdi-sözleşmesi μ-listesi (FreeCumulants değil). | ⏳ bekliyor | düşük | golden-κ unit testi ÖNCE + transport/production |
+| **F0b** | **[TAMAMLANDI 2026-06]** L0 κ-mesafe konsolidasyonu: `bounded_kappa_distance(mu_a, mu_b, *, include_mean)` (`quantum_moments.py`). μ-listesi sözleşmesi. `production._structural_kappa_distance` (include_mean=False) + `production_judge._bounded_kappa_error` (include_mean=True, FreeCumulants→to_moments_approx) ikisi de delege. Sturm/mesafe dispatcher zaten tekti. | ✅ TAMAM | düşük | golden-κ bit-aynı eşdeğerlik (4 test) + production/simulation |
 | **F1** | L1: tüm `_encode_target` → tek `Encoder.encode` YÖNLENDİRME (perception KORUNUR). **BİLİNEN SINIR:** `protein`/`glucose` (7 karakter, tam çeşitlilik) yol-grafı izomorfizmi — köşegen pertürbasyonla çözülemiyor, L1 marj ≈3e-4. Gerçek çözüm: N-gram/pozisyon-hash (manifold migrasyonu gerektirir, F5'e ertelendi). | ⚠️ SINIRLI | orta | encoder eşdeğerlik + perception |
 | **F2** | **[TAMAMLANDI 2026-06]** Dökümhane↔İspat Flywheel (`production.py`): `_transport_epsilon` theorem-graph-aware (-1e-9→-1e-5 Sturm kanıtı varsa), `_sync_transport_epsilon()` her `produce()`'ta, `scan_production_gaps()` başarısız eksen→ProofLoop kampanya ipucu. | ✅ TAMAM | düşük | `scan_production_gaps` + epsilon sync testi |
-| **F2b** | L2 Certifier: `ask` çift-encode kaldır → herkes `CoreMachine`'e. `truth.certify` komşu yeniden-encode cache'le (CONTRADICTORY kapısı buna bağlı). | ⏳ bekliyor | orta | ask/certify_all + grounding/truth + CONTRADICTORY regresyon |
+| **F2b** | **[TAMAMLANDI 2026-06]** L2 Certifier: `ask` çift grounding hesabı kaldırıldı. CoreMachine `evidence["grounding_cert"]`'i stash eder, `ask()` ORADAN özet alır. `truth.certify` komşu yeniden-encode KORUNDU (CONTRADICTORY kapısı — atlanmadı). | ✅ TAMAM | orta | core_machine (2 regresyon) + grounding/truth/certification yeşil |
 | **F3** | L3 Memory: tek `admit()` yolu. **⚠️ TOP RİSK.** `add_unchecked` kapı-MUAF kalmalı. | ⏳ bekliyor | **YÜKSEK** | **ÖNCE caller-admission-parity testi** + universe_gate + growth |
 | **F4** | L4: Producer çatısı (7 facade→1+sarmalayıcı); Synthesizer konveks-çekirdek (#8); Reasoner. Wonder loop: `score(g)=α·v_ext·novelty−γ·degeneracy`. `engine.grow()` bağlama (ÖNCE karakterizasyon testi — O(n²) risk). | ⏳ bekliyor | orta | production+simulation+reasoning + golden-çıktı |
 | **F5** | L5 Cognition: döngü iskeleti (strateji-pluggable); Ingestor (#9); GapFinder (#10); encoder N-gram/position-hash (manifold migrasyonu). | ⏳ bekliyor | yüksek | growth+proof_loop+research |
 | **F6** | L6 facade namespace + proxy; serve.py. `engine.grow` bağlama golden testi. 3D-SDF util parametreli. | ⏳ bekliyor | orta | API smoke + serve + engine.grow golden |
 
-**Sıra kuralı:** alttan üste (L0→L6). **Tamamlanan:** F0 (NC Möbius κ) + F2 (flywheel) ≈ temel matematik doğruluğu + ispat↔üretim döngüsü. F3'ten önce parite testi ZORUNLU. Encoder collision (`protein`==`glucose`) F5'e ertelendi (manifold migrasyonu gerektirir).
+**Sıra kuralı:** alttan üste (L0→L6). **Tamamlanan:** F0 (NC Möbius κ) + F0b (bounded_kappa_distance tek imza) + F2 (flywheel) + F2b (ask tek grounding geçişi). F3'ten önce parite testi ZORUNLU. Encoder collision (`protein`==`glucose`) F5'e ertelendi (manifold migrasyonu gerektirir).
 
-**Sonraki adım:** F0b (bounded_kappa_distance konsolidasyonu) → F2b (CoreMachine ask dedup) → F3 (Memory admit) sırasıyla — her biri ayrı commit, test-yeşil.
+**Sonraki adım:** F3 (Memory tek `admit()` yolu) — **ÖNCE caller-admission-parity testi ZORUNLU**, sonra `add_unchecked` kapı-muaf bırakılarak tüm giriş yolları tek kapıya. Yüksek risk.
 
 ---
 

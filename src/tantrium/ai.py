@@ -598,9 +598,11 @@ class AI:
         if location_text:
             answer = f"{cert_summary}\n{location_text}"
 
-        # Topraklama özeti
-        gcert = self._engine.grounder.certify(query[:64], moments=ucert.moments)
-        answer = f"{answer}\n{gcert.summary()}"
+        # Topraklama özeti — CoreMachine'in zaten hesapladığı sertifikayı yeniden kullan
+        # (çift grounding hesabı YOK; gcert evidence'tan gelir)
+        gcert = ucert.evidence.get("grounding_cert")
+        if gcert is not None:
+            answer = f"{answer}\n{gcert.summary()}"
 
         return AskResult(
             query=query,

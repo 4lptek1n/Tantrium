@@ -189,6 +189,11 @@ cert.coherent           # hepsi tutarlı mı?
 
 `ask()` CoreMachine kullanır. `certified` = yapısal (geriye dönük uyumlu), `coherent` = 4 eksen.
 
+**F2b — tek grounding geçişi:** CoreMachine grounding sertifikasını bir kez hesaplar ve
+`evidence["grounding_cert"]` içine koyar. `ask()` özet metnini ORADAN alır — eskiden `ask()`
+ayrıca `grounder.certify()` çağırıyordu (çift hesap). Artık tek geçiş. `truth.certify` komşu
+yeniden-encode'u KORUNUR (CONTRADICTORY kapısı buna bağlı — gerçek tekrar değil, atlamadı).
+
 **Genesis öz-düzeltici:** `_coherent_for_genesis()` → CONTRADICTORY kavramlar manifolda girmiyor.
 
 ---
@@ -401,6 +406,11 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
   - `to_moments_approx()`: NC partition ters dönüşüm (μ₄'te 2κ₂², 3 değil) — roundtrip tam.
   - `R_transform(z)`: R(z)=Σκₙzⁿ⁻¹ — `add()` metodunun cebirsel temeli; serbest toplam altında lineer.
   - `free_entropy(mu)`: χ(μ)=∬log|x−y|dμ → ½log(2πe·κ₂)+κ₃/κ₄ düzeltmesi. ΔF gradyanı.
+  - **F0b — `bounded_kappa_distance(mu_a, mu_b, *, include_mean)`**: TEK kanonik κ-mesafe (L0).
+    Girdi sözleşmesi μ-listesi. `include_mean=False` → κ₂,κ₃,κ₄ (şekil, yol-fit ekseni);
+    `include_mean=True` → κ₁,κ₂,κ₃,κ₄ (merkez dahil, evren kapanışı). tanh-sınırlı (κ₅/κ₆ patlamasını
+    eler). `production._structural_kappa_distance` + `production_judge._bounded_kappa_error` ikisi de
+    buna delege — ayrım (κ₁ dahil/hariç) parametre olarak KORUNUR. Golden test: bit-aynı eşdeğerlik.
   - SemanticManifold: `quantum_bridges()` — klasik uzak ama kuantum yakın kavramlar
   - KnowledgeEdge: `quantum_dist` alanı (κ-mesafe)
   - MolecularGenesis: quantum-guided beam search (0.75×W2 + 0.25×κ_dist)
@@ -421,7 +431,8 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: 443 geçiyor, 1 skipped (91 production+simulation + 23 quantum_moments + ...)
+- Tests: 447 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b golden] +
+  14 core_machine[+2 F2b regresyon] + ...)
 
 ---
 

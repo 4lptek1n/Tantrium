@@ -122,3 +122,27 @@ def test_certify_unified_shorthand(ai):
     from tantrium.core.unified import UnifiedCertificate
     result = ai._engine.certify_unified("EGFR")
     assert isinstance(result, UnifiedCertificate)
+
+
+def test_grounding_cert_stashed_in_evidence(ai):
+    """F2b: CoreMachine grounding sertifikasını evidence'a koyar (ask() yeniden kullanır).
+
+    ask() çift grounding hesabı YAPMAZ — gcert tek kez CoreMachine'de hesaplanır,
+    evidence['grounding_cert'] üzerinden özet metnine ulaşır.
+    """
+    cert = ai._engine.core.certify("EGFR")
+    gcert = cert.evidence.get("grounding_cert")
+    assert gcert is not None, "grounding_cert evidence'ta olmalı"
+    # Sertifika verdict'i UnifiedCertificate.grounding ile tutarlı
+    assert gcert.verdict == cert.grounding
+    assert abs(gcert.score - cert.grounding_score) < 1e-12
+    # summary() çağrılabilir (ask() bunu kullanır)
+    assert isinstance(gcert.summary(), str)
+
+
+def test_ask_uses_single_grounding_pass(ai):
+    """F2b: ask() topraklama özetini evidence'tan alır, yeniden encode/certify etmez."""
+    result = ai.ask("EGFR")
+    # ask() çıktısı grounding satırını içermeli (gcert.summary evidence'tan geldi)
+    assert result.grounding in ("GROUNDED", "WEAKLY_GROUNDED", "UNGROUNDED")
+    assert result.answer  # boş değil

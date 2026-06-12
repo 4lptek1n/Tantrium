@@ -209,3 +209,30 @@ def free_entropy(mu: list[float]) -> float:
     denom = k2 ** 3
     correction = -(2.0 * k3**2 / (9.0 * denom) + k4**2 / (8.0 * denom)) if denom > 1e-20 else 0.0
     return base + correction
+
+
+def bounded_kappa_distance(
+    mu_a: list[float],
+    mu_b: list[float],
+    *,
+    include_mean: bool = False,
+) -> float:
+    """Sınırlı κ-mesafe — TEK kanonik imza (L0). Girdi sözleşmesi: μ-listesi.
+
+    Ham FreeCumulants.distance moleküler momentlerde κ₅/κ₆ patlamasıyla domine
+    olur (κ₆ ~ −774). tanh(κ) ölçek-kararlı: her terim [0,2), toplam sınırlı.
+
+    include_mean=False (varsayılan): κ₂,κ₃,κ₄ — şekil yapısı, merkez κ₁ HARİÇ.
+                                      Üretim yol-uyumu (eski _structural_kappa_distance).
+    include_mean=True:               κ₁,κ₂,κ₃,κ₄ — merkez DAHİL.
+                                      Evren kapanışı hatası (eski _bounded_kappa_error).
+
+    Ayrım KORUNUR: iki kullanım farklı eksen ölçer (yol-fit vs kapanış); tek
+    fonksiyon, tek parametre. FreeCumulants nesnesi geçirmek için önce
+    .to_moments_approx() ile μ-uzayına dön (κ₁..κ₄ roundtrip tam).
+    """
+    import math
+    ka = FreeCumulants.from_moments(mu_a).k
+    kb = FreeCumulants.from_moments(mu_b).k
+    idx = (0, 1, 2, 3) if include_mean else (1, 2, 3)
+    return sum(abs(math.tanh(ka[i]) - math.tanh(kb[i])) for i in idx)

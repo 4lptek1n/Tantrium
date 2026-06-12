@@ -144,7 +144,8 @@ class CoreMachine:
             confidence_level=conf.level,
             reconstruction_fidelity=recon,
             coherent=coherent,
-            evidence={"run": run},
+            # gcert: ask() özet metni için yeniden kullanır (çift grounding hesabı YOK)
+            evidence={"run": run, "grounding_cert": gcert},
         )
 
     def _encode_adaptive(self, input_data: object, name: str) -> object:

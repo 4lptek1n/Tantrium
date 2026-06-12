@@ -211,14 +211,15 @@ class ProductionJudge:
 
     @staticmethod
     def _bounded_kappa_error(ka, kb) -> float:
-        """Sınırlı κ-mesafe — yalnız yapısal κ₁..κ₄, tanh ile [0,1)'e sıkıştırılmış.
+        """Evren-kapanışı κ-hatası — kanonik bounded_kappa_distance'a delege.
 
-        Ham FreeCumulants.distance moleküler momentlerde κ₅/κ₆ patlamasıyla
-        domine olur (κ₆ ~ −774). tanh(κ₁..κ₄) ölçek-kararlı: aralık [0,4].
+        Merkez κ₁ DAHİL (include_mean=True): kapanış hizalaması merkez konumu da
+        ölçer. FreeCumulants girişini μ-uzayına çevirir (κ₁..κ₄ roundtrip tam),
+        tek imza L0'a iner. κ₅/κ₆ kullanılmadığından roundtrip kaybı yok.
         """
-        import math
-        a, b = ka.k, kb.k
-        return sum(abs(math.tanh(a[i]) - math.tanh(b[i])) for i in range(4))
+        from tantrium.core.quantum_moments import bounded_kappa_distance
+        return bounded_kappa_distance(
+            ka.to_moments_approx(), kb.to_moments_approx(), include_mean=True)
 
     def close_universe(self, smiles: str, kappa_disease, kappa_healthy,
                        mu_required: list[float] | None = None,

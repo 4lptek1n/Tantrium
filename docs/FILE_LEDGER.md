@@ -74,10 +74,14 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   |NC(6)|=132 özyinelemeli kapalı form. `to_moments_approx()` ters dönüşümde de NC (μ₄'te 2κ₂²)
   → roundtrip tam. `R_transform(z)=Σκₙzⁿ⁻¹` eklendi (add() cebirsel temeli). `free_entropy(mu)`:
   χ=½log(2πeκ₂)+düzeltme — termodinamik ΔF gradyanı. 10 yeni test (toplam 23).
+- **F0b Değişiklikleri:** `bounded_kappa_distance(mu_a, mu_b, *, include_mean)` modül-seviye TEK
+  kanonik κ-mesafe. `production._structural_kappa_distance` (include_mean=False, κ₂₋₄) +
+  `production_judge._bounded_kappa_error` (include_mean=True, κ₁₋₄) ikisi de buna delege.
+  Eskiden iki ayrı tanh-implementasyonu; şimdi tek imza, ayrım parametrede. Golden bit-aynı test.
 - **Güç:** `add` (serbest additivite), `subtract` (dekonvolüsyon), `ring/hetero_indicator`,
   `is_entangled_with` (klasik-uzak/kuantum-yakın).
 - **Gerçek hayat:** Molekülün halka/heteroatom/asimetri imzası; gizli yapısal bağlantılar.
-- **Tekrar:** κ-mesafe iki yerde FARKLI (κ₁ dahil/hariç) — birleşmede parametre korunur.
+- **Tekrar:** κ-mesafe ayrımı (κ₁ dahil/hariç) ARTIK `include_mean` parametresi — TEK fonksiyon.
 
 ### ✅ core/production_judge.py — 6 eksen yargı + evren kapanışı
 - **İş:** `close_universe` (κ(hastalık⊞M)≈κ(sağlıklı)+Sturm), `judge_all_axes` (structural·
@@ -127,8 +131,10 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Güç (DOĞRULANDI):** grounder ve truth'a `moments=moments` GEÇİRİR — yeniden encode ETMEZ.
   coherent = paradigms≥total-1 ∧ grounding≠UNGROUNDED ∧ truth≠CONTRADICTORY ∧ conf≥0.40.
   `_encode_adaptive` 8→16 (fidelity<0.999).
-- **Nüans:** Çift-encode sorunu CoreMachine'de DEĞİL — `ai.ask`'ta (core'u atlayıp ayrı grounder
-  çağırıyor). F2 = herkesi CoreMachine'e yönlendir; CoreMachine'in kendisi doğru.
+- **F2b Değişiklikleri [TAMAMLANDI 2026-06]:** grounding sertifikası artık
+  `evidence["grounding_cert"]`'e stash edilir. `ai.ask` eskiden çift grounding hesaplıyordu
+  (CoreMachine + ayrı `grounder.certify`); şimdi özet metnini evidence'tan alır → tek geçiş.
+  `truth.certify` komşu yeniden-encode'u KORUNDU (CONTRADICTORY kapısı buna bağlı).
 - **Tekrar:** YOK. Eksen birleştiricinin kendisi.
 
 ### ✅ core/grounding.py — Eksen 2 (topraklama, TAU kökü)
@@ -505,12 +511,12 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 | 9 | Veri-çekme: `ingest`/`researcher`/`growth` fetch_* (UniProt/PubChem/OEIS) | Ingestor kaynak-adaptörleri |
 | 10 | Boşluk-tespiti 4 yer: `necessity`(geometrik) `paradigm.blind_spots`(çapa) `explorer.scan_frontier`(kayıtlı) `topology`(grid) | GapFinder birliği (4 sinyal de korunur) |
 | — | 4 döngü: `proof_loop`/`explorer`/`researcher`/`growth.stream` | Cognition iskeleti + pluggable strateji (HER strateji korunur) |
-| — | `ai.ask` çift-encode (CoreMachine'i atlayıp ayrı grounder) | herkesi CoreMachine'e yönlendir |
+| ✅ | ~~`ai.ask` çift-encode (CoreMachine'i atlayıp ayrı grounder)~~ **F2b ÇÖZÜLDÜ** | gcert evidence'ta stash, ask yeniden kullanır |
 | — | Encode kapıları: dağınık `_encode_target` (inverse/genesis/space) | tek Encoder.encode yönlendirme (math zaten tek) |
 
 ### SAHTE tekrarlar (katalog yanlış etiketledi — BİRLEŞMEZ, gücü öldürürdü):
 1. perception float "yarık" — YOK (çıktı Fraction, kasıtlı karşılaştırılabilir).
-2. κ-mesafe "2 özdeş" — FARKLI (κ₁ dahil/hariç).
+2. κ-mesafe "2 özdeş" — FARKLI (κ₁ dahil/hariç). **F0b:** tek `bounded_kappa_distance(include_mean)` — ayrım parametrede korundu.
 3. Sturm 3 kopya — exact sympy İSPAT vs numpy hızlı (rigor korunur).
 4. 4 mesafe metriği — zaten dispatcher (`metric.distance`).
 5. `nearest()` 3 kopya — zaten dispatcher (`semantic.nearest(metric=)`).

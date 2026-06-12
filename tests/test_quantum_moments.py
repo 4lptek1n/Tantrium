@@ -1,7 +1,12 @@
 """Serbest kümülantlar ve kuantum imza testleri."""
 import math
 import pytest
-from tantrium.core.quantum_moments import FreeCumulants, QuantumSignature, free_entropy
+from tantrium.core.quantum_moments import (
+    FreeCumulants,
+    QuantumSignature,
+    bounded_kappa_distance,
+    free_entropy,
+)
 
 
 MU_SIMPLE = [1.0, 0.3, 0.15, 0.08, 0.04, 0.02, 0.01, 0.005]
@@ -153,6 +158,55 @@ def test_free_entropy_finite_for_spread():
     """Standart momentler → sonlu entropi."""
     chi = free_entropy(MU_SIMPLE)
     assert math.isfinite(chi), f"χ={chi} sonlu olmalı"
+
+
+# ── F0b: bounded_kappa_distance kanonik κ-mesafe (tek imza) ──────────────────
+
+MU_A = [1.0, 0.3, 0.15, 0.08, 0.04, 0.02, 0.01, 0.005]
+MU_B = [1.0, 0.5, 0.30, 0.18, 0.10, 0.06, 0.03, 0.015]
+
+
+def test_bounded_kappa_distance_structural_golden():
+    """include_mean=False → eski _structural_kappa_distance (κ₂,κ₃,κ₄) ile bit-aynı."""
+    ka = FreeCumulants.from_moments(MU_A).k
+    kb = FreeCumulants.from_moments(MU_B).k
+    legacy = sum(abs(math.tanh(ka[i]) - math.tanh(kb[i])) for i in (1, 2, 3))
+    canon = bounded_kappa_distance(MU_A, MU_B, include_mean=False)
+    assert abs(canon - legacy) < 1e-15, f"structural mod {canon} ≠ legacy {legacy}"
+
+
+def test_bounded_kappa_distance_closure_golden():
+    """include_mean=True → eski _bounded_kappa_error (κ₁..κ₄) ile bit-aynı."""
+    ka = FreeCumulants.from_moments(MU_A).k
+    kb = FreeCumulants.from_moments(MU_B).k
+    legacy = sum(abs(math.tanh(ka[i]) - math.tanh(kb[i])) for i in range(4))
+    canon = bounded_kappa_distance(MU_A, MU_B, include_mean=True)
+    assert abs(canon - legacy) < 1e-15, f"closure mod {canon} ≠ legacy {legacy}"
+
+
+def test_bounded_kappa_distance_default_excludes_mean():
+    """Varsayılan include_mean=False — merkez κ₁ farkı sonuca girmemeli."""
+    # Aynı şekil (κ₂,κ₃,κ₄) ama farklı merkez (κ₁) → varsayılan mesafe küçük olmalı
+    same_shape = bounded_kappa_distance(MU_A, MU_A, include_mean=False)
+    assert same_shape == 0.0, "Aynı μ → sıfır mesafe"
+    # include_mean True ve False farklı sonuç vermeli (κ₁ terimi eklenince)
+    d_no_mean = bounded_kappa_distance(MU_A, MU_B, include_mean=False)
+    d_mean = bounded_kappa_distance(MU_A, MU_B, include_mean=True)
+    assert d_mean > d_no_mean, "Merkez dahil → en az κ₁ farkı kadar büyük"
+
+
+def test_bounded_kappa_distance_freecumulant_roundtrip():
+    """FreeCumulants → to_moments_approx → bounded_kappa_distance κ₁..κ₄ korunur.
+
+    production_judge._bounded_kappa_error bu yolu kullanır; roundtrip κ₁..κ₄ tam.
+    """
+    ka = FreeCumulants.from_moments(MU_A)
+    kb = FreeCumulants.from_moments(MU_B)
+    # Doğrudan κ uzayında (eski yol) vs μ-roundtrip (yeni kanonik yol)
+    direct = sum(abs(math.tanh(ka.k[i]) - math.tanh(kb.k[i])) for i in range(4))
+    via_mu = bounded_kappa_distance(
+        ka.to_moments_approx(), kb.to_moments_approx(), include_mean=True)
+    assert abs(direct - via_mu) < 1e-9, f"roundtrip κ₁..κ₄ kaybı: {direct} ≠ {via_mu}"
 
 
 def test_nearest_quantum_metric_wired():
