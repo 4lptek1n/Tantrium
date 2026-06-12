@@ -12,8 +12,8 @@ Hedef tipi otomatik:
   hastalık → κ_gerekli = κ_sağlıklı ⊟ κ_hastalık (ters)
   SMILES   → doğrudan imza
 
-Üretim: 3D konformer (ETKDGv3), evren-kapanışı, 6 eksen yargı, sertifika.
-Sertifika: spektral zorunluluk (deterministik), yeterlilik değil.
+Çıktı: SMILES + 3D SDF (ETKDGv3) + evren-kapanışı kanıtı + 6 eksen sertifika.
+Sistem tahmin etmez — kanıtlar. Sertifika deterministik, wet-lab onayı ayrıdır.
 """
 from __future__ import annotations
 
@@ -362,8 +362,8 @@ class ProductionEngine:
             injected_as=injected_as, sdf_path=sdf,
             candidates=scored[:top_k], verdict=verdict,
             note=("Üretim ve yargı tek Sturm-pozitiflik ekseni (RH'nin H_{d,j}≥0 "
-                  "kriteri). 3D yapı: ETKDGv3 konformeri üretildi. Spektral "
-                  "zorunluluk = gerekli koşul; biyolojik geçerlilik wet-lab ile."),
+                  "kriteri). Sistem tahmin etmez — matematiksel sertifika üretir. "
+                  "Wet-lab onayı ayrıdır."),
         )
 
     # ── Çok-stratejili havuz ──────────────────────────────────────────────
