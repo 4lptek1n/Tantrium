@@ -70,6 +70,7 @@ src/tantrium/          ← pip install -e . ile kurulu paket
     spectral.py        ← SpectralMeasure, gram_spectrum
   reasoning/           ← NecessityEngine, reasoner, inference, thinker...
   research/            ← ProofLoop, explorer, researcher, ingest, goal, actor
+    net.py             ← http_get_json(_link) TEK HTTP-JSON transport (#9 dedup)
   language/            ← CertifiedGenerator, Speaker, LanguageBootstrap
   perception/          ← duyusal grounding (ses/görüntü → AYNI moment uzayı)
     encode.py          ← encode_signal/encode_image/encode_matrix
@@ -461,8 +462,8 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: 466 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b golden] +
-  14 core_machine[+2 F2b regresyon] + 12 admission_parity[F3] + 7 molecular_3d[#7 dedup] + ...)
+- Tests: 473 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b golden] +
+  14 core_machine[+2 F2b regresyon] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] + ...)
 
 ---
 

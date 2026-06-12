@@ -21,7 +21,6 @@ import pathlib
 import time
 import urllib.error
 import urllib.parse
-import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Callable
@@ -38,25 +37,15 @@ _STATE_FILE = _STATE_DIR / "ingest_state.json"
 # ─── HTTP yardımcı ────────────────────────────────────────────────────────────
 
 def _http_json(url: str, timeout: float = 20.0):
-    req = urllib.request.Request(url, headers=_UA)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    """Kanonik `net.http_get_json`'a delege (#9). UA: tam araştırma UA'sı."""
+    from tantrium.research.net import http_get_json
+    return http_get_json(url, timeout=timeout, user_agent=_UA["User-Agent"])
 
 
 def _http_json_with_link(url: str, timeout: float = 20.0):
-    """JSON döndür + Link header'daki 'next' cursor URL'sini (varsa) döndür."""
-    req = urllib.request.Request(url, headers=_UA)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        body = json.loads(resp.read().decode("utf-8"))
-        link = resp.headers.get("Link", "") or ""
-    # Link: <https://...cursor=XXX>; rel="next"
-    # URL içinde virgül olabilir (fields=a,b,c) — regex ile <...>; rel="next" yakala
-    import re
-    next_url = None
-    m = re.search(r'<([^>]+)>\s*;\s*rel="next"', link)
-    if m:
-        next_url = m.group(1)
-    return body, next_url
+    """JSON döndür + Link header'daki 'next' cursor URL'si. `net.http_get_json_link`'e delege."""
+    from tantrium.research.net import http_get_json_link
+    return http_get_json_link(url, timeout=timeout, user_agent=_UA["User-Agent"])
 
 
 # ─── Ingest sonucu ────────────────────────────────────────────────────────────

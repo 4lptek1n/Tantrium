@@ -381,24 +381,31 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Tekrar:** `_make_probe` sentetik yapı ≈ bridge._paradigm_structure_for (farklı amaç: test vs eşleme).
   Döngü Cognition iskeletine girer (paradigma-boşluk stratejisi).
 
+### ✅ research/net.py — TEK HTTP-JSON transport [#9 dedup ÇÖZÜLDÜ 2026-06]
+- **İş:** `http_get_json(url, *, timeout, user_agent, errors)` + `http_get_json_link` (Link
+  header rel="next" cursor). İstisna yutmaz — caller fallback'i yönetir. `errors` decode modu
+  (strict=ingest/researcher, replace=growth toleranslı).
+- **Güç:** ingest/researcher/growth üçünün ham `urllib.request` desenini tek ilkele indirir.
+- **Tekrar:** Birleştirildi — yalnız transport. Parse modül-başına AYRI (gerçek ayrım). Tests: 7.
+
 ### ✅ research/researcher.py — kör-nokta veri döngüsü (AutonomousResearcher)
 - **İş:** `assess_gaps` (MetaParadigm.blind_spots)→hedef→`_fetch_for_gap` (algoritmik `_generate_sequences`
   her çapa için: asal/zeta/GUE/Lucas/Ramanujan-tau/elliptic... + OEIS/LMFDB/PubChem)→observe→ilerleme.
-- **Tekrar:** **VERİ-ÇEKME 3-YÖNLÜ TEKRAR (#9):** `fetch_oeis/lmfdb/pubchem` ≈ ingest ≈ growth fetch.
-  → Ingestor (kaynak adaptörleri, resumable cursor) birleşmesi.
+- **#9:** `fetch_oeis/lmfdb/pubchem` 3 satır-içi urlopen → `net.http_get_json` delege (UA="Tantrium-AGI/1.0").
+  Parse mantığı (OEIS A-numara, LMFDB zero, PubChem SMILES→Morgan) KORUNDU.
 
 ### ✅ research/ingest.py — batch gerçek-veri (DataIngestor)
 - **İş:** UniProt/PubChem/OEIS gerçek veri, resumable state (.tantrium/ingest_state.json),
   `_observe_all`→observer.observe, `run`/`scale`. Cursor sayfalaması.
-- **Tekrar:** fetch metotları #9 kümesinde.
+- **#9:** `_http_json`/`_http_json_with_link` → `net.http_get_json(_link)` delege (tam araştırma UA).
 
 ### ✅ research/growth.py — sınırsız akış (GrowthEngine)
 - **İş:** `stream`: 8-kaynak rotasyon (PubChem/ChEMBL/UniProt/KEGG/OEIS/web/PubMed/Wikidata)→
   observer.pulse→periyodik `_consolidate` (NecessityEngine + SelfModel.locate). Resumable
   growth_state.json. `_next_batch`, `_fetch_*` (8 fetcher).
-- **Okuma notu:** head(1-130)+stream+_consolidate satır-satır okundu; 8 fetcher gövdesi desen-doğrulandı
-  (ingest/researcher ile aynı UniProt/PubChem/OEIS deseni).
-- **Tekrar:** fetch #9 kümesinde. Döngü Cognition iskeletine girer (akış stratejisi).
+- **#9:** `_http_json`/`_http_json_link` → `net.http_get_json(_link, errors="replace")` delege
+  (toleranslı decode korundu). 8 fetcher gövdeleri ingest/researcher ile aynı deseni paylaşıyordu.
+- **Tekrar:** transport birleşti; döngü (stream) Cognition iskeletine girer (akış stratejisi).
 
 ### ✅ research/goal.py — hedef temsili (Goal · GoalManifold)
 - **İş:** `Goal` (manifold-certified kavram), `GoalManifold.pursue` (nearest + semantic bonus),
@@ -520,7 +527,7 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 |---|--------|----------|
 | ✅ | ~~3D-SDF: `inverse._make_3d` ≈ `certifier._smiles_to_sdf` (ETKDGv3 seed=42)~~ **ÇÖZÜLDÜ** | `core/molecular_3d.embed_3d_sdf` (prefix/props/remove_hs parametreli); ikisi de delege |
 | 8 | Konveks-moment-kombo: `reasoner.compose`+`generalization.interpolate/derive/blend`+`autonomous._local_genesis`+`synthesis.bridge/genesis` | Synthesizer tek konveks-çekirdek (motorlar/API korunur) |
-| 9 | Veri-çekme: `ingest`/`researcher`/`growth` fetch_* (UniProt/PubChem/OEIS) | Ingestor kaynak-adaptörleri |
+| ✅ | ~~Veri-çekme: `ingest`/`researcher`/`growth` fetch_* (UniProt/PubChem/OEIS)~~ **TRANSPORT ÇÖZÜLDÜ** | `research/net.http_get_json(_link)` ortak HTTP ilkeli; 3 modül delege. Parse mantığı modül-başına KORUNDU (çıktı şekilleri farklı) |
 | 10 | Boşluk-tespiti 4 yer: `necessity`(geometrik) `paradigm.blind_spots`(çapa) `explorer.scan_frontier`(kayıtlı) `topology`(grid) | GapFinder birliği (4 sinyal de korunur) |
 | — | 4 döngü: `proof_loop`/`explorer`/`researcher`/`growth.stream` | Cognition iskeleti + pluggable strateji (HER strateji korunur) |
 | ✅ | ~~`ai.ask` çift-encode (CoreMachine'i atlayıp ayrı grounder)~~ **F2b ÇÖZÜLDÜ** | gcert evidence'ta stash, ask yeniden kullanır |

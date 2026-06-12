@@ -75,24 +75,15 @@ class GrowthReport:
 
 
 def _http_json(url: str, timeout: int = 12) -> Any:
-    req = urllib.request.Request(url, headers=_UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8", "replace"))
+    """Kanonik `net.http_get_json`'a delege (#9). Toleranslı decode (replace)."""
+    from tantrium.research.net import http_get_json
+    return http_get_json(url, timeout=timeout, user_agent=_UA["User-Agent"], errors="replace")
 
 
 def _http_json_link(url: str, timeout: int = 15) -> tuple[Any, str | None]:
-    """JSON + Link header 'next' URL (UniProt cursor sayfalaması için)."""
-    req = urllib.request.Request(url, headers=_UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        body = json.loads(r.read().decode("utf-8", "replace"))
-        link = r.headers.get("Link", "") or ""
-    next_url = None
-    for part in link.split(","):
-        if 'rel="next"' in part:
-            s, e = part.find("<"), part.find(">")
-            if s != -1 and e != -1:
-                next_url = part[s + 1:e]
-    return body, next_url
+    """JSON + Link header 'next' URL (UniProt cursor). `net.http_get_json_link`'e delege."""
+    from tantrium.research.net import http_get_json_link
+    return http_get_json_link(url, timeout=timeout, user_agent=_UA["User-Agent"], errors="replace")
 
 
 class GrowthEngine:

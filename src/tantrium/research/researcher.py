@@ -17,7 +17,6 @@ import json
 import time
 import urllib.error
 import urllib.parse
-import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -330,15 +329,13 @@ class AutonomousResearcher:
 
         Başarısız veya ağ yoksa boş liste döner; caller fallback kullanır.
         """
+        from tantrium.research.net import http_get_json
         encoded = urllib.parse.quote(keyword)
         url = f"https://oeis.org/search?q={encoded}&fmt=json&start=0"
         results: list[tuple[str, list[float]]] = []
         try:
-            req = urllib.request.Request(
-                url, headers={"User-Agent": "Tantrium-AGI/1.0"}
-            )
-            with urllib.request.urlopen(req, timeout=self.oeis_timeout) as resp:
-                raw_data = json.loads(resp.read().decode("utf-8"))
+            raw_data = http_get_json(url, timeout=self.oeis_timeout,
+                                     user_agent="Tantrium-AGI/1.0")
             # OEIS /search returns list directly; some endpoints return dict with "results"
             if isinstance(raw_data, list):
                 data_list = raw_data
@@ -369,13 +366,11 @@ class AutonomousResearcher:
 
     def fetch_lmfdb_zeros(self, n: int = 20) -> list[tuple[str, list[float]]]:
         """LMFDB'den Riemann zeta sıfırlarını çek."""
+        from tantrium.research.net import http_get_json
         url = f"https://www.lmfdb.org/api/Zeros/zeta/?N={n}&_format=json"
         try:
-            req = urllib.request.Request(
-                url, headers={"User-Agent": "Tantrium-AGI/1.0"}
-            )
-            with urllib.request.urlopen(req, timeout=self.oeis_timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+            data = http_get_json(url, timeout=self.oeis_timeout,
+                                 user_agent="Tantrium-AGI/1.0")
             zeros = [float(item["zero"]) for item in (data or []) if "zero" in item]
             if len(zeros) >= 6:
                 return [("LMFDB:riemann_zeros", zeros[:32])]
@@ -388,6 +383,7 @@ class AutonomousResearcher:
     def fetch_pubchem(self, query: str, max_results: int = 6) -> list[tuple[str, list[float]]]:
         """PubChem'den SMILES çek → Morgan fingerprint → moment dizisi."""
         from tantrium.core.encoder import encode_smiles
+        from tantrium.research.net import http_get_json
 
         encoded = urllib.parse.quote(query)
         url = (
@@ -396,11 +392,8 @@ class AutonomousResearcher:
         )
         results: list[tuple[str, list[float]]] = []
         try:
-            req = urllib.request.Request(
-                url, headers={"User-Agent": "Tantrium-AGI/1.0"}
-            )
-            with urllib.request.urlopen(req, timeout=self.oeis_timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+            data = http_get_json(url, timeout=self.oeis_timeout,
+                                 user_agent="Tantrium-AGI/1.0")
             compounds = (data.get("PropertyTable") or {}).get("Properties") or []
             for c in compounds[:max_results]:
                 smiles = c.get("SMILES", "") or c.get("IsomericSMILES", "")
