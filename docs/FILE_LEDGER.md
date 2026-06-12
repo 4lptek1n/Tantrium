@@ -290,9 +290,47 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ---
 
-## Henüz ⬜ KATALOG (kendim okumadım — güvenme, doğrulanacak)
+## L4 Reasoning (akıl yürütme operatörleri)
 
-**reasoning:** necessity.py · reasoner.py · inference.py · thinker.py · planner.py · generalization.py
+### ✅ reasoning/necessity.py — mantıksal zorunluluk (NecessityEngine)
+- **İş:** `compute_transitive_closure` (A→B→C ⟹ A→C zorunlu; REQUIRES/ACHIEVES/COMPOSED/IS_A
+  kenarları, BFS/DFS, TAU'ya enjekte), `find_manifold_gaps` (teorem çiftleri moment-orta-noktası,
+  en yakın kavram uzaksa boşluk), `run`. `close()` ve growth `_consolidate` bunu çağırır.
+- **Tekrar:** TAU geçişi reasoner ile İLİŞKİLİ ama farklı semantik (aynı-tip kapanış vs tipli çıkarım). Birleştirilmez.
+
+### ✅ reasoning/reasoner.py — tipli forward-chaining (GraphReasoner)
+- **İş:** `query` (`_CHAIN_RULES`: IS_A+ACHIEVES→ACHIEVES, CAUSES+CAUSES→CAUSES... türetilen
+  kenar TİPİ girdi tiplerine bağlı), `_proxy_reason` (kenar yoksa moment-komşu proxy), `compose`
+  (konveks moment birleşim), `chain_all`.
+- **Tekrar:** `compose` GERÇEK TEKRAR kümesinde (aşağı bkz). query/chain_all öksüz değil — ai.reason kullanır.
+
+### ✅ reasoning/generalization.py — konveks interpolasyon (HankelGeneralizer)
+- **İş:** `interpolate` (α·μ_A+(1-α)·μ_B), `derive` (N uniform ort.), `explore_midpoints`
+  (A→B boşluk haritası), `weighted_blend`. PSD garantili (konveks komb. PSD). Eksik kavram auto-encode.
+- **Tekrar:** **GERÇEK TEKRAR KÜMESİ (#8):** konveks-moment-kombinasyonu `reasoner.compose` +
+  `generalization.interpolate/derive/blend` + `autonomous._local_genesis` + `synthesis.bridge`'te
+  ~5 yerde. Synthesizer çatısı bunları tek konveks-çekirdek arkasına alır (motorlar/API korunur).
+
+### ✅ reasoning/inference.py — ses çıkarım kuralları (InferenceChain)
+- **İş:** 7 ses kural (COMPOSE_ALEPH tensör · TRANSFER_BET · CHAIN_TAV · UNION_EMET · BOUND_HE ·
+  SPECTRAL_ZAYIN · CAUSAL_NECESSITY). `infer(run_a,run_b)`, `run_all` (tümdengelimsel kapanış).
+- **Güç:** Her sonuç YENİ teorem (kanıtlı). thinker ell=2, ai.infer, engine.grow kullanır.
+  `run_all` öksüz — Cognition'a bağlanırsa güç ekler.
+- **Tekrar:** YOK. Alt sınıflar `apply()` tam uygular (base NotImplementedError sorun değil).
+
+### ✅ reasoning/thinker.py — çok-seviyeli derin düşünce (Thinker)
+- **İş:** `think`: ell=0 (encode+certify) → ell=1 (TAU walk, semantic>ALEPH) → ell=2 (InferenceChain
+  komşu çiftleri→türetilen iddia) → ell=3 (ikinci-derece walk). ThinkingResult + sabit nokta.
+- **Tekrar:** YOK. Tek-soru çok-seviye orkestrasyon. "Context window yok — manifold hafıza."
+
+### ✅ reasoning/planner.py — hedef BFS planlama (Planner)
+- **İş:** `plan`: known→hedef greedy BFS (TAU kenarları, moment mesafesi azalt), PlanStep dizisi.
+  `execute_plan`→Actor. `_infer_known` (session'dan).
+- **Tekrar:** YOK. Hedef-yol bulma (reasoner kavram-merkezli'den farklı).
+
+---
+
+## Henüz ⬜ KATALOG (kendim okumadım — güvenme, doğrulanacak)
 
 **research:** proof_loop.py · explorer.py · researcher.py · ingest.py · goal.py · actor.py ·
 growth.py · autonomous.py
