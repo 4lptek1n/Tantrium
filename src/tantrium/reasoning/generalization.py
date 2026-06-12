@@ -93,13 +93,9 @@ class HankelGeneralizer:
                 return None
 
         alpha = max(0.0, min(1.0, alpha))
-        k = min(len(ca.moments), len(cb.moments))
-        blended = [
-            Fraction(
-                alpha * float(ca.moments[i]) + (1.0 - alpha) * float(cb.moments[i])
-            ).limit_denominator(10 ** 9)
-            for i in range(k)
-        ]
+        from tantrium.core.moment_ops import convex_combine
+        blended = convex_combine(
+            [ca.moments, cb.moments], [alpha, 1.0 - alpha], mode="frac")
 
         name = derived_name or f"⟨{name_a}⊕{name_b}⟩"
         concept = Concept(
@@ -188,13 +184,9 @@ class HankelGeneralizer:
         if len(concepts) < 2:
             return None
 
-        k = len(concepts[0].moments)
-        blended = [
-            Fraction(
-                sum(weights[i] * float(concepts[i].moments[j]) for i in range(len(concepts)))
-            ).limit_denominator(10 ** 9)
-            for j in range(k)
-        ]
+        from tantrium.core.moment_ops import convex_combine
+        blended = convex_combine(
+            [c.moments for c in concepts], weights, mode="frac")
 
         names = [n for n, _ in weighted_concepts]
         name = derived_name or "⟨" + "+".join(f"{n}×{w:.2f}" for n, w in weighted_concepts[:3]) + "⟩"

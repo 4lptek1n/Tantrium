@@ -327,6 +327,15 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **#10:** `find_manifold_gaps` = GapFinder'ın "geometric" sinyali (DEĞİŞMEDİ, native çağrılabilir).
 - **Tekrar:** TAU geçişi reasoner ile İLİŞKİLİ ama farklı semantik (aynı-tip kapanış vs tipli çıkarım). Birleştirilmez.
 
+### ✅ core/moment_ops.py — konveks moment çekirdeği [#8 KISMÎ 2026-06]
+- **İş:** `convex_combine(moment_lists, weights, *, mode)`. mode="exact" (Fraction tam,
+  reasoner.compose) | mode="frac" (float ağırlıklı toplam→Fraction-1e9, generalization).
+- **Güç:** İki sayısal rejim TEK çekirdekte ama AYRI mod — exact vs float ayrımı KORUNDU.
+- **DÜRÜST SINIR:** Yalnız bit-aynı ağırlıklı-toplam siteleri bağlandı (interpolate/weighted_blend/
+  compose). `derive` (Σμ/n), `synthesis.bridge` ((a+b)/2), `_local_genesis` (ham float) böl/ham
+  aritmetiği KORUNDU — float'ta ağırlıklı-toplamdan ayrışır, PSD sınırını kaydırmamak için
+  bağlanMADI (ledger "naif birleştirme gücü öldürür" uyarısı). Tests: 7.
+
 ### ✅ reasoning/gap_finder.py — TEK boşluk dispatcher [#10 dedup ÇÖZÜLDÜ 2026-06]
 - **İş:** `GapFinder(engine).find(signal=)` — 4 boşluk-tespit sinyalini additive facade arkasına alır:
   geometric (necessity) · anchor (paradigm.blind_spots) · recorded (explorer.scan_frontier) · grid
@@ -536,7 +545,7 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 | # | Tekrar | Birleşme |
 |---|--------|----------|
 | ✅ | ~~3D-SDF: `inverse._make_3d` ≈ `certifier._smiles_to_sdf` (ETKDGv3 seed=42)~~ **ÇÖZÜLDÜ** | `core/molecular_3d.embed_3d_sdf` (prefix/props/remove_hs parametreli); ikisi de delege |
-| 8 | Konveks-moment-kombo: `reasoner.compose`+`generalization.interpolate/derive/blend`+`autonomous._local_genesis`+`synthesis.bridge/genesis` | Synthesizer tek konveks-çekirdek (motorlar/API korunur) |
+| 🟡 | Konveks-moment-kombo (#8 KISMÎ): `core/moment_ops.convex_combine(mode=exact\|frac)`. `reasoner.compose` (exact) + `generalization.interpolate/weighted_blend` (frac) bağlandı (bit-aynı). `derive`/`synthesis.bridge`/`autonomous._local_genesis` KORUNDU (böl/ham-float aritmetiği = gerçek sayısal ayrım, PSD sınırı kaydırmamak için) |
 | ✅ | ~~Veri-çekme: `ingest`/`researcher`/`growth` fetch_* (UniProt/PubChem/OEIS)~~ **TRANSPORT ÇÖZÜLDÜ** | `research/net.http_get_json(_link)` ortak HTTP ilkeli; 3 modül delege. Parse mantığı modül-başına KORUNDU (çıktı şekilleri farklı) |
 | ✅ | ~~Boşluk-tespiti 4 yer: `necessity`(geometrik) `paradigm.blind_spots`(çapa) `explorer.scan_frontier`(kayıtlı) `topology`(grid)~~ **ÇÖZÜLDÜ** | `reasoning/gap_finder.GapFinder.find(signal=)` additive dispatcher; 4 metot DEĞİŞMEDİ, `Gap.raw` orijinali taşır |
 | — | 4 döngü: `proof_loop`/`explorer`/`researcher`/`growth.stream` | Cognition iskeleti + pluggable strateji (HER strateji korunur) |

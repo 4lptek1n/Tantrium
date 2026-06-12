@@ -339,14 +339,11 @@ class GraphReasoner:
         if not cb.is_real():
             return f"'{name_b}' Aleph filtresini geçemiyor (certified değil)."
 
-        k = min(len(ca.moments), len(cb.moments))
         a = Fraction(alpha).limit_denominator(100)
         b = Fraction(1) - a
 
-        composed = [
-            a * ca.moments[i] + b * cb.moments[i]
-            for i in range(k)
-        ]
+        from tantrium.core.moment_ops import convex_combine
+        composed = convex_combine([ca.moments, cb.moments], [a, b], mode="exact")
 
         comp_name = f"{name_a}⊕{name_b}"
         comp_concept = Concept(

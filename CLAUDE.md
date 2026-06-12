@@ -52,6 +52,7 @@ src/tantrium/          ← pip install -e . ile kurulu paket
     semantic.py        ← SemanticManifold (40k kavram, distance(), nearest(metric=), quantum_bridges(), _nearest_l1_extended())
     inverse.py         ← InverseTransport — hedef→W2-minimal moleküller→3D SDF
     molecular_3d.py    ← embed_3d_sdf() TEK 3D SDF util (ETKDGv3 seed=42, #7 dedup)
+    moment_ops.py      ← convex_combine(mode=exact|frac) konveks moment çekirdeği (#8 kısmî)
     quantum_moments.py ← FreeCumulants (Voiculescu κ_k) + QuantumSignature (kuantum imza)
   proof/               ← dyadic ispat ilkleri (pip'ten erişilir)
     dyadic_flow.py     ← solve_greedy (Fraction aritmetik)
@@ -465,8 +466,9 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: 481 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b golden] +
-  14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] + 8 gap_finder[#10] + ...)
+- Tests: 488 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
+  14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] +
+  8 gap_finder[#10] + 7 moment_ops[#8 kısmî] + ...)
 
 ---
 
