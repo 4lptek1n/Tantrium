@@ -2119,6 +2119,22 @@ class AI:
         from tantrium.reasoning.gap_finder import GapFinder
         return GapFinder(self._engine).find(signal=signal, **kw)
 
+    def wonder(self, signal: str = "all", *, alpha: float = 1.0,
+               gamma: float = 0.7, top_k: int = 10, **kw) -> list:
+        """Boşlukları MERAK skoruyla sırala: α·dış-değer·yenilik − γ·dejenerasyon.
+
+        Kendini-tımarı (self-grooming) cezalar: sistemin kendi ürettiği genesis/
+        bridge kavramlarıyla çevrili boşluklar (yüksek dejenerasyon) düşük skor alır;
+        teorem/ingest gibi DIŞSAL bilgiye yakın yeni boşluklar öne çıkar.
+
+        Döner: list[WonderScore] (gap + score + v_ext/novelty/degeneracy bileşenleri).
+        """
+        from tantrium.reasoning.gap_finder import GapFinder
+        from tantrium.reasoning.wonder import WonderScorer
+        gaps = GapFinder(self._engine).find(signal=signal, **kw)
+        scored = WonderScorer(self._engine, alpha=alpha, gamma=gamma).rank(gaps)
+        return scored[:top_k]
+
     def destiny(self, name: str, top_k: int = 5) -> dict:
         """Bir kavramın geleceği — TAU torunları + moment çekicisi."""
         from tantrium.meta.vision import CosmicVision

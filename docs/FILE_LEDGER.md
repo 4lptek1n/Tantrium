@@ -336,6 +336,14 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   aritmetiği KORUNDU — float'ta ağırlıklı-toplamdan ayrışır, PSD sınırını kaydırmamak için
   bağlanMADI (ledger "naif birleştirme gücü öldürür" uyarısı). Tests: 7.
 
+### ✅ reasoning/wonder.py — merak döngüsü (self-grooming cezası) [F4 2026-06]
+- **İş:** `WonderScorer(engine, alpha, gamma).score(gap)/rank(gaps)` → `WonderScore`.
+  `score = α·v_ext·novelty − γ·degeneracy`. v_ext=sentetik-olmayan komşu oranı (dış demir),
+  novelty=tanh(en yakın uzaklık), degeneracy=sentetik komşu oranı (genesis/bridge/interpolation...).
+- **Güç:** Manifoldun kendi içine çökmesini (kendi köprülerinin köprüsü) engeller — γ sentetik
+  bölgeyi cezalar, dışsal bilgiye (teorem/ingest) yakın yeni boşlukları öne çıkarır. `ai.wonder()`.
+- **Tekrar:** YOK — yeni önceliklendirme katmanı. GapFinder çıktısını skorlar. Tests: 7.
+
 ### ✅ reasoning/gap_finder.py — TEK boşluk dispatcher [#10 dedup ÇÖZÜLDÜ 2026-06]
 - **İş:** `GapFinder(engine).find(signal=)` — 4 boşluk-tespit sinyalini additive facade arkasına alır:
   geometric (necessity) · anchor (paradigm.blind_spots) · recorded (explorer.scan_frontier) · grid

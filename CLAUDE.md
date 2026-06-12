@@ -71,6 +71,7 @@ src/tantrium/          ← pip install -e . ile kurulu paket
     spectral.py        ← SpectralMeasure, gram_spectrum
   reasoning/           ← NecessityEngine, reasoner, inference, thinker...
     gap_finder.py      ← GapFinder.find(signal=) TEK boşluk dispatcher (#10 dedup)
+    wonder.py          ← WonderScorer α·v_ext·novelty−γ·degeneracy (self-grooming cezası)
   research/            ← ProofLoop, explorer, researcher, ingest, goal, actor
     net.py             ← http_get_json(_link) TEK HTTP-JSON transport (#9 dedup)
   language/            ← CertifiedGenerator, Speaker, LanguageBootstrap
@@ -341,6 +342,8 @@ ai.lineage_mol("c1ccccc1", depth=3)            # → [[MolPoint]] (benzene ata-t
 ai.manifold_gaps(domain="math_kernel")         # → list[ManifoldGap] (yalnız geometrik sinyal)
 ai.gaps(signal="all")                          # → list[Gap] (4 sinyal birleşik: geometric/anchor/recorded/grid)
 ai.gaps(signal="anchor", threshold=5)          # → list[Gap] (tek sinyal; Gap.raw orijinali taşır)
+ai.wonder(signal="all", gamma=0.7)             # → list[WonderScore]: α·v_ext·novelty−γ·degeneracy
+                                               #   self-grooming cezası: sentetik komşulu boşluk düşük skor
 ai.destiny("prime", top_k=5)                   # → {attractor, descendants, evolution_direction}
 ai.genealogy("protein", depth=4)               # → str (soy zinciri anlatısı)
 ai.signal("tone", freq=440)                    # → sinyal (perceive() için)
@@ -470,9 +473,9 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: 492 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
+- Tests: 499 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
   14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] +
-  8 gap_finder[#10] + 7 moment_ops[#8 kısmî] + 4 deduce[engine.grow bağlama] + ...)
+  8 gap_finder[#10] + 7 moment_ops[#8] + 4 deduce[engine.grow] + 7 wonder[F4 self-grooming] + ...)
 
 ---
 

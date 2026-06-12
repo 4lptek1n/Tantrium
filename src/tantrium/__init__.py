@@ -20,6 +20,7 @@ from tantrium.reasoning.thinker import ThinkingResult, ThinkingLevel
 from tantrium.reasoning.generalization import DerivedConcept, HankelGeneralizer
 from tantrium.reasoning.necessity import NecessityReport, NecessaryEdge, ManifoldGap
 from tantrium.reasoning.gap_finder import Gap, GapFinder
+from tantrium.reasoning.wonder import WonderScore, WonderScorer
 from tantrium.reasoning.reasoner import ChainStep, ReasoningResult, GraphReasoner
 from tantrium.reasoning.planner import Plan, PlanStep, Planner
 from tantrium.research.autonomous import Observation, AutonomousObserver
@@ -121,6 +122,8 @@ __all__ = [
     "ManifoldGap",
     "Gap",
     "GapFinder",
+    "WonderScore",
+    "WonderScorer",
     "DerivedConcept",
     "HankelGeneralizer",
     "ChainStep",
