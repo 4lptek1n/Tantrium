@@ -955,80 +955,20 @@ class AI:
 
     def design_drug(self, protein: str, max_steps: int = 16, beam_width: int = 6,
                     out_dir: str = "results/molecules") -> dict:
-        """KAPALI DÖNGÜ ilaç keşfi — makine işe yarayan molekülü ÜRETENE kadar ilerler.
-
-        Determinist hat: hafıza araması yok, rastgelelik yok.
-          1. Protein → bilinen ligand SMILES → κ-profil (biyolojik yön hedefi)
-          2. simulate(): makine atom-atom molekülü κ-profile DOĞRU diziyor;
-             transport (sturm/dyadic/zeta) gerçeklik geçidi, paradigmalar yapı.
-          3. Her uç judge_binding ile yargılanır; işe yarayanlara 3D SDF üretilir.
-
-        Üretim ve yargı artık ayrık değil — yargı sinyali (κ-profil) üretimin yönü.
-        """
-        import os
+        """Protein → kanıtlı ilaç adayları + 3D SDF. produce() üzerinden çalışır."""
         refs = self._protein_reference_ligands(protein)
         if not refs:
             return {"protein": protein, "verdict": "BİLİNMİYOR",
                     "reason": f"'{protein}' için referans ligand yok — yön kurulamıyor.",
                     "candidates": []}
-
-        profile = []
-        for _nm, smi in refs:
-            try:
-                profile.append([float(m) for m in self.engine.encoder.encode(smi).moments])
-            except Exception:
-                continue
-
-        # Kimyasal primitifler — atom kadar temel başlangıç yapıları.
-        # Makine bunları κ-profile DOĞRU inşa eder; cevap molekülü değil, tohum.
-        PRIMITIVES = [
-            "c1ccccc1",    # benzen
-            "c1ccncc1",    # piridin
-            "c1ccncn1",    # pirimidin (kinaz çekirdeği motifi)
-            "c1cc[nH]c1",  # pirol
-            "C1CCNCC1",    # piperidin
-            "c1ccc2ncccc2c1",  # kinolin
-        ]
-        from tantrium.core.molecular_genesis import MolecularGenesis
-        rep = MolecularGenesis(self.engine).simulate(
-            seeds=PRIMITIVES, max_steps=max_steps, beam_width=beam_width,
-            toward_profile=profile)
-
-        # Uçları + soyu yargıla, işe yarayanları topla
-        seen: set[str] = set()
-        results = []
-        for s in (rep.frontier + list(reversed(rep.lineage))):
-            if s.smiles in seen:
-                continue
-            seen.add(s.smiles)
-            j = self.judge_binding(s.smiles, protein)
-            results.append((s.smiles, j))
-
-        results.sort(key=lambda r: r[1].get("paradigm_dist_to_nearest", 9e9))
-        works = [(smi, j) for smi, j in results if j["verdict"] == "İŞE YARAYABİLİR"]
-
-        os.makedirs(out_dir, exist_ok=True)
-        from tantrium.core.inverse import InverseTransport
-        inv = InverseTransport(self.engine)
-        for smi, j in works[:5]:
-            j["sdf_path"] = inv._make_3d(smi, f"design_{smi[:12]}", out_dir)
-
-        best = (works[0] if works else results[0]) if results else None
-        return {
-            "protein": protein,
-            "n_refs": len(refs),
-            "reference_ligands": [n for n, _ in refs],
-            "verdict": "İŞE YARAYAN ADAY ÜRETİLDİ" if works else "İŞE YARAYAN ÜRETİLEMEDİ",
-            "n_candidates": len(results),
-            "n_works": len(works),
-            "best": {"smiles": best[0], **best[1]} if best else None,
-            "candidates": [{"smiles": smi, "verdict": j["verdict"],
-                            "paradigm_dist": j.get("paradigm_dist_to_nearest"),
-                            "kappa": j.get("kappa_dist_to_nearest"),
-                            "nearest_ligand": j.get("nearest_ligand"),
-                            "sdf": j.get("sdf_path", "")}
-                           for smi, j in results[:10]],
-        }
+        from tantrium.core.production import ProductionEngine
+        cert = ProductionEngine(self.engine).produce(
+            protein, max_steps=max_steps, beam_width=beam_width,
+            out_dir=out_dir, inject=False)
+        result = cert.to_design_dict()
+        result["n_refs"] = len(refs)
+        result["reference_ligands"] = [n for n, _ in refs]
+        return result
 
     def _canonical_kappa(self):
         """Sağlıklı/dengeli referans κ — sistemin kanonik ζ ailesi.
@@ -1045,96 +985,12 @@ class AI:
 
     def cure(self, disease: str, max_steps: int = 14, beam_width: int = 5,
              out_dir: str = "results/molecules") -> dict:
-        """TERS PARADİGMA — hastalığın gerçeğinden, onu nötrleyecek molekülü çıkar.
-
-        '23 paradigmayı tersten çalıştırmak': ileri yön molekül→imza okur; ters
-        yön hastalığın imzasından molekülü ZORUNLU kılar. Serbest kümülant
-        additivitesinin tersi (dekonvolüsyon):
-
-            hastalık ⊞ molekül = sağlıklı   ⟹   κ_molekül = κ_sağlıklı ⊟ κ_hastalık
-
-        Adımlar:
-          1. Hastalığın gerçeğini encode et → κ_hastalık (kelime değil, yapısı)
-          2. κ_sağlıklı = kanonik ζ ailesi (sistemin denge durumu)
-          3. κ_gerekli = κ_sağlıklı ⊟ κ_hastalık  (ters additivity)
-          4. κ_gerekli → μ_gerekli → makine bu imzayı TERSTEN molekül olarak dizer
-
-        Çıkan molekül 'bilinen ilaca benzeyen' değil — hastalığın matematiksel
-        olarak gerektirdiği bileşen. disease: hedef yapı/protein/SMILES.
-        """
-        import os
-        from tantrium.core.quantum_moments import FreeCumulants
-        from tantrium.core.molecular_genesis import MolecularGenesis
-
-        # 1. Hastalığın gerçeği → imza
-        try:
-            d_obj = self.engine.encoder.encode(disease)
-            mu_d = [float(m) for m in d_obj.moments]
-        except Exception:
-            return {"disease": disease, "verdict": "GEÇERSİZ",
-                    "reason": "Hastalık encode edilemedi."}
-        kappa_d = FreeCumulants.from_moments(mu_d)
-
-        # 2-3. Ters additivity: gerekli molekül imzası
-        kappa_healthy = self._canonical_kappa()
-        kappa_req = kappa_healthy.subtract(kappa_d)
-        mu_req_ideal = kappa_req.to_moments_approx()
-
-        # 3b. GERÇEKLENEBİLİRLİK PROJEKSİYONU — ters yön de forward'ın Hankel-PSD
-        # kısıtına uymalı. İstenen imza fiziksel olmayabilir (G=AᵀA daima PSD);
-        # en yakın gerçeklenebilir moment dizisine projekte et.
-        from tantrium.core.reconstruct import reconstruct_measure
-        try:
-            rec = reconstruct_measure(mu_req_ideal, max_atoms=4)
-            mu_req = list(rec.reconstructed_moments) or mu_req_ideal
-            realizability_gap = round(float(rec.reconstruction_error), 4)
-        except Exception:
-            mu_req = mu_req_ideal
-            realizability_gap = None
-
-        # 4. Tersten inşa: makine bu imzaya doğru molekül dizer
-        PRIMITIVES = ["c1ccccc1", "c1ccncc1", "c1ccncn1", "c1cc[nH]c1",
-                      "C1CCNCC1", "c1ccc2ncccc2c1", "CC"]
-        rep = MolecularGenesis(self.engine).simulate(
-            seeds=PRIMITIVES, max_steps=max_steps, beam_width=beam_width,
-            toward_profile=[mu_req])
-
-        # Üretilen molekülün gerekli imzaya ne kadar uyduğu
-        cands = []
-        for s in rep.frontier:
-            try:
-                k_c = FreeCumulants.from_moments(
-                    [float(m) for m in self.engine.encoder.encode(s.smiles).moments])
-                fit = k_c.distance(kappa_req)
-                cands.append((s.smiles, fit, s.n_atoms))
-            except Exception:
-                continue
-        cands.sort(key=lambda x: x[1])
-
-        best_smi = cands[0][0] if cands else (rep.best.smiles if rep.best else None)
-        sdf = ""
-        if best_smi:
-            os.makedirs(out_dir, exist_ok=True)
-            from tantrium.core.inverse import InverseTransport
-            sdf = InverseTransport(self.engine)._make_3d(
-                best_smi, f"cure_{disease[:10]}", out_dir)
-
-        return {
-            "disease": disease,
-            "method": "ters paradigma (serbest dekonvolüsyon)",
-            "kappa_disease": [round(x, 3) for x in kappa_d.k],
-            "kappa_required": [round(x, 3) for x in kappa_req.k],
-            "realizability_gap": realizability_gap,
-            "designed_molecule": best_smi,
-            "signature_fit": round(cands[0][1], 4) if cands else None,
-            "n_atoms": cands[0][2] if cands else None,
-            "sdf": sdf,
-            "candidates": [{"smiles": s, "fit": round(f, 4), "atoms": a}
-                           for s, f, a in cands[:6]],
-            "note": ("Hastalığın gerektirdiği molekül matematiksel zorunlulukla "
-                     "çıkarıldı — bilinen ilaca benzetme değil. Biyolojik geçerlilik "
-                     "wet-lab ile doğrulanmalı."),
-        }
+        """Hastalık → κ-dekonvolüsyon → kanıtlı molekül + 3D SDF. produce() üzerinden."""
+        from tantrium.core.production import ProductionEngine
+        cert = ProductionEngine(self.engine).produce(
+            disease, max_steps=max_steps, beam_width=beam_width,
+            out_dir=out_dir, inject=False)
+        return cert.to_cure_dict()
 
     def simulate(self, seed: str = "CC", max_steps: int = 14,
                  beam_width: int = 5, toward: str | None = None) -> "object":

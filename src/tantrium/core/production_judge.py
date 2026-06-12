@@ -140,26 +140,60 @@ class ProductionCertificate:
     def to_design_dict(self) -> dict:
         """Eski design_drug() dict şekli (sarmalayıcı için)."""
         works = [c for c in self.candidates if c.get("coherent")]
+        best_dict = None
+        if self.designed_smiles:
+            best_dict = {
+                "smiles": self.designed_smiles,
+                "verdict": self.verdict,
+                "sdf_path": self.sdf_path,
+                "paradigm_dist_to_nearest": next(
+                    (a["value"] for a in (self.axes[0].name == "structural"
+                     and [{"value": self.axes[0].value}] or [])
+                     if isinstance(a, dict)), None)
+                    if self.axes else None,
+            }
         return {
             "protein": self.target, "n_refs": 0,
-            "reference_ligands": [], "verdict":
-                "İŞE YARAYAN ADAY ÜRETİLDİ" if works else self.verdict,
+            "reference_ligands": [],
+            "verdict": "İŞE YARAYAN ADAY ÜRETİLDİ" if works else self.verdict,
             "n_candidates": len(self.candidates), "n_works": len(works),
-            "best": {"smiles": self.designed_smiles, "verdict": self.verdict}
-                    if self.designed_smiles else None,
-            "candidates": self.candidates,
+            "best": best_dict,
+            "candidates": [{"smiles": c.get("smiles"), "verdict":
+                            "İŞE YARAYABİLİR" if c.get("coherent") else "İŞE YARAMAZ",
+                            "sdf": c.get("sdf_path", "")}
+                           for c in self.candidates[:10]],
         }
 
     def to_cure_dict(self) -> dict:
         """Eski cure() dict şekli (sarmalayıcı için)."""
+        # κ_required → required_moments ilk 6'sı (κ yaklaşımı)
+        kappa_req = [round(float(x), 3) for x in self.required_moments[:6]]
+        # Closure varsa κ_disease ClosureProof'tan alınabilir, yoksa boş
+        kd = []
+        if self.closure and self.closure.kappa_joint:
+            kd = [round(float(x), 3) for x in self.closure.kappa_joint[:6]]
         return {
             "disease": self.target, "method": "ters paradigma (serbest dekonvolüsyon)",
-            "kappa_disease": [], "kappa_required": list(self.required_moments)[:6],
+            "kappa_disease": kd, "kappa_required": kappa_req,
             "realizability_gap": self.realizability_gap,
             "designed_molecule": self.designed_smiles,
-            "signature_fit": self.signature_fit, "n_atoms": self.n_atoms,
-            "sdf": self.sdf_path, "candidates": self.candidates, "note": self.note,
+            "signature_fit": round(self.signature_fit, 4) if self.signature_fit != float("inf") else None,
+            "n_atoms": self.n_atoms,
+            "sdf": self.sdf_path,
+            "candidates": [{"smiles": c.get("smiles"), "fit": c.get("kappa_fit"),
+                            "atoms": c.get("smiles") and self._n_atoms_safe(c.get("smiles", ""))}
+                           for c in self.candidates[:6]],
+            "note": self.note,
         }
+
+    @staticmethod
+    def _n_atoms_safe(smiles: str) -> int:
+        try:
+            from rdkit import Chem
+            mol = Chem.MolFromSmiles(smiles)
+            return mol.GetNumAtoms() if mol else 0
+        except Exception:
+            return 0
 
 
 class ProductionJudge:

@@ -282,11 +282,12 @@ class ProductionEngine:
             ref_smiles_list.append(smi)
 
         for c in scored[:top_k]:
-            axes, coherent = judge.judge_all_axes(
+            axes_obj, coherent = judge.judge_all_axes(
                 c["smiles"], mu_req, profiles, kappa_thr, ref_smiles_list)
             c["axes"] = [{"name": a.name, "ok": a.ok, "value": round(a.value, 4),
                           "threshold": a.threshold, "detail": a.detail}
-                         for a in axes]
+                         for a in axes_obj]
+            c["_axes_obj"] = axes_obj   # AxisVerdict nesneleri sertifika için
             c["coherent"] = coherent
 
         # ── 7. Hüküm ───────────────────────────────────────────────────
@@ -320,14 +321,33 @@ class ProductionEngine:
             works = ok_best and fit_best <= kappa_thr and coh_best
             verdict = "İŞE YARAYABİLİR" if works else "İŞE YARAMAZ"
 
-        # ── 8. 3D (işe yarayana) ──────────────────────────────────────
+        # ── 8. 3D (tutarlı tüm adaylara) ─────────────────────────────
         sdf = ""
-        if works:
+        if coh_best:
             os.makedirs(out_dir, exist_ok=True)
             try:
                 from tantrium.core.inverse import InverseTransport
-                sdf = InverseTransport(self.engine)._make_3d(
-                    smi_best, f"produce_{target[:10]}", out_dir)
+                inv3d = InverseTransport(self.engine)
+                sdf = inv3d._make_3d(smi_best, f"produce_{target[:10]}", out_dir)
+                # En iyi adayın SDF yolunu candidates içine de yaz
+                for c in scored[:top_k]:
+                    if c["smiles"] == smi_best:
+                        c["sdf_path"] = sdf
+                # Diğer tutarlı adaylara da 3D üret (en fazla 4)
+                n_extra = 0
+                for i, c in enumerate(scored[:top_k]):
+                    if c["smiles"] == smi_best or not c.get("coherent"):
+                        c.setdefault("sdf_path", "")
+                        continue
+                    if n_extra >= 4:
+                        c.setdefault("sdf_path", "")
+                        continue
+                    try:
+                        c["sdf_path"] = inv3d._make_3d(
+                            c["smiles"], f"cand_{target[:8]}_{i}", out_dir)
+                        n_extra += 1
+                    except Exception:
+                        c["sdf_path"] = ""
             except Exception:
                 pass
 
@@ -355,7 +375,7 @@ class ProductionEngine:
             designed_smiles=smi_best, n_atoms=self._n_atoms(smi_best),
             combination=[c.get("combination_partner", "") for c in scored
                          if c.get("combination_partner")] or [],
-            axes=[],  # best'in axes'i candidates[0]'da
+            axes=best.get("_axes_obj", []),
             coherent=coh_best, closure=closure_obj,
             sturm_path_ok=ok_best, pivot_min=pmin_best, signature_fit=fit_best,
             refine_rounds_used=refine_used,
