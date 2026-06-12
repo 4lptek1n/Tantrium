@@ -2597,6 +2597,39 @@ class AI:
             "born_total": born_total,
         }
 
+    def cognition(
+        self,
+        mode: str = "batch",
+        max_cycles: int = 2,
+        time_limit_s: float = 300.0,
+        network: bool = False,
+        strategies: "list | None" = None,
+        verbose: bool = False,
+    ) -> "object":
+        """L5 Cognition döngüsü — strateji-pluggable tek orkestratör.
+
+        ai.run() ve ai.grow()'un genelleştirilmiş hali; kendi strateji listeni enjekte
+        edebilirsin. Mevcut ai.run() ve ai.grow() değişmeden çalışmaya devam eder.
+
+        mode="batch"  → sonlu fazlı (perceive→reflect→operate→prove→persist).
+        mode="stream" → sürekli (GrowthEngine.stream delege).
+
+        Örnek::
+
+            from tantrium.research.cognition import Cognition, PerceivePhase, PersistPhase
+            cog = ai.cognition(mode="batch", max_cycles=1, time_limit_s=60)
+            print(cog.summary())
+        """
+        from tantrium.research.cognition import Cognition
+        cog = Cognition(self._engine, strategies=strategies)
+        return cog.cycle(
+            mode=mode,
+            max_cycles=max_cycles,
+            time_limit_s=time_limit_s,
+            network=network,
+            verbose=verbose,
+        )
+
     def grow(
         self,
         time_limit_s: "float | None" = 300.0,

@@ -445,10 +445,18 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   `plan`/`execute`/`pursue_goal`. ai.act() bunu kullanır.
 - **Tekrar:** YOK. Sınırlı eylem katmanı.
 
-> **F5 BİRLEŞME HEDEFLERİ (doğrulanmış):** (a) Veri-çekme #9 → Ingestor. (b) 4 döngü
-> (proof_loop/explorer/researcher/growth.stream) → Cognition iskeleti + pluggable strateji
-> (HER strateji korunur). (c) Boşluk tespiti 3-yönlü (necessity geometrik / blind_spots paradigma /
-> explorer frontier) → GapFinder birliği. Bunlar gerçek ama strateji-koruyan birleşmeler.
+### ✅ research/cognition.py — L5 Cognition döngü iskeleti (YENİ — F5)
+- **İş:** `Cognition` sınıfı — 4 döngüyü (GrowthEngine/ProofLoop/Explorer/Researcher) tek
+  strateji-pluggable çatı altında birleştirir. `CognitionStrategy` Protocol (runtime_checkable).
+  Yerleşik fazlar: `PerceivePhase` (manifold boyutu) · `ReflectPhase` (GapFinder) ·
+  `OperatePhase` (Researcher+Explorer delege) · `ProvePhase` (ProofLoop delege) · `PersistPhase`.
+  `cycle(mode="batch"|"stream")` — batch: fazlı sonlu; stream: GrowthEngine.stream delege.
+  `add_strategy(before=)` ile özel faz enjeksiyonu. `ai.cognition()` facade.
+- **Tekrar:** 4 döngü DEĞİŞMEDİ; Cognition bunlara delege eder (strateji koruyucu).
+
+> **F5 TAMAMLANDI (2026-06):** (a) Veri-çekme #9 (net.py) ✅ (b) 4 döngü → Cognition
+> iskeleti + pluggable strateji ✅ (c) Boşluk tespiti → GapFinder birliği (#10) ✅
+> (d) Encoder → imza-encoding + migrasyon (F1/F5) ✅. 15 yeni test (test_cognition.py).
 
 ---
 

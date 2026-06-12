@@ -73,6 +73,7 @@ src/tantrium/          ← pip install -e . ile kurulu paket
     gap_finder.py      ← GapFinder.find(signal=) TEK boşluk dispatcher (#10 dedup)
     wonder.py          ← WonderScorer α·v_ext·novelty−γ·degeneracy (self-grooming cezası)
   research/            ← ProofLoop, explorer, researcher, ingest, goal, actor
+    cognition.py       ← Cognition — L5 strateji-pluggable tek döngü iskeleti (F5)
     net.py             ← http_get_json(_link) TEK HTTP-JSON transport (#9 dedup)
   language/            ← CertifiedGenerator, Speaker, LanguageBootstrap
   perception/          ← duyusal grounding (ses/görüntü → AYNI moment uzayı)
@@ -286,6 +287,10 @@ ai("ATP", "ADP")                               # → str: transport + karşıla�
 ai(tone(440))                                  # → str: algı → dil ("Bir sinyal algıladım...")
 ai(noise_image())                              # → str: görüntü → dil
 ai(b"\x00\xff...")                             # → str: kripto yapı analizi
+ai.cognition(mode="batch", max_cycles=2)       # → CognitionReport: L5 strateji-pluggable döngü
+                                               #   mode="batch": perceive→reflect→operate→prove→persist (sonlu)
+                                               #   mode="stream": GrowthEngine.stream delege (sürekli)
+                                               #   strategies=[...]: özel CognitionStrategy listesi enjekte et
 ai.run(cycles=3, time_limit_s=600)             # → dict: KAPALI DÖNGÜ (tüm büyüme adımları)
                                                #   blind_spots → auto_research → close → genesis → prove → persist
 ai.pulse("CCO")                                # → dict: TEK ÇEKİRDEK NABZI (veri girer + genesis aynı anda)
@@ -477,10 +482,14 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: ~509 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
+- **Cognition döngüsü — F5 (research/cognition.py)**: `Cognition` sınıfı — 4 döngü
+  (GrowthEngine/ProofLoop/Explorer/Researcher) tek strateji-pluggable çatı altında.
+  `CognitionStrategy` Protocol; 5 yerleşik faz (perceive/reflect/operate/prove/persist);
+  `cycle(mode="batch"|"stream")`; `ai.cognition()` facade.
+- Tests: ~525 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
   14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] +
   8 gap_finder[#10] + 7 moment_ops[#8] + 4 deduce[engine.grow] + 7 wonder[F4] + 5 serve[F6] +
-  23 encoder[+5 collision KÖK çözüm] + ...)
+  23 encoder[+5 collision KÖK çözüm] + 15 cognition[F5] + ...)
 
 ---
 
