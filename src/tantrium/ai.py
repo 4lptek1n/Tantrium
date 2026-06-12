@@ -1152,23 +1152,29 @@ class AI:
             seed=seed, max_steps=max_steps, beam_width=beam_width, toward=toward)
 
     def produce(self, target: str, max_steps: int = 16, beam_width: int = 6,
-                out_dir: str = "results/molecules") -> "object":
-        """TEK GİRİŞ — hedeften molekülü üret ve AYNI eksende yargıla.
+                out_dir: str = "results/molecules", refine_rounds: int = 2,
+                combination: bool = True, network: bool = False, inject: bool = True,
+                epsilon: float = 0.5, top_k: int = 10) -> "object":
+        """TEK GİRİŞ — çok-stratejili üret → evren-kapat → 6-eksen sertifikala.
 
-        design_drug + cure + simulate + judge_binding'in tek homojen enerjide
-        birleşimi. Hedef tipi otomatik okunur (protein / hastalık / SMILES) ve
-        üretim ile yargı bölünmez: ikisi de referanstan moleküle giden konveks
-        yolun Sturm pivot pozitifliği — RH'nın H_{d,j}(t)≥0 kriterinin moleküler
-        hali. Gerçeklenebilirlik geçidin içinde; ayrı reconstruct projeksiyonu
-        yok (eski cure'daki realizability_gap artefaktı kaybolur).
+        design_drug + cure + simulate + judge_binding'in TEK homojen enerji
+        ekseninde birleşimi. Hedef tipi otomatik; üretim ve yargı bölünmez:
+        ikisi de referans→molekül konveks yolunun Sturm pivot pozitifliği
+        (RH'nin H_{d,j}≥0 kriteri). Gerçekten-kapatan moleküllerin sıralı
+        kümesini ProductionCertificate olarak döner.
 
-        ai.produce("egfr")               # protein → bilinen ligand yönü
+        ai.produce("egfr")               # protein → bilinen ligand profili
         ai.produce("c1ccc2ncnc(N)c2c1")  # SMILES → doğrudan imza
         ai.produce("alzheimer")          # hastalık → ters dekonvolüsyon
+
+        NOT: 3D docking, ADMET, off-target yok. Spektral zorunluluk (gerekli
+        koşul); biyolojik geçerlilik wet-lab ile.
         """
         from tantrium.core.production import ProductionEngine
         return ProductionEngine(self.engine).produce(
-            target, max_steps=max_steps, beam_width=beam_width, out_dir=out_dir)
+            target, max_steps=max_steps, beam_width=beam_width, out_dir=out_dir,
+            refine_rounds=refine_rounds, combination=combination, network=network,
+            inject=inject, epsilon=epsilon, top_k=top_k)
 
     # Paradigma-matematik mesafe eşiği: kinaz-içi çiftler ≤2.0, kinaz-dışı ≥3.1.
     # 2.5 = boşluğun ortası — 'aynı terapötik tür' ile 'farklı' arasını ayırır.
