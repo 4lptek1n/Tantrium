@@ -91,8 +91,8 @@ tools/                 ← 7 CLI script
   grow_manifold.py
 
 results/agi/
-  manifold.json        ← 39,929 kavram (kalıcı)
-  tau_graph.json       ← 654,962+ edge (kalıcı)
+  manifold.json        ← 44,061 kavram (kalıcı)
+  tau_graph.json       ← 677,651 edge / 43,785 node (kalıcı)
   spectral_cache.json
 ```
 
@@ -345,21 +345,33 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 3. `from tantrium.research_os import ...` → ModuleNotFoundError. subprocess kullan.
 4. `inject_math_kernel()` idempotent — mevcut kavramları geçer.
 5. `transport.py` artık `tantrium.proof.dyadic_flow` import eder (`tantrium.transport` değil).
-6. **Encoder collision**: `protein` = `glucose` = aynı moment (her ikisi 7 unique char, path grafı → aynı spektrum).
-   Label OLMADAN ayrılamaz. Çözüm: `label_aware=True` (40k manifold yeniden encode gerektirir — kırıcı değişiklik).
-   Şu an label + TAU bağlantıları semantic farkı taşır. `_text_to_bigram_matrix(label_aware=True)` sadece CollisionHunter'da.
+6. **Encoder collision + label_aware (DÜZELTİLDİ — doküman koddan geriydi)**: `protein`/`glucose`
+   gibi aynı uzunluk+çeşitlilikteki tokenlar etiketsiz path-bigram spektrumunda çakışır. **Artık ana
+   metin encode yolu `label_aware=True` kullanıyor** (`encoder.py:450,458` → `_to_matrix` str/fallback
+   dalları). Yani YENİ encode edilen metin köşegene codepoint kimliği katar, çakışma encode anında çözülür.
+   DİKKAT (kalan risk): `results/agi/manifold.json`'daki ESKİ kavramlar etiketSİZ kodlamayla kaydedildi —
+   yeni-encode (label_aware) ile eski-kayıt momentleri karşılaştırılırken küçük tutarsızlık olabilir.
+   `_text_to_bigram_matrix(label_aware=True)` HEM ana encoder HEM CollisionHunter'da (eskiden yalnız ikincisindeydi).
 7. **Causal chain entity linking**: "ras pathway" ≠ "ras" string olarak ama `_normalize_entity()` suffix'leri kaldırır.
    Yeni `_extract_relations()` extraction'da normalize eder; eski TAU'daki "pathway" suffix'li kavramlar normalize edilmez.
-9. **`nearest(metric="extended")` tiebreaker**: 10% metin boyutu ağırlığı FARKLI uzunluk/çeşitliliği çözer. Aynı uzunluk+çeşitlilik çakışmaları (protein/glucose) için `label_aware=True` encoding gerekir.
 8. **Grounding — bridge kavramlar çapa olamaz**: 42k+ doymuş manifoldda `⟨bridge:...⟩` genesis köprüleri rezonans çapası
    olunca çöp stringler GROUNDED çıkıyordu. `_RESONANCE_RADIUS=0.3`, bridge hariç, `_RESONANCE_MIN_GROUNDED=4` ile düzeltildi.
    `zzzqqqwwwvvv` gibi tekrarlı harfli stringler organik asitlerle moment çakışması yaşayabilir (encoder collision uzantısı).
+   NOT (doğrulanmış): `grounding.certify` doymuş manifoldda rezonansı HÜKÜM için kullanmaz — iki sağlam
+   sinyale iner: doğrudan TAU kenarı (≥3) + `in_manifold`. Rezonans hesaplanır ama yargıyı vermez.
+9. **`nearest(metric="extended")` tiebreaker**: 10% metin boyutu ağırlığı FARKLI uzunluk/çeşitliliği çözer.
+   Aynı uzunluk+çeşitlilik çakışmaları artık ana yolda `label_aware=True` ile encode-anında çözülüyor (bkz. #6).
+10. **`lang_topology.inject(run_reasoner=True)` ÖLÜ DAL**: var olmayan `TauReasoner`'ı import eder
+    (artık `GraphReasoner`). Varsayılan `run_reasoner=False` → çalışmıyor; çağırma veya GraphReasoner'a güncelle.
+11. **`engine.grow()` ≠ `ai.grow()`**: `engine.grow()` (engine.py) tümdengelimsel kapanış (certify_theorem_graph
+    + InferenceChain tüm çiftler + Explorer) — GERÇEK iş yapar ama facade'a bağlı DEĞİL (öksüz gizli güç).
+    `ai.grow()` ise `GrowthEngine.stream` (veri akışı). İkisi farklı; karıştırma.
 
 ---
 
 ## Mevcut Durum
 
-- Kavram: 44,017 | TAU edge: 677,042 | Paradigma: 23/23
+- Kavram: 44,061 | TAU edge: 677,651 (43,785 node) | Paradigma: 23/23
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
 - CoreMachine: TEK ÇEKİRDEK — 4 eksen tek geçişte (certified+grounding+truth+confidence)
 - Genesis öz-düzeltici: CONTRADICTORY kavramlar manifolda girmiyor (truth axis geçidi)
