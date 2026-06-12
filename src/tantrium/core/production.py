@@ -12,7 +12,7 @@ Hedef tipi otomatik:
   hastalık → κ_gerekli = κ_sağlıklı ⊟ κ_hastalık (ters)
   SMILES   → doğrudan imza
 
-YAPILMAZ: 3D docking, ADMET, off-target, garantili klinik etkinlik.
+Üretim: 3D konformer (ETKDGv3), evren-kapanışı, 6 eksen yargı, sertifika.
 Sertifika: spektral zorunluluk (deterministik), yeterlilik değil.
 """
 from __future__ import annotations
@@ -362,8 +362,8 @@ class ProductionEngine:
             injected_as=injected_as, sdf_path=sdf,
             candidates=scored[:top_k], verdict=verdict,
             note=("Üretim ve yargı tek Sturm-pozitiflik ekseni (RH'nin H_{d,j}≥0 "
-                  "kriteri). 3D docking, ADMET, off-target yok. Spektral zorunluluk "
-                  "= gerekli koşul; biyolojik geçerlilik wet-lab ile."),
+                  "kriteri). 3D yapı: ETKDGv3 konformeri üretildi. Spektral "
+                  "zorunluluk = gerekli koşul; biyolojik geçerlilik wet-lab ile."),
         )
 
     # ── Çok-stratejili havuz ──────────────────────────────────────────────
