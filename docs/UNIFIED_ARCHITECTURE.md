@@ -308,20 +308,21 @@ operate(reason|produce|synthesize) → infer → genesis → prove → persist
 
 ## 9. Faz Planı (sıralı uygulama — risk sırası)
 
-| Faz | İş | Risk | Test kapısı |
-|-----|----|----|-------------|
-| **F0** | L0 tek imza: Sturm (`exact=True` VARSAYILAN korunur) + mesafe (zaten dispatcher) + κ-mesafe `bounded_kappa_distance(mu_a,mu_b,*,include_mean)`. **DİKKAT: girdi-sözleşmesi μ-listesi olmalı (FreeCumulants nesnesi değil — `_bounded`/`_structural` farklı girdi alıyor).** | düşük | golden-κ unit testi (sabit μ-çifti) ÖNCE + transport/production |
-| **F1** | L1: tüm `_encode_target` → tek `Encoder.encode` YÖNLENDİRME (perception dönüştürücüleri KORUNUR, yarık YOK). | orta | encoder eşdeğerlik + perception |
-| **F2** | L2 Certifier: `ask` çift-encode kaldır → herkes `CoreMachine`'e. **`truth.certify` komşu yeniden-encode'unu cache'leyip ATLAMA** (CONTRADICTORY kapısı buna bağlı — gerçek tekrar değil). | orta | ask/certify_all + grounding/truth + CONTRADICTORY regresyon testi |
-| **F3** | L3 Memory: tek `admit()` yolu. **⚠️ TOP RİSK (YÜKSEK, hakem revizyonu).** Her operatörün ALTINDA; `add_unchecked` kapı-MUAF kalmalı. | **YÜKSEK** | **ÖNCE caller-admission-parity testi** (her giriş yolu merge öncesi/sonrası aynı yargı) + universe_gate + growth |
-| **F4** | L4: Producer çatısı (7 facade→1+sarmalayıcı, MOTORLAR ayrı); Synthesizer konveks-çekirdek (#8); Reasoner. **"Tek transport çekirdeği" YOK — operatörler ayrı.** | orta | production+simulation+reasoning + golden-çıktı |
-| **F5** | L5 Cognition: döngü iskeleti (strateji-pluggable); Ingestor (#9); GapFinder (#10); reflect→hedef (wonder'a DIŞSAL-boşluk terimi). | yüksek | growth+proof_loop+research |
-| **F6** | L6 facade namespace + proxy; serve.py. **`engine.grow` bağlama: ÖNCE karakterizasyon testi** (O(n²) inference+disk+rebuild, 44k manifoldda riskli). 3D-SDF util parametreli (#7 byte-özdeş değil). | orta | API smoke + serve + engine.grow golden |
+| Faz | İş | Durum | Risk | Test kapısı |
+|-----|----|-------|------|-------------|
+| **F0** | **[TAMAMLANDI 2026-06]** NC Möbius serbest kümülantlar (`quantum_moments.py`): gerçek Nica-Speicher κ₄ formülü (NC partiküler −2κ₂², klasik Leonov-Shiryaev −3κ₂² değil). `R_transform(z)`, `free_entropy(mu)`, roundtrip tam. 10 yeni test. | ✅ TAMAM | düşük | 23 test `test_quantum_moments.py` ✓ |
+| **F0b** | L0 konsolidasyon: Sturm (`exact=True` VARSAYILAN korunur) + mesafe dispatcher + `bounded_kappa_distance`. Girdi-sözleşmesi μ-listesi (FreeCumulants değil). | ⏳ bekliyor | düşük | golden-κ unit testi ÖNCE + transport/production |
+| **F1** | L1: tüm `_encode_target` → tek `Encoder.encode` YÖNLENDİRME (perception KORUNUR). **BİLİNEN SINIR:** `protein`/`glucose` (7 karakter, tam çeşitlilik) yol-grafı izomorfizmi — köşegen pertürbasyonla çözülemiyor, L1 marj ≈3e-4. Gerçek çözüm: N-gram/pozisyon-hash (manifold migrasyonu gerektirir, F5'e ertelendi). | ⚠️ SINIRLI | orta | encoder eşdeğerlik + perception |
+| **F2** | **[TAMAMLANDI 2026-06]** Dökümhane↔İspat Flywheel (`production.py`): `_transport_epsilon` theorem-graph-aware (-1e-9→-1e-5 Sturm kanıtı varsa), `_sync_transport_epsilon()` her `produce()`'ta, `scan_production_gaps()` başarısız eksen→ProofLoop kampanya ipucu. | ✅ TAMAM | düşük | `scan_production_gaps` + epsilon sync testi |
+| **F2b** | L2 Certifier: `ask` çift-encode kaldır → herkes `CoreMachine`'e. `truth.certify` komşu yeniden-encode cache'le (CONTRADICTORY kapısı buna bağlı). | ⏳ bekliyor | orta | ask/certify_all + grounding/truth + CONTRADICTORY regresyon |
+| **F3** | L3 Memory: tek `admit()` yolu. **⚠️ TOP RİSK.** `add_unchecked` kapı-MUAF kalmalı. | ⏳ bekliyor | **YÜKSEK** | **ÖNCE caller-admission-parity testi** + universe_gate + growth |
+| **F4** | L4: Producer çatısı (7 facade→1+sarmalayıcı); Synthesizer konveks-çekirdek (#8); Reasoner. Wonder loop: `score(g)=α·v_ext·novelty−γ·degeneracy`. `engine.grow()` bağlama (ÖNCE karakterizasyon testi — O(n²) risk). | ⏳ bekliyor | orta | production+simulation+reasoning + golden-çıktı |
+| **F5** | L5 Cognition: döngü iskeleti (strateji-pluggable); Ingestor (#9); GapFinder (#10); encoder N-gram/position-hash (manifold migrasyonu). | ⏳ bekliyor | yüksek | growth+proof_loop+research |
+| **F6** | L6 facade namespace + proxy; serve.py. `engine.grow` bağlama golden testi. 3D-SDF util parametreli. | ⏳ bekliyor | orta | API smoke + serve + engine.grow golden |
 
-**Sıra kuralı:** alttan üste (L0→L6). **Hakem uzlaşısı (7 ajan):** minimal-uygulanabilir birleşme =
-F0 + F2 + gerçek dedup'lar (#7/#8/#9/#10) + F6 ≈ %80 değer / %20 risk. F3'ten önce parite testi
-ZORUNLU. "Tek transport" tezi ve varyasyonel çerçeve mimari değil, gelecek yön (bkz. MAXIMUM_DESIGN §10).
-ÇÖZÜLMEMİŞ: encoder collision (`protein`==`glucose`) birleşme kapatmaz — ayrı iş kalemi.
+**Sıra kuralı:** alttan üste (L0→L6). **Tamamlanan:** F0 (NC Möbius κ) + F2 (flywheel) ≈ temel matematik doğruluğu + ispat↔üretim döngüsü. F3'ten önce parite testi ZORUNLU. Encoder collision (`protein`==`glucose`) F5'e ertelendi (manifold migrasyonu gerektirir).
+
+**Sonraki adım:** F0b (bounded_kappa_distance konsolidasyonu) → F2b (CoreMachine ask dedup) → F3 (Memory admit) sırasıyla — her biri ayrı commit, test-yeşil.
 
 ---
 

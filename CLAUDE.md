@@ -345,13 +345,14 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 3. `from tantrium.research_os import ...` → ModuleNotFoundError. subprocess kullan.
 4. `inject_math_kernel()` idempotent — mevcut kavramları geçer.
 5. `transport.py` artık `tantrium.proof.dyadic_flow` import eder (`tantrium.transport` değil).
-6. **Encoder collision + label_aware (DÜZELTİLDİ — doküman koddan geriydi)**: `protein`/`glucose`
-   gibi aynı uzunluk+çeşitlilikteki tokenlar etiketsiz path-bigram spektrumunda çakışır. **Artık ana
-   metin encode yolu `label_aware=True` kullanıyor** (`encoder.py:450,458` → `_to_matrix` str/fallback
-   dalları). Yani YENİ encode edilen metin köşegene codepoint kimliği katar, çakışma encode anında çözülür.
-   DİKKAT (kalan risk): `results/agi/manifold.json`'daki ESKİ kavramlar etiketSİZ kodlamayla kaydedildi —
-   yeni-encode (label_aware) ile eski-kayıt momentleri karşılaştırılırken küçük tutarsızlık olabilir.
-   `_text_to_bigram_matrix(label_aware=True)` HEM ana encoder HEM CollisionHunter'da (eskiden yalnız ikincisindeydi).
+6. **Encoder collision — KISMİ ÇÖZÜM, BİLİNEN SINIR**: `protein`/`glucose` gibi aynı
+   uzunluk+tam-çeşitlilikteki (7 karakter) tokenlar path-bigram spektrumunda **yapısal izomorf** —
+   yol-grafı eigenvektörü aynı. `label_aware=True` (`encoder.py:450,458`) köşegene codepoint kimliği
+   ekler, L1 marjı ≈ 3e-4 (ince ama pozitif). Bu KÖKLÜ çözüm DEĞİL: yol-grafı izomorfizmi köşegen
+   pertürbasyonuyla temelden giderilemez; `_IDENT_W` büyütülmesi marjı kötüleştiriyor (test edildi,
+   geri alındı). Gerçek çözüm: bigram yerine N-gram veya pozisyon-hash matrisi (F5 görev listesi,
+   manifold migrasyonu gerektirir). ESKİ manifold.json `label_aware=False` ile kaydedildi — yeni
+   encode ile küçük tutarsızlık olabilir.
 7. **Causal chain entity linking**: "ras pathway" ≠ "ras" string olarak ama `_normalize_entity()` suffix'leri kaldırır.
    Yeni `_extract_relations()` extraction'da normalize eder; eski TAU'daki "pathway" suffix'li kavramlar normalize edilmez.
 8. **Grounding — bridge kavramlar çapa olamaz**: 42k+ doymuş manifoldda `⟨bridge:...⟩` genesis köprüleri rezonans çapası
@@ -393,12 +394,23 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
   - `arrange(EGFR)` → levodopa, lisinopril, methotrexate (kimyasal mantıklı sıralama)
   - `morph(aspirin, erlotinib)` → moment uzayı yolu, t=0.25'te erlotinib
   - cyclohexane W2=0.000 benzene (aynı yapısal imza — kernel doğru okuyor)
-- **Kuantum Moment Katmanı** (Voiculescu serbest olasılık): FreeCumulants κ_k + QuantumSignature
-  - Encoder: her encoding artık `free_cumulants` üretiyor (yapısal + kuantum imza)
+- **Kuantum Moment Katmanı — F0 Keystone (NC Möbius Serbest Kümülantlar)** (`core/quantum_moments.py`):
+  - `from_moments()`: artık GERÇEK NC Möbius (Nica-Speicher) formülleri.
+    κ₄^free = μ₄ − 2μ₂² + ... (klasik Leonov-Shiryaev'den farklı: −3μ₂² değil −2μ₂²).
+    |NC(4)|=14 bölüm, |NC(5)|=42, |NC(6)|=132 — özyinelemeli kapalı form.
+  - `to_moments_approx()`: NC partition ters dönüşüm (μ₄'te 2κ₂², 3 değil) — roundtrip tam.
+  - `R_transform(z)`: R(z)=Σκₙzⁿ⁻¹ — `add()` metodunun cebirsel temeli; serbest toplam altında lineer.
+  - `free_entropy(mu)`: χ(μ)=∬log|x−y|dμ → ½log(2πe·κ₂)+κ₃/κ₄ düzeltmesi. ΔF gradyanı.
   - SemanticManifold: `quantum_bridges()` — klasik uzak ama kuantum yakın kavramlar
   - KnowledgeEdge: `quantum_dist` alanı (κ-mesafe)
   - MolecularGenesis: quantum-guided beam search (0.75×W2 + 0.25×κ_dist)
   - API: `ai.quantum_distance()`, `ai.synthesize()`, `ai.entangle()`
+- **Dökümhane ↔ İspat Flywheel** (`core/production.py`):
+  - `ProductionEngine._transport_epsilon = -1e-9` (başlangıç) — theorem graph'taki Sturm sertifikasına göre -1e-5'e genişler.
+  - `_sync_transport_epsilon()`: her `produce()` çağrısında otomatik; `qjr_degree_j_shift` + `qjr_degree_r_step` kanıtlanırsa eşik genişler → daha fazla molekül geçer.
+  - `scan_production_gaps(cert)`: başarısız AxisVerdict'leri ProofLoop kampanya ipuçlarına çevirir.
+    transport başarısız → "subresultant_recurrence"; quantum → "rh_formalization"; closure → "lah_gate_ab".
+  - Flywheel: ispat → transport koridoru genişler → daha iyi üretim → yeni boşluk → ispat.
 - **Forward Causal Reasoning**: `ai.what_if(concept, depth)` — ileri BFS (erlotinib → ne olur?), `causal_chain()`'in tamamlayıcısı
 - **Analoji Motoru**: `ai.analogy(a, b, c)` — TAU-tabanlı birincil (erlotinib:egfr::imatinib:?→bcr-abl) + moment fallback
 - **Hipotez Üretimi**: `ai.hypothesize(concept)` — transitif kausal çıkarım (A INHIBITS B, B ACTIVATES C → A INHIBITS C)
@@ -409,7 +421,7 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: 433 geçiyor, 1 skipped
+- Tests: 443 geçiyor, 1 skipped (91 production+simulation + 23 quantum_moments + ...)
 
 ---
 

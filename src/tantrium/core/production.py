@@ -107,6 +107,10 @@ class ProductionEngine:
 
     def __init__(self, engine: "CertificationEngine") -> None:
         self.engine = engine
+        # Transport Sturm pivot eşiği. Kanonik sıkı (-1e-9); ispat sonrası genişler.
+        # _sync_transport_epsilon() theorem graph'taki Sturm sertifikasını okur,
+        # qjr_degree_j_shift + qjr_degree_r_step kanıtlanınca -1e-5'e yükselir.
+        self._transport_epsilon: float = -1e-9
 
     # ── Hedef okuma ────────────────────────────────────────────────────────
 
@@ -200,6 +204,9 @@ class ProductionEngine:
         koşul, yeterli değil); wet-lab onayı gerekir.
         """
         from tantrium.core.production_judge import ProductionJudge, ProductionCertificate
+
+        # Theorem graph'taki Sturm sertifikasına göre transport eşiğini güncelle
+        self._sync_transport_epsilon()
 
         judge = ProductionJudge(self.engine, self)
 
@@ -604,7 +611,7 @@ class ProductionEngine:
                            for j in range(size)] for i in range(size)])
             lo = float(np.linalg.eigvalsh(H).min())
             worst = min(worst, lo)
-        return worst >= -1e-9, worst
+        return worst >= self._transport_epsilon, worst
 
     # ── Yardımcılar ────────────────────────────────────────────────────────
 
@@ -692,6 +699,57 @@ class ProductionEngine:
                  for i in range(len(valid)) for j in range(i + 1, len(valid))]
         avg = sum(dists) / len(dists) if dists else 0.0
         return avg + 0.25
+
+    # ── Dökümhane ↔ İspat Flywheel ───────────────────────────────────────────
+
+    def _sync_transport_epsilon(self) -> None:
+        """Theorem graph'taki Sturm sertifikasını oku → transport eşiğini genişlet.
+
+        subresultant_recurrence kampanyası qjr_degree_j_shift + qjr_degree_r_step'i
+        kanıtlarsa: pivot eşiği -1e-9 → -1e-5. Daha geniş koridor = daha fazla geçen
+        molekül. Flywheel: ispat → genişleme → üretim kalitesi artar → yeni boşluk.
+        """
+        try:
+            import json
+            from pathlib import Path
+            from tantrium.research.proof_loop import _INJECTED_STATUSES
+            graph_path = (Path(__file__).resolve().parents[4]
+                          / "tantrium" / "theorem_graph" / "theorem_graph.yaml")
+            if not graph_path.exists():
+                return
+            with open(graph_path) as f:
+                data = json.load(f)
+            nodes = data.get("nodes", {})
+            sturm_nodes = ["qjr_degree_j_shift", "qjr_degree_r_step"]
+            if all(nodes.get(n, {}).get("status") in _INJECTED_STATUSES
+                   for n in sturm_nodes):
+                self._transport_epsilon = -1e-5
+        except Exception:
+            pass
+
+    def scan_production_gaps(self, cert: "ProductionCertificate") -> list[str]:
+        """Başarısız sertifika eksenlerini ProofLoop kampanya ipuçlarına çevir.
+
+        Dökümhane↔İspat flywheel'inin giriş noktası:
+          transport başarısız → "transport" → subresultant_recurrence kampanyası
+          quantum başarısız   → "quantum"   → rh_formalization kampanyası
+          closure başarısız   → "closure"   → lah_gate_ab kampanyası
+
+        Kullanım:
+          gaps = pe.scan_production_gaps(cert)
+          if "transport" in gaps:
+              ProofLoop(engine).launch_campaign("subresultant_recurrence")
+        """
+        from typing import TYPE_CHECKING
+        gaps: list[str] = []
+        for ax in (cert.axes or []):
+            if not ax.ok and ax.name not in gaps:
+                gaps.append(ax.name)
+        if cert.closure and not cert.closure.universe_closes and "closure" not in gaps:
+            gaps.append("closure")
+        if cert.verdict in ("ÜRETİLEMEDİ", "KISMÎ") and not gaps:
+            gaps.append("generic")
+        return gaps
 
     def _canonical_kappa(self):
         """Sağlıklı denge κ — kanonik ζ ailesi (RH çapası)."""

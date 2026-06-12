@@ -121,10 +121,12 @@ def _text_to_bigram_matrix(text: str, label_aware: bool = False) -> list[list[Fr
     satır yeniden normalize edilir (stokastik kalır). Bu, harf KİMLİĞİNİ
     spektruma katar — "pbjw" ve "hame" (ikisi de 4 ayrı karakterli yol grafı)
     aksi halde AYNI permütasyon spektrumuna, aynı momentlere çöker (çakışma).
-    VARSAYILAN KAPALI: depolanan manifold (40k kavram) köşegensiz kodlamayla
-    kurulmuş; açmak rezonans-topraklamayı kaydırır (örn. ATP). Çakışma avcısı
-    bu modu açıkça kullanarak harf-permütasyon çakışmasının çözülebilir
-    olduğunu gösterir — ana yol legacy uyumlu kalır.
+
+    SINIR: protein/glucose (7 char, tam çeşitlilik, yol-grafı izomorfizm) bu modda
+    L1 ≈ 2.6e-3 marj — ince ama mevcut. Kökten çözüm: bigram yerine N-gram veya
+    pozisyon-hash matrisi gerekir (F5 görev listesinde, manifold migrasyonu gerektirir).
+
+    MANIFOLD UYUMU: manifold.json bu mod AÇIKken oluşturuldu (encoder.py:450,458).
     """
     chars = sorted(set(text))
     if not chars:

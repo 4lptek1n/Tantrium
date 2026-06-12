@@ -48,10 +48,12 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Güç:** Moment hesabı TEK yerde. `_extract_structure` → pipeline'a delege +
   free_cumulants ekler. `encode_adaptive` belirsizlikte derinleştirir (8→16, fidelity).
 - **Gerçek hayat:** Duyu organı — her girdi tek spektral parmak izine iner.
-- **Nüans:** Metin yolu `label_aware=True` kullanıyor (satır 450/458) — CLAUDE.md
-  pitfall#6 "sadece CollisionHunter" DİYOR ama kod değişmiş. **Doküman koddan geride.**
+- **BİLİNEN SINIR (F1 — ertelendi):** `protein`/`glucose` (7 char, tam çeşitlilik, yol-grafı
+  izomorfizm) → `label_aware=True` ile L1 marjı yalnız ≈3e-4. Köşegen pertürbasyonu kökten
+  çözmüyor (F1'de test edildi, _IDENT_W büyütülmesi marjı kötüleştirdi). Gerçek çözüm:
+  N-gram/pozisyon-hash matrisi — F5 görev listesi (manifold migrasyonu gerektirir).
 - **Tekrar:** Dağınık `_encode_target`'lar bunu ÇAĞIRAN kısayol; moment matematiği burada
-  tek. F1 = yönlendirme birleştirme, math silme DEĞİL.
+  tek. F1 = yönlendirme birleştirme (encoder collision ayrı F5 kalemi), math silme DEĞİL.
 
 ### ✅ core/perception/encode.py — duyusal dönüştürücüler (encoder'a delege)
 - **İş:** `encode_signal/image/matrix/signal_temporal` — ham duyu → A → encoder'ın
@@ -65,10 +67,14 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Tekrar:** YOK — dönüştürücüler farklı fizik. Tek `Encoder.encode` arkasına yönlendirilir,
   KORUNUR.
 
-### ✅ core/quantum_moments.py — Voiculescu serbest kümülantlar
-- **İş:** `FreeCumulants` (κ₁..κ₆, klasik moment-kümülant Möbius), `QuantumSignature` (μ+κ).
-- **Güç:** `add` (serbest additivite κ(A⊞B)=κ(A)+κ(B)), `subtract` (dekonvolüsyon),
-  `to_moments_approx` (κ→μ, F0'da μ₅/μ₆ tam yapıldı), `ring/hetero_indicator` (κ₄/κ₃),
+### ✅ core/quantum_moments.py — Voiculescu serbest kümülantlar [F0 TAMAMLANDI 2026-06]
+- **İş:** `FreeCumulants` (κ₁..κ₆), `QuantumSignature` (μ+κ), `free_entropy(mu)`.
+- **F0 Değişiklikleri (commit 8af1159):** `from_moments()` artık GERÇEK NC Möbius (Nica-Speicher):
+  κ₄^NC = μ₄ − 2μ₂² + ... (klassik Leonov-Shiryaev −3μ₂² DEĞİL). |NC(4)|=14, |NC(5)|=42,
+  |NC(6)|=132 özyinelemeli kapalı form. `to_moments_approx()` ters dönüşümde de NC (μ₄'te 2κ₂²)
+  → roundtrip tam. `R_transform(z)=Σκₙzⁿ⁻¹` eklendi (add() cebirsel temeli). `free_entropy(mu)`:
+  χ=½log(2πeκ₂)+düzeltme — termodinamik ΔF gradyanı. 10 yeni test (toplam 23).
+- **Güç:** `add` (serbest additivite), `subtract` (dekonvolüsyon), `ring/hetero_indicator`,
   `is_entangled_with` (klasik-uzak/kuantum-yakın).
 - **Gerçek hayat:** Molekülün halka/heteroatom/asimetri imzası; gizli yapısal bağlantılar.
 - **Tekrar:** κ-mesafe iki yerde FARKLI (κ₁ dahil/hariç) — birleşmede parametre korunur.
@@ -92,11 +98,15 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Tekrar:** YOK — roller doğru ayrılmış. `paradigm_signature` (45 özellik) okunmadı tam.
 - **TODO:** `paradigm_signature`/`paradigm_distance` tam doğrula (F4 producer için kritik).
 
-### 🟡 core/production.py — çok-stratejili dökümhane
-- **Okundu:** `_build_pool` (5 strateji ayrı algoritma → tek havuz), produce akışı, judge helpers.
+### ✅ core/production.py — çok-stratejili dökümhane [F2 Flywheel TAMAMLANDI 2026-06]
+- **Okundu:** `_build_pool` (5 strateji), produce akışı, judge helpers, tüm fly wheel kodu.
 - **Güç:** Genesis·scaffold·inverse·morph·doğrudan AYRI motorlar, tek havuzda birleşir.
+- **F2 Değişiklikleri:** `_transport_epsilon = -1e-9` (ayarlanabilir), `_sync_transport_epsilon()`
+  (theorem_graph'ta `qjr_degree_j_shift`+`qjr_degree_r_step` PROVEN ise -1e-5'e genişler),
+  `scan_production_gaps(cert)` (başarısız AxisVerdict → ProofLoop kampanya ipucu).
+  Flywheel: ispat kanıtlanır → epsilon genişler → daha fazla molekül üretim geçidi geçer.
 - **Tekrar:** Motorlar farklı; facade 7→1 olur, motorlar korunur.
-- **TODO:** `_read_target_ext`, `_refine`, `_decompose_combination` tam doğrula.
+- **TODO:** `_read_target_ext`, `_refine`, `_decompose_combination` tam doğrula (F4 için).
 
 ### 🟡 core/engine.py — runtime + lazy singleton'lar
 - **Okundu:** `grow` (642, tümdengelimsel kapanış — öksüz ama gerçek iş), `proof_loop`, `think`, status.
