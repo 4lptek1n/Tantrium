@@ -1151,6 +1151,25 @@ class AI:
         return MolecularGenesis(self.engine).simulate(
             seed=seed, max_steps=max_steps, beam_width=beam_width, toward=toward)
 
+    def produce(self, target: str, max_steps: int = 16, beam_width: int = 6,
+                out_dir: str = "results/molecules") -> "object":
+        """TEK GİRİŞ — hedeften molekülü üret ve AYNI eksende yargıla.
+
+        design_drug + cure + simulate + judge_binding'in tek homojen enerjide
+        birleşimi. Hedef tipi otomatik okunur (protein / hastalık / SMILES) ve
+        üretim ile yargı bölünmez: ikisi de referanstan moleküle giden konveks
+        yolun Sturm pivot pozitifliği — RH'nın H_{d,j}(t)≥0 kriterinin moleküler
+        hali. Gerçeklenebilirlik geçidin içinde; ayrı reconstruct projeksiyonu
+        yok (eski cure'daki realizability_gap artefaktı kaybolur).
+
+        ai.produce("egfr")               # protein → bilinen ligand yönü
+        ai.produce("c1ccc2ncnc(N)c2c1")  # SMILES → doğrudan imza
+        ai.produce("alzheimer")          # hastalık → ters dekonvolüsyon
+        """
+        from tantrium.core.production import ProductionEngine
+        return ProductionEngine(self.engine).produce(
+            target, max_steps=max_steps, beam_width=beam_width, out_dir=out_dir)
+
     # Paradigma-matematik mesafe eşiği: kinaz-içi çiftler ≤2.0, kinaz-dışı ≥3.1.
     # 2.5 = boşluğun ortası — 'aynı terapötik tür' ile 'farklı' arasını ayırır.
     _PARADIGM_WORKS_THR = 2.5

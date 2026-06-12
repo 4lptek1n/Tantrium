@@ -153,3 +153,64 @@ def test_cure_reports_realizability(ai):
     r = ai.cure("c1ccc2ncnc(N)c2c1", max_steps=4, beam_width=3)
     assert "realizability_gap" in r
     assert "kappa_required" in r and len(r["kappa_required"]) >= 4
+
+
+# ─── Tek homojen enerji: produce (üretim+yargı tek Sturm-pozitiflik ekseni) ──
+
+def test_produce_reads_target_kind(ai):
+    """produce hedef tipini otomatik okur: protein / hastalık / SMILES."""
+    from tantrium.core.production import ProductionEngine
+    pe = ProductionEngine(ai.engine)
+    kind_p, _, _, _ = pe._read_target("egfr")
+    kind_s, _, _, _ = pe._read_target("c1ccc2ncnc(N)c2c1")
+    assert kind_p == "protein"        # bilinen ligandı var
+    assert kind_s == "smiles"         # geçerli SMILES
+
+
+def test_produce_judges_on_sturm_axis(ai):
+    """Üretim ve yargı tek eksen — referans→molekül yolunun Sturm pivot pozitifliği."""
+    from tantrium.core.production import ProductionEngine
+    pe = ProductionEngine(ai.engine)
+    _, mu_req, profiles, _ = pe._read_target("egfr")
+    erlotinib = "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1"
+    ok, pmin, fit = pe._judge_on_axis(erlotinib, mu_req)
+    assert ok is True                 # gerçek inhibitör: yol gerçek-ölçüde
+    assert pmin >= -1e-6              # Sturm pivotu pozitif (hiperbolik)
+
+
+def test_produce_discriminates_structural(ai):
+    """Yapısal κ: gerçek EGFR inhibitörü, alakasız molekülden YAKIN olmalı."""
+    from tantrium.core.production import ProductionEngine
+    pe = ProductionEngine(ai.engine)
+    _, mu_req, _, _ = pe._read_target("egfr")
+    erlotinib = "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1"
+    _, _, fit_real = pe._judge_on_axis(erlotinib, mu_req)
+    _, _, fit_junk = pe._judge_on_axis("CCO", mu_req)
+    assert fit_real < fit_junk        # erlotinib etanolden yapısal yakın
+
+
+def test_produce_rejects_unstable_motifs(ai):
+    """GIMEL Aşil topuğu: peroksit/poliokso zinciri kimyasal kararlılık geçidinden geçmez."""
+    from tantrium.core.production import ProductionEngine
+    assert ProductionEngine._chemically_stable("c1ccccc1") is True
+    assert ProductionEngine._chemically_stable("OCc1c2c[nH]c1OO2") is False  # peroksit
+
+
+def test_produce_full_flow(ai):
+    """produce() tek geçişte molekül üretir ve aynı eksende yargılar."""
+    r = ai.produce("egfr", max_steps=6, beam_width=4)
+    assert r.target_kind == "protein"
+    assert r.designed_smiles is not None
+    assert r.verdict in ("İŞE YARAYABİLİR", "İŞE YARAMAZ")
+    # üretilen molekül kimyasal kararlılık geçidinden geçmiş olmalı
+    from tantrium.core.production import ProductionEngine
+    assert ProductionEngine._chemically_stable(r.designed_smiles)
+
+
+def test_produce_unknown_protein_falls_to_disease(ai):
+    """Bilinmeyen hedef ligand bulamazsa hastalık (ters dekonvolüsyon) yoluna düşer."""
+    from tantrium.core.production import ProductionEngine
+    pe = ProductionEngine(ai.engine)
+    kind, mu_req, _, ref = pe._read_target("nonexistent_xyz_protein_999")
+    assert kind == "disease"
+    assert "denge" in ref or "ζ" in ref or "sağlıklı" in ref
