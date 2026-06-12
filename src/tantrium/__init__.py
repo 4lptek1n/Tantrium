@@ -45,7 +45,7 @@ from tantrium.perception import (
 from tantrium.core.inverse import InverseTransport, DesignCandidate, DesignReport
 from tantrium.core.molecular_space import MolecularSpace, MolPoint, ArrangementResult, MorphResult
 from tantrium.core.molecular_genesis import MolecularGenesis, GenesisCandidate, GenesisReport as MolGenesisReport
-from tantrium.core.quantum_moments import FreeCumulants, QuantumSignature
+from tantrium.core.quantum_moments import FreeCumulants, QuantumSignature, free_entropy
 
 __all__ = [
     # Core SDK
@@ -176,4 +176,5 @@ __all__ = [
     # Quantum moments
     "FreeCumulants",
     "QuantumSignature",
+    "free_entropy",
 ]
