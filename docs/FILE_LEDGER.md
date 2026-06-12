@@ -215,11 +215,82 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ---
 
+## L3 Graph (TAU hafıza ağı)
+
+### ✅ graph/knowledge_graph.py — TAU ağı (bilgi edge'de)
+- **İş:** `KnowledgeGraph`. Node=isim+spektral yarıçap(sr=μ₇), Edge=PSD-certified bağlantı.
+  `nearest()` sr-index binary search (O(√n)). `build` manifolddan. save/load (integer-ID compact,
+  paradigma tek-harf kod). Edge tipleri: ALEPH (geometrik) + SEMANTIC (IS_A/USES/CAUSES/INHIBITS/...).
+- **Güç:** "Bilgi node'da değil EDGE'de." Topoloji = bilgi. Kausal akıl + sentez tabanı.
+- **Nüans:** `nearest()` SemanticManifold.nearest()'ten FARKLI — bu graf topolojisi (edge/sr),
+  o moment geometrisi. İki ayrı katman, tamamlayıcı, tekrar değil.
+- **Tekrar:** YOK.
+
+### ✅ graph/anchors.py — 10 kanonik matematik çapası
+- **İş:** GUE/Poisson/Uniform/Exponential/Periodic/Gaussian/Linear/Geometric/PrimeGaps/ZetaZeros
+  → kalıcı çapa Concept. `nearest_anchor` "hangi matematik ailesi?". `is_anchor` filtre.
+- **Güç:** Manifoldun referans çerçevesi — DNA'nın komşusu "kühn" değil gerçek aile.
+- **Tekrar:** `_power_moments` encoder hızlı yoluyla aynı mantık (kanonik diziler için) — küçük paylaşım fırsatı, kritik değil.
+
+### ✅ graph/relations.py — dil→TAU ilişki çıkarıcı (Pe)
+- **İş:** `extract_relations` (regex IS_A/USES/DEFINES/ACHIEVES/REQUIRES/COMPOSED + `_REJECT`
+  stopword), `certify_and_add_edge` (typed TAU edge), `propagate_subset` (mini-Tav: PSD-koruyan
+  konveks moment hizalama komşulara).
+- **Güç:** Metinden anlamsal kenar inşası. mini-Tav PSD garantisi (iki PSD konveks komb. PSD).
+- **Tekrar:** YOK.
+
+### ✅ graph/memory.py — oturum çalışma belleği (SessionMemory)
+- **İş:** `Turn` + `SessionMemory`. Recency-decay aktif kavramlar. Manifold(uzun)↔konuşma(çalışma)
+  köprüsü. save/load/latest/new.
+- **Tekrar:** YOK. Ayrı katman.
+
+---
+
+## L0/L3 Domains (spektral motor · teorem köprüsü · molekül stratejileri)
+
+### ✅ domains/spectral.py — TEK spektral motor (W2 omurgası)
+- **İş:** `SpectralMeasure` (özdeğer ölçüsü dμ), `_jacobi_eigvals` (saf Python), `moment/entropy/
+  gap/effective_rank/carleman_sum`, `gram_spectrum`, `dna_measure`+`dna_window_measures`
+  (mutasyon lokalizasyonu), `spectral_distance` (W2: sıralı özdeğer L2/n), `moments_to_spectral`
+  (Golub-Welsch: Stieltjes 3-terim→Jacobi→özdeğer = μ_k→özdeğer TERSİ).
+- **Güç:** Her yerde kullanılan kanonik W2 omurgası (anchors/perception/semantic/vision).
+- **Tekrar:** YOK. Tek spektral motor.
+
+### ✅ domains/math_kernel.py — RH ispat→AGI köprüsü (enjeksiyon)
+- **İş:** `inject_math_kernel`: theorem_graph→Concept (depends_on→REQUIRES, proves→ACHIEVES,
+  anchor→SPECTRAL_BRIDGE). `inject_computational_math_objects`: uniform kavramları gerçek
+  dizilerle değiştir (Catalan/cross-ratio/dyadic/Li). Idempotent.
+- **Tekrar:** YOK. Teorem ifadesini ANA encoder ile encode eder.
+
+### ✅ domains/bridge.py — paradigma↔teorem semantik köprüsü
+- **İş:** `PARADIGM_TO_THEOREMS` (ALEPH→D_POSITIVITY, TAV→RH_CLOSURE, DALET→JENSEN_HYPERBOLICITY...),
+  `theorem_to_codex_object`, `bootstrap_manifold`, `enrich_sync`, `paradigm_coverage_report`.
+- **Güç:** Her AGI sertifikası AYNI ANDA RH ispat zincirinde bir adım.
+- **Nüans:** `_theorem_moments` hash+yapı türevli SENTETİK encode (math_kernel ifade-encode'undan
+  farklı amaç — paradigma-yapı eşlemesi için). İki teorem→moment yolu, farklı amaç.
+- **Tekrar:** YOK (amaçlar farklı).
+
+### ✅ domains/certifier.py — SMILES-listesi skorlama stratejisi
+- **İş:** `MolecularCertifier`: SMILES listesi→hedefe karşı certify→dyadic transport ile en iyi→3D.
+  `_fetch_candidates`(PubChem), `_dyadic_transport_score` (T_{1/2}^k ölçek altında D-pozitiflik
+  kararlılığı), `generate_3d`, `_smiles_to_sdf`.
+- **Tekrar:** **GERÇEK TEKRAR (#7):** `_smiles_to_sdf` ≈ `inverse._make_3d` (ikisi ETKDGv3 seed=42).
+  Paylaşılabilir `make_3d` util. `_dyadic_transport_score` ≠ transport dyadic (farklı: özel
+  kararlılık skoru vs akış çözücü).
+
+### ✅ domains/generator.py — scaffold-kütüphane üretimi
+- **İş:** `MoleculeGenerator`: 29 kinaz scaffold + Morgan moment + fragment kombinasyon +
+  interpolasyon walk. `_TARGET_SMILES_MAP` (hedef→bilinen ilaç). certifier'ın `_dyadic_transport_score`
+  + `_smiles_to_sdf`'ini kullanır.
+- **Tekrar:** YOK. Farklı strateji (genesis/inverse/space'ten ayrı). produce() havuzuna besler.
+
+> **GERÇEK TEKRAR ENVANTERİ (şimdiye dek):** (1) 3D-SDF üretici 2 kopya (inverse/certifier).
+> (2) `_make_3d`/`_smiles_to_sdf` paylaşılabilir. Bunlar küçük, izole, güvenli birleşmeler.
+> Geri kalan tüm "tekrarlar" sahte çıktı (dispatcher/farklı-amaç/farklı-rigor).
+
+---
+
 ## Henüz ⬜ KATALOG (kendim okumadım — güvenme, doğrulanacak)
-
-**graph:** knowledge_graph.py · anchors.py · relations.py · memory.py
-
-**domains:** bridge.py · math_kernel.py · certifier.py · generator.py · spectral.py
 
 **reasoning:** necessity.py · reasoner.py · inference.py · thinker.py · planner.py · generalization.py
 
