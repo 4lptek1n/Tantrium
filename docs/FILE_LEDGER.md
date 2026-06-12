@@ -389,11 +389,47 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ---
 
+## L4 Language + Perception (dil I/O · duyusal)
+
+### ✅ language/speaker.py — sertifika→dil (Narrator çekirdeği)
+- **İş:** NetworkRun→Türkçe. Paradigma/boşluk şablonları, `narrate` (line/brief/standard/full),
+  `explain`, `compare`, `locate`, `synthesize` (TAU→paragraf), `describe_percept` (algı→dil:
+  spektral karakter+grounding+çağrışım), `name_gap`.
+- **Güç:** "Söyleyemediğini söylemez — sessizlik kesinliktir." Uydurmaz.
+- **Tekrar:** YOK. generator'dan farklı (run anlatımı vs yörünge).
+
+### ✅ language/generator.py — TAU yörünge üretimi (CertifiedGenerator)
+- **İş:** seed→encode→her adımda TAU komşuları arasından argmin moment_distance→certified cümle.
+  3 geçiş (semantic→Hankel→canlı moment arama). TR/EN. "argmin, sampling DEĞİL — deterministik walk."
+- **Tekrar:** YOK. Speaker run anlatır, generator manifoldda yürür.
+
+### ✅ language/bootstrap.py — kelime öğrenme (LanguageBootstrap)
+- **İş:** metin→token→canonical byte encoding (b/255)→Aleph→manifold. `_tokenize` (çok-dilli
+  stopword), `from_text`(+ilişki çıkarma), `auto_learn`.
+- **Tekrar:** YOK. Metin→kavram giriş yolu.
+
+### ✅ language/lang_topology.py — İngilizce ontoloji omurgası (EnglishTopology)
+- **İş:** ~200 çekirdek İngilizce ilişki (IS_A/USES/DEFINES/REQUIRES/COMPOSED) → TAU kenar + bootstrap metni.
+- **Nüans (KÜÇÜK ÖLÜ DAL):** `inject(run_reasoner=True)` var olmayan `TauReasoner`'ı import eder
+  (artık `GraphReasoner`). Varsayılan False → ölü dal, çalışmıyor. F6'da temizlenir.
+- **Tekrar:** YOK. Statik ontoloji enjeksiyonu.
+
+### ✅ perception/crypto.py — şifre yapı okuma (savunma)
+- **İş:** `analyze` (spektral entropi μ₁ + ECB blok tekrarı → STRUCTURED/WEAK_LEAK/STRONG),
+  `achilles` (GIMEL marjin vs gürültü referansı → en zayıf eksen = Aşil topuğu).
+- **Güç:** Yapıyı okur, anahtar kurtarmaz (savunma/denetim). encode_signal kullanır.
+- **Tekrar:** YOK.
+
+### ✅ perception/generate.py — algı test fixture'ları
+- **İş:** `tone/chord/white_noise` + `solid/gradient/checkerboard/stripes/concentric/noise_image`.
+  Bilinen spektral içerikli "yapay-gerçek" sinyaller (grounding doğrulaması).
+- **Tekrar:** YOK.
+
+---
+
 ## Henüz ⬜ KATALOG (kendim okumadım — güvenme, doğrulanacak)
 
-**language:** speaker.py · generator.py · lang_topology.py · bootstrap.py
-
-**perception:** generate.py · crypto.py
+**meta:** synthesis.py · vision.py · paradigm.py · topology.py · self_model.py
 
 **meta:** synthesis.py · vision.py · paradigm.py · topology.py · self_model.py
 
