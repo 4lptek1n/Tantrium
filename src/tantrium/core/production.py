@@ -280,6 +280,9 @@ class ProductionEngine:
         ref_smiles_list = []
         for _, smi in self._reference_ligands(target)[:4]:
             ref_smiles_list.append(smi)
+        # SMILES hedef: kütüphanede referans yok → hedefin kendisi yapısal kıyaslama
+        if kind == "smiles" and not ref_smiles_list and self._is_smiles(target):
+            ref_smiles_list = [target]
 
         for c in scored[:top_k]:
             axes_obj, coherent = judge.judge_all_axes(
