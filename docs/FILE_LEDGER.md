@@ -104,14 +104,99 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   ÖLÜ DEĞİL — facade'a bağlanmamış gizli güç.
 - **TODO:** `process`, `certify_unified`, lazy property'ler, persist, TAU yükleme tam doğrula.
 
+### ✅ core/network.py — 23 paradigmanın DAG çalıştırıcısı
+- **İş:** `CertificationPipeline.run(obj) → CertificationRun`. Kahn topolojik sıra; bağımlılık
+  CERTIFIED değilse düğüm DEP_BLOCKED.
+- **Güç:** `knowledge_frontier` = gerçek boşluk (cascade değil). CertificationRun **deep-copy
+  snapshot** ile gerçekten immutable (sonraki run().reset() önceki run'ları bozmasın diye — ince, kritik).
+- **Gerçek hayat:** Teorem prova hattı — girdi DAG'dan akar, her düğümde sertifika ya da adlandırılmış boşluk.
+- **Tekrar:** YOK. Yapısal eksenin (Eksen 1) makinesi.
+
+### ✅ core/unified.py — CoreMachine (TEK ÇEKİRDEK, zaten temiz)
+- **İş:** `certify(input) → UnifiedCertificate`. ONE encode → ONE process → 4 eksen.
+- **Güç (DOĞRULANDI):** grounder ve truth'a `moments=moments` GEÇİRİR — yeniden encode ETMEZ.
+  coherent = paradigms≥total-1 ∧ grounding≠UNGROUNDED ∧ truth≠CONTRADICTORY ∧ conf≥0.40.
+  `_encode_adaptive` 8→16 (fidelity<0.999).
+- **Nüans:** Çift-encode sorunu CoreMachine'de DEĞİL — `ai.ask`'ta (core'u atlayıp ayrı grounder
+  çağırıyor). F2 = herkesi CoreMachine'e yönlendir; CoreMachine'in kendisi doğru.
+- **Tekrar:** YOK. Eksen birleştiricinin kendisi.
+
+### ✅ core/grounding.py — Eksen 2 (topraklama, TAU kökü)
+- **İş:** `certify(token) → GroundingCertificate`. Doğrudan (TAU kenar in+out) + rezonans
+  (sıkı yarıçap köklü komşu + domain tutarlılığı). GROUNDED/WEAKLY/UNGROUNDED.
+- **Güç:** Çöp string'i eler — yapısal geçerlilik (PSD) yetmez, referans gerekir.
+- **Nüans (DÜRÜST):** Kod notu: 27k+ yeniden-encode manifoldda L1 mesafeler 0.0001'e indi,
+  rezonans güvenilmez oldu → yargı iki sağlam sinyale (doğrudan kenar≥3, in_manifold) iniyor.
+  Rezonans hâlâ hesaplanıyor ama hükmü vermiyor. Manifold doygunluğunu kabul eden dürüst tasarım.
+- **Tekrar:** YOK.
+
+### ✅ core/truth.py — Eksen 3 (gerçek, komşu tutarlılık)
+- **İş:** `certify(name) → TruthCertificate`. Komşulara CERTIFIED transport + EMET cross-check.
+  CONSISTENT/CONTESTED/CONTRADICTORY. score=certified/checked, EMET çelişkisinde ×0.5.
+- **Güç:** İyi bağlanmış YANLIŞ ifadeyi yakalar (grounding kaçırır). Genesis öz-düzeltici bunu kullanır.
+- **Tekrar:** Komşuları yeniden encode eder ama zorunlu (ayrı kavramlar). Gerçek tekrar değil.
+
+### ✅ core/confidence.py — Eksen 4 (kalibre güven)
+- **İş:** `calibrate(coverage,margin,grounding,truth) → Confidence`. Ağırlıklı GEOMETRİK ortalama.
+- **Güç:** Geometrik → herhangi bir eksen 0'a giderse toplam çöker (zayıf halka kuralı, telafi yok).
+  margin_norm=0.3+0.7·min(1,margin/0.3): margin=0 başarısızlık DEĞİL (rank-eksik PSD geçerli).
+- **Tekrar:** YOK. Tek toplama fonksiyonu.
+
+### ✅ core/reconstruct.py — ters moment problemi (yapıcı Hamburger)
+- **İş:** `reconstruct_measure(μ) → ReconstructedMeasure`. Gauss kuadratür/Prony: Hankel+shifted
+  Hankel genelleştirilmiş özdeğer → destek noktaları; Vandermonde → ağırlıklar.
+- **Güç:** "Moment dizisi ölçüyü belirler"in YAPICI yüzü. `reconstruction_fidelity`=exp(-hata·100)
+  → adaptif derinlik sinyali + collision testi. Rank-eksik ölçüleri yakalar.
+- **Tekrar:** YOK. Tek ters-dönüşüm algoritması.
+
+### ✅ proof/dyadic_flow.py — exact rasyonel dyadic taşıma (RH primitifi)
+- **İş:** `solve_greedy(sources,deficits,policy) → Certificate`. Pozitif kaynak negatif açığı
+  half-power kenarlarla kapatır. `half_power` haritaları (unit/qgap/diffgap/qdiff/.../conservative).
+- **Güç:** Tam rasyonel, yaklaşıklık YOK. CertifiedTransport'un 1. (DYADIC) katmanı.
+- **Tekrar:** YOK. RH ispatının taşıma primitifi.
+
+### ✅ proof/certificate.py — Cell · TransportEdge · Certificate (ispat defteri)
+- **İş:** Değişmez pozitiflik sertifikası: taşınan pozitif kaynak ≥ negatif açık. `verify()`
+  kaynak aşımı + kapatılmamış açık kontrolü. `markdown()` çıktı.
+- **Tekrar:** YOK. Saf veri + doğrulama.
+
+### ✅ algebra/sturm.py — SEMBOLİK Sturm zinciri (rigor kaynağı)
+- **İş:** `normalized_sturm_chain/pivots` (sympy), `pivot_factorization`. Monik Öklid kalanları.
+- **Güç:** transport'un numpy yaklaşığının EXACT sembolik karşılığı. Pivot işareti = kök gerçekliği.
+- **Tekrar:** YOK — numpy hızlı yol farklı rigor seviyesi (UNIFIED §2.5 onaylandı).
+
+### ✅ algebra/positivity.py — polinom katsayı pozitifliği
+- **İş:** `coefficients_in_var`, `has_positive_coefficients`, `positivity_report`,
+  `ramp_top_coefficient` (2^T_j·∏(n+m)^m). Sembolik sympy.
+- **Tekrar:** YOK. RH kampanya yardımcısı.
+
+### ✅ algebra/sheffer.py — Sheffer/EGF (Sturm–Toda geçiş çalışması)
+- **İş:** `transition_polynomial(d)` EGF'den, `lah_number`, `lah_polynomial`. RH alt-resultant/Lah kapısı.
+- **Tekrar:** YOK. Araştırma-seviyesi RH matematiği.
+
+### ✅ core/semantic.py — Manifold (hafıza substratı) + nearest dispatcher
+- **İş:** `Concept` (moment dizisi kavram), `SemanticManifold` (koleksiyon). `nearest(concept,
+  n, metric=)` TEK dispatcher: l1 (hızlı ön-eleme) · spectral_w2 (L1 geniş→W2 rerank) ·
+  quantum (κ blend) · extended (L1+metin tiebreaker). `add` (Aleph kapısı), `add_unchecked`
+  (güvenilen), save/load (v3 parallel arrays), spektral cache (numpy vektörize, incremental).
+- **Güç:** Sistemin yaşadığı metrik uzay. nearest_spectral'ın O(N)→tek-broadcast hızlı yolu (100x).
+- **Nüans (SAHTE TEKRAR #6):** Katalog "3 nearest birleştirilmeli" dedi — ZATEN birleşik
+  (`nearest(metric=)`). `_nearest_l1/_nearest_quantum_vec/nearest_spectral` = farklı geometri
+  backend'leri, tekrar değil. `metric.distance` gibi temiz dispatcher.
+- **Tekrar:** YOK. Backend'ler farklı geometri, KORUNUR.
+
+### ✅ core/collision.py — çekirdek iddianın öz-denetimi (CollisionHunter)
+- **İş:** `hunt()` rastgele farklı girdiler üret → 8-momentte ε-yakın ama yapısal-farklı çiftleri
+  yakala → derinlik (8→16) ya da label-aware kodlama ayrıştırıyor mu?
+- **Güç:** Sistem KENDİ temelini adversarial test eder ("8 moment yapıyı belirler" vaadi).
+  `_encode_label_aware` permütasyon çakışmasının çözülebilir olduğunu gösterir.
+- **Tekrar:** YOK. Benzersiz öz-denetim aracı.
+
 ---
 
 ## Henüz ⬜ KATALOG (kendim okumadım — güvenme, doğrulanacak)
 
-**core:** network.py · unified.py · grounding.py · truth.py · confidence.py · reconstruct.py ·
-semantic.py · inverse.py · molecular_genesis.py · molecular_space.py · collision.py
-
-**proof:** dyadic_flow.py · certificate.py — **algebra:** sturm.py · positivity.py · sheffer.py
+**core:** inverse.py · molecular_genesis.py · molecular_space.py
 
 **graph:** knowledge_graph.py · anchors.py · relations.py · memory.py
 
