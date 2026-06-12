@@ -310,16 +310,18 @@ operate(reason|produce|synthesize) → infer → genesis → prove → persist
 
 | Faz | İş | Risk | Test kapısı |
 |-----|----|----|-------------|
-| **F0** | L0 tek imza: Sturm (`exact` modu KORUNUR) + mesafe (zaten dispatcher) + κ-mesafe (`include_mean` param — κ₁ ayrımı KORUNUR). Davranış bire bir aynı. | düşük | mevcut transport+production testleri + altın-çıktı eşitliği |
-| **F1** | L1: tüm `_encode_target` → tek `Encoder.encode` YÖNLENDİRME (perception dönüştürücüleri KORUNUR, yarık YOK). Sadece tek giriş + cache. | orta | encoder eşdeğerlik + perception (her modalite aynı moment) |
-| **F2** | L2 Certifier: `ask` çift-encode kaldır; herkes tek `Certificate` tüketir | orta | ask/certify_all + grounding/truth |
-| **F3** | L3 Memory: tek `admit()` yolu; tüm manifold.add çağrıları ona iner | orta-yüksek | universe_gate + growth + observe |
-| **F4** | L4 Operatörler: Producer çatısı (7 metot→1+sarmalayıcı); Synthesizer; Reasoner | orta | production+simulation+reasoning |
-| **F5** | L5 Cognition: 5 döngü→1; Ingestor; GapFinder; reflect→hedef | yüksek | growth+proof_loop+research |
-| **F6** | L6 facade namespace + eski metot proxy; serve.py | düşük | API smoke + serve testleri |
+| **F0** | L0 tek imza: Sturm (`exact=True` VARSAYILAN korunur) + mesafe (zaten dispatcher) + κ-mesafe `bounded_kappa_distance(mu_a,mu_b,*,include_mean)`. **DİKKAT: girdi-sözleşmesi μ-listesi olmalı (FreeCumulants nesnesi değil — `_bounded`/`_structural` farklı girdi alıyor).** | düşük | golden-κ unit testi (sabit μ-çifti) ÖNCE + transport/production |
+| **F1** | L1: tüm `_encode_target` → tek `Encoder.encode` YÖNLENDİRME (perception dönüştürücüleri KORUNUR, yarık YOK). | orta | encoder eşdeğerlik + perception |
+| **F2** | L2 Certifier: `ask` çift-encode kaldır → herkes `CoreMachine`'e. **`truth.certify` komşu yeniden-encode'unu cache'leyip ATLAMA** (CONTRADICTORY kapısı buna bağlı — gerçek tekrar değil). | orta | ask/certify_all + grounding/truth + CONTRADICTORY regresyon testi |
+| **F3** | L3 Memory: tek `admit()` yolu. **⚠️ TOP RİSK (YÜKSEK, hakem revizyonu).** Her operatörün ALTINDA; `add_unchecked` kapı-MUAF kalmalı. | **YÜKSEK** | **ÖNCE caller-admission-parity testi** (her giriş yolu merge öncesi/sonrası aynı yargı) + universe_gate + growth |
+| **F4** | L4: Producer çatısı (7 facade→1+sarmalayıcı, MOTORLAR ayrı); Synthesizer konveks-çekirdek (#8); Reasoner. **"Tek transport çekirdeği" YOK — operatörler ayrı.** | orta | production+simulation+reasoning + golden-çıktı |
+| **F5** | L5 Cognition: döngü iskeleti (strateji-pluggable); Ingestor (#9); GapFinder (#10); reflect→hedef (wonder'a DIŞSAL-boşluk terimi). | yüksek | growth+proof_loop+research |
+| **F6** | L6 facade namespace + proxy; serve.py. **`engine.grow` bağlama: ÖNCE karakterizasyon testi** (O(n²) inference+disk+rebuild, 44k manifoldda riskli). 3D-SDF util parametreli (#7 byte-özdeş değil). | orta | API smoke + serve + engine.grow golden |
 
-**Sıra kuralı:** alttan üste (L0→L6). Üst katman alttakinin kanonik halini kullanır;
-böylece her faz bir öncekinin temizlediği zeminde durur.
+**Sıra kuralı:** alttan üste (L0→L6). **Hakem uzlaşısı (7 ajan):** minimal-uygulanabilir birleşme =
+F0 + F2 + gerçek dedup'lar (#7/#8/#9/#10) + F6 ≈ %80 değer / %20 risk. F3'ten önce parite testi
+ZORUNLU. "Tek transport" tezi ve varyasyonel çerçeve mimari değil, gelecek yön (bkz. MAXIMUM_DESIGN §10).
+ÇÖZÜLMEMİŞ: encoder collision (`protein`==`glucose`) birleşme kapatmaz — ayrı iş kalemi.
 
 ---
 

@@ -9,6 +9,39 @@ literal yapandır.*
 > Bu tasarım `FILE_LEDGER.md`'deki 70-dosya satır-satır doğrulamasına dayanır.
 > Her ilke, kodda gerçekten var olan bir mekanizmaya bağlanmıştır (kaynak gösterilir).
 
+> ## ⚖️ 7-AJAN HAKEM İNCELEMESİ — ZORUNLU DÜZELTMELER (2026-06-12)
+> Bu belge 7 bağımsız adversarial eleştirmene (matematik·fizik·yazılım·red-team·biyoloji·
+> felsefe·test) sınatıldı. Oylar: 6× REVISE, 1× MAJOR-CONCERNS (biyoloji), 1× PROCEED (test).
+> **Mühendislik omurgası (UNIFIED F0–F6 + gerçek dedup'lar) SAĞLAM.** Ama aşağıdaki DERİN
+> iddialar ABARTILI bulundu — "mimari" değil "yorum/öneri" seviyesine indirilmeli:
+>
+> 1. **§4 "TEK transport işlemi" — EN TEHLİKELİ (3 ajan).** Kod aksini söylüyor: `reasoner`
+>    tipli-kenar graf yürüyüşü (transport YOK), `synthesis` konveks orta-nokta, `production`
+>    dyadic akış. Bunları "aynı işlem" demek kataloğun yaptığı SURFACE-SIMILARITY hatasını
+>    tekrarlar — ve §2.5/FILE_LEDGER'ın "BİRLEŞTİRİLMEZ" notuyla çelişir. → **"Tek transport
+>    çekirdeği" TEZİ İPTAL.** Doğrusu: ortak OMURGA (Encoder+Certifier+Memory), AYRI operatörler.
+> 2. **§1 "serbest kümülant / Voiculescu" — YANLIŞ İSİM.** `quantum_moments.from_moments`
+>    KLASİK Leonov-Shiryaev kümülantlarını hesaplıyor (κ₄'te −3μ₂²; serbest olan −2μ₂² olurdu).
+>    `add()` klasik additivite. → "serbest/non-komütatif" çerçevesi DÜŞÜR ya da formülleri düzelt.
+> 3. **§2 fizik — METAFOR present-tense yazılmış.** Döngüde minimize edilen GERÇEK serbest-enerji
+>    YOK (ΔF §7'de "vizyon" doğru ama §0/§2'de "evrilir" diyor). "de Bruijn-Newman ısı akışı"
+>    aslında 0.5-oranlı geometrik interpolasyon; `λ=−var₀` daima ≤0 → hiçbir şey sertifikalamaz.
+>    → "PROPOSED/analoji" etiketle; "de Bruijn-Newman" iddiasını ısı aşamasından kaldır.
+> 4. **§3 biyoloji — EN ZAYIF (MAJOR-CONCERNS).** κ-additivite=homeostaz bir KATEGORİ HATASI
+>    (ilaç+hastalık serbest bağımsız değişken değil). "cure/homeostaz/evren-kapatır" sözcükleri
+>    bir "spektral uyumluluk tarayıcısını" aşırı satıyor. DNA↔zeta = eşik'li numeroloji (held-out
+>    doğrulama yok). → "tarama sezgiseli" diline indir; benchmark ekle; köprüleri "doğrulanmamış" işaretle.
+> 5. **§5 öz-model — ABARTILI.** `self_certify` 4 muhasebe sayacını encode ediyor (öz-model değil).
+>    "evren = matematik" yanlışlanamaz ve mimari ona BAĞIMLI değil. reflect→wonder→act, ⟨SELF⟩
+>    WEAKLY-grounded olduğundan dejenere "kendiyle uğraşma" sabit-noktasına düşebilir. → işlevsel
+>    dile indir; wonder'a DIŞSAL-boşluk terimi ekle.
+>
+> **MİMARİ RİSK DÜZELTMESİ:** En yüksek risk F5 değil **F3 (tek `admit`)** — her operatörün
+> ALTINDA; `add_unchecked` (kapı-muaf) yanlış yönlenirse küratörlü veri sessizce reddedilir.
+> F2 `truth.certify` komşu yeniden-encode'unu cache'leyip ATLAMAMALI (CONTRADICTORY kapısını öldürür).
+> Sturm `exact=True` varsayılan KALMALI (zaten kısmen sayısal: `limit_denominator(10**6)`).
+> Detay + uzlaşı yol haritası: bu belgenin sonundaki "§10 HAKEM UZLAŞISI" bölümü.
+
 ---
 
 ## 0. Tek Cümle
@@ -103,12 +136,17 @@ Reason · produce · synthesize · bridge **ayrı motorlar değil** — hepsi **
 | **Bridge** | çapraz-domain transport | farklı domain, spektral-yakın | `synthesis.bridge`, `_discover_bridges` |
 | **Generation** | manifold üzerinde yörünge (argmin transport) | her adım en-yakın komşuya | `language/generator` |
 
-Kod parçalanması bu birliği gizledi. **Maksimum mimari:** TEK `Transport` çekirdeği,
-sınır-koşulu preset'leriyle parametrize. reason/produce/synthesize = bu çekirdeğin
-adlandırılmış preset'leri (strateji-koruma ilkesi: her preset KORUNUR, çekirdek tek).
-
-Bu, FILE_LEDGER #8 (konveks-kombo 5 yerde) + UNIFIED Synthesizer/Transporter
-birleşmelerinin DERİN gerekçesidir: onlar zaten tek işlem.
+> ⚠️ **HAKEM DÜZELTMESİ (matematik+yazılım+red-team):** Yukarıdaki "tek transport" çerçevesi
+> ABARTI. Kod aksini söylüyor: `reasoner.query` tipli-kenar graf yürüyüşü (`_CHAIN_RULES`,
+> transport/Sturm/dyadic YOK), `synthesis.bridge` konveks orta-nokta (transport yalnız DOĞRULAMA
+> alt-adımı), `production` dyadic akış. Bunlar matematiksel olarak FARKLI işlemler. **"TEK Transport
+> çekirdeği + preset" TEZİ İPTAL** — leaky god-object üretir ve §2.5/FILE_LEDGER'ın kendi
+> "BİRLEŞTİRİLMEZ" notuyla çelişir.
+>
+> **DOĞRUSU:** Operatörler ortak OMURGAYI paylaşır (tek Encoder→Percept, tek Certifier, tek Memory)
+> ama AYRI kalır. Gerçek paylaşılan tek şey: `encode` + `certify` + `admit`. Birleşen tek gerçek
+> tekrar #8 yalnızca **konveks-kombinasyon çekirdeği** (bridge/interpolate/derive/blend/_local_genesis
+> aynı μ_C=Σαμ matematiği) — o da Synthesizer içinde, reasoning/production'a DOKUNMADAN.
 
 ---
 
@@ -204,4 +242,45 @@ her strateji) TEK ARAYÜZ ARDINDA korunur.
                        farklı sınır koşullarıyla
 ```
 
-*Sistem zaten tek makine. Mimari onu literal yapar. Hiçbir gücü silmez — gizli birliği açar.*
+*Sistem ortak bir OMURGA (ölçü→sertifika→hafıza) paylaşır; operatörler ayrı kalır. Mimari bu
+omurgayı tekilleştirir + öksüz gücü bağlar — hiçbir gerçek ayrımı silmeden.*
+
+---
+
+## 10. HAKEM UZLAŞISI — 7 ajanın ortak kararı (uygulama rehberi)
+
+**Oylar:** 6× REVISE · 1× MAJOR-CONCERNS (biyoloji) · 1× PROCEED (test). **Uzlaşı: omurgayı kur,
+abartıyı in, biyoloji/öz-model dilini düşür, riski yeniden derecelendir.**
+
+### Hemen yap (yüksek-değer, düşük-risk — 4 ajan hemfikir):
+- **F0** substrate tek-imza (Sturm `exact=True` VARSAYILAN kalır; κ-mesafe `bounded_kappa_distance(
+  mu_a, mu_b, *, include_mean)` — DİKKAT: girdi-sözleşmesi μ-listesi olmalı, FreeCumulants nesnesi
+  değil; golden-değer unit testi önce). Davranış bire-bir aynı.
+- **F2** `ai.ask` çift-encode'u kaldır → herkesi `CoreMachine`'e yönlendir. AMA `truth.certify`
+  komşu yeniden-encode'unu cache'leyip ATLAMA (CONTRADICTORY kapısı buna bağlı — gerçek tekrar değil).
+- **#7 3D-SDF util:** `inverse._make_3d` ve `certifier._smiles_to_sdf` **byte-özdeş DEĞİL** (RemoveHs,
+  fallback-seed, prop seti, dosya adı farklı) → birleşik `make_3d` bunları PARAMETRELE; SDF-içerik testi ekle.
+- **#9 Ingestor** (3 özdeş fetch adaptörü) · **#10 GapFinder** (4 boşluk sinyali birliği) · **F6** facade namespace + proxy.
+
+### En yüksek risk — yeniden derecelendirildi:
+- **F3 tek `admit()` = TOP RİSK (orta-yüksek DEĞİL, YÜKSEK).** Her operatörün altında. ÖNCE
+  "caller-admission-parity" testi: her giriş yolu (`add`/`add_unchecked`/`tau.add_node`/`math_kernel.inject`/
+  `proof_loop.sync`) merge öncesi/sonrası AYNI yargıyı vermeli; `add_unchecked` kapı-MUAF kalmalı.
+
+### İptal / ertele (tez, refactor değil):
+- **§4 "tek transport çekirdeği" — İPTAL** (leaky god-object; operatörler ayrı kalır).
+- **`engine.grow` bağlama** (F6) — O(n²) inference + disk-append + manifold rebuild; 44k manifoldda
+  ÖNCE karakterizasyon testi olmadan bağlanmaz.
+
+### Doküman dürüstlük düzeltmeleri (kod değişmeden):
+- `FreeCumulants` = KLASİK kümülant (serbest değil) — yeniden adlandır ya da formül düzelt.
+- Fizik (ısı akışı/serbest enerji/alan) → "PROPOSED/analoji" etiketle; "de Bruijn-Newman" iddiasını kaldır.
+- Biyoloji: "cure/homeostaz/evren-kapatır" → "spektral uyumluluk tarayıcısı"; DNA↔zeta "doğrulanmamış"; benchmark ekle.
+- Öz-model: "evren=matematik" ve "öz-farkındalık" → işlevsel dile; wonder'a dışsal-boşluk terimi.
+
+### ÇÖZÜLMEMİŞ (mimari kapatmıyor — dürüstçe söyle):
+- **Encoder collision** (`protein`==`glucose` aynı moment). "Tek Percept/ölçü" bunu çözmez; tek
+  Encoder'a sabitlerken çakışmayı sabitleme riski. Ayrı bir iş kalemi (label_aware tam geçiş ya da kabul).
+
+**SONUÇ:** Omurga + 4 gerçek dedup + facade = ~%80 değer, ~%20 risk. "Tek transport" ve varyasyonel
+çerçeve mimari değil, gelecekteki YÖNDÜR. F0'dan başla; F3'ten önce parite testi yaz.
