@@ -198,6 +198,35 @@ yeniden-encode'u KORUNUR (CONTRADICTORY kapısı buna bağlı — gerçek tekrar
 
 ---
 
+## Admission — Tek `admit()` Yolu (F3)
+
+**Sorun:** Manifolda kavram girişi 3 dağınık yoldan oluyordu: `add()` (Aleph kontrollü,
+7 çağıran), `add_unchecked()` (kontrolsüz, 23 çağıran), engine evren kapısı (`_universe_gate`).
+Admission LOJİĞİ tek yerde değildi.
+
+**Çözüm:** `SemanticManifold.admit(concept, *, policy)` — TEK manifold admission yolu.
+`add()` ve `add_unchecked()` artık buna delege (dış sözleşmeleri korunur).
+
+```python
+m.admit(concept, policy="aleph")    # Aleph PSD → core | rejected. add() bunu kullanır.
+m.admit(concept, policy="trusted")  # kontrolsüz, KAPI-MUAF. add_unchecked() bunu kullanır.
+# Döner: AdmissionResult(admitted, tier, reason). bool(result) = admitted.
+```
+
+**KAPI-MUAF kuralı:** `trusted` politikası Aleph'i atlar — güvenilir/sertifikalı kaynaklar
+(genesis köprüleri, algı kavramları, öğrenme) için. Plan gereği bu muafiyet korundu.
+
+**Engine evren kapısı AYRI:** `research/autonomous._universe_gate` truth+grounding ile
+core/frontier ayırır + CONTRADICTORY reddeder. Engine'e bağlı olduğundan saf manifoldda
+yaşamaz; kabul için `admit(policy="trusted")`'a iner. Üç bölge: core | frontier | rejected.
+
+**Parity testi ÖNCE yazıldı** (`test_admission_parity.py`, 12 test): refactor öncesi/sonrası
+her admission yolunun yargısı SABİT — `add()`≡`admit("aleph")`, `add_unchecked()`≡`admit("trusted")`,
+gated yargı korundu. NOT: 35 çağıran henüz yeniden yönlendirilmedi (artımlı takip); admission
+LOJİĞİ tek metoda indi, davranış birebir korundu.
+
+---
+
 ## CertifiedTransport
 
 ```

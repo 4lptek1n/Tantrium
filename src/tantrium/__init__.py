@@ -9,7 +9,7 @@ from tantrium.core.metric import canonical_distance, l1_distance, distance as me
 from tantrium.core.collision import CollisionHunter, CollisionReport
 from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
-from tantrium.core.semantic import Concept, SemanticManifold
+from tantrium.core.semantic import AdmissionResult, Concept, SemanticManifold
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
 from tantrium.proof.certificate import Cell, Certificate, TransportEdge
 from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
@@ -76,6 +76,7 @@ __all__ = [
     "encode_smiles",
     "Concept",
     "SemanticManifold",
+    "AdmissionResult",
     "CertifiedTransport",
     "TransportCertificate",
     "TransportRanking",

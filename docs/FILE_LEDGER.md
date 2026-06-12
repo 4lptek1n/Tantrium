@@ -190,11 +190,16 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **İş:** `transition_polynomial(d)` EGF'den, `lah_number`, `lah_polynomial`. RH alt-resultant/Lah kapısı.
 - **Tekrar:** YOK. Araştırma-seviyesi RH matematiği.
 
-### ✅ core/semantic.py — Manifold (hafıza substratı) + nearest dispatcher
+### ✅ core/semantic.py — Manifold (hafıza substratı) + nearest dispatcher [F3 admit TAMAM]
 - **İş:** `Concept` (moment dizisi kavram), `SemanticManifold` (koleksiyon). `nearest(concept,
   n, metric=)` TEK dispatcher: l1 (hızlı ön-eleme) · spectral_w2 (L1 geniş→W2 rerank) ·
-  quantum (κ blend) · extended (L1+metin tiebreaker). `add` (Aleph kapısı), `add_unchecked`
-  (güvenilen), save/load (v3 parallel arrays), spektral cache (numpy vektörize, incremental).
+  quantum (κ blend) · extended (L1+metin tiebreaker). save/load (v3 parallel arrays),
+  spektral cache (numpy vektörize, incremental).
+- **F3 Değişiklikleri [TAMAMLANDI 2026-06]:** `admit(concept, *, policy)` TEK admission yolu.
+  `policy="aleph"` (PSD → core|rejected) | `policy="trusted"` (kapı-MUAF). `add()`≡admit("aleph",
+  rejected→ValueError), `add_unchecked()`≡admit("trusted"). `AdmissionResult(admitted,tier,reason)`.
+  Engine evren kapısı (`autonomous._universe_gate`) AYRI (engine-bağımlı), kabul için admit("trusted").
+  Parity testi ÖNCE (12). 35 çağıran artımlı taşınacak — şimdilik logic tek metoda indi.
 - **Güç:** Sistemin yaşadığı metrik uzay. nearest_spectral'ın O(N)→tek-broadcast hızlı yolu (100x).
 - **Nüans (SAHTE TEKRAR #6):** Katalog "3 nearest birleştirilmeli" dedi — ZATEN birleşik
   (`nearest(metric=)`). `_nearest_l1/_nearest_quantum_vec/nearest_spectral` = farklı geometri

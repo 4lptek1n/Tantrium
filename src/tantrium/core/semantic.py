@@ -18,6 +18,25 @@ from typing import Sequence
 from tantrium.core.codex import CertifiableObject as CodexObject, PositivityParadigm as AlephParadigm, ParadigmResult
 
 
+# ─── Admission verdict (F3: tek admit() yolu) ──────────────────────────────
+
+@dataclass
+class AdmissionResult:
+    """admit() yargısı — TEK manifold admission yolunun çıktısı.
+
+    admitted : kavram manifolda girdi mi
+    tier     : "core" (Aleph sertifikalı) | "trusted" (kapı-muaf) | "rejected"
+    reason   : insan-okunur gerekçe (Aleph gap adı / kaynak güveni)
+    """
+    admitted: bool
+    tier: str
+    reason: str
+    concept_name: str = ""
+
+    def __bool__(self) -> bool:
+        return self.admitted
+
+
 # ─── A concept in natural language / any domain ────────────────────────────
 
 @dataclass
@@ -141,20 +160,51 @@ class SemanticManifold:
     """
     concepts: dict[str, Concept] = field(default_factory=dict)
 
-    def add(self, concept: Concept) -> "SemanticManifold":
-        result = concept.verify_existence()
-        if result.is_certified():
+    def admit(self, concept: Concept, *, policy: str = "aleph") -> "AdmissionResult":
+        """TEK admission yolu — tüm manifold girişleri buraya iner (F3).
+
+        policy="aleph"   : Aleph PSD kontrolü (verify_existence). Geçerse core,
+                           geçmezse rejected. add() bu politikayı kullanır.
+        policy="trusted" : kontrolsüz kabul (güvenilir/sertifikalı kaynak).
+                           KAPI-MUAF (plan gereği). add_unchecked() bunu kullanır.
+
+        Engine-seviyesi evren kapısı (truth+grounding ile core/frontier ayrımı,
+        CONTRADICTORY reddi) `research/autonomous._universe_gate`'tedir — engine'e
+        bağlı olduğundan saf manifoldda yaşamaz; o da kabul için buraya
+        (policy="trusted") iner. Burada engine bağımlılığı YOK.
+
+        Döner: AdmissionResult(admitted, tier, reason).
+        """
+        if policy == "trusted":
             self.concepts[concept.name] = concept
-        else:
+            return AdmissionResult(True, "trusted", "trusted source — gate-exempt",
+                                   concept.name)
+        if policy == "aleph":
+            result = concept.verify_existence()
+            if result.is_certified():
+                self.concepts[concept.name] = concept
+                return AdmissionResult(True, "core", "Aleph PSD certified",
+                                       concept.name)
+            return AdmissionResult(False, "rejected", str(result.gap_name),
+                                   concept.name)
+        raise ValueError(
+            f"Unknown admission policy: {policy!r} (expected 'aleph' or 'trusted')")
+
+    def add(self, concept: Concept) -> "SemanticManifold":
+        result = self.admit(concept, policy="aleph")
+        if not result.admitted:
             raise ValueError(
-                f"Concept '{concept.name}' rejected by Aleph filter: {result.gap_name}. "
+                f"Concept '{concept.name}' rejected by Aleph filter: {result.reason}. "
                 f"It does not exist in the real manifold."
             )
         return self
 
     def add_unchecked(self, concept: Concept) -> "SemanticManifold":
-        """Add without Aleph check — use only for trusted certified inputs."""
-        self.concepts[concept.name] = concept
+        """Add without Aleph check — use only for trusted certified inputs.
+
+        admit(policy="trusted")'a delege — kapı-muaf tek yol.
+        """
+        self.admit(concept, policy="trusted")
         return self
 
     def distance(self, name_a: str, name_b: str, metric: str = "spectral_w2") -> float | None:
