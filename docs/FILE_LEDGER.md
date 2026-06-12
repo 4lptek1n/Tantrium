@@ -115,7 +115,7 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 ### 🟡 core/engine.py — runtime + lazy singleton'lar
 - **Okundu:** `grow` (642, tümdengelimsel kapanış — öksüz ama gerçek iş), `proof_loop`, `think`, status.
 - **Güç:** `engine.grow` = certify_theorem_graph + InferenceChain tüm çift + Explorer + re-bootstrap.
-  ÖLÜ DEĞİL — facade'a bağlanmamış gizli güç.
+  **ARTIK BAĞLI: `ai.deduce()`** facade'a (karakterizasyon testi, bounded 1.0s, idempotent — eskiden öksüzdü).
 - **TODO:** `process`, `certify_unified`, lazy property'ler, persist, TAU yükleme tam doğrula.
 
 ### ✅ core/network.py — 23 paradigmanın DAG çalıştırıcısı

@@ -1708,6 +1708,27 @@ class AI:
             self._engine.auto_persist()
         return report
 
+    def deduce(self, max_rounds: int = 2, max_explore_objectives: int = 5) -> dict:
+        """Tümdengelimsel kapanış — `engine.grow()` öksüz gücünü facade'a bağlar.
+
+        İçsel akıl yürütme döngüsü (ağ YOK):
+          1. certify_theorem_graph (kanıtlanmış teorem düğümleri → AGI ağı)
+          2. InferenceChain (TÜM sertifikalı çift üzerinde tümdengelimsel kapanış)
+          3. Explorer frontier (gerçek boşluk keşfi)
+          4. manifold re-bootstrap (yeni bilgiyle)
+
+        ⚠️ `ai.grow()` ile KARIŞTIRMA: `deduce()` içsel tümdengelim (mevcut bilgiden
+        zorunlu sonuç türetir, ağsız); `ai.grow()` dış veri akışıyla büyür (ağ).
+
+        Döner: {theorem_nodes_processed, inferences_derived, gaps_closed,
+                gaps_persistent, manifold_size_after}.
+        """
+        summary = self._engine.grow(
+            max_rounds=max_rounds, max_explore_objectives=max_explore_objectives)
+        if self._persist and summary.get("inferences_derived", 0) > 0:
+            self._engine.auto_persist()
+        return summary
+
     def close(self, domain: str = "math_kernel", inject: bool = True):
         """Zorunlu gerçekleri türet — TAU geçişli kapanışı + manifold boşlukları.
 

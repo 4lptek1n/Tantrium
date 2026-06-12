@@ -302,6 +302,9 @@ ai.grounding("protein")                        # → GroundingCertificate (GROUN
 ai.transport("CCO", "aspirin", use_smiles=True)# → TransportCertificate
 ai.rank("EGFR", top_n=10)                      # → TransportRanking
 ai.prove(max_cycles=2)                         # → LoopReport (kapalı döngü)
+ai.deduce(max_rounds=2)                         # → dict: TÜMDENGELİMSEL kapanış (içsel, ağsız)
+                                               #   certify_theorem_graph + InferenceChain tüm çift + Explorer
+                                               #   {theorem_nodes_processed, inferences_derived, gaps_closed/persistent}
 ai.close(domain="math_kernel", inject=True)    # → NecessityReport
 ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, "causal_relations": k, ...}
 ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}  [Geri BFS]
@@ -404,9 +407,10 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
    Aynı uzunluk+çeşitlilik çakışmaları artık ana yolda `label_aware=True` ile encode-anında çözülüyor (bkz. #6).
 10. **`lang_topology.inject(run_reasoner=True)` ÖLÜ DAL**: var olmayan `TauReasoner`'ı import eder
     (artık `GraphReasoner`). Varsayılan `run_reasoner=False` → çalışmıyor; çağırma veya GraphReasoner'a güncelle.
-11. **`engine.grow()` ≠ `ai.grow()`**: `engine.grow()` (engine.py) tümdengelimsel kapanış (certify_theorem_graph
-    + InferenceChain tüm çiftler + Explorer) — GERÇEK iş yapar ama facade'a bağlı DEĞİL (öksüz gizli güç).
-    `ai.grow()` ise `GrowthEngine.stream` (veri akışı). İkisi farklı; karıştırma.
+11. **`engine.grow()` ≠ `ai.grow()` — ARTIK İKİSİ DE BAĞLI**: `engine.grow()` (engine.py) tümdengelimsel
+    kapanış (certify_theorem_graph + InferenceChain tüm çiftler + Explorer + manifold re-bootstrap).
+    **Artık `ai.deduce()` facade'ına bağlı** (eskiden öksüzdü). `ai.grow()` ise `GrowthEngine.stream`
+    (dış veri akışı, ağ). İKİSİ FARKLI: `deduce()` içsel tümdengelim (ağsız), `grow()` dış akış. Karıştırma.
 
 ---
 
@@ -466,9 +470,9 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: 488 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
+- Tests: 492 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
   14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] +
-  8 gap_finder[#10] + 7 moment_ops[#8 kısmî] + ...)
+  8 gap_finder[#10] + 7 moment_ops[#8 kısmî] + 4 deduce[engine.grow bağlama] + ...)
 
 ---
 
