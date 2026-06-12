@@ -25,8 +25,9 @@ if TYPE_CHECKING:
     from tantrium.core.production import ProductionEngine
     from tantrium.core.quantum_moments import FreeCumulants
 
-# Paradigma-matematik eşiği: kinaz-içi çiftler ≤2.0, kinaz-dışı ≥3.1. 2.5 = ayraç.
-_PARADIGM_WORKS_THR = 2.5
+# Paradigma-matematik eşiği (45-özellik imza, normalize L1):
+# EGFR-içi çiftler ≤3.43, EGFR-dışı ≥4.25 → 3.8 = ayraç.
+_PARADIGM_WORKS_THR = 3.8
 
 
 @dataclass

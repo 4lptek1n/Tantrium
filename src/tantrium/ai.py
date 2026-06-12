@@ -1032,9 +1032,10 @@ class AI:
             refine_rounds=refine_rounds, combination=combination, network=network,
             inject=inject, epsilon=epsilon, top_k=top_k)
 
-    # Paradigma-matematik mesafe eşiği: kinaz-içi çiftler ≤2.0, kinaz-dışı ≥3.1.
-    # 2.5 = boşluğun ortası — 'aynı terapötik tür' ile 'farklı' arasını ayırır.
-    _PARADIGM_WORKS_THR = 2.5
+    # Paradigma-matematik mesafe eşiği (45-özellik normalize imza):
+    # EGFR-içi ≤3.43, kinaz-sınıfı ≤4.18, kinaz-dışı ≥4.25 → 4.5 = sınıf ayracı.
+    # judge_binding "aynı terapötik sınıf mı?" sorar — üretimden daha geniş.
+    _PARADIGM_WORKS_THR = 4.5
 
     def judge_binding(self, candidate: str, protein: str, top_refs: int = 8) -> dict:
         """İşe yarar mı? — adayı proteinin bilinen ligandlarına karşı

@@ -66,61 +66,121 @@ def distance(moments_a, moments_b, metric: str = CANONICAL) -> float:
 
 
 # ─── Paradigma-matematik imzası ──────────────────────────────────────────────
-# Paradigmalar "sertifikalandı/✓" demez — SAYILAR hesaplar. Bu imza o sayıları
-# (özdeğer spektrumu, Lyapunov, Li, de Bruijn-Newman Λ, alt-resultant, Schur,
-# spektral entropi) ölçek-bağımsız bir vektörde toplar. İki nesnenin "aynı tür"
-# olması = paradigmaların KENDİ matematiğinde yakın olmaları, geçen-sayısı değil.
+# 8 moment GİRDİDİR — paradigmalar o momentleri işleyip FARKLI sayılar üretir.
+# Bu imza o çıktıları (Newton kimliği, Euler karakteristiği, Sylvester inertia,
+# τ-determinantlar, Q_hidden, Li akışları, Hankel oranları, RESH entropi üçlüsü,
+# MDL, Achilles marjini, serbest kümülantlar…) tek normalize vektörde toplar.
+# İki nesnenin "aynı tür" olması = paradigmaların KENDİ matematiğinde yakın.
 
 def paradigm_signature(structure: dict) -> list[float]:
-    """Paradigmaların matematik çıktılarından ölçek-bağımsız imza vektörü.
+    """Tüm 23 paradigmanın sayısal çıktılarından ölçek-bağımsız imza vektörü.
 
-    structure: encode(...).structure (pipeline L0-L7 çıktısı).
-    Tüm özellikler intensive/normalize — farklı boyuttaki moleküller karşılaştırılabilir.
+    8 moment GİRDİDİR — bu vektör paradigmaların KENDİ hesapladığı çıktılardır.
+    Tüm özellikler intensive/normalize: farklı boyuttaki nesneler karşılaştırılabilir.
     """
     import math
     s = structure or {}
     feats: list[float] = []
 
-    # DALET — özdeğer spektrumunun ŞEKLİ (top 5, toplama normalize)
+    def _sf(v, default: float = 0.0) -> float:
+        if v is None:
+            return default
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return default
+
+    # ── DALET (L2.5): Eigenvalue spektrumu + Newton + Euler + Sylvester ────────
     eigs = [float(e) for e in s.get("eigenvalues", []) if float(e) > 1e-12]
     tot = sum(eigs) or 1.0
+    rank = max(int(s.get("matrix_rank") or len(eigs) or 1), 1)
+    log_r = math.log(rank + 1) or 1.0
+
+    # Eigenvalue şekli (top 5, toplama normalize) — DALET birincil çıktısı
     shape = [e / tot for e in eigs[:5]]
     feats += shape + [0.0] * (5 - len(shape))
+    # Newton Z₃ kimliği residual (tanh×10): 0 ise kimlik tuttu
+    feats.append(math.tanh(_sf(s.get("newton_residual")) * 10.0))
+    # Euler karakteristiği / (rank+1): nullity bağıl büyüklüğü ∈ [0,1)
+    feats.append(min(_sf(s.get("euler_characteristic")) / (rank + 1.0), 1.0))
+    # Sylvester n₊ / rank: 1.0 = tam PSD, düşükse bozulma
+    feats.append(min(_sf(s.get("conserved_index"), float(rank)) / (rank + 1e-9), 1.0))
 
-    # HE — Lyapunov sönümü (ilk=1.0 atla, 4 değer; zaten μ_k/λ_max^k normalize)
+    # ── BET (L0.5): von Neumann spektral entropi ──────────────────────────────
+    feats.append(_sf(s.get("spectral_entropy")) / log_r)
+
+    # ── HE (L1.5): Lyapunov sönümü (μ_k/λ_max^k, ilk=1.0 atla) ──────────────
     lya = [float(x) for x in s.get("lyapunov_values", [])][1:5]
     feats += lya + [0.0] * (4 - len(lya))
 
-    # HET — Li katsayıları, kendi toplamlarına oranlanmış (boyut-bağımsız)
+    # ── ZAYIN (L2): τ-determinantlar + Schur ──────────────────────────────────
+    feats.append(math.tanh(_sf(s.get("schur_min_eigenvalue"))))   # Schur min
+    feats.append(math.tanh(_sf(s.get("Q_hidden_trace"))))         # H(t) gizli faktörü
+    taus = s.get("tau_determinants") or {}
+    tau_ref = max(abs(_sf(taus.get("tau_1_0"), 1.0)), 1e-9)
+    for tk in ("tau_1_0", "tau_1_1", "tau_1_2"):
+        feats.append(math.tanh(_sf(taus.get(tk)) / tau_ref))
+    for tk in ("tau_2_0", "tau_2_1"):
+        feats.append(math.tanh(_sf(taus.get(tk)) / (tau_ref ** 2 + 1e-15)))
+
+    # ── HET (L3): Li katsayıları (toplamına normalize) + akış gradyanları ──────
     li = [float(x) for x in s.get("li_coefficients", [])][:4]
     lisum = sum(abs(x) for x in li) or 1.0
-    li = [x / lisum for x in li]
-    feats += li + [0.0] * (4 - len(li))
+    feats += [x / lisum for x in li] + [0.0] * (4 - len(li))
+    flows = s.get("flows") or []
+    for i in range(3):
+        grad = float(flows[i].get("gradient", 0.0)) if i < len(flows) else 0.0
+        feats.append(math.tanh(grad))
 
-    # von Neumann — spektral entropi, log(rank) ile normalize
-    rank = max(int(s.get("matrix_rank", 1)), 1)
-    feats.append(float(s.get("spectral_entropy", 0.0)) / (math.log(rank + 1) or 1.0))
+    # ── TAV (L4): de Bruijn-Newman Λ + dominant kütle fraksiyonu ─────────────
+    feats.append(math.tanh(_sf(s.get("debruijn_newman_lambda"))))
+    fp = _sf(s.get("fixed_point"))
+    feats.append(fp / (tot + 1e-9) if fp > 0 else 0.0)
 
-    # TAV — de Bruijn-Newman Λ (tanh ile sınırlanmış)
-    feats.append(math.tanh(float(s.get("debruijn_newman_lambda", 0.0))))
-
-    # Alt-resultant çapraz oranları (3, tanh sınırlı)
+    # ── TET: Alt-resultant çapraz oranlar + Hankel determinant oranları ────────
     sub = [float(x) for x in s.get("subresultant_cross_ratios", [])][:3]
-    sub += [0.0] * (3 - len(sub))
-    feats += [math.tanh(x) for x in sub]
+    feats += [math.tanh(x) for x in sub] + [0.0] * (3 - len(sub))
+    hdets = [float(x) for x in s.get("hankel_determinants", [])]
+    for i in range(1, 4):
+        prev = hdets[i - 1] if (i - 1) < len(hdets) else None
+        curr = hdets[i] if i < len(hdets) else None
+        if prev is not None and curr is not None and abs(prev) > 1e-15:
+            feats.append(math.tanh(curr / prev))
+        else:
+            feats.append(0.0)
 
-    # Schur tamamlayıcı min özdeğeri (tanh sınırlı)
-    feats.append(math.tanh(float(s.get("schur_min_eigenvalue", 0.0))))
+    # ── RESH: von Neumann entropi üçlüsü (toplam / alt-sistem / çevre) ────────
+    feats.append(_sf(s.get("entropy_total")) / log_r)
+    feats.append(_sf(s.get("entropy_subsystem")) / log_r)
+    feats.append(_sf(s.get("entropy_environment")) / log_r)
 
-    return feats
+    # ── YOD: MDL oranı (model sıkışıklığı / ham sıkışıklık) ──────────────────
+    feats.append(math.tanh(_sf(s.get("mdl_ratio"))))
+
+    # ── GIMEL (L5): Achilles marjini (en zayıf paradigma) ────────────────────
+    feats.append(math.tanh(_sf(s.get("achilles_margin"))))
+
+    # ── VAV/NUN: Bileşik boyut (log-normalize, cap ≈ e^10 ~ 22000) ───────────
+    feats.append(math.log(max(_sf(s.get("composite_dim"), 1.0), 1.0)) / 10.0)
+
+    # ── Serbest Kümülantlar (κ_k): Voiculescu kuantum imzası ─────────────────
+    kappa = [float(x) for x in (s.get("free_cumulants") or [])][:4]
+    feats += [math.tanh(x) for x in kappa] + [0.0] * (4 - len(kappa))
+
+    return feats  # 45 özellik — 23 paradigmanın tüm sayısal çıktısı
 
 
 def paradigm_distance(struct_a: dict, struct_b: dict) -> float:
-    """İki nesnenin paradigma-matematik imzaları arası L1 mesafe.
+    """İki nesnenin paradigma-matematik imzaları arası normalize L1 mesafe.
 
+    Feature sayısına normalize → threshold feature eklendikçe geçerli kalır.
     Küçük mesafe = paradigmaların kendi hesaplarına göre 'aynı tür yapı'.
     """
     a = paradigm_signature(struct_a)
     b = paradigm_signature(struct_b)
     k = min(len(a), len(b))
-    return sum(abs(a[i] - b[i]) for i in range(k))
+    if k == 0:
+        return 0.0
+    raw = sum(abs(a[i] - b[i]) for i in range(k))
+    # Ortalama feature başına mesafe × 19 (orijinal feature sayısı) → ölçek korunur
+    return raw / k * 19
