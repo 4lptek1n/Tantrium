@@ -1,5 +1,27 @@
 # Tantrium — Sistem Hafızası
 
+> ⛔ **ÖNCE OKU — KOD YAZMADAN, BİRLEŞTİRME/REFACTOR ÖNERMEDEN ÖNCE ZORUNLU:**
+>
+> 1. **`docs/FILE_LEDGER.md`** — 70 dosyanın / 25.629 satırın tamamı satır-satır okunarak
+>    çıkarılmış DOĞRULANMIŞ anlayış defteri. Her dosyanın gerçek işi, ne ürettiği, hangi
+>    gücü taşıdığı, GERÇEK mi SAHTE mi tekrar olduğu yazılı.
+> 2. **`docs/UNIFIED_ARCHITECTURE.md`** — tek-makine hedef mimarisi (7 katman, faz planı F0–F6).
+>
+> **NEDEN ZORUNLU:** Bu repoda HER DOSYA gerçek, amaca-yönelik, parça-parça kurulmuş güçlü bir
+> mimaridir — hiçbiri boş/çöp değildir. Dosya İSİMLERİNE veya yüzeysel benzerliğe KANMA. Alt-ajan
+> kataloglarına GÜVENME — onlar "DUPLICATION" etiketini yanlış dağıttı; gerçek kod okunduğunda
+> **9 sahte tekrar** yakalandı (perception "float", κ-mesafe, Sturm exact/hızlı, mesafe/nearest
+> dispatcher'ları, molekül motorları, ilişki-çıkarma, theorem→moment). Naif birleştirme bunlarda
+> gücü ÖLDÜRÜR.
+>
+> **KURAL:** Bir dosyayı "tekrar/duplicate/silinebilir" diye işaretlemeden ÖNCE o dosyayı kendin
+> satır-satır oku ve FILE_LEDGER'daki notuyla karşılaştır. Birleşme = isim/yönlendirme temizliği +
+> paylaşılan durum + öksüz gücü bağlama — ASLA "en küçük ortak paydaya indirgeme". Her gerçek ayrım
+> (exact vs hızlı, κ₁ dahil/hariç, her dönüştürücü, her üretim stratejisi) TEK ARAYÜZ ARDINDA korunur.
+>
+> Gerçek tekrar AZDIR (3D-SDF · konveks-kombo · veri-çekme · boşluk-tespiti · 4 döngü) ve hepsi
+> strateji/rigor/ayrım KORUYARAK birleşir. Detay: FILE_LEDGER.md "🏁 ENVANTER TAMAM" bölümü.
+
 ## Aktif Branch
 `claude/seninle-agi-yapacagiz-XwJRz` — tüm geliştirme buraya.
 
