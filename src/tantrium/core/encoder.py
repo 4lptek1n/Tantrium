@@ -160,6 +160,82 @@ def _text_to_bigram_matrix(text: str, label_aware: bool = False) -> list[list[Fr
     return matrix
 
 
+def _is_valid_smiles(s: str) -> bool:
+    """RDKit ile geçerli SMILES mi? Geçerliyse text_signature yolunu atla."""
+    try:
+        from rdkit import Chem
+        return Chem.MolFromSmiles(s) is not None
+    except Exception:
+        return False
+
+
+def _char_signature(c: str) -> float:
+    """Karaktere deterministik, iyi-yayılmış [0.3, 1.0] imza değeri.
+
+    a-z codepoint'leri (97-122) dar bir aralıkta; doğrudan kullanılırsa harf
+    farkları ezilir (yol-grafı izomorfizmi). Çarpımsal hash ile [0,1)'e geniş
+    yayıp [0.3,1.0]'a taşırız → her karakter spektrumda ayırt edilebilir kimlik taşır.
+    """
+    return 0.3 + 0.7 * (((ord(c) * 2654435761) % 9973) / 9973.0)
+
+
+def _text_to_signature_moments(
+    text: str, num_moments: int = 8, gamma: float = 0.4
+) -> list[Fraction] | None:
+    """Metin → pozisyon+codepoint imza matrisi → eigenvalue-normalize moment [0,1].
+
+    KÖK ÇÖZÜM (encoder collision): tüm-farklı-karakterli kelime (protein/glucose)
+    satır-stokastik bigram'da PERMÜTASYON matrisi = ortogonal → G=PᵀP=I → μ_k≡1
+    (hepsi çöker). Ayrıca anagramlar (protein/pointer, listen/silent) aynı harf
+    kümesi → köşegen-codepoint AYIRMAZ; SIRA bilgisi şart.
+
+    Çözüm: normalize-EDİLMEMİŞ ağırlıklı bigram —
+      A[i][j] = Σ_{a→b geçişleri, pozisyon p}  sig(a)·sig(b)·(1 + γ·p/(L-1))
+    sig = karakter kimliği (çakışmayı kırar), p = pozisyon (anagramı kırar).
+    Sonra SMILES yolu gibi: G=AᵀA → λ normalize → μ_k=(1/n)Σ(λ_i/λ_max)^k ∈ [0,1].
+
+    Hausdorff [0,1] rejimi — SMILES/algı ile AYNI, domain-blind tutarlı. μ_0=1.
+    Döner: Fraction moment listesi; geçersiz/boş metinde None (caller fallback).
+    """
+    try:
+        import numpy as np
+        if not text or len(text) < 2:
+            return None
+        chars = sorted(set(text))
+        n = len(chars)
+        if n < 1:
+            return None
+        c2i = {c: i for i, c in enumerate(chars)}
+        L = len(text)
+        A = np.zeros((n, n), dtype=np.float64)
+        denom = max(L - 1, 1)
+        for p, (a, b) in enumerate(zip(text, text[1:])):
+            A[c2i[a]][c2i[b]] += (
+                _char_signature(a) * _char_signature(b) * (1.0 + gamma * p / denom)
+            )
+        G = A.T @ A
+        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
+        max_eig = float(eigs.max()) or 1.0
+        if max_eig <= 0:
+            return None
+        vals = sorted(eigs / max_eig)
+        nv = len(vals)
+        # Kesin-iç regülarizasyon: empirik λ-ölçüsünü küçük uniform [0,1] ölçüsüyle
+        # harmanla. Uniform momentleri 1/(k+1) kesin-iç Hausdorff dizisidir → az-karakterli
+        # (rank-deficient) kelimelerde bile Hankel minörleri KESİN pozitif kalır, float→Fraction
+        # yuvarlamasına dayanır (ALEPH PSD geçer). _EPS küçük → çakışma ayrımı korunur.
+        _EPS = 0.02
+        moments: list[Fraction] = [Fraction(1)]
+        for k in range(1, num_moments):
+            emp = sum(d ** k for d in vals) / nv
+            uni = 1.0 / (k + 1)
+            mk = (1.0 - _EPS) * emp + _EPS * uni
+            moments.append(Fraction(float(mk)).limit_denominator(10 ** 9))
+        return moments
+    except Exception:
+        return None
+
+
 def _text_extra_dims(text: str) -> list[float]:
     """Metin token için ek sinyal boyutları: uzunluk + karakter çeşitliliği.
 
@@ -399,6 +475,25 @@ class UniversalEncoder:
                 "moment_path": "power_moments_fast",
             })
             return CodexObject(name=obj_name, moments=moments, structure=structure)
+
+        # Metin yolu: pozisyon+codepoint imza momentleri (encoder collision KÖK çözümü).
+        # SMILES gibi eigenvalue-normalize [0,1] Hausdorff; Hankel-rekonstrüksiyon ile
+        # pipeline tutarlı. Tüm-farklı-karakter çakışmasını ve anagramı encode-anında ayırır.
+        # SMILES stringler (RDKit doğrulama) bu yolu ATLAR → _to_matrix bigram yolu.
+        if isinstance(input, str) and len(input) > 1 and not _is_valid_smiles(input):
+            sig_moments = _text_to_signature_moments(input, self.num_moments)
+            if sig_moments is not None:
+                A = _sequence_to_hankel_matrix(sig_moments)
+                G = _gram(A)
+                structure = self._extract_structure(input, A, G, sig_moments)
+                structure.update({
+                    "encoder": "text_signature",
+                    "matrix_size": len(A),
+                    "input_type": type(input).__name__,
+                    "num_moments": self.num_moments,
+                    "moment_path": "text_signature",
+                })
+                return CodexObject(name=obj_name, moments=sig_moments, structure=structure)
 
         A = self._to_matrix(input)
         G = _gram(A)

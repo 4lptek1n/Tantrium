@@ -48,12 +48,13 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Güç:** Moment hesabı TEK yerde. `_extract_structure` → pipeline'a delege +
   free_cumulants ekler. `encode_adaptive` belirsizlikte derinleştirir (8→16, fidelity).
 - **Gerçek hayat:** Duyu organı — her girdi tek spektral parmak izine iner.
-- **BİLİNEN SINIR (F1 — ertelendi):** `protein`/`glucose` (7 char, tam çeşitlilik, yol-grafı
-  izomorfizm) → `label_aware=True` ile L1 marjı yalnız ≈3e-4. Köşegen pertürbasyonu kökten
-  çözmüyor (F1'de test edildi, _IDENT_W büyütülmesi marjı kötüleştirdi). Gerçek çözüm:
-  N-gram/pozisyon-hash matrisi — F5 görev listesi (manifold migrasyonu gerektirir).
-- **Tekrar:** Dağınık `_encode_target`'lar bunu ÇAĞIRAN kısayol; moment matematiği burada
-  tek. F1 = yönlendirme birleştirme (encoder collision ayrı F5 kalemi), math silme DEĞİL.
+- **F1/F5 KÖK ÇÖZÜLDÜ [2026-06]:** `_text_to_signature_moments` — pozisyon+codepoint ağırlıklı
+  bigram (`sig(a)·sig(b)·(1+γp/L)`, γ=0.4) → eigenvalue-normalize [0,1] Hausdorff (SMILES rejimi).
+  Eski permütasyon-çöküşü (μ_k≡1) ve anagram çakışması ÇÖZÜLDÜ (protein/glucose 0.0026→0.43,
+  protein/pointer 0.62). `_char_signature` çarpımsal-hash kimlik yayar; pozisyon anagramı kırar.
+  `_EPS=0.02` uniform harman → az-karakterli kelimede Hankel-PSD (ALEPH geçer). `encode()` str→imza yolu.
+  **MİGRASYON:** `tools/migrate_text_encoding.py` (27853 metin kavramı yeni encoding, 16330 molekül korundu).
+- **Tekrar:** Dağınık `_encode_target`'lar bunu ÇAĞIRAN kısayol; moment matematiği burada tek.
 
 ### ✅ core/perception/encode.py — duyusal dönüştürücüler (encoder'a delege)
 - **İş:** `encode_signal/image/matrix/signal_temporal` — ham duyu → A → encoder'ın

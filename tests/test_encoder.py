@@ -116,3 +116,46 @@ def test_encode_name_propagates():
 def test_encode_smiles_name_propagates():
     obj = encode_smiles("CCO", name="ethanol")
     assert obj.name == "ethanol"
+
+
+# ─── Encoder collision KÖK çözüm (F1/F5: pozisyon+codepoint imza) ────────────
+
+def _l1(a: str, b: str) -> float:
+    ma = [float(m) for m in encode(a).moments]
+    mb = [float(m) for m in encode(b).moments]
+    return sum(abs(x - y) for x, y in zip(ma, mb))
+
+
+def test_collision_all_unique_chars_separated():
+    """protein/glucose (7 char, tam çeşitlilik, eski yol-grafı izomorfizmi) AYRIŞIR.
+
+    Eski label_aware bigram L1≈0.0026 (ince). Yeni imza encoding: L1 > 0.1 (sağlam).
+    """
+    assert _l1("protein", "glucose") > 0.1, "tüm-farklı-karakter çakışması çözülmeli"
+
+
+def test_collision_anagrams_separated():
+    """Anagramlar (aynı harf kümesi, farklı sıra) AYRIŞIR — pozisyon bilgisi taşınır."""
+    assert _l1("protein", "pointer") > 0.1, "anagram protein/pointer ayrışmalı"
+    assert _l1("listen", "silent") > 0.1, "anagram listen/silent ayrışmalı"
+
+
+def test_collision_identity_zero():
+    """Aynı metin → tam sıfır mesafe (determinizm)."""
+    assert _l1("protein", "protein") == 0.0
+
+
+def test_signature_moments_hausdorff_range():
+    """İmza momentleri [0,1] Hausdorff rejiminde (μ₀=1, azalan), SMILES ile tutarlı."""
+    mu = [float(m) for m in encode("protein").moments]
+    assert abs(mu[0] - 1.0) < 1e-9, "μ₀=1"
+    assert all(0.0 <= m <= 1.0 for m in mu), "tüm momentler [0,1]"
+
+
+def test_short_text_certifies():
+    """Kısa kelimeler (DNA/ATP, az karakter) regülarizasyonla ALEPH-PSD geçer."""
+    for w in ("DNA", "ATP", "RNA", "cat"):
+        obj = encode(w)
+        H = obj.hankel(4)
+        # Sylvester: lider asal minörler ≥ 0 (PSD)
+        assert obj.is_moment_sequence(), f"{w} geçerli moment dizisi (Hankel PSD) olmalı"

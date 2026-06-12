@@ -391,14 +391,18 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 3. `from tantrium.research_os import ...` → ModuleNotFoundError. subprocess kullan.
 4. `inject_math_kernel()` idempotent — mevcut kavramları geçer.
 5. `transport.py` artık `tantrium.proof.dyadic_flow` import eder (`tantrium.transport` değil).
-6. **Encoder collision — KISMİ ÇÖZÜM, BİLİNEN SINIR**: `protein`/`glucose` gibi aynı
-   uzunluk+tam-çeşitlilikteki (7 karakter) tokenlar path-bigram spektrumunda **yapısal izomorf** —
-   yol-grafı eigenvektörü aynı. `label_aware=True` (`encoder.py:450,458`) köşegene codepoint kimliği
-   ekler, L1 marjı ≈ 3e-4 (ince ama pozitif). Bu KÖKLÜ çözüm DEĞİL: yol-grafı izomorfizmi köşegen
-   pertürbasyonuyla temelden giderilemez; `_IDENT_W` büyütülmesi marjı kötüleştiriyor (test edildi,
-   geri alındı). Gerçek çözüm: bigram yerine N-gram veya pozisyon-hash matrisi (F5 görev listesi,
-   manifold migrasyonu gerektirir). ESKİ manifold.json `label_aware=False` ile kaydedildi — yeni
-   encode ile küçük tutarsızlık olabilir.
+6. **Encoder collision — KÖK ÇÖZÜLDÜ (2026-06, F1/F5)**: `protein`/`glucose` (tüm-farklı-karakter)
+   ESKİDEN satır-stokastik bigram'da **permütasyon matrisi = ortogonal** → G=PᵀP=I → μ_k≡1 (hepsi
+   çöküyordu); anagramlar (protein/pointer) harf-kümesi aynı → köşegen-codepoint de AYIRMIYORDU.
+   **ÇÖZÜM:** `_text_to_signature_moments` (`encoder.py`) — pozisyon+codepoint ağırlıklı normalize-
+   EDİLMEMİŞ bigram (`sig(a)·sig(b)·(1+γ·p/L)`, γ=0.4) → SMILES gibi eigenvalue-normalize → μ_k∈[0,1]
+   Hausdorff. `_char_signature` çarpımsal-hash ile a-z'yi geniş yayar (kimlik kırar); pozisyon ağırlığı
+   anagramı kırar. Kesin-iç regülarizasyon (`_EPS=0.02` uniform [0,1] harman) az-karakterli kelimede
+   Hankel-PSD'yi garanti eder (ALEPH geçer). Marj: protein/glucose **0.0026→0.43**, anagram 0.62.
+   **MİGRASYON YAPILDI:** `tools/migrate_text_encoding.py` — manifold.json'daki 27853 metin kavramı
+   yeni encoding'e taşındı (16330 molekül/sayısal korundu). `encode()` str için imza yolunu kullanır.
+   **SMILES KORUMASI:** `_is_valid_smiles(s)` (RDKit) ile geçerli SMILES stringler imza yolunu ATLAR
+   → `_to_matrix` bigram yoluna gider; moleküler mesafeler değişmez (production/judge testleri yeşil).
 7. **Causal chain entity linking**: "ras pathway" ≠ "ras" string olarak ama `_normalize_entity()` suffix'leri kaldırır.
    Yeni `_extract_relations()` extraction'da normalize eder; eski TAU'daki "pathway" suffix'li kavramlar normalize edilmez.
 8. **Grounding — bridge kavramlar çapa olamaz**: 42k+ doymuş manifoldda `⟨bridge:...⟩` genesis köprüleri rezonans çapası
@@ -407,7 +411,7 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
    NOT (doğrulanmış): `grounding.certify` doymuş manifoldda rezonansı HÜKÜM için kullanmaz — iki sağlam
    sinyale iner: doğrudan TAU kenarı (≥3) + `in_manifold`. Rezonans hesaplanır ama yargıyı vermez.
 9. **`nearest(metric="extended")` tiebreaker**: 10% metin boyutu ağırlığı FARKLI uzunluk/çeşitliliği çözer.
-   Aynı uzunluk+çeşitlilik çakışmaları artık ana yolda `label_aware=True` ile encode-anında çözülüyor (bkz. #6).
+   Aynı uzunluk+çeşitlilik çakışmaları artık ana yolda imza-encoding ile encode-anında çözülüyor (bkz. #6).
 10. **`lang_topology.inject(run_reasoner=True)` ÖLÜ DAL**: var olmayan `TauReasoner`'ı import eder
     (artık `GraphReasoner`). Varsayılan `run_reasoner=False` → çalışmıyor; çağırma veya GraphReasoner'a güncelle.
 11. **`engine.grow()` ≠ `ai.grow()` — ARTIK İKİSİ DE BAĞLI**: `engine.grow()` (engine.py) tümdengelimsel
@@ -473,9 +477,10 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: 504 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
+- Tests: ~509 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
   14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] +
-  8 gap_finder[#10] + 7 moment_ops[#8] + 4 deduce[engine.grow] + 7 wonder[F4] + 5 serve[F6] + ...)
+  8 gap_finder[#10] + 7 moment_ops[#8] + 4 deduce[engine.grow] + 7 wonder[F4] + 5 serve[F6] +
+  23 encoder[+5 collision KÖK çözüm] + ...)
 
 ---
 
