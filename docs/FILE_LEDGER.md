@@ -194,9 +194,28 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ---
 
-## Henüz ⬜ KATALOG (kendim okumadım — güvenme, doğrulanacak)
+### ✅ core/molecular_genesis.py — atom-atom TÜRETİM (benzerlik değil)
+- **İş:** `generate` (hedef→spektral+kuantum rehber→beam search→sertifika); `simulate`
+  (transport-sertifikalı adım adım büyüme). `_quantum_score`=0.75×W2+0.25×κ.
+- **Güç:** Her atom-ekleme CertifiedTransport: **sturm=sert geçit**, dyadic=bonus, zeta=yön.
+  `toward_profile`(κ)=KAPALI DÖNGÜ biyolojik yön. Beam çeşitliliği alkana çöküşü engeller.
+- **Tekrar:** YOK. En derin üretim motoru — inverse/space'ten farklı algoritma.
 
-**core:** inverse.py · molecular_genesis.py · molecular_space.py
+### ✅ core/inverse.py — ters transport (W2-minimal, fragment mutasyon)
+- **İş:** `design`: hedef→manifold araması→fragment mutasyon(RDKit,Lipinski)→sertifika→3D.
+  `_make_3d`(ETKDGv3,seed=42)=PAYLAŞILAN 3D üretici (production çağırır).
+- **Tekrar:** YOK. Farklı strateji. `_encode_target` core encode (ince sarmalayıcı).
+
+### ✅ core/molecular_space.py — kütüphane W2 uzayı (150+ ilaç)
+- **İş:** `arrange`(W2 sıralama), `morph`(interpolasyon yolu), `lineage`(W2 ata-torun ağacı).
+- **Tekrar:** YOK. Farklı strateji.
+
+> **ÇEKİRDEK (core+proof+algebra) TAMAMEN ✅ — 22 dosya satır-satır okundu.** Üç molekül motoru
+> gerçekten farklı algoritma; produce() havuzda birleştirir. Facade 7→1, motorlar korunur.
+
+---
+
+## Henüz ⬜ KATALOG (kendim okumadım — güvenme, doğrulanacak)
 
 **graph:** knowledge_graph.py · anchors.py · relations.py · memory.py
 
