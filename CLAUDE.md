@@ -255,14 +255,16 @@ ai.benchmark()                                 # → {score, correct, total, fai
 ai.consolidate(threshold=0.02, dry_run=True)   # → {pairs_found, merged, sample_pairs}  manifold tekilleştirme
 ai.explain("EGFR", why="tumor growth")        # → str: sertifika + nedensel yol
 ai.think("protein folding")                    # → ThinkingResult
-ai.produce("egfr")                             # → ProductionResult: TEK HOMOJEN ENERJİ
+ai.produce("egfr")                             # → ProductionCertificate: EVREN-KAPANIŞI DÖKÜM
                                                #   hedef tipi otomatik (protein/hastalık/SMILES)
-                                               #   üretim+yargı TEK eksen: referans→molekül yolunun
-                                               #   Sturm pivot pozitifliği = RH'nın H_{d,j}(t)≥0 kriteri
-                                               #   .sturm_path_ok (gerçek-ölçü geçidi) .pivot_min
-                                               #   .signature_fit (yapısal κ: κ₂,κ₃,κ₄ tanh-sınırlı)
-                                               #   design_drug+cure+simulate+judge'ı birleştirir;
-                                               #   realizability_gap artefaktı YOK (geçit içeride)
+                                               #   çok-stratejili havuz (genesis·scaffold·inverse·morph)
+                                               #   evren kapanışı: κ(hastalık⊞M)≈κ(sağlıklı) + Sturm yolu
+                                               #   6 eksen yargı (structural·transport·quantum·energy·gimel HARD;
+                                               #                   grounding SOFT — veto yok)
+                                               #   .designed_smiles .n_atoms .sdf_path (3D ETKDGv3)
+                                               #   .sturm_path_ok .pivot_min .signature_fit
+                                               #   .coherent .closure .candidates[] .verdict
+                                               #   design_drug+cure+simulate+judge hepsi bu altında
 ai.produce("c1ccc2ncnc(N)c2c1")               # → SMILES hedef → doğrudan imza
 ai.produce("alzheimer")                        # → hastalık → ters dekonvolüsyon (κ_sağlıklı⊟κ_hastalık)
 ai.discover("EGFR", top_k=5)                   # → molekül keşfi (Morgan moment uzayı)
@@ -335,7 +337,7 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 
 ## Mevcut Durum
 
-- Kavram: 43,282 | TAU edge: 672,062 | Paradigma: 23/23
+- Kavram: 44,017 | TAU edge: 677,042 | Paradigma: 23/23
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
 - CoreMachine: TEK ÇEKİRDEK — 4 eksen tek geçişte (certified+grounding+truth+confidence)
 - Genesis öz-düzeltici: CONTRADICTORY kavramlar manifolda girmiyor (truth axis geçidi)
@@ -343,17 +345,15 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - Algı katmanı: ses+görüntü grounding aktif (Wiener–Khinchin/Bochner momentleri)
 - Algı→dil köprüsü: `ai.witness()` gördüğünü dile döker (görmek=hatırlamak=anlatmak)
 - Kripto okuyucu: GIMEL Aşil topuğu zayıf şifreyi ZAYIN ekseninden yakalar (savunma)
-- **Üretim — Tek Homojen Enerji** (`core/production.py`, `ai.produce`): design_drug+cure+
-  simulate+judge_binding'in TEK Sturm-pozitiflik ekseninde birleşimi. RH ispatından
-  (tce-collapse-engine) doğan kriter: Jensen hiperbolikliği ⟺ Sturm pivot pozitifliği ⟺
-  H_{d,j}(t)≥0. Molekülde: referans→molekül konveks moment yolu boyunca Sturm pivotları
-  pozitif kalıyorsa (de Bruijn-Newman Λ≤0 moleküler hali) molekül GERÇEKTEN bağlanır.
-  Üretim ve yargı bölünmez — ikisi de aynı pozitiflik geçidi. İKİ GEÇİT: (1) Sturm yolu
-  gerçek-ölçüde (bağlanabilir) (2) yapısal κ-uyum eşik altında (özgül: κ₂,κ₃,κ₄ tanh-sınırlı).
-  GIMEL Aşil topuğu: peroksit/poliokso zinciri kimyasal kararlılık geçidinden geçmez.
-  `realizability_gap` artefaktı YOK — gerçeklenebilirlik kısıtı geçidin içinde, ayrı
-  reconstruct projeksiyonu yok. Hedef tipi otomatik: protein (ligand κ-profili) / hastalık
-  (ters dekonvolüsyon κ_sağlıklı⊟κ_hastalık) / SMILES (doğrudan imza). Tests: 6 (produce).
+- **Üretim — Evren-Kapanışı Dökümhanesi** (`core/production.py` + `core/production_judge.py`):
+  design_drug+cure+simulate+judge_binding hepsinin tek `produce()` altında birleşimi.
+  Kriter RH ispatından: Jensen hiperbolikliği ⟺ Sturm pivot pozitifliği ⟺ H_{d,j}(t)≥0.
+  Çok-stratejili havuz: genesis · scaffold · inverse · morph · kombinasyon (50 farklı yol).
+  Evren kapanışı: κ(hastalık⊞M)→κ(sağlıklı) — serbest kümülant additivitesi + Sturm yolu.
+  6 eksen yargı: structural(paradigm_dist<2.5) · transport(Sturm pivot≥0) · quantum(κ-fit) ·
+  energy(GROUND_STATE) · gimel(kimyasal kararlılık) HARD; grounding SOFT (veto yok).
+  Çıktı: SMILES + 3D SDF (ETKDGv3 konformeri) + ProductionCertificate (denetlenebilir).
+  Hedef otomatik: protein / hastalık / SMILES. Tests: 46 (produce) + 25 (simulation).
 - **InverseTransport**: hedef (protein/hastalık/SMILES) → W2-minimal moleküller → 3D SDF (3s, RDKit ETKDGv3)
 - **MolecularSpace**: 150+ ilaç kütüphanesi, saf W2 dizimi — arrange/morph/lineage_mol
   - `arrange(EGFR)` → levodopa, lisinopril, methotrexate (kimyasal mantıklı sıralama)
@@ -375,7 +375,7 @@ ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (T�
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: 363 geçiyor
+- Tests: 433 geçiyor, 1 skipped
 
 ---
 
