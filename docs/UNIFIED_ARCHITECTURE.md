@@ -32,6 +32,13 @@ pipeline'da nereye oturduğunu ve hangi mevcut parçaların onunla birleşeceği
 Bu, RH'nin `H_{d,j}(t) ≥ 0` kriterinin sisteme uygulanmış hali: tek geçiş,
 paylaşılan durum, deterministik.
 
+> **BİRLEŞME = TEK ARAYÜZ, HER GERÇEK AYRIMI KORU.** Birleştirme asla "en küçük
+> ortak payda"ya indirgeme değildir. İki parça aynı *isme/şekle* benzese de farklı
+> *anlam* taşıyorsa (exact vs hızlı, κ₁ dahil vs hariç, her duyusal dönüştürücü,
+> her üretim stratejisi) — bunlar tek arayüz ARDINDA korunur, birleştirilmez.
+> Aksi halde birleşme gücü maskeler. Bu belge bu ilkeye göre düzeltilmiştir
+> (bkz. Bölüm 2.5: gerçek kodla doğrulanan sahte tekrarlar).
+
 ---
 
 ## 2. Mevcut Dağınıklık (envanterden, sayılarla)
@@ -41,8 +48,8 @@ paylaşılan durum, deterministik.
 | 1 | **Encode** | 10+ | `core/encoder`, `perception/encode` (float!), `production._encode`, `inverse._encode_target`, `molecular_genesis._encode_target`, `molecular_space._encode_target`, `bridge._theorem_moments`, `meta/paradigm` |
 | 2 | **Sturm-yol** | 3 | `transport._sturm_path_check` (sympy), `transport._sturm_psd_fallback` (numpy), `production._sturm_path_pivot_min` (numpy) |
 | 3 | **Nearest-neighbor** | 3 | `semantic._nearest_l1`, `_nearest_quantum_vec`, `nearest_spectral` |
-| 4 | **κ-mesafe** | 2 özdeş | `production._structural_kappa_distance` ≡ `production_judge._bounded_kappa_error` |
-| 5 | **Mesafe metriği** | 4 | `metric.canonical_distance`, `l1_distance`, `spectral_distance`, `quantum_distance` |
+| 4 | **κ-mesafe** | ~~2 özdeş~~ → **FARKLI** (bkz 2.5: κ₁ dahil/hariç) | `production._structural_kappa_distance` (κ₂₋₄) vs `production_judge._bounded_kappa_error` (κ₁₋₄) |
+| 5 | **Mesafe metriği** | ~~4~~ → **zaten dispatcher var** (bkz 2.5) | `metric.distance(a,b,metric=)` satır 58 |
 | 6 | **Veri çekme** | 3 | `DataIngestor.fetch_*`, `AutonomousResearcher.fetch_*`, `GrowthEngine._fetch_*` (aynı UniProt/PubChem/OEIS API) |
 | 7 | **Boşluk tespiti** | 3 | `NecessityEngine.find_manifold_gaps` (geometrik), `Researcher.assess_gaps` (paradigma), `Explorer.scan_frontier` (kayıtlı hata) |
 | 8 | **Orkestratör döngü** | 5 | `AI.run`, `AI.grow`, `engine.grow`, `ProofLoop.run`, `Explorer.run_loop`, `Researcher.run`, `GrowthEngine.stream` |
@@ -54,9 +61,31 @@ paylaşılan durum, deterministik.
 `GraphReasoner.compose`, `InferenceChain.run_all`, `Planner.execute_plan`,
 `HankelGeneralizer.interpolate/derive/explore_midpoints`, `Actor.pursue_goal`.
 
-**Kritik yarık:** `perception/encode.py` momentleri **float numpy** ile üretir,
-`core/encoder.py` **exact Fraction** ile. Algı kavramları ile dil kavramları
-doğrudan kıyaslanamaz — şu an yamayla hizalanıyor.
+> **DİKKAT — yukarıdaki tablo şekil/isim tekrarıdır, anlam tekrarı DEĞİL.**
+> Alt-ajan katalogları "DUPLICATION" etiketini fazla cömert dağıttı. Gerçek kod
+> okunduğunda bazıları sahte çıktı (Bölüm 2.5). Birleşme yalnız ANLAM tekrarına
+> uygulanır; gerçek ayrımlar tek arayüz ardında korunur.
+
+---
+
+## 2.5 Sahte Tekrarlar — gerçek kodla doğrulanan, BİRLEŞTİRİLMEYECEKLER
+
+Tasarımın ilk taslağı kataloglara güvendi. Sonra her yüksek-riskli iddia gerçek
+kodla sınandı. Şunlar **anlamca farklı** — naif birleşme gücü yok ederdi:
+
+| Sahte "tekrar" | Gerçek fark (koddan) | Karar |
+|----------------|----------------------|-------|
+| `perception/encode.py` vs `core/encoder.py` (float vs Fraction "yarık") | **YANLIŞ.** perception zaten `_DEFAULT_ENCODER._extract_structure`'ı çağırır; çıktı momentleri `Fraction(mk).limit_denominator(1e9)` — encoder ile AYNI rejim, [0,1] Hausdorff. float yalnız ara-hesap (büyük matriste Fraction determinant patlamasını önlemek için). Kasıtlı, doğru, karşılaştırılabilir tasarım — yama değil. | Yarık YOK. perception modülleri ayrı **dönüştürücülerdir** (sinyal=Wiener–Khinchin otokorelasyon, görüntü=DC-çıkarma, temporal=pencereleme). Her biri farklı fiziği okur → KORUNUR. Sadece tek `Encoder.encode` arkasına yönlendirilir. |
+| `production._structural_kappa_distance` ≡ `production_judge._bounded_kappa_error` ("2 özdeş") | **YANLIŞ.** Biri κ₂,κ₃,κ₄ toplar (indeks 1,2,3 — ortalama κ₁ HARİÇ, saf şekil); diğeri κ₁,κ₂,κ₃,κ₄ (range(4) — κ₁ DAHİL). Farklı eksenler. | Birleştirme YOK (ya da parametreyle: `include_mean=False/True`). κ₁ dahil/hariç ayrımı korunur. |
+| `transport._sturm_path_check` vs `_sturm_psd_fallback` vs `production._sturm_path_pivot_min` (3 kopya) | **KISMEN YANLIŞ.** `_sturm_path_check` = **sympy SEMBOLİK ispat** (pivotlar exact rasyonel). `_psd_fallback` = numpy yaklaşığı (sympy yokken). `_pivot_min` = numpy ama pivot DEĞERİNİ döndürür. | Tek imza `sturm_path(src,tgt,*,exact=False,return_pivot=False)` — ama **exact sembolik yol KORUNUR** (rigor kaybı yok), hızlı yol ve pivot-değer modları da. |
+| 4 mesafe metriği (canonical/l1/spectral/quantum) | **YANLIŞ — zaten temiz.** `metric.distance(a,b,metric=)` dispatcher SATIR 58'de mevcut. l1 açıkça "ön-eleme, hüküm mercii değil"; canonical = gerçek W2 hüküm. Farklı roller, doğru ayrılmış. | Değişiklik YOK (zaten birleşik). quantum/spectral dispatcher'a eklenebilir. |
+| 7 molekül metodu (`discover/design/cure/produce/...`) | **YANLIŞ — motorlar farklı.** `produce._build_pool` zaten 5 ayrı algoritmayı (genesis=atom-atom Sturm · scaffold=kinaz kütüphane · inverse=fragment mutasyon · morph=ara nokta · doğrudan=ligand) TEK havuza akıtır. | Facade 7→namespace olur ama **motorlar KORUNUR** — strateji çeşitliliği gücün ta kendisi. |
+| `engine.grow` ("öksüz") | **ÖLÜ DEĞİL — gizli güç.** Gerçek iş yapar: `certify_theorem_graph` + `InferenceChain` tüm çiftler + `Explorer` + re-bootstrap. Sadece facade'a bağlanmamış. | Silinmez — Cognition'a **bağlanır**. Bu güç EKLER, çıkarmaz. |
+
+**Sonuç:** Bu refactor'ün gerçek kazancı *silme* değil — **(a) isim/yönlendirme
+temizliği, (b) facade namespace, (c) öksüz gizli gücü (engine.grow tümdengelimsel
+kapanışı) ana döngüye bağlama, (d) paylaşılan durumla çift-encode'u bitirme.**
+Hiçbir gerçek ayrım kaybolmaz; sistem güçlenir.
 
 ---
 
@@ -162,10 +191,11 @@ temiz İngilizce isimlere geçer.
 `bridge._theorem_moments`, `meta/paradigm` byte-encode.
 
 **Tasarım:** `Encoder.encode(input, *, modality="auto") -> Percept`. Modalite otomatik
-saptanır (metin/SMILES/dizi/sinyal/görüntü/matris/momentler). **Tek numerik sözleşme:**
-moment hesabı exact Fraction; algı (sinyal/görüntü) için float→Fraction köprüsü
-belgelenmiş hassasiyetle (yarık kapanır). `Percept.free_cumulants` ve
-`Percept.spectral` lazy alanlar — ihtiyaç olunca hesaplanır, cache'lenir.
+saptanır. **DÜZELTME (bkz 2.5):** perception zaten encoder'a delege ediyor, çıktı
+Fraction — yarık YOK. Bu yüzden F1 = *yönlendirme birleştirme*: dağınık `_encode_target`
+çağrıları tek `Encoder.encode`'a iner, ama **duyusal dönüştürücüler korunur** (sinyal
+otokorelasyon, görüntü DC-çıkarma, temporal pencereleme — her biri farklı fizik).
+`Percept.free_cumulants` ve `Percept.spectral` lazy + cache.
 
 ### 6.2 L2 — Certifier (tek yargı kapısı)
 **Birleşir:** `core/unified.py CoreMachine` (ana) ← çağıran HER yol. `ask`, `produce`,
@@ -176,13 +206,15 @@ yeniden hesaplamaz. `grounder`/`truth`/`confidence` ekenleri Percept'ten okur.
 (`ask` artık `grounder.certify`'ı ikinci kez çağırmaz). Eksenler tek geçişte paylaşılan
 `Percept.moments`/`Percept.structure`'dan.
 
-### 6.3 L0 — Substrate (matematik tekilleştirme)
-- **Sturm:** `algebra/sturm.py sturm_path_pivots(src, tgt, *, exact=False)` ←
-  `transport._sturm_path_check` + `_sturm_psd_fallback` + `production._sturm_path_pivot_min`.
-- **Mesafe:** `core/metric.py distance(a, b, metric=...)` tek dağıtıcı ←
-  `canonical`, `l1`, `spectral`, `quantum` hepsini metric parametresiyle.
-- **κ-mesafe:** `core/quantum_moments.py` tek `bounded_distance` ←
-  `production._structural_kappa_distance` ≡ `production_judge._bounded_kappa_error`.
+### 6.3 L0 — Substrate (tek imza, HER MOD KORUNUR — bkz 2.5)
+- **Sturm:** `algebra/sturm.py sturm_path(src, tgt, *, exact=False, return_pivot=False)`
+  ← 3 yol tek imza ALTINDA. **`exact=True` sembolik sympy ispatı korunur** (rigor
+  kaybı yok); `exact=False` numpy hızlı; `return_pivot=True` pivot değeri. İndirgeme yok.
+- **Mesafe:** `core/metric.py distance(a, b, metric=...)` — **zaten mevcut** (satır 58).
+  quantum/spectral dispatcher'a eklenir; l1=ön-eleme, canonical=hüküm rolleri korunur.
+- **κ-mesafe:** tek `bounded_kappa_distance(a, b, *, include_mean)` —
+  `_structural_kappa_distance` (include_mean=False, κ₂₋₄) ve `_bounded_kappa_error`
+  (include_mean=True, κ₁₋₄) **ikisi de korunur**, parametreyle ayrılır.
 
 ### 6.4 L3 — Memory (tek hafıza, tek admit yolu)
 **Birleşir:** `Engine` (manifold+tau+anchors+theorem_graph lazy tutar) içinde tek
@@ -278,8 +310,8 @@ operate(reason|produce|synthesize) → infer → genesis → prove → persist
 
 | Faz | İş | Risk | Test kapısı |
 |-----|----|----|-------------|
-| **F0** | L0 tekilleştir: Sturm + mesafe + κ-mesafe tek imza (saf fonksiyonlar, davranış aynı) | düşük | mevcut transport+production testleri |
-| **F1** | L1 Encoder birleştir: tüm `_encode_target` → `Encoder.encode`; perception float→Fraction köprüsü | orta | yeni encoder eşdeğerlik testi + perception |
+| **F0** | L0 tek imza: Sturm (`exact` modu KORUNUR) + mesafe (zaten dispatcher) + κ-mesafe (`include_mean` param — κ₁ ayrımı KORUNUR). Davranış bire bir aynı. | düşük | mevcut transport+production testleri + altın-çıktı eşitliği |
+| **F1** | L1: tüm `_encode_target` → tek `Encoder.encode` YÖNLENDİRME (perception dönüştürücüleri KORUNUR, yarık YOK). Sadece tek giriş + cache. | orta | encoder eşdeğerlik + perception (her modalite aynı moment) |
 | **F2** | L2 Certifier: `ask` çift-encode kaldır; herkes tek `Certificate` tüketir | orta | ask/certify_all + grounding/truth |
 | **F3** | L3 Memory: tek `admit()` yolu; tüm manifold.add çağrıları ona iner | orta-yüksek | universe_gate + growth + observe |
 | **F4** | L4 Operatörler: Producer çatısı (7 metot→1+sarmalayıcı); Synthesizer; Reasoner | orta | production+simulation+reasoning |
