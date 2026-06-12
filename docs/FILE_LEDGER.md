@@ -224,8 +224,15 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ### ✅ core/inverse.py — ters transport (W2-minimal, fragment mutasyon)
 - **İş:** `design`: hedef→manifold araması→fragment mutasyon(RDKit,Lipinski)→sertifika→3D.
-  `_make_3d`(ETKDGv3,seed=42)=PAYLAŞILAN 3D üretici (production çağırır).
+  `_make_3d` artık `molecular_3d.embed_3d_sdf`'e delege (remove_hs=True + SMILES alanı).
 - **Tekrar:** YOK. Farklı strateji. `_encode_target` core encode (ince sarmalayıcı).
+
+### ✅ core/molecular_3d.py — TEK kanonik 3D SDF util [#7 dedup ÇÖZÜLDÜ 2026-06]
+- **İş:** `embed_3d_sdf(smiles, name, out_dir, *, prefix, props, remove_hs, enforce_chirality)`.
+  SMILES → ETKDGv3 (randomSeed=42) + MMFF94 → SDF. `inverse._make_3d` (props={SMILES},
+  remove_hs=True) ve `certifier._smiles_to_sdf` (prefix={target}_, props={Target,Source}) delege.
+- **Güç:** Determinizm — seed=42 her zaman, aynı SMILES aynı konformer (denetlenebilir üretim).
+- **Tekrar:** Birleştirildi — fark parametrede korundu (dosya öneki/alanlar/H-temizleme). Tests: 7.
 
 ### ✅ core/molecular_space.py — kütüphane W2 uzayı (150+ ilaç)
 - **İş:** `arrange`(W2 sıralama), `morph`(interpolasyon yolu), `lineage`(W2 ata-torun ağacı).
@@ -511,7 +518,7 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 ### Gerçek tekrarlar (yalnız bunlar birleşir — küçük, izole, güvenli):
 | # | Tekrar | Birleşme |
 |---|--------|----------|
-| 7 | 3D-SDF: `inverse._make_3d` ≈ `certifier._smiles_to_sdf` (ETKDGv3 seed=42) | tek `make_3d` util |
+| ✅ | ~~3D-SDF: `inverse._make_3d` ≈ `certifier._smiles_to_sdf` (ETKDGv3 seed=42)~~ **ÇÖZÜLDÜ** | `core/molecular_3d.embed_3d_sdf` (prefix/props/remove_hs parametreli); ikisi de delege |
 | 8 | Konveks-moment-kombo: `reasoner.compose`+`generalization.interpolate/derive/blend`+`autonomous._local_genesis`+`synthesis.bridge/genesis` | Synthesizer tek konveks-çekirdek (motorlar/API korunur) |
 | 9 | Veri-çekme: `ingest`/`researcher`/`growth` fetch_* (UniProt/PubChem/OEIS) | Ingestor kaynak-adaptörleri |
 | 10 | Boşluk-tespiti 4 yer: `necessity`(geometrik) `paradigm.blind_spots`(çapa) `explorer.scan_frontier`(kayıtlı) `topology`(grid) | GapFinder birliği (4 sinyal de korunur) |

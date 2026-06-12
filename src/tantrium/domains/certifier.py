@@ -11,7 +11,6 @@ from __future__ import annotations
 import time
 import urllib.request
 import json
-import pathlib
 import warnings
 import logging
 from dataclasses import dataclass, field
@@ -427,40 +426,12 @@ class MolecularCertifier:
     ) -> str:
         """SMILES → RDKit ETKDGv3 + MMFF94 → SDF dosyası.
 
+        Kanonik `embed_3d_sdf` util'ine delege (#7): prefix=target + Target/Source alanı.
         Başarısız olursa boş string döner.
         """
-        try:
-            from rdkit import Chem
-            from rdkit.Chem import AllChem
-
-            mol = Chem.MolFromSmiles(smiles)
-            if mol is None:
-                return ""
-
-            mol = Chem.AddHs(mol)
-            params = AllChem.ETKDGv3()
-            params.randomSeed = 42
-            if AllChem.EmbedMolecule(mol, params) == -1:
-                fallback = AllChem.ETKDG()
-                fallback.randomSeed = 42
-                AllChem.EmbedMolecule(mol, fallback)
-
-            AllChem.MMFFOptimizeMolecule(mol)
-
-            mol.SetProp("_Name", name[:64])
-            mol.SetProp("Target", target)
-            mol.SetProp("Source", "Tantrium_MolecularCertifier")
-
-            out = pathlib.Path(out_dir)
-            out.mkdir(parents=True, exist_ok=True)
-            safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)[:40]
-            path = out / f"{target}_{safe_name}.sdf"
-
-            writer = Chem.SDWriter(str(path))
-            writer.write(mol)
-            writer.close()
-
-            return str(path)
-
-        except Exception:
-            return ""
+        from tantrium.core.molecular_3d import embed_3d_sdf
+        return embed_3d_sdf(
+            smiles, name, out_dir,
+            prefix=f"{target}_",
+            props={"Target": target, "Source": "Tantrium_MolecularCertifier"},
+        )

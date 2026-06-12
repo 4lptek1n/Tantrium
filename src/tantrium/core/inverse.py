@@ -463,35 +463,13 @@ class InverseTransport:
     # ── 3D konformasyon ──────────────────────────────────────────────────────
 
     def _make_3d(self, smiles: str, name: str, out_dir: str) -> str:
-        """RDKit ETKDGv3 ile 3D konformasyon üret, SDF kaydet."""
-        try:
-            from rdkit import Chem
-            from rdkit.Chem import AllChem, Descriptors
+        """RDKit ETKDGv3 ile 3D konformasyon üret, SDF kaydet.
 
-            mol = Chem.MolFromSmiles(smiles)
-            if mol is None:
-                return ""
-
-            mol = Chem.AddHs(mol)
-            params = AllChem.ETKDGv3()
-            params.randomSeed = 42
-            params.enforceChirality = True
-            result = AllChem.EmbedMolecule(mol, params)
-            if result == -1:
-                # Fallback: klasik ETKDG
-                AllChem.EmbedMolecule(mol, AllChem.ETKDG())
-
-            AllChem.MMFFOptimizeMolecule(mol)
-            mol = Chem.RemoveHs(mol)
-
-            safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)[:40]
-            path = os.path.join(out_dir, f"{safe_name}.sdf")
-
-            writer = Chem.SDWriter(path)
-            mol.SetProp("_Name", name)
-            mol.SetProp("SMILES", smiles)
-            writer.write(mol)
-            writer.close()
-            return path
-        except Exception:
-            return ""
+        Kanonik `embed_3d_sdf` util'ine delege (#7): remove_hs=True + SMILES alanı.
+        """
+        from tantrium.core.molecular_3d import embed_3d_sdf
+        return embed_3d_sdf(
+            smiles, name, out_dir,
+            props={"SMILES": smiles},
+            remove_hs=True,
+        )
