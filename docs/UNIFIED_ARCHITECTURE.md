@@ -318,15 +318,20 @@ operate(reason|produce|synthesize) → infer → genesis → prove → persist
 | **F3** | **[ÇEKİRDEK TAMAMLANDI 2026-06]** L3 Memory tek `admit(policy)` yolu (`semantic.py`): `add()`≡admit("aleph"), `add_unchecked()`≡admit("trusted", kapı-MUAF). `AdmissionResult(admitted,tier,reason)`. Engine evren kapısı (`_universe_gate`) AYRI kalır (engine-bağımlı), kabul için admit("trusted")'a iner. **35 çağıran yeniden yönlendirilmedi** (artımlı takip). | 🟡 ÇEKİRDEK | **YÜKSEK** | **caller-admission-parity testi (12, ÖNCE yazıldı)** + universe_gate + certification + growth ✓ |
 | **F4** | **[TAMAMLANDI 2026-06]** L4: ✅ Producer çatısı (`design_drug`/`cure`→`produce()` sarmalayıcı) · ✅ Synthesizer konveks-çekirdek (#8 kısmî) · ✅ `engine.grow()`→`ai.deduce()` bağlandı · ✅ Wonder loop (`reasoning/wonder.WonderScorer`: `α·v_ext·novelty−γ·degeneracy`, sentetik komşu = self-grooming cezası, `ai.wonder()`). | ✅ TAMAM | orta | deduce(4) + wonder(7) + production + reasoning ✓ |
 | **F5** | L5 Cognition: döngü iskeleti (strateji-pluggable); Ingestor (#9); GapFinder (#10); encoder N-gram/position-hash (manifold migrasyonu). | ⏳ bekliyor | yüksek | growth+proof_loop+research |
-| **F6** | L6 facade namespace + proxy; serve.py. `engine.grow` bağlama golden testi. ~~3D-SDF util~~ (#7 ✅ `molecular_3d.embed_3d_sdf` ile tamam). | ⏳ bekliyor | orta | API smoke + serve + engine.grow golden |
+| **F6** | **[ÇEKİRDEK TAMAM 2026-06]** ✅ serve.py smoke testi (in-process, route+handler doğrulama) · ✅ `engine.grow`→`ai.deduce` golden (F4'te) · ✅ 3D-SDF util (#7). Facade namespace/proxy ATLANDI (düz-API ilkesi `from tantrium import ...` korunur — namespace'leme ona aykırı). | 🟡 ÇEKİRDEK | orta | serve (5) + deduce (4) ✓ |
 | **dedup#7** | **[TAMAMLANDI 2026-06]** 3D-SDF tek util: `core/molecular_3d.embed_3d_sdf` (parametreli: prefix/props/remove_hs). `inverse._make_3d`+`certifier._smiles_to_sdf` delege. | ✅ TAMAM | düşük | molecular_3d (7) + inverse_design + genesis ✓ |
 | **dedup#9** | **[TAMAMLANDI 2026-06]** HTTP-JSON transport tek ilkel: `research/net.http_get_json(_link)` (timeout/UA/errors param). `ingest`/`growth`/`researcher` üçü de delege; parse mantığı modül-başına KORUNDU. | ✅ TAMAM | düşük | net (7, mock'lu) + growth 17 ✓ |
 | **dedup#10** | **[TAMAMLANDI 2026-06]** GapFinder tek dispatcher: `reasoning/gap_finder.GapFinder.find(signal=)` (geometric/anchor/recorded/grid/all). 4 metot DEĞİŞMEDİ (additive facade), `Gap.raw` orijinali taşır. `ai.gaps()`. | ✅ TAMAM | düşük | gap_finder (8) + advanced_reasoning + paradigms (47) ✓ |
 | **dedup#8** | **[KISMÎ TAMAMLANDI 2026-06]** `core/moment_ops.convex_combine(mode=exact\|frac)`. `reasoner.compose` (exact Fraction) + `generalization.interpolate/weighted_blend` (frac) bağlandı (bit-aynı). `derive`/`synthesis.bridge`/`_local_genesis` böl/ham-float aritmetiği KORUNDU (PSD sınırı kaydırmamak). | 🟡 KISMÎ | orta | moment_ops (7) + advanced_reasoning (28) ✓ |
 
-**Sıra kuralı:** alttan üste (L0→L6). **Tamamlanan:** F0 (NC Möbius κ) + F0b (bounded_kappa_distance tek imza) + F2 (flywheel) + F2b (ask tek grounding geçişi) + F3-çekirdek (admit() tek yol + parity testi). Encoder collision (`protein`==`glucose`) F5'e ertelendi (manifold migrasyonu gerektirir).
+**Sıra kuralı:** alttan üste (L0→L6). **Tamamlanan (2026-06):** F0 (NC Möbius κ) + F0b (bounded_kappa_distance) + F2 (flywheel) + F2b (ask tek grounding) + F3-çekirdek (admit() + parity) + F4 (Producer çatısı + #8 konveks-çekirdek + engine.grow→deduce + Wonder loop) + F6-çekirdek (serve smoke) + 4 gerçek dedup (#7/#9/#10 tam, #8 kısmî). Test 443→499.
 
-**Sonraki adım:** F3-çağıran-migrasyonu (35 `.add`/`.add_unchecked` çağıranını `admit(policy=)`'a artımlı taşı — her grup ayrı commit, parity testi yeşil tutarak) → F4 (Producer çatısı + Wonder loop + engine.grow bağlama).
+**KALAN (dürüst):**
+- **F1/F5 encoder collision** (`protein`==`glucose`): N-gram/pozisyon-hash matrisi — manifold migrasyonu gerektirir (ESKİ manifold.json yeniden encode), bu yüzden ertelendi. Mevcut `label_aware` L1≈3e-4 kısmi çözüm.
+- **F3-çağıran-migrasyonu**: 35 `.add`/`.add_unchecked` çağıranı zaten `admit()`'e transitif delege ediyor (logic birleşti); açık `admit(policy=)` çağrısına rewrite KOZMETİK + risk — yapılmadı.
+- **F5 Cognition iskeleti**: 4 döngü (proof_loop/explorer/researcher/growth.stream) pluggable strateji çatısı — büyük, ayrı çalışma.
+- **#8 kalan**: `derive`/`bridge`/`_local_genesis` böl/ham-float aritmetiği KORUNDU (gerçek sayısal ayrım, naif birleştirme PSD sınırını kaydırır).
+- **F6 namespace/proxy**: düz-API ilkesine (`from tantrium import ...`) aykırı — bilinçli ATLANDI.
 
 ---
 
