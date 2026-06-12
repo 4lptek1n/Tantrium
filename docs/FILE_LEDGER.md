@@ -330,10 +330,66 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ---
 
-## Henüz ⬜ KATALOG (kendim okumadım — güvenme, doğrulanacak)
+## L5 Research (özerklik döngüleri + veri kaynakları)
 
-**research:** proof_loop.py · explorer.py · researcher.py · ingest.py · goal.py · actor.py ·
-growth.py · autonomous.py
+### ✅ research/autonomous.py — ÇEKİRDEK observe motoru (AutonomousObserver)
+- **İş:** `observe`: encode→tam 23 paradigma→evren kapısı(truth+grounding)→çapa→öğren→mini-Tav→
+  köprü keşfi→ilişki çıkar→persist. `_universe_gate` (CONTRADICTORY→reddet; GROUNDED→çekirdek,
+  değilse sınır), `_discover_bridges` (cross-domain→SPECTRAL_BRIDGE), `_extract_relations` (kausal
+  fiil: inhibits/causes/activates), `pulse` (+local genesis), `_local_genesis` (konveks köprü).
+- **Güç:** İnsansız öğrenme döngüsünün kalbi. researcher/ingest/growth hepsi bunu çağırır.
+- **Tekrar:** `_extract_relations` (kausal) ≠ `graph/relations.extract_relations` (mantıksal IS_A/USES)
+  — farklı ilişki tipleri, ikisi de meşru, BİRLEŞMEZ. `_local_genesis` konveks-kombinasyon kümesinde (#8).
+
+### ✅ research/proof_loop.py — teorem döngüsü (ProofLoop)
+- **İş:** scan_gaps(NecessityEngine)+scan_theorem_graph(açık node)→kampanya→launch(subprocess Research
+  OS)→update_theorem_graph→sync_new_theorems→ingest_candidates. run_cycle/run.
+- **Güç:** DÜRÜSTLÜK: `dependency_closure` açıkça "KANIT DEĞİL — önkoşullar sağlandı" caveat'ı ile işaretli.
+- **Tekrar:** Döngü iskeleti explorer/researcher/growth ile benzer ama mekanizma farklı (teorem boşluğu).
+
+### ✅ research/explorer.py — paradigma-boşluk keşfi (Explorer)
+- **İş:** `scan_frontier` (knowledge.jsonl'dan bloklanmış paradigma), `_make_probe` (paradigma başına
+  minimal sentetik CodexObject), `explore` (CLOSED/REFINED/PERSISTENT), `run_loop`, `_try_research_os`.
+- **Tekrar:** `_make_probe` sentetik yapı ≈ bridge._paradigm_structure_for (farklı amaç: test vs eşleme).
+  Döngü Cognition iskeletine girer (paradigma-boşluk stratejisi).
+
+### ✅ research/researcher.py — kör-nokta veri döngüsü (AutonomousResearcher)
+- **İş:** `assess_gaps` (MetaParadigm.blind_spots)→hedef→`_fetch_for_gap` (algoritmik `_generate_sequences`
+  her çapa için: asal/zeta/GUE/Lucas/Ramanujan-tau/elliptic... + OEIS/LMFDB/PubChem)→observe→ilerleme.
+- **Tekrar:** **VERİ-ÇEKME 3-YÖNLÜ TEKRAR (#9):** `fetch_oeis/lmfdb/pubchem` ≈ ingest ≈ growth fetch.
+  → Ingestor (kaynak adaptörleri, resumable cursor) birleşmesi.
+
+### ✅ research/ingest.py — batch gerçek-veri (DataIngestor)
+- **İş:** UniProt/PubChem/OEIS gerçek veri, resumable state (.tantrium/ingest_state.json),
+  `_observe_all`→observer.observe, `run`/`scale`. Cursor sayfalaması.
+- **Tekrar:** fetch metotları #9 kümesinde.
+
+### ✅ research/growth.py — sınırsız akış (GrowthEngine)
+- **İş:** `stream`: 8-kaynak rotasyon (PubChem/ChEMBL/UniProt/KEGG/OEIS/web/PubMed/Wikidata)→
+  observer.pulse→periyodik `_consolidate` (NecessityEngine + SelfModel.locate). Resumable
+  growth_state.json. `_next_batch`, `_fetch_*` (8 fetcher).
+- **Okuma notu:** head(1-130)+stream+_consolidate satır-satır okundu; 8 fetcher gövdesi desen-doğrulandı
+  (ingest/researcher ile aynı UniProt/PubChem/OEIS deseni).
+- **Tekrar:** fetch #9 kümesinde. Döngü Cognition iskeletine girer (akış stratejisi).
+
+### ✅ research/goal.py — hedef temsili (Goal · GoalManifold)
+- **İş:** `Goal` (manifold-certified kavram), `GoalManifold.pursue` (nearest + semantic bonus),
+  `update_progress`, save/load, `encode_goal`.
+- **Tekrar:** YOK.
+
+### ✅ research/actor.py — sandbox eylem (Actor)
+- **İş:** learn/relate/save/think/progress. `_UNSAFE` blocklist (import/subprocess/eval/open/write yasak).
+  `plan`/`execute`/`pursue_goal`. ai.act() bunu kullanır.
+- **Tekrar:** YOK. Sınırlı eylem katmanı.
+
+> **F5 BİRLEŞME HEDEFLERİ (doğrulanmış):** (a) Veri-çekme #9 → Ingestor. (b) 4 döngü
+> (proof_loop/explorer/researcher/growth.stream) → Cognition iskeleti + pluggable strateji
+> (HER strateji korunur). (c) Boşluk tespiti 3-yönlü (necessity geometrik / blind_spots paradigma /
+> explorer frontier) → GapFinder birliği. Bunlar gerçek ama strateji-koruyan birleşmeler.
+
+---
+
+## Henüz ⬜ KATALOG (kendim okumadım — güvenme, doğrulanacak)
 
 **language:** speaker.py · generator.py · lang_topology.py · bootstrap.py
 
