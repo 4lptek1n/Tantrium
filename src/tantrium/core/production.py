@@ -190,37 +190,44 @@ class ProductionEngine:
 
     # ── Ana üretici ───────────────────────────────────────────────────────
 
-    def produce(self, target: str, max_steps: int = 16, beam_width: int = 6,
+    def produce(self, target: "str | list[float]", max_steps: int = 16, beam_width: int = 6,
                 out_dir: str = "results/molecules", refine_rounds: int = 2,
                 combination: bool = True, network: bool = False, inject: bool = True,
                 epsilon: float = 0.5, top_k: int = 10) -> "ProductionCertificate":
         """Tek giriş: çok-stratejili üret → evren-kapat → sertifikala.
 
-        Strateji havuzu (50 farklı yol): genesis · scaffold · inverse · morph ·
-        kombinasyon · refine-gradyan. Hepsi aynı Sturm-pozitiflik + evren-kapanışı
-        geçidinden geçer. Gerçekten kapatan moleküllerin sıralı kümesi döner.
-
-        NOT: 3D docking, ADMET, off-target yok. Spektral zorunluluk (gerekli
-        koşul, yeterli değil); wet-lab onayı gerekir.
+        target: kavram/hastalık/SMILES string VEYA moment listesi (meaning_compose().to_produce_target())
         """
         from tantrium.core.production_judge import ProductionJudge, ProductionCertificate
+        from tantrium.core.quantum_moments import FreeCumulants
 
-        # Theorem graph'taki Sturm sertifikasına göre transport eşiğini güncelle
         self._sync_transport_epsilon()
-
         judge = ProductionJudge(self.engine, self)
 
-        kind, mu_req, profiles, ref_name, gap, kd, kh = self._read_target_ext(
-            target, network=network)
-        if kind == "invalid":
-            return ProductionCertificate(
-                target=target, target_kind="invalid",
-                verdict="GEÇERSİZ", note="Hedef encode edilemedi.")
+        # Moment listesi doğrudan verildi (meaning_compose entegrasyonu)
+        if isinstance(target, (list, tuple)):
+            mu_req = [float(x) for x in target]
+            if not mu_req or mu_req[0] <= 0:
+                return ProductionCertificate(
+                    target="⟨moment_query⟩", target_kind="invalid",
+                    verdict="GEÇERSİZ", note="Moment listesi boş veya geçersiz.")
+            kzero = FreeCumulants([0.0] * 6)
+            kh = FreeCumulants.from_moments(mu_req)
+            kind, profiles, ref_name, gap, kd = "moments", [mu_req], "moment sorgusu", 0.0, kzero
+            target_str = "⟨moment_query⟩"
+        else:
+            target_str = target
+            kind, mu_req, profiles, ref_name, gap, kd, kh = self._read_target_ext(
+                target, network=network)
+            if kind == "invalid":
+                return ProductionCertificate(
+                    target=target, target_kind="invalid",
+                    verdict="GEÇERSİZ", note="Hedef encode edilemedi.")
 
         kappa_thr = self._kappa_threshold(profiles)
 
         # ── 1. Çok-stratejili havuz ─────────────────────────────────────
-        pool = self._build_pool(target, mu_req, profiles, max_steps, beam_width)
+        pool = self._build_pool(target_str, mu_req, profiles, max_steps, beam_width)
 
         # ── 2. Yargı + sırala ──────────────────────────────────────────
         scored: list[dict] = []
@@ -339,7 +346,7 @@ class ProductionEngine:
 
         if best is None:
             return ProductionCertificate(
-                target=target, target_kind=kind, required_moments=mu_req,
+                target=target_str, target_kind=kind, required_moments=mu_req,
                 reference=ref_name, realizability_gap=gap,
                 verdict="ÜRETİLEMEDİ",
                 note="Havuz boş veya tüm adaylar elendi.")
@@ -409,7 +416,7 @@ class ProductionEngine:
                 universe_closes=cl.get("universe_closes", False))
 
         return ProductionCertificate(
-            target=target, target_kind=kind, reference=ref_name,
+            target=target_str, target_kind=kind, reference=ref_name,
             required_moments=mu_req, realizability_gap=gap,
             designed_smiles=smi_best, n_atoms=self._n_atoms(smi_best),
             combination=[c.get("combination_partner", "") for c in scored

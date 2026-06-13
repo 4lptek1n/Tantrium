@@ -465,36 +465,61 @@ class Cognition:
         )
 
     def _stream(self, time_limit_s: float, network: bool, **kw) -> CognitionReport:
-        """Sürekli mod: GrowthEngine.stream()'e delege."""
+        """Sürekli mod: GrowthEngine.stream() + ComposePhase + FlyWheelPhase.
+
+        Zaman bütçesi: %80 büyüme (GrowthEngine), %20 komposisyon+flywheel.
+        """
         t0 = time.monotonic()
+        state = CognitionState()
+        phase_logs: list[str] = []
+
+        # %80: GrowthEngine büyüme
+        growth_budget = time_limit_s * 0.80
         try:
             from tantrium.research.growth import GrowthEngine
             ge = GrowthEngine(self.engine)
             rep = ge.stream(
-                time_limit_s=time_limit_s,
+                time_limit_s=growth_budget,
                 network=network,
                 verbose=kw.get("verbose", False),
-                **{k: v for k, v in kw.items() if k != "verbose"},
+                **{k: v for k, v in kw.items() if k not in ("verbose",)},
             )
-            elapsed = time.monotonic() - t0
-            return CognitionReport(
-                mode="stream",
-                total_cycles=getattr(rep, "cycles", 0),
-                concepts_added=getattr(rep, "concepts_added", 0),
-                edges_added=getattr(rep, "edges_added", 0),
-                gaps_found=0,
-                proofs_completed=0,
-                elapsed_s=round(elapsed, 1),
-            )
+            state.concepts_added += getattr(rep, "concepts_added", 0)
+            state.edges_added += getattr(rep, "edges_added", 0)
+            state.cycle_num = getattr(rep, "cycles", 0)
+            phase_logs.append(f"stream/growth: +{state.concepts_added} kavram, "
+                              f"+{state.edges_added} kenar, {state.cycle_num} döngü")
         except Exception as exc:
-            elapsed = time.monotonic() - t0
-            return CognitionReport(
-                mode="stream",
-                total_cycles=0,
-                concepts_added=0,
-                edges_added=0,
-                gaps_found=0,
-                proofs_completed=0,
-                elapsed_s=round(elapsed, 1),
-                phase_logs=[f"stream: hata — {exc}"],
-            )
+            phase_logs.append(f"stream/growth: hata — {exc}")
+
+        # %20: ComposePhase + FlyWheelPhase (kapalı döngü)
+        remaining = time_limit_s - (time.monotonic() - t0)
+        if remaining > 5.0:
+            state.elapsed_s = time.monotonic() - t0
+            state = ComposePhase(top_n=3).execute(self.engine, state)
+            phase_logs.extend(state.logs); state.logs = []
+
+            remaining2 = time_limit_s - (time.monotonic() - t0)
+            if remaining2 > 3.0:
+                state.elapsed_s = time.monotonic() - t0
+                state = FlyWheelPhase(max_targets=2, time_budget_s=remaining2 * 0.9
+                                      ).execute(self.engine, state)
+                phase_logs.extend(state.logs); state.logs = []
+
+        # Persist
+        state.elapsed_s = time.monotonic() - t0
+        state = PersistPhase().execute(self.engine, state)
+        phase_logs.extend(state.logs)
+
+        elapsed = time.monotonic() - t0
+        return CognitionReport(
+            mode="stream",
+            total_cycles=state.cycle_num,
+            concepts_added=state.concepts_added,
+            edges_added=state.edges_added,
+            gaps_found=state.gaps_found,
+            proofs_completed=state.proofs_completed,
+            elapsed_s=round(elapsed, 1),
+            phase_logs=phase_logs,
+            campaigns_triggered=list(state.campaigns_triggered),
+        )

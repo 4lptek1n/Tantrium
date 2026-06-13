@@ -436,8 +436,8 @@ ai.generate("EGFR", use_meaning=True)         # → GenResult: anlam kanalı hib
    sinyale iner: doğrudan TAU kenarı (≥3) + `in_manifold`. Rezonans hesaplanır ama yargıyı vermez.
 9. **`nearest(metric="extended")` tiebreaker**: 10% metin boyutu ağırlığı FARKLI uzunluk/çeşitliliği çözer.
    Aynı uzunluk+çeşitlilik çakışmaları artık ana yolda imza-encoding ile encode-anında çözülüyor (bkz. #6).
-10. **`lang_topology.inject(run_reasoner=True)` ÖLÜ DAL**: var olmayan `TauReasoner`'ı import eder
-    (artık `GraphReasoner`). Varsayılan `run_reasoner=False` → çalışmıyor; çağırma veya GraphReasoner'a güncelle.
+10. **`lang_topology.inject(run_reasoner=True)` — FİX [2026-06]**: `TauReasoner` → `GraphReasoner`
+    düzeltildi (`lang_topology.py:325`). `run_reasoner=True` artık güvenli çalışır.
 11. **`engine.grow()` ≠ `ai.grow()` — ARTIK İKİSİ DE BAĞLI**: `engine.grow()` (engine.py) tümdengelimsel
     kapanış (certify_theorem_graph + InferenceChain tüm çiftler + Explorer + manifold re-bootstrap).
     **Artık `ai.deduce()` facade'ına bağlı** (eskiden öksüzdü). `ai.grow()` ise `GrowthEngine.stream`
