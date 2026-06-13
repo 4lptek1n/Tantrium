@@ -503,6 +503,37 @@ class NarratePhase:
             except Exception:
                 pass
 
+            # Gerçek Narrator: en ilginç yeni kavramı Speaker ile yorumla
+            try:
+                speaker = getattr(engine, "speaker", None)
+                if speaker and state.concepts_added > 0:
+                    # Manifoldun son eklenen kavramlarından birini seç
+                    concepts = list(engine.manifold.concepts.keys())
+                    if concepts:
+                        # Sondan bir kavram (en yeni)
+                        candidate = next(
+                            (c for c in reversed(concepts)
+                             if not str(c).startswith("⟨bridge:")
+                             and not str(c).startswith("theorem_candidate:")),
+                            None
+                        )
+                        if candidate:
+                            from tantrium.core.unified import CoreMachine
+                            cert2 = CoreMachine(engine).certify(str(candidate))
+                            gr = getattr(cert2, "grounding", "?")
+                            nn = engine.manifold.nearest(
+                                engine.manifold.concepts[candidate], n=2
+                            )
+                            neighbors = [n for n, _ in nn if n != candidate][:2]
+                            neighbor_str = " ve ".join(f"'{n}'" for n in neighbors)
+                            if neighbor_str:
+                                parts.append(
+                                    f"En yeni kavram: '{candidate}' — "
+                                    f"grounding={gr}, yakın: {neighbor_str}."
+                                )
+            except Exception:
+                pass
+
             text = " ".join(parts)
             state.narration.append(text)
             state.log(f"narrate: '{text[:80]}...'")
@@ -526,16 +557,61 @@ class PersistPhase:
         return state
 
 
+class DeductivePhase:
+    """Tümdengelimsel kapanış: engine.grow() — öksüz gücü döngüye bağlıyor.
+
+    UNIFIED_ARCHITECTURE.md §2.5: engine.grow() 'öksüz' olarak işaretlenmişti —
+    hiçbir döngüye bağlı değildi. Gerçek iş yapar:
+      certify_theorem_graph + InferenceChain TÜM çiftler + Explorer + re-bootstrap
+
+    Sistem yeni kavramlar öğrendikten SONRA bu faz çalışır:
+    196 yeni kavram → InferenceChain tüm çiftlerde çalışır → yüzlerce yeni bağ türetilir
+    → türetilen bağlar manifolda girer → sistem sadece biriktirmez, ANLAM ÇIKARIR.
+
+    ai.deduce() = engine.grow() = tümdengelimsel kapanış (ağsız, içsel).
+    ai.grow()   = GrowthEngine.stream() = büyüme (dış veri, ağ).
+    İkisi farklı — bu faz içsel reasoning.
+    """
+    name = "deduce"
+
+    def __init__(self, max_rounds: int = 2, time_budget_s: float = 60.0):
+        self.max_rounds = max_rounds
+        self.time_budget_s = time_budget_s
+
+    def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
+        try:
+            before = len(engine.manifold.concepts)
+            # engine.grow() = certify_theorem_graph + InferenceChain + Explorer + re-bootstrap
+            result = engine.grow(
+                max_rounds=self.max_rounds,
+                time_limit_s=self.time_budget_s,
+            )
+            after = len(engine.manifold.concepts)
+            delta = after - before
+            state.concepts_added += delta
+            # InferenceChain'den türetilen çıkarım sayısı
+            inferences = getattr(result, "inferences_derived", 0)
+            gaps_closed = getattr(result, "gaps_closed", 0)
+            state.log(
+                f"deduce: +{delta} kavram, {inferences} çıkarım, "
+                f"{gaps_closed} boşluk kapandı (engine.grow)"
+            )
+        except Exception as exc:
+            state.log(f"deduce: atlandı — {exc}")
+        return state
+
+
 # ── Cognition Ana Sınıf ──────────────────────────────────────────────────────
 
 _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     PerceivePhase(),
     ReflectPhase(),
     OperatePhase(),
-    ComposePhase(),    # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
-    FlyWheelPhase(),   # Kademe 6: produce() → scan_production_gaps() → ProofLoop
+    DeductivePhase(),   # engine.grow(): InferenceChain + certify_theorem_graph (öksüz bağlandı)
+    ComposePhase(),     # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
+    FlyWheelPhase(),    # Kademe 6: produce() → scan_production_gaps() → ProofLoop
     ProvePhase(),
-    NarratePhase(),    # Tel 2: döngü sesi — öğrenileni dile döker
+    NarratePhase(),     # Tel 2: döngü sesi — öğrenileni dile döker
     PersistPhase(),
 ]
 
@@ -724,6 +800,15 @@ class Cognition:
                 state = FlyWheelPhase(max_targets=2, time_budget_s=remaining2 * 0.9
                                       ).execute(self.engine, state)
                 phase_logs.extend(state.logs); state.logs = []
+
+        # Tümdengelimsel kapanış: yeni kavramlardan çıkarım türet
+        remaining_d = time_limit_s - (time.monotonic() - t0)
+        if remaining_d > 5.0:
+            state.elapsed_s = time.monotonic() - t0
+            state = DeductivePhase(
+                max_rounds=1, time_budget_s=min(remaining_d * 0.3, 45.0)
+            ).execute(self.engine, state)
+            phase_logs.extend(state.logs); state.logs = []
 
         # Tel 2: Narrate — ne öğrendik, ne açık, ne kanıtlandı
         state.elapsed_s = time.monotonic() - t0
