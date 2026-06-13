@@ -110,7 +110,16 @@ class PerceivePhase:
 
 
 class ReflectPhase:
-    """Yansıma: GapFinder ile manifold boşluklarını tespit et; adları sonraki tele yaz."""
+    """Yansıma: GapFinder + SelfModel.reflect() — döngüyü bilgilendirir.
+
+    UNIFIED_ARCHITECTURE §6.6: "reflect: SelfModel.reflect() artık döngüyü
+    bilgilendirir (zayıf eksen → hedef seçimi), salt-okunur değil."
+
+    Zayıf eksen → strateji değişimi:
+    - WEAKLY_GROUNDED / UNGROUNDED → grounding ekseni zayıf → grow() önce
+    - truth=CONTESTED/CONTRADICTORY → truth ekseni kırık → deduce() önce
+    - structural confidence düşük → ProofLoop kampanyası önce
+    """
     name = "reflect"
 
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
@@ -118,12 +127,45 @@ class ReflectPhase:
             from tantrium.reasoning.gap_finder import GapFinder
             gaps = GapFinder(engine).find(signal="all")
             state.gaps_found += len(gaps)
-            # Tel 1: boşluk adlarını taşı → PerceivePhase sonraki turda GrowthEngine'e iletir
             gap_names = [getattr(g, "name", str(g)) for g in gaps]
             state.open_gap_names = gap_names
             state.log(f"reflect: {len(gaps)} boşluk → {gap_names[:3]}")
         except Exception as exc:
             state.log(f"reflect: atlandı — {exc}")
+
+        # SelfModel.reflect() → döngü hedefini bilgilendir (salt-okunur değil)
+        try:
+            from tantrium.meta.self_model import SelfModel
+            r = SelfModel(engine).reflect(persist=False)
+            grounding_v = getattr(r, "grounding_verdict", "UNKNOWN")
+            truth_v = getattr(r, "truth", None)
+            conf = getattr(r, "confidence", 1.0) or 1.0
+
+            # Zayıf eksen → hedef seçimi: öncelik sırasını open_gap_names başına yaz
+            priority_gaps: list[str] = []
+            if grounding_v in ("WEAKLY_GROUNDED", "UNGROUNDED"):
+                # Grounding zayıf → TAU kenar oluşturacak boşluklar önce
+                priority_gaps += [g for g in state.open_gap_names
+                                   if "ALEPH" not in g and "TAV" not in g][:3]
+                state.log(f"reflect/self: grounding={grounding_v} → grow önce")
+            if str(truth_v) in ("CONTESTED", "CONTRADICTORY"):
+                # Truth kırık → deduce önce (InferenceChain çelişkileri çözer)
+                priority_gaps += [g for g in state.open_gap_names if "EMET" in g][:2]
+                state.log(f"reflect/self: truth={truth_v} → deduce önce")
+            if float(conf) < 0.5:
+                # Güven düşük → ProofLoop kampanyası önce
+                priority_gaps += [g for g in state.open_gap_names if "TAV" in g or "ALEPH" in g][:2]
+                state.log(f"reflect/self: confidence={conf:.2f} → prove önce")
+
+            if priority_gaps:
+                # Öncelikli boşlukları listenin başına koy, geri kalanı ekle
+                rest = [g for g in state.open_gap_names if g not in priority_gaps]
+                state.open_gap_names = priority_gaps + rest
+                state.log(f"reflect/self: hedef sıralaması güncellendi ({len(priority_gaps)} öncelikli)")
+
+        except Exception as exc:
+            state.log(f"reflect/self: atlandı — {exc}")
+
         return state
 
 
