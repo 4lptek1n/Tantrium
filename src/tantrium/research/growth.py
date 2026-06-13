@@ -26,6 +26,7 @@ import pathlib
 import time
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -99,6 +100,8 @@ class GrowthEngine:
             observer = AutonomousObserver(engine)
         self.observer = observer
         self.state = self._load_state()
+        self._gap_cache: list[str] = []  # _fetch_web için önceden hesaplanmış boşluklar
+        self._gap_cache_cycle: int = -1  # cache'in güncellendiği döngü
 
     # ─── Resumable durum ─────────────────────────────────────────────────────
 
@@ -161,71 +164,96 @@ class GrowthEngine:
         return out
 
     def _fetch_uniprot(self, size: int = 8, organism: int = 9606) -> list[str]:
-        """Reviewed (Swiss-Prot) protein dizileri. Cursor durumu resumable."""
+        """UniProt protein adları + gen isimleri. Diziler yerine kısa isimler → hızlı encode."""
         cursor = self.state.get("uniprot_cursor")
         if not cursor:
             q = urllib.parse.quote(f"reviewed:true AND organism_id:{organism}")
             cursor = (f"https://rest.uniprot.org/uniprotkb/search?query={q}"
                       f"&format=json&size={min(size, 100)}"
-                      f"&fields=accession,sequence,length")
+                      f"&fields=accession,gene_names,protein_name,cc_function")
         out: list[str] = []
         try:
             data, next_url = _http_json_link(cursor)
             for entry in (data or {}).get("results", []):
-                seq = ((entry or {}).get("sequence") or {}).get("value", "")
-                if seq and len(seq) >= 20:
-                    out.append(seq)
-            self.state["uniprot_cursor"] = next_url  # düşse None → baştan
+                # Gen isimleri (kısa: TP53, BRCA1, EGFR...)
+                genes = (entry or {}).get("genes") or []
+                for g in genes[:2]:
+                    gname = (g.get("geneName") or {}).get("value", "")
+                    if gname:
+                        out.append(gname)
+                # Protein adı (kısa)
+                pname_obj = ((entry or {}).get("proteinDescription") or {})
+                rec = (pname_obj.get("recommendedName") or {})
+                pname = (rec.get("fullName") or {}).get("value", "")
+                if pname and len(pname) < 80:
+                    out.append(pname)
+                # Fonksiyon metni → kausal kenar öğrenimi
+                comments = (entry or {}).get("comments") or []
+                for c in comments[:1]:
+                    if c.get("commentType") == "FUNCTION":
+                        texts = c.get("texts") or []
+                        for t in texts[:1]:
+                            val = t.get("value", "")
+                            if val and len(val) > 50:
+                                try:
+                                    self.observer.observe(val[:600])
+                                except Exception:
+                                    pass
+            self.state["uniprot_cursor"] = next_url
         except Exception:
             pass
         time.sleep(_RATE_LIMIT_S)
-        return out
+        return [x for x in out if x]
 
-    def _fetch_web(self, n: int = 5) -> list[str]:
-        """Manifold boşluklarına göre Wikipedia'dan kavramlar çek.
-
-        Sistem ne bilmediğini biliyor (gaps). O boşlukları Wikipedia'da arar,
-        başlık + kategoriler + bağlantı isimleri döndürür. Ham metin değil —
-        temiz kavram adları. Sistem kendi kör noktalarını doldurur.
-        """
-        # Hangi boşluğu araştıracağız?
-        web_idx = self.state.get("web_gap_idx", 0)
-        concepts_list: list[str] = []
-
+    def _refresh_gap_cache(self) -> None:
+        """Manifold boşluklarını döngü başında bir kez hesapla (paralel fetch'te bottleneck önlenir)."""
         try:
             from tantrium.reasoning.necessity import NecessityEngine
             ne = NecessityEngine(self.engine)
             gaps = ne.find_manifold_gaps(domain="math_kernel", top_k=12)
-            if not gaps:
-                # Gaps yoksa manifolddan rastgele sınır kavramı al
-                tau = self.engine.tau
-                causal = {"CAUSES", "INHIBITS", "ACTIVATES"}
-                frontier = [
-                    s for s, edges in tau.edges.items()
-                    if any(e.paradigm in causal for e in edges)
-                    and len(tau.edges.get(s, [])) < 5
-                ]
-                gaps_labels = frontier[web_idx % max(len(frontier), 1): web_idx % max(len(frontier), 1) + 3] if frontier else []
-            else:
-                idx = web_idx % len(gaps)
-                gaps_labels = [g.concept_a for g in gaps[idx:idx + 3]]
+            if gaps:
+                self._gap_cache = [g.concept_a for g in gaps]
+                return
         except Exception:
-            gaps_labels = ["mathematics", "biochemistry", "topology"]
+            pass
+        # Fallback: kausal sınır kavramları
+        try:
+            tau = self.engine.tau
+            causal = {"CAUSES", "INHIBITS", "ACTIVATES"}
+            frontier = [
+                s for s, edges in tau.edges.items()
+                if any(e.paradigm in causal for e in edges) and len(edges) < 5
+            ]
+            self._gap_cache = frontier[:20] if frontier else ["mathematics", "biochemistry", "topology"]
+        except Exception:
+            self._gap_cache = ["mathematics", "biochemistry", "topology"]
 
+    def _fetch_web(self, n: int = 5) -> list[str]:
+        """Manifold boşluklarına göre Wikipedia'dan kavramlar çek.
+
+        Boşluklar _refresh_gap_cache() ile döngü başında hesaplanır;
+        _fetch_web() sadece HTTP yapar (NecessityEngine çağırmaz → hız).
+        """
+        web_idx = self.state.get("web_gap_idx", 0)
+        cache = self._gap_cache or ["mathematics", "biochemistry", "topology"]
+        idx = web_idx % max(len(cache), 1)
+        gaps_labels = cache[idx:idx + 3]
         self.state["web_gap_idx"] = web_idx + 1
 
-        for query in gaps_labels[:3]:
+        concepts_list: list[str] = []
+        _SKIP = ("All ", "Articles ", "Wikipedia ", "Pages ", "CS1 ",
+                 "Webarchive", "Use ", "Short description")
+
+        def _fetch_one_wiki(query: str) -> list[str]:
+            local: list[str] = []
             try:
-                # Wikipedia OpenSearch — ilgili başlıkları bul
                 q = urllib.parse.quote(str(query)[:80])
                 url = (f"https://en.wikipedia.org/w/api.php"
                        f"?action=opensearch&search={q}&limit=3&format=json")
                 data = _http_json(url)
                 titles = (data[1] if isinstance(data, list) and len(data) > 1 else [])
-
                 for title in titles[:2]:
                     t = urllib.parse.quote(str(title)[:120])
-                    # Sayfa: kategoriler + bağlantılar + kısa özet (extracts)
                     url2 = (f"https://en.wikipedia.org/w/api.php"
                             f"?action=query&prop=categories|links|extracts"
                             f"&titles={t}&format=json&exintro=1&exsentences=3"
@@ -235,34 +263,34 @@ class GrowthEngine:
                     for pid, page in pages.items():
                         if pid == "-1":
                             continue
-                        # Sayfa başlığı
-                        concepts_list.append(str(page.get("title", "")))
-                        # Kategoriler: "Category:Kinase inhibitors" → "kinase inhibitors"
-                        _SKIP = ("All ", "Articles ", "Wikipedia ", "Pages ", "CS1 ",
-                                 "Webarchive", "Use ", "Short description")
+                        local.append(str(page.get("title", "")))
                         for cat in (page.get("categories") or [])[:8]:
                             cname = cat.get("title", "").replace("Category:", "").strip()
-                            if (cname and len(cname) < 60
-                                    and not any(cname.startswith(s) for s in _SKIP)):
-                                concepts_list.append(cname)
-                        # Bağlantı başlıkları (linked Wikipedia pages)
+                            if cname and len(cname) < 60 and not any(cname.startswith(s) for s in _SKIP):
+                                local.append(cname)
                         for link in (page.get("links") or [])[:6]:
                             lname = link.get("title", "").strip()
                             if lname and len(lname) < 60 and not lname.startswith(("Wikipedia:", "Help:", "File:")):
-                                concepts_list.append(lname)
-                        # Sayfa özeti → kausal ilişki çıkar (manifolda ham metin olarak EKLENMEZ)
+                                local.append(lname)
                         extract = str(page.get("extract") or "").strip()
                         if extract and len(extract) > 50:
                             try:
                                 self.observer.observe(extract)
                             except Exception:
                                 pass
-                    time.sleep(_RATE_LIMIT_S)
-
             except Exception:
                 pass
+            return local
 
-        # Tekrarları kaldır, boşları at, max n
+        # 3 Wikipedia sorgusu paralel
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futs = [pool.submit(_fetch_one_wiki, q) for q in gaps_labels[:3]]
+            for fut in as_completed(futs):
+                try:
+                    concepts_list += fut.result()
+                except Exception:
+                    pass
+
         seen: set[str] = set()
         out: list[str] = []
         for c in concepts_list:
@@ -272,8 +300,6 @@ class GrowthEngine:
                 out.append(c)
             if len(out) >= n:
                 break
-
-        time.sleep(_RATE_LIMIT_S)
         return out
 
     def _fetch_kegg(self, n: int = 4) -> list[str]:
@@ -471,15 +497,25 @@ class GrowthEngine:
                 [int((base + i) ** 1.5) % 97 + 1 for i in range(j, j + 8)]
                 for j in range(0, 24, 8)
             ]
+        # 8 kaynak paralel çekilir — her biri bağımsız HTTP, sıralı bekleme gerekmez
+        sources = [
+            (self._fetch_pubchem, 8),
+            (self._fetch_chembl, 4),
+            (self._fetch_uniprot, 6),
+            (self._fetch_kegg, 4),
+            (self._fetch_oeis, 4),
+            (self._fetch_web, 5),
+            (self._fetch_pubmed, 3),
+            (self._fetch_wikidata, 4),
+        ]
         batch: list[Any] = []
-        batch += self._fetch_pubchem(8)    # kimya: PubChem SMILES
-        batch += self._fetch_chembl(4)     # kimya: ChEMBL biyoaktif moleküller
-        batch += self._fetch_uniprot(6)    # biyoloji: UniProt protein dizileri
-        batch += self._fetch_kegg(4)       # biyoloji: KEGG yolak genleri
-        batch += self._fetch_oeis(4)       # matematik: tamsayı dizileri
-        batch += self._fetch_web(5)        # web: boşluk-güdümlü Wikipedia kavramları
-        batch += self._fetch_pubmed(3)     # biyomedikal: PubMed kausal öğrenim
-        batch += self._fetch_wikidata(4)   # ontoloji: Wikidata typed triples
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            futures = {pool.submit(fn, n): fn.__name__ for fn, n in sources}
+            for fut in as_completed(futures):
+                try:
+                    batch += fut.result()
+                except Exception:
+                    pass
         return batch
 
     # ─── Ana döngü: sınırsız kendi kendine büyüme ────────────────────────────
@@ -534,6 +570,8 @@ class GrowthEngine:
                         pass
 
                 rep.cycles += 1
+                if network:
+                    self._refresh_gap_cache()  # NecessityEngine'i paralel fetch öncesi çalıştır
                 batch = self._next_batch(network)
                 if not batch:
                     _log("boş parti — kaynak geçici sustu, devam")
