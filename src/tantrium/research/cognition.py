@@ -37,6 +37,9 @@ class CognitionState:
     # Kademe 6: ComposePhase → FlyWheelPhase arasında geçirilen hedefler
     compose_targets: list[str] = field(default_factory=list)   # gap kavram adları
     campaigns_triggered: list[str] = field(default_factory=list)  # başlatılan kampanyalar
+    # Döngüler arası teller
+    open_gap_names: list[str] = field(default_factory=list)  # ReflectPhase→PerceivePhase/ProvePhase
+    narration: list[str] = field(default_factory=list)        # her döngünün sesi (NarratePhase)
 
     def log(self, msg: str) -> None:
         self.logs.append(f"[{self.elapsed_s:.1f}s] {msg}")
@@ -54,15 +57,19 @@ class CognitionReport:
     elapsed_s: float
     phase_logs: list[str] = field(default_factory=list)
     campaigns_triggered: list[str] = field(default_factory=list)
+    narrations: list[str] = field(default_factory=list)
 
     def summary(self) -> str:
         camp_str = (f", kampanyalar={self.campaigns_triggered}"
                     if self.campaigns_triggered else "")
-        return (
+        base = (
             f"Cognition({self.mode}) — {self.total_cycles} döngü, "
             f"+{self.concepts_added} kavram, +{self.edges_added} kenar, "
             f"{self.proofs_completed} kanıt{camp_str}, {self.elapsed_s:.1f}s"
         )
+        if self.narrations:
+            base += f"\n\n{self.narrations[-1]}"
+        return base
 
 
 # ── Strateji Protokolü ───────────────────────────────────────────────────────
@@ -82,7 +89,7 @@ class CognitionStrategy(Protocol):
 # ── Yerleşik Fazlar ──────────────────────────────────────────────────────────
 
 class PerceivePhase:
-    """Algı: mevcut manifold boyutunu ölç, kör noktaları say."""
+    """Algı: mevcut manifold boyutunu ölç; önceki turdan gelen boşlukları GrowthEngine'e ilet."""
     name = "perceive"
 
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
@@ -90,13 +97,19 @@ class PerceivePhase:
             n_concepts = len(engine.manifold.concepts)
             n_edges = sum(len(v) for v in engine.tau.edges.values())
             state.log(f"perceive: {n_concepts:,} kavram, {n_edges:,} kenar")
+            # Tel 1: önceki döngüden gelen boşlukları GrowthEngine hedeflemesine aktar
+            if state.open_gap_names:
+                ge = getattr(engine, "_grower", None)
+                if ge is not None:
+                    ge._gap_cache = list(state.open_gap_names)
+                    state.log(f"perceive→grow tel: {len(state.open_gap_names)} boşluk iletildi")
         except Exception as exc:
             state.log(f"perceive: hata — {exc}")
         return state
 
 
 class ReflectPhase:
-    """Yansıma: GapFinder ile manifold boşluklarını tespit et."""
+    """Yansıma: GapFinder ile manifold boşluklarını tespit et; adları sonraki tele yaz."""
     name = "reflect"
 
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
@@ -104,7 +117,10 @@ class ReflectPhase:
             from tantrium.reasoning.gap_finder import GapFinder
             gaps = GapFinder(engine).find(signal="all")
             state.gaps_found += len(gaps)
-            state.log(f"reflect: {len(gaps)} boşluk bulundu")
+            # Tel 1: boşluk adlarını taşı → PerceivePhase sonraki turda GrowthEngine'e iletir
+            gap_names = [getattr(g, "name", str(g)) for g in gaps]
+            state.open_gap_names = gap_names
+            state.log(f"reflect: {len(gaps)} boşluk → {gap_names[:3]}")
         except Exception as exc:
             state.log(f"reflect: atlandı — {exc}")
         return state
@@ -339,6 +355,56 @@ class FlyWheelPhase:
         return state
 
 
+class NarratePhase:
+    """Ses: döngünün öğrendiklerini Türkçe dile döker.
+
+    Doğrulanmış durumdan üretilen rapor — halüsinasyon imkansız.
+    Ne öğrendim, hangi boşluklar açık, ne kanıtlandı, ne hedefleniyor.
+    Tel 2: döngü biter → sistem konuşur.
+    """
+    name = "narrate"
+
+    def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
+        try:
+            parts: list[str] = [f"[Döngü {state.cycle_num}]"]
+
+            n_total = len(engine.manifold.concepts)
+            if state.concepts_added:
+                parts.append(f"{state.concepts_added} yeni kavram öğrendim (toplam: {n_total:,}).")
+            else:
+                parts.append(f"Manifold sabit: {n_total:,} kavram.")
+
+            if state.gaps_found:
+                gap_preview = ", ".join(f"'{g}'" for g in state.open_gap_names[:3])
+                suffix = f" (+{len(state.open_gap_names) - 3} daha)" if len(state.open_gap_names) > 3 else ""
+                parts.append(f"{state.gaps_found} boşluk tespit ettim: {gap_preview}{suffix}.")
+                parts.append("Bu boşluklar bir sonraki turda hedeflenecek.")
+
+            if state.proofs_completed:
+                parts.append(f"{state.proofs_completed} teorem/kavram kanıtlandı veya bağlandı.")
+
+            if state.campaigns_triggered:
+                parts.append(f"Başlatılan kampanyalar: {', '.join(state.campaigns_triggered)}.")
+
+            # Öz-model: sistem kendini görüyor mu?
+            try:
+                from tantrium.core.grounding import GroundingCertifier
+                gc = GroundingCertifier(engine)
+                cert = gc.certify("⟨SELF⟩")
+                verdict = getattr(cert, "verdict", "UNKNOWN")
+                parts.append(f"Öz-konum: {verdict}.")
+            except Exception:
+                pass
+
+            text = " ".join(parts)
+            state.narration.append(text)
+            state.log(f"narrate: '{text[:80]}...'")
+            print(f"\n🗣  {text}\n")
+        except Exception as exc:
+            state.log(f"narrate: atlandı — {exc}")
+        return state
+
+
 class PersistPhase:
     """Kalıcılaştırma: manifoldu diske yaz."""
     name = "persist"
@@ -362,6 +428,7 @@ _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     ComposePhase(),    # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
     FlyWheelPhase(),   # Kademe 6: produce() → scan_production_gaps() → ProofLoop
     ProvePhase(),
+    NarratePhase(),    # Tel 2: döngü sesi — öğrenileni dile döker
     PersistPhase(),
 ]
 
@@ -445,8 +512,16 @@ class Cognition:
                 break
             state.cycle_num = cycle_i + 1
             state.elapsed_s = time.monotonic() - t0
+            # open_gap_names döngüler arası TAŞINIR (Tel 1: compounding)
+            # Diğer döngü-bazlı sayaçlar sıfırlanır
+            prev_gaps = list(state.open_gap_names)
+            state.concepts_added = 0
+            state.edges_added = 0
+            state.gaps_found = 0
+            state.open_gap_names = prev_gaps  # önceki boşlukları koru
             if verbose:
-                print(f"[Cognition] döngü {cycle_i + 1}/{max_cycles}")
+                print(f"[Cognition] döngü {cycle_i + 1}/{max_cycles}"
+                      + (f" ({len(prev_gaps)} boşluk hedefte)" if prev_gaps else ""))
 
             for strategy in strategies:
                 if time.monotonic() - t0 >= time_limit_s:
@@ -474,22 +549,41 @@ class Cognition:
             elapsed_s=round(elapsed, 1),
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
+            narrations=list(state.narration),
         )
 
     def _stream(self, time_limit_s: float, network: bool, **kw) -> CognitionReport:
         """Sürekli mod: GrowthEngine.stream() + ComposePhase + FlyWheelPhase.
 
-        Zaman bütçesi: %80 büyüme (GrowthEngine), %20 komposisyon+flywheel.
+        Zaman bütçesi: %75 büyüme (GrowthEngine), %15 komposisyon+flywheel, %10 narration.
+        Tel 1: ReflectPhase boşlukları → GrowthEngine._gap_cache → hedefli büyüme.
+        Tel 2: NarratePhase → döngü sesi.
         """
         t0 = time.monotonic()
         state = CognitionState()
         phase_logs: list[str] = []
 
-        # %80: GrowthEngine büyüme
-        growth_budget = time_limit_s * 0.80
+        # Tel 1: mevcut boşlukları bul → GrowthEngine'e ilet
+        try:
+            from tantrium.reasoning.gap_finder import GapFinder
+            gaps = GapFinder(self.engine).find(signal="all")
+            gap_names = [getattr(g, "name", str(g)) for g in gaps]
+            state.open_gap_names = gap_names
+            state.gaps_found = len(gaps)
+            ge_cached = getattr(self.engine, "_grower", None)
+            if ge_cached is not None and gap_names:
+                ge_cached._gap_cache = list(gap_names)
+            phase_logs.append(f"stream/reflect: {len(gaps)} boşluk → GrowthEngine'e iletildi")
+        except Exception as exc:
+            phase_logs.append(f"stream/reflect: atlandı — {exc}")
+
+        # %75: GrowthEngine büyüme (boşluklar zaten cache'te)
+        growth_budget = time_limit_s * 0.75
         try:
             from tantrium.research.growth import GrowthEngine
             ge = GrowthEngine(self.engine)
+            if state.open_gap_names:
+                ge._gap_cache = list(state.open_gap_names)
             rep = ge.stream(
                 time_limit_s=growth_budget,
                 network=network,
@@ -504,19 +598,26 @@ class Cognition:
         except Exception as exc:
             phase_logs.append(f"stream/growth: hata — {exc}")
 
-        # %20: ComposePhase + FlyWheelPhase (kapalı döngü)
+        # %15: ComposePhase + FlyWheelPhase (kapalı döngü)
         remaining = time_limit_s - (time.monotonic() - t0)
-        if remaining > 5.0:
+        compose_budget = remaining * 0.60
+        if compose_budget > 5.0:
             state.elapsed_s = time.monotonic() - t0
             state = ComposePhase(top_n=3).execute(self.engine, state)
             phase_logs.extend(state.logs); state.logs = []
 
-            remaining2 = time_limit_s - (time.monotonic() - t0)
+            remaining2 = time_limit_s * 0.15 - (time.monotonic() - t0 - growth_budget)
             if remaining2 > 3.0:
                 state.elapsed_s = time.monotonic() - t0
                 state = FlyWheelPhase(max_targets=2, time_budget_s=remaining2 * 0.9
                                       ).execute(self.engine, state)
                 phase_logs.extend(state.logs); state.logs = []
+
+        # Tel 2: Narrate — ne öğrendik, ne açık, ne kanıtlandı
+        state.elapsed_s = time.monotonic() - t0
+        state.cycle_num = max(state.cycle_num, 1)
+        state = NarratePhase().execute(self.engine, state)
+        phase_logs.extend(state.logs); state.logs = []
 
         # Persist
         state.elapsed_s = time.monotonic() - t0
@@ -534,4 +635,5 @@ class Cognition:
             elapsed_s=round(elapsed, 1),
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
+            narrations=list(state.narration),
         )
