@@ -1774,7 +1774,16 @@ class AI:
                 from fractions import Fraction
                 moms = [Fraction(m).limit_denominator(10 ** 9) for m in sig.moments]
                 tmp = Concept(name="⟨compose:query⟩", moments=moms)
-                return engine.manifold.nearest(tmp, n=n, metric=metric)
+                # Daha fazla aday al, sonra anlamsız kavramları filtrele
+                candidates = engine.manifold.nearest(tmp, n=n * 6, metric=metric)
+                _SKIP = ("list_", "⟨bridge:", "oeis:", "algo:", "dna_")
+                filtered = [
+                    (name, dist) for name, dist in candidates
+                    if not any(name.startswith(p) for p in _SKIP)
+                    and len(name) < 80          # Wikipedia başlıklarını ele
+                    and " is the " not in name  # "X is the Y" kalıplarını ele
+                ]
+                return filtered[:n]
             except Exception:
                 return []
 
