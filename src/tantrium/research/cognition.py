@@ -701,11 +701,12 @@ class Cognition:
                 verbose=kw.get("verbose", False),
                 **{k: v for k, v in kw.items() if k not in ("verbose",)},
             )
-            state.concepts_added += getattr(rep, "concepts_added", 0)
-            state.edges_added += getattr(rep, "edges_added", 0)
+            dc = getattr(rep, "concepts_end", 0) - getattr(rep, "concepts_start", 0)
+            de = getattr(rep, "edges_end", 0) - getattr(rep, "edges_start", 0)
+            state.concepts_added += max(0, dc)
+            state.edges_added += max(0, de)
             state.cycle_num = getattr(rep, "cycles", 0)
-            phase_logs.append(f"stream/growth: +{state.concepts_added} kavram, "
-                              f"+{state.edges_added} kenar, {state.cycle_num} döngü")
+            phase_logs.append(f"stream/growth: +{dc} kavram, +{de} kenar, {state.cycle_num} döngü")
         except Exception as exc:
             phase_logs.append(f"stream/growth: hata — {exc}")
 
