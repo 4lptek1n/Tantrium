@@ -37,6 +37,7 @@ src/tantrium/          ← pip install -e . ile kurulu paket
   ai.py                ← tantrium.AI() — SDK girişi
   core/
     encoder.py         ← girdi→moments (domain-blind) + _text_extra_dims()
+    topology_encode.py ← TopologyEncoder — kavram→TAU semantik komşuluk Laplacian→moment (ANLAM kanalı)
     codex.py           ← 23 paradigma (verify() okur, hesaplamaz)
     pipeline.py        ← run_pipeline() L0-L7 sıralı hesaplama
     network.py         ← CertificationPipeline (topolojik DAG)
@@ -385,6 +386,13 @@ ai.perceive(noise_image(), modality="image", name="nz", learn=True)  # manifolda
 ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (Türkçe)
 # spektral karakter (saf ton↔gürültü) + grounding (N/23) + çağrışım (TAU komşusu)
 # "görmek = hatırlamak = anlatmak" — perceive suskun, witness konuşur
+
+# Anlam kanalı (ilişkisel kodlama — "Topoloji = bilgi")
+ai.meaning("intelligence")                     # → CodexObject: TAU semantik komşuluk Laplacian → moment
+                                               #   harf değil ANLAM: kavramın ilişki-grafı spektrumu
+                                               #   semantik-topraksız kavram (pointer/glucose) → None (yüzeye düş)
+ai.meaning_distance("protein", "enzyme")       # → float: ANLAM mesafesi (topolojik moment L1)
+                                               #   protein~enzyme < protein~algorithm (harfin yapamadığı ayrım)
 ```
 
 ---

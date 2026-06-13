@@ -56,6 +56,20 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   **MİGRASYON:** `tools/migrate_text_encoding.py` (27853 metin kavramı yeni encoding, 16330 molekül korundu).
 - **Tekrar:** Dağınık `_encode_target`'lar bunu ÇAĞIRAN kısayol; moment matematiği burada tek.
 
+### ✅ core/topology_encode.py — ANLAM kanalı (ilişkisel kodlama, YENİ)
+- **İş:** `TopologyEncoder.encode(name) → CodexObject`. Kavramın TAU semantik komşuluğunu
+  (tipli kenarlar: IS_A/USES/REQUIRES/ACHIEVES/COMPOSED/INHIBITS/CAUSES/... — geometrik
+  ALEPH/SPECTRAL_BRIDGE HARİÇ) IDF-ağırlıklı (ters in-derece, jenerik hub bastırma) indüklenmiş
+  alt-graf olarak kurar → `G=AᵀA → eigvalsh → [0,1] normalize → μ_k`. Molekülün bağ-grafıyla
+  AYNI boru, perception transducer deseni (`_hausdorff_moments`+`_moments_and_structure`).
+- **Güç:** Mimarinin tezi "Topoloji = bilgi"nin işlevsel hali. ANLAM kanalı: harf değil ilişki.
+  Kanıt (gerçek graf): `d(intelligence,reasoning)=0.0` << `d(intelligence,protein)=0.18`;
+  `d(protein,enzyme)=0.0285` < `d(protein,algorithm)=0.0388` (harfin YAPAMADIĞI sıralama).
+- **DÜRÜST SINIR:** semantik-topraksız kavram (pointer/glucose/dna — yalnız geometrik kenar) → None,
+  caller yüzey kodlamasına düşer. Ayrım, ilişki-çıkarımının kalitesi kadar keskin — graf büyüdükçe
+  keskinleşir. Darboğaz matematik DEĞİL, graf yoğunluğu/extraction. API: `ai.meaning()`, `ai.meaning_distance()`.
+- **Tekrar:** YOK — yüzey kodlamanın (encoder) tamamlayıcısı, ayrı modalite ("relational").
+
 ### ✅ core/perception/encode.py — duyusal dönüştürücüler (encoder'a delege)
 - **İş:** `encode_signal/image/matrix/signal_temporal` — ham duyu → A → encoder'ın
   `_extract_structure`'ı. Çıktı momentleri `Fraction(...).limit_denominator(1e9)`.

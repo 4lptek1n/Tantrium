@@ -197,6 +197,14 @@ Fraction — yarık YOK. Bu yüzden F1 = *yönlendirme birleştirme*: dağınık
 otokorelasyon, görüntü DC-çıkarma, temporal pencereleme — her biri farklı fizik).
 `Percept.free_cumulants` ve `Percept.spectral` lazy + cache.
 
+**ANLAM KANALI (2026-06, `core/topology_encode.py`):** Yüzey kodlaması (harf/ses imzası)
+"nasıl görünüyor"u okur; **ilişkisel kodlama** "ne demek"i okur. `TopologyEncoder.encode(name)`
+kavramın TAU semantik komşuluğunu (tipli kenarlar, IDF-ağırlıklı) indüklenmiş alt-graf →
+`G=AᵀA → μ_k` — molekülün bağ-grafıyla AYNI boru. Mimarinin "Topoloji = bilgi" tezinin işlevsel
+hali: anlam edge'de. Kanıt: `protein~enzyme < protein~algorithm` (harfin yapamadığı ayrım).
+Modalite="relational". Dürüst sınır: semantik-topraksız kavram → None (yüzeye düşer); ayrım
+graf yoğunluğu kadar keskin (extraction darboğazı, matematik değil). `ai.meaning()`/`ai.meaning_distance()`.
+
 ### 6.2 L2 — Certifier (tek yargı kapısı)
 **Birleşir:** `core/unified.py CoreMachine` (ana) ← çağıran HER yol. `ask`, `produce`,
 `pulse`, `grounding`, `truth`, `transport` artık aynı `Certificate`'ı **tüketir**,

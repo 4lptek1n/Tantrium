@@ -1541,6 +1541,40 @@ class AI:
 
         return run
 
+    def meaning(self, name: str, *, max_neighbors: int = 24) -> "object | None":
+        """İlişkisel kodlama — kavramın ANLAMINI TAU topolojisinden okur.
+
+        Mimarinin tezi: "Bilgi node'da değil EDGE'de. Topoloji = bilgi." Kelimenin
+        anlamı harflerinde değil, ilişki komşuluğundadır. Bu metod o komşuluğu
+        molekülle AYNI `G=AᵀA → μ_k` borusundan geçirir — semantik alt-grafın
+        Laplacian spektrumu = anlam-geometrisi.
+
+        Yüzey kodlaması (`encode`) "nasıl yazılıyor"u okur; bu "ne demek"i okur.
+        IDF (ters-derece) ağırlık jenerik hub'ları (consciousness/knowledge) bastırır.
+
+        Döner: CodexObject (.moments [0,1] Hausdorff, .structure["neighbors"]) ya da
+        yetersiz semantik komşulukta None (caller yüzey kodlamasına düşer — dürüst sınır).
+        """
+        te = getattr(self, "_topo_encoder", None)
+        if te is None:
+            from tantrium.core.topology_encode import TopologyEncoder
+            te = TopologyEncoder(self._engine)
+            self._topo_encoder = te
+        return te.encode(name, max_neighbors=max_neighbors)
+
+    def meaning_distance(self, a: str, b: str, *, max_neighbors: int = 24) -> "float | None":
+        """İki kavramın ANLAM mesafesi (topolojik moment L1).
+
+        protein~enzyme < protein~algorithm — harflerin yapamadığı ayrım.
+        None = kavramlardan biri semantik-topraksız (yüzeyle karşılaştır).
+        """
+        oa = self.meaning(a, max_neighbors=max_neighbors)
+        ob = self.meaning(b, max_neighbors=max_neighbors)
+        if oa is None or ob is None:
+            return None
+        return float(sum(abs(float(x) - float(y))
+                         for x, y in zip(oa.moments, ob.moments)))
+
     def witness(
         self,
         data,
