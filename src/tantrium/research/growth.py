@@ -488,8 +488,186 @@ class GrowthEngine:
         time.sleep(_RATE_LIMIT_S * 2)  # Wikidata rate limit daha kısıtlı
         return [x for x in dict.fromkeys(out) if x][:n]
 
+    # ─── Yapılandırılmış bilgi enjeksiyonu (ConceptNet + KEGG KGML) ─────────────
+
+    def _ensure_in_manifold(self, name: str) -> bool:
+        """Kavramı manifolda ekle (yoksa). NLP yok, hızlı."""
+        if not name or len(name) > 80:
+            return False
+        if name in self.engine.manifold.concepts:
+            return True
+        try:
+            from tantrium.core.semantic import Concept
+            codex_obj = self.engine.encoder.encode(name)
+            concept = Concept(
+                name=name,
+                moments=list(codex_obj.moments),
+                domain="general",
+                source="structured",
+            )
+            self.engine.manifold.add_unchecked(concept)
+            self.engine.tau.add_node(concept)
+            return True
+        except Exception:
+            return False
+
+    def _inject_direct_edge(self, subj: str, paradigm: str, obj: str) -> bool:
+        """Yapılandırılmış veri → doğrudan TAU kenarı (NLP yok, sertifikasyon yok).
+
+        Her iki kavram manifolda yoksa ekle, sonra KnowledgeEdge ekle.
+        ConceptNet/KEGG gibi küratörlü kaynaklardan gelen kenarlar için.
+        """
+        if not self._ensure_in_manifold(subj) or not self._ensure_in_manifold(obj):
+            return False
+        from tantrium.graph.relations import certify_and_add_edge
+        return certify_and_add_edge(self.engine, subj, obj, paradigm)
+
+    def _fetch_conceptnet(self, n: int = 20) -> list[str]:
+        """ConceptNet API: 600k+ kavram, yapılandırılmış triples → doğrudan TAU.
+
+        İngilizce ilişkiler paradigma haritası:
+          Causes→CAUSES, IsA→IS_A, PartOf→COMPONENT_OF, MadeOf→COMPOSED ...
+        NLP yok — ConceptNet zaten düzenlenmiş (kurallı) bilgi.
+        """
+        _CN_REL_MAP = {
+            "Causes": "CAUSES",
+            "IsA": "IS_A",
+            "PartOf": "COMPONENT_OF",
+            "UsedFor": "ACHIEVES",
+            "CapableOf": "ACHIEVES",
+            "HasA": "REQUIRES",
+            "DefinedAs": "DEFINES",
+            "MadeOf": "COMPOSED",
+            "Entails": "CAUSES",
+            "HasPrerequisite": "REQUIRES",
+            "CausesDesire": "CAUSES",
+            "ReceivesAction": "USES",
+            "HasProperty": "DEFINES",
+        }
+        cn_idx = self.state.get("cn_idx", 0)
+        # Seed kavramlar: manifold boşluklarından al (varsa), yoksa genel liste
+        seeds = (self._gap_cache or [
+            "cell", "protein", "enzyme", "inhibitor", "disease", "signal",
+            "molecule", "gene", "reaction", "pathway", "cancer", "brain",
+            "neuron", "antibody", "metabolism", "dna", "rna", "virus",
+            "immune", "receptor",
+        ])
+        concept = seeds[cn_idx % len(seeds)].lower().replace(" ", "_")
+        self.state["cn_idx"] = cn_idx + 1
+        out: list[str] = []
+        try:
+            url = (f"https://api.conceptnet.io/c/en/{urllib.parse.quote(concept)}"
+                   f"?limit=100")
+            data = _http_json(url, timeout=15)
+            edges = (data or {}).get("edges", [])
+            for edge in edges:
+                start = edge.get("start") or {}
+                end = edge.get("end") or {}
+                if start.get("language") != "en" or end.get("language") != "en":
+                    continue
+                rel_label = (edge.get("rel") or {}).get("label", "")
+                paradigm = _CN_REL_MAP.get(rel_label)
+                if not paradigm:
+                    continue
+                subj_raw = start.get("label", "")
+                obj_raw = end.get("label", "")
+                if not subj_raw or not obj_raw or subj_raw == obj_raw:
+                    continue
+                subj = subj_raw.lower().replace(" ", "_")
+                obj = obj_raw.lower().replace(" ", "_")
+                if len(subj) > 60 or len(obj) > 60:
+                    continue
+                if self._inject_direct_edge(subj, paradigm, obj):
+                    out.append(subj_raw)
+                    out.append(obj_raw)
+        except Exception:
+            pass
+        time.sleep(_RATE_LIMIT_S)
+        return [x for x in dict.fromkeys(out) if x][:n]
+
+    def _fetch_kegg_kgml(self, n: int = 10) -> list[str]:
+        """KEGG KGML XML: pathway ilişkileri → INHIBITS/ACTIVATES doğrudan.
+
+        <relation entry1="X" entry2="Y" type="activation|inhibition|...">
+        Onlarca yıllık biyokimya bilgisi yapılandırılmış XML olarak —
+        NLP yok, yorum yok, doğrudan TAU kenarı.
+        """
+        _KGML_PATHWAYS = [
+            "hsa04010", "hsa04151", "hsa04210", "hsa04110",
+            "hsa04012", "hsa04350", "hsa04630", "hsa04310",
+            "hsa04015", "hsa04014", "hsa04020", "hsa04022",
+            "hsa04024", "hsa04064", "hsa04066", "hsa04068",
+            "hsa04071", "hsa04072", "hsa04010", "hsa04370",
+        ]
+        _KGML_TYPE_MAP = {
+            "activation": "ACTIVATES",
+            "inhibition": "INHIBITS",
+            "expression": "CAUSES",
+            "repression": "INHIBITS",
+            "indirect effect": "CAUSES",
+            "state change": "CAUSES",
+            "binding/association": "USES",
+            "dissociation": "CAUSES",
+            "phosphorylation": "ACTIVATES",
+            "dephosphorylation": "INHIBITS",
+            "ubiquitination": "CAUSES",
+            "methylation": "CAUSES",
+        }
+        kgml_idx = self.state.get("kgml_idx", 0)
+        pathway = _KGML_PATHWAYS[kgml_idx % len(_KGML_PATHWAYS)]
+        self.state["kgml_idx"] = kgml_idx + 1
+        out: list[str] = []
+        try:
+            import xml.etree.ElementTree as ET
+            url = f"https://rest.kegg.jp/get/{pathway}/kgml"
+            req = urllib.request.Request(url, headers=_UA)
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                xml_text = resp.read().decode("utf-8", errors="replace")
+            root = ET.fromstring(xml_text)
+            # entry_id → gen/bileşik ismi haritası
+            entries: dict[str, str] = {}
+            for entry in root.findall("entry"):
+                eid = entry.get("id", "")
+                graphics = entry.find("graphics")
+                if graphics is not None:
+                    gname = graphics.get("name", "").split(",")[0].strip()
+                    if gname and 1 < len(gname) < 30:
+                        entries[eid] = gname.lower()
+                if eid not in entries:
+                    raw = entry.get("name", "").split()[0]
+                    short = raw.split(":")[-1].strip()
+                    if 1 < len(short) < 20:
+                        entries[eid] = short.lower()
+            # relation → doğrudan TAU kenarı
+            edges_added = 0
+            for rel in root.findall("relation"):
+                e1 = rel.get("entry1", "")
+                e2 = rel.get("entry2", "")
+                rel_type = rel.get("type", "")
+                # Subtype daha spesifik (phosphorylation vs activation)
+                subtypes = rel.findall("subtype")
+                if subtypes:
+                    rel_type = subtypes[0].get("name", rel_type)
+                paradigm = _KGML_TYPE_MAP.get(rel_type)
+                if not paradigm:
+                    continue
+                subj = entries.get(e1, "")
+                obj = entries.get(e2, "")
+                if not subj or not obj or subj == obj:
+                    continue
+                if self._inject_direct_edge(subj, paradigm, obj):
+                    out.append(subj)
+                    out.append(obj)
+                    edges_added += 1
+                    if edges_added >= n * 3:
+                        break
+        except Exception:
+            pass
+        time.sleep(_RATE_LIMIT_S)
+        return [x for x in dict.fromkeys(out) if x][:n]
+
     def _next_batch(self, network: bool) -> list[Any]:
-        """Bir sonraki karışık veri partisi: 8 kaynak."""
+        """Bir sonraki karışık veri partisi: 10 kaynak (8 + ConceptNet + KEGG KGML)."""
         if not network:
             # Ağsız: algoritmik diziler (resumable offset ile çeşitlilik)
             base = self.state.get("total_processed", 0)
@@ -497,7 +675,7 @@ class GrowthEngine:
                 [int((base + i) ** 1.5) % 97 + 1 for i in range(j, j + 8)]
                 for j in range(0, 24, 8)
             ]
-        # 8 kaynak paralel çekilir — her biri bağımsız HTTP, sıralı bekleme gerekmez
+        # 10 kaynak paralel çekilir — her biri bağımsız HTTP, sıralı bekleme gerekmez
         sources = [
             (self._fetch_pubchem, 8),
             (self._fetch_chembl, 4),
@@ -507,9 +685,11 @@ class GrowthEngine:
             (self._fetch_web, 5),
             (self._fetch_pubmed, 3),
             (self._fetch_wikidata, 4),
+            (self._fetch_conceptnet, 20),   # ConceptNet: dil sorununun çözümü
+            (self._fetch_kegg_kgml, 10),    # KEGG KGML: doğrudan INHIBITS/ACTIVATES
         ]
         batch: list[Any] = []
-        with ThreadPoolExecutor(max_workers=8) as pool:
+        with ThreadPoolExecutor(max_workers=10) as pool:
             futures = {pool.submit(fn, n): fn.__name__ for fn, n in sources}
             for fut in as_completed(futures):
                 try:
