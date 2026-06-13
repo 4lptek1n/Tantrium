@@ -420,13 +420,25 @@ class Cognition:
         if mode == "stream":
             return self._stream(time_limit_s=time_limit_s, network=network, **kw)
         return self._batch(max_cycles=max_cycles, time_limit_s=time_limit_s,
-                           verbose=verbose, **kw)
+                           verbose=verbose, network=network, **kw)
 
     def _batch(self, max_cycles: int, time_limit_s: float,
-               verbose: bool, **_) -> CognitionReport:
+               verbose: bool, network: bool = False, **_) -> CognitionReport:
         t0 = time.monotonic()
         state = CognitionState()
         phase_logs: list[str] = []
+
+        # network=True ise OperatePhase'i canlı instance ile güncelle
+        strategies = []
+        for s in self._strategies:
+            if isinstance(s, OperatePhase) and network:
+                strategies.append(OperatePhase(
+                    max_cycles=s.max_cycles,
+                    time_budget_s=s.time_budget_s,
+                    network=True,
+                ))
+            else:
+                strategies.append(s)
 
         for cycle_i in range(max_cycles):
             if time.monotonic() - t0 >= time_limit_s:
@@ -436,7 +448,7 @@ class Cognition:
             if verbose:
                 print(f"[Cognition] döngü {cycle_i + 1}/{max_cycles}")
 
-            for strategy in self._strategies:
+            for strategy in strategies:
                 if time.monotonic() - t0 >= time_limit_s:
                     state.should_stop = True
                     break
