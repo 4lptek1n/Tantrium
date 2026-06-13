@@ -20,7 +20,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
 
-_SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
+_SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
+             "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
+             "INHIBITS", "CAUSES", "ACTIVATES"}
 # ALEPH and SPECTRAL_BRIDGE are Hankel/Wasserstein certified — used as fallback
 # when a concept has no text-extracted semantic edges (e.g. theorem names)
 _CERTIFIED = {"ALEPH", "SPECTRAL_BRIDGE"}
@@ -32,6 +34,13 @@ _CONNECTIVE: dict[str, str] = {
     "REQUIRES":        "{src}, {tgt} gerektirir",
     "DEFINES":         "{src}, {tgt} tanımlar",
     "COMPOSED":        "{src}, {tgt} bileşenine sahiptir",
+    "COMPONENT_OF":    "{src}, {tgt}'nin parçasıdır",
+    "HAS_SIGNAL":      "{src}, {tgt} sinyaliyle algılanır",
+    "HAS_COMPOUND":    "{src}, {tgt} bileşiğini içerir",
+    "HAS_IMAGE":       "{src}, {tgt} görüntüsüyle temsil edilir",
+    "INHIBITS":        "{src}, {tgt}'yi engeller",
+    "CAUSES":          "{src}, {tgt}'ye yol açar",
+    "ACTIVATES":       "{src}, {tgt}'yi etkinleştirir",
     "ALEPH":           "{src}, moment uzayında {tgt} ile komşu",
     "SPECTRAL_BRIDGE": "{src}, {tgt} ile spektral köprü kuruyor",
 }
@@ -41,8 +50,15 @@ _EN_CONNECTIVE: dict[str, str] = {
     "USES":            "{src} uses {tgt}",
     "ACHIEVES":        "{src} achieves {tgt}",
     "REQUIRES":        "{src} requires {tgt}",
-    "DEFINES":        "{src} defines {tgt}",
+    "DEFINES":         "{src} defines {tgt}",
     "COMPOSED":        "{src} is composed of {tgt}",
+    "COMPONENT_OF":    "{src} is part of {tgt}",
+    "HAS_SIGNAL":      "{src} is sensed via {tgt}",
+    "HAS_COMPOUND":    "{src} contains compound {tgt}",
+    "HAS_IMAGE":       "{src} is represented by {tgt}",
+    "INHIBITS":        "{src} inhibits {tgt}",
+    "CAUSES":          "{src} causes {tgt}",
+    "ACTIVATES":       "{src} activates {tgt}",
     "ALEPH":           "{src} is moment-adjacent to {tgt}",
     "SPECTRAL_BRIDGE": "{src} has a spectral bridge to {tgt}",
 }
@@ -101,6 +117,12 @@ class CertifiedGenerator:
         self.engine = engine
         self.lang = lang  # "tr" | "en"
 
+    def _get_topo_encoder(self):
+        if not hasattr(self, "_topo_enc"):
+            from tantrium.core.topology_encode import TopologyEncoder
+            self._topo_enc = TopologyEncoder(self.engine)
+        return self._topo_enc
+
     def generate(
         self,
         seed: str,
@@ -108,6 +130,7 @@ class CertifiedGenerator:
         goal_name: str | None = None,
         beam: int = 3,
         context_decay: float = 0.7,
+        use_meaning: bool = False,
     ) -> GenerationResult:
         """Seed kavramından başlayarak certified yörünge üret.
 
@@ -154,6 +177,7 @@ class CertifiedGenerator:
                 current, context_moments, goal_moment,
                 visited, beam,
                 fallback_concept=seed_concept,
+                use_meaning=use_meaning,
             )
             if nxt is None:
                 break
@@ -200,6 +224,7 @@ class CertifiedGenerator:
         visited: set[str],
         beam: int,
         fallback_concept=None,
+        use_meaning: bool = False,
     ) -> tuple[str, str, float] | None:
         """TAU komşularından en yakın adayı döndür.
 
@@ -221,8 +246,19 @@ class CertifiedGenerator:
             if goal_moments is not None:
                 goal_c = Concept(name="_goal", moments=goal_moments,
                                  domain="internal", source="generator")
-                return float(moment_distance(goal_c, tc))
-            return float(moment_distance(ref_concept, tc))
+                surf = float(moment_distance(goal_c, tc))
+            else:
+                surf = float(moment_distance(ref_concept, tc))
+            if use_meaning:
+                enc = self._get_topo_encoder()
+                m_tc = enc.encode(tc.name)
+                m_cur = enc.encode(current)
+                if m_tc and m_cur:
+                    k = min(len(m_tc.moments), len(m_cur.moments))
+                    mdist = sum(abs(float(m_tc.moments[i]) - float(m_cur.moments[i]))
+                                for i in range(k))
+                    return 0.6 * surf + 0.4 * mdist
+            return surf
 
         # Pass 1: prefer certified semantic edges (produce human-readable text)
         candidates: list[tuple[float, str, str]] = []

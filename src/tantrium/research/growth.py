@@ -254,7 +254,7 @@ class GrowthEngine:
                         extract = str(page.get("extract") or "").strip()
                         if extract and len(extract) > 50:
                             try:
-                                self.ai.learn(extract)
+                                self.observer.observe(extract)
                             except Exception:
                                 pass
                     time.sleep(_RATE_LIMIT_S)
@@ -322,7 +322,7 @@ class GrowthEngine:
                              if l.startswith("DESCRIPTION") or l.startswith("NAME"))
             if desc:
                 try:
-                    self.ai.learn(desc[:400])
+                    self.observer.observe(desc[:400])
                 except Exception:
                     pass
         except Exception:
@@ -391,7 +391,7 @@ class GrowthEngine:
                 if abstract_text and len(abstract_text) > 100:
                     # Kausal kenar öğrenimi
                     try:
-                        self.ai.learn(abstract_text[:2000])
+                        self.observer.observe(abstract_text[:2000])
                     except Exception:
                         pass
                     # Başlık satırlarını kavram olarak döndür
@@ -454,7 +454,7 @@ class GrowthEngine:
                     try:
                         # Relation type from query index
                         rel_word = "treats" if "disease" in query else "associated with"
-                        self.ai.learn(f"{labels[0]} {rel_word} {labels[1]}.")
+                        self.observer.observe(f"{labels[0]} {rel_word} {labels[1]}.")
                     except Exception:
                         pass
         except Exception:

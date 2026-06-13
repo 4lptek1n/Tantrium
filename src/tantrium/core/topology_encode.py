@@ -34,6 +34,8 @@ from tantrium.core.encoder import (
 _SEMANTIC_PARADIGMS = frozenset({
     "IS_A", "USES", "REQUIRES", "ACHIEVES", "COMPOSED",
     "DEFINES", "INHIBITS", "CAUSES", "ACTIVATES", "TARGETS", "BINDS",
+    # Multi-modal ve kausal zincir paradigmaları (atom→DNA→elma)
+    "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
 })
 
 _MAX_NEIGHBORS = 24       # alt-graf kenarı ≤ 25 → eigvalsh O(n³) hızlı

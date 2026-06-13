@@ -393,6 +393,17 @@ ai.meaning("intelligence")                     # → CodexObject: TAU semantik k
                                                #   semantik-topraksız kavram (pointer/glucose) → None (yüzeye düş)
 ai.meaning_distance("protein", "enzyme")       # → float: ANLAM mesafesi (topolojik moment L1)
                                                #   protein~enzyme < protein~algorithm (harfin yapamadığı ayrım)
+ai.bind_percept("apple", signal, modality="signal", paradigm="HAS_SIGNAL")
+                                               # → str: percept_name — kavrama çok-modal grounding bağlar
+                                               #   HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE paradigmaları
+                                               #   manifolda admit(trusted) + TAU kenarı → meaning() görür
+ai.meaning_compose("EGFR inhibitor that crosses BBB")
+                                               # → CompositeSignature: dil komposisyonu
+                                               #   bileşen kavramlar → her birinin κ'sı → FreeCumulants.add()
+                                               #   .components, .moments, .nearest(), .to_produce_target()
+                                               #   produce(cs.to_produce_target()) ile doğrudan kullanılabilir
+ai.generate("EGFR", use_meaning=True)         # → GenResult: anlam kanalı hibrit skor (0.6×yüzey + 0.4×topolojik)
+                                               #   use_meaning=False (varsayılan): yüzey moment mesafesi
 ```
 
 ---
@@ -489,6 +500,14 @@ ai.meaning_distance("protein", "enzyme")       # → float: ANLAM mesafesi (topo
 - **Manifold Tekilleştirme**: `ai.consolidate(threshold, dry_run)` — çok yakın kavramları tespit/birleştir
 - **REST API Sunucu**: `python -m tantrium.serve` — FastAPI HTTP endpoint (bkz. src/tantrium/serve.py)
 - **Büyüme Kaynakları**: 4 → 8 kaynak: +KEGG +ChEMBL +PubMed +Wikidata (ontolojik typed triples)
+  - **BUG FİX (Kademe 1):** `growth.py self.ai AttributeError` — KEGG/PubMed/Wikidata/Web
+    `self.ai.learn()` → `self.observer.observe()` (4 satır). Kausal kenar öğrenimi AKTIF.
+- **Dil Katmanı — Kausal-Spektral Komposisyon (Kademe 1-5):**
+  - `bind_percept()`: kavrama çok-modal grounding (HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE kenarları)
+  - `meaning_compose()`: dil → κ-toplam (FreeCumulants.add) → CompositeSignature (kompozisyonel anlam)
+  - `generate(use_meaning=True)`: hibrit skor (0.6×yüzey + 0.4×topolojik) ile anlam-kanalı üretim
+  - `relations.py`: COMPOSED regex genişledi (forms/assembles/generates/makes up) + COMPONENT_OF paradigması
+  - `knowledge_graph.py` + `topology_encode.py`: CO/HS/HC/HI compact kodları + _SEMANTIC_PARADIGMS güncellendi
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
 - **Cognition döngüsü — F5 (research/cognition.py)**: `Cognition` sınıfı — 4 döngü
   (GrowthEngine/ProofLoop/Explorer/Researcher) tek strateji-pluggable çatı altında.

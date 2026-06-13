@@ -197,6 +197,34 @@ class DesignResult:
         return "\n".join(lines)
 
 
+@dataclass
+class CompositeSignature:
+    """ai.meaning_compose() — çok-bileşenli anlam imzası.
+
+    Bir cümledeki kavramların TAU topolojik momentlerinin serbest kümülant
+    toplamı: κ_total = κ(A) ⊞ κ(B) ⊞ κ(C). Dil komposisyonu = κ-additivite.
+    """
+    text: str
+    components: list  # list[tuple[str, list[float]]] — (kavram_adı, moments)
+    moments: list     # list[float] — birleşik moment imzası
+    n_surface: int = 0  # yüzey-encoding ile kaplanan (meaning() None döndü)
+
+    def nearest(self, n: int = 5, metric: str = "quantum") -> list:
+        """Manifolda en yakın kavramlar — birleşik imzadan."""
+        return []  # AI.meaning_compose() doldurur
+
+    def to_produce_target(self) -> list:
+        """produce() için mu_required — doğrudan kullanılabilir."""
+        return self.moments
+
+    def __str__(self) -> str:
+        comp_str = ", ".join(f"{c[0]}({c[1][1]:.3f})" if len(c[1]) > 1 else c[0]
+                             for c in self.components[:6])
+        mu1 = float(self.moments[1]) if len(self.moments) > 1 else 0.0
+        return (f"CompositeSignature({len(self.components)} bileşen, "
+                f"μ₁={mu1:.3f}): [{comp_str}]")
+
+
 # ─── Ana AI sınıfı ───────────────────────────────────────────────────────────
 
 class AI:
@@ -659,11 +687,13 @@ class AI:
         steps: int = 8,
         goal: str | None = None,
         lang: str = "tr",
+        use_meaning: bool = False,
     ) -> GenResult:
         """TAU walk → Sturm-garantili certified metin üretimi."""
         from tantrium.language.generator import CertifiedGenerator
         gen = CertifiedGenerator(self._engine, lang=lang)
-        result = gen.generate(seed, max_steps=steps, goal_name=goal)
+        result = gen.generate(seed, max_steps=steps, goal_name=goal,
+                              use_meaning=use_meaning)
         return GenResult(
             seed=seed,
             text=result.text,
@@ -1574,6 +1604,191 @@ class AI:
             return None
         return float(sum(abs(float(x) - float(y))
                          for x, y in zip(oa.moments, ob.moments)))
+
+    def bind_percept(
+        self,
+        concept_name: str,
+        signal,
+        *,
+        modality: str = "signal",
+        paradigm: str = "HAS_SIGNAL",
+        name: str | None = None,
+    ) -> str:
+        """Kavrama çok-modal algısal grounding bağlar.
+
+        Mimarinin tezi: "Elma" = elmanın kokusu + sesi + molekülü + matematiği.
+        Hepsi AYNI moment uzayında. Bu metod duyusal sinyali encode eder, kalıcı
+        bir percept kavramı oluşturur ve TAU'ya `concept_name -[paradigm]→ percept`
+        kenarı ekler. Artık `ai.meaning(concept_name)` bu komşuyu da görür.
+
+        modality: "signal" (ses/EEG), "image" (piksel), "matrix" (herhangi 2D),
+                  "smiles" (koku/kimyasal — SMILES stringi).
+        paradigm: "HAS_SIGNAL" | "HAS_COMPOUND" | "HAS_IMAGE" (veya özel).
+        name: percept kavramının adı. None → otomatik ⟨percept:concept:modality⟩.
+
+        Döner: eklenen percept kavramının adı.
+        """
+        percept_name = name or f"⟨percept:{concept_name}:{modality}⟩"
+
+        # Encode
+        if modality == "signal":
+            from tantrium.perception.encode import encode_signal
+            obj = encode_signal(signal, name=percept_name)
+        elif modality == "image":
+            from tantrium.perception.encode import encode_image
+            obj = encode_image(signal, name=percept_name)
+        elif modality == "matrix":
+            from tantrium.perception.encode import encode_matrix
+            obj = encode_matrix(signal, name=percept_name)
+        elif modality == "smiles":
+            obj = self._engine.encoder.encode(signal, name=percept_name)
+        else:
+            from tantrium.perception.encode import encode_signal
+            obj = encode_signal(signal, name=percept_name)
+
+        # Percept kavramını manifolda ekle (trusted — sertifikalı algı kaynağı)
+        from tantrium.core.semantic import Concept
+        concept = Concept(
+            name=percept_name,
+            moments=list(obj.moments),
+            domain="percept",
+            source=f"bind_percept:{modality}",
+        )
+        self._engine.manifold.admit(concept, policy="trusted")
+        if percept_name not in self._engine.tau.nodes:
+            self._engine.tau.add_node(concept)
+
+        # TAU kenarı: concept_name -[paradigm]→ percept_name
+        from tantrium.graph.knowledge_graph import KnowledgeEdge
+        edges = self._engine.tau.edges.setdefault(concept_name, [])
+        already = any(e.target == percept_name and e.paradigm == paradigm for e in edges)
+        if not already:
+            edges.append(KnowledgeEdge(
+                source=concept_name,
+                target=percept_name,
+                distance=0.0,
+                paradigm=paradigm,
+            ))
+            self._engine.tau._dirty = True
+
+        # Topology encoder cache'ini temizle — yeni kenar görünsün
+        if hasattr(self, "_topo_encoder"):
+            self._topo_encoder._indeg = None
+
+        return percept_name
+
+    def meaning_compose(self, text: str, *, max_neighbors: int = 24) -> "CompositeSignature | None":
+        """Dil komposisyonu: cümle → bileşen kavramlar → κ-toplam → birleşik anlam.
+
+        "EGFR inhibitor that crosses BBB" gibi bir cümle, bileşen kavramlarının
+        serbest kümülant toplamı olarak encode edilir:
+            κ_total = κ(egfr) ⊞ κ(inhibitor) ⊞ κ(bbb)
+
+        TAU'da semantik köklü olan her kavram anlam kanalından κ'sını verir.
+        Köklenemeyenler yüzey encoding ile fallback → n_surface sayacı.
+
+        Döner: CompositeSignature (.moments üretim hedefi, .nearest() manifold yakınları)
+               ya da hiç bileşen bulunamazsa None.
+        """
+        from tantrium.core.quantum_moments import FreeCumulants
+
+        # Metinden anahtar kavramları çıkar — hem ilişki uçları hem tekil kelimeler
+        candidates: list[str] = []
+        text_lower = text.lower()
+
+        # 1. _extract_relations → (subj, rel, obj): her özne/nesne
+        try:
+            from tantrium.research.autonomous import _extract_relations as _ext
+            for subj, _, obj in _ext(text_lower):
+                if subj and len(subj) >= 3:
+                    candidates.append(subj)
+                if obj and len(obj) >= 3:
+                    candidates.append(obj)
+        except Exception:
+            pass
+
+        # 2. Basit token fallback (stopword'leri ele)
+        import re
+        _STOP = {"that", "which", "with", "from", "into", "over", "also", "have",
+                 "been", "will", "more", "than", "some", "many", "most", "used",
+                 "the", "and", "for", "are", "was", "has", "can", "not"}
+        words = [w for w in re.findall(r"[a-z]{4,}", text_lower) if w not in _STOP]
+        candidates.extend(words)
+
+        # Tekilleştir, sıra koru
+        seen: set[str] = set()
+        unique: list[str] = []
+        for c in candidates:
+            if c not in seen:
+                seen.add(c)
+                unique.append(c)
+
+        if not unique:
+            return None
+
+        # Her kavram için meaning() → κ; başarısız → yüzey encoding fallback
+        components: list[tuple[str, list[float]]] = []
+        kappas: list[FreeCumulants] = []
+        n_surface = 0
+
+        for cname in unique:
+            obj = self.meaning(cname, max_neighbors=max_neighbors)
+            if obj is not None:
+                moments_f = [float(m) for m in obj.moments]
+                components.append((cname, moments_f))
+                kappas.append(FreeCumulants.from_moments(moments_f))
+            else:
+                # Yüzey encoding fallback — anlam kanalı bulamazsa imzaya bak
+                try:
+                    encoded = self._engine.encoder.encode(cname)
+                    moments_f = [float(m) for m in encoded.moments]
+                    components.append((cname, moments_f))
+                    kappas.append(FreeCumulants.from_moments(moments_f))
+                    n_surface += 1
+                except Exception:
+                    pass
+
+        if not kappas:
+            return None
+
+        # κ_total = κ₁ ⊞ κ₂ ⊞ ... (serbest additivite)
+        k_total = kappas[0]
+        for k in kappas[1:]:
+            k_total = k_total.add(k)
+
+        # Birleşik moment imzası
+        combined_moments = k_total.to_moments_approx()
+        if not combined_moments or combined_moments[0] <= 0:
+            # fallback: bileşen momentlerinin aritmetik ortalaması
+            n = len(components)
+            max_len = max(len(c[1]) for c in components)
+            combined_moments = [
+                sum(c[1][i] if i < len(c[1]) else 0.0 for c in components) / n
+                for i in range(max_len)
+            ]
+
+        sig = CompositeSignature(
+            text=text,
+            components=components,
+            moments=list(combined_moments),
+            n_surface=n_surface,
+        )
+
+        # nearest() metodunu manifold üzerinden doldur
+        engine = self._engine
+
+        def _nearest(n: int = 5, metric: str = "quantum") -> list:
+            try:
+                from tantrium.core.semantic import Concept
+                from fractions import Fraction
+                moms = [Fraction(m).limit_denominator(10 ** 9) for m in sig.moments]
+                tmp = Concept(name="⟨compose:query⟩", moments=moms)
+                return engine.manifold.nearest(tmp, n=n, metric=metric)
+            except Exception:
+                return []
+
+        sig.nearest = _nearest  # type: ignore[method-assign]
+        return sig
 
     def witness(
         self,

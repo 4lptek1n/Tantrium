@@ -270,12 +270,15 @@ class KnowledgeGraph:
         # L0 statistical (sentence co-occurrence, PPMI) is excluded.
         _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
                      "SPECTRAL_BRIDGE", "QUANTUM_BRIDGE",
-                     "CAUSES", "INHIBITS", "ACTIVATES"}
+                     "CAUSES", "INHIBITS", "ACTIVATES",
+                     "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE"}
         # Paradigm → single-char code for compact storage
         _P = {"ALEPH": "A", "IS_A": "I", "USES": "U", "DEFINES": "D",
               "ACHIEVES": "V", "REQUIRES": "R", "COMPOSED": "C",
               "SPECTRAL_BRIDGE": "S", "QUANTUM_BRIDGE": "Q",
-              "CAUSES": "CA", "INHIBITS": "IN", "ACTIVATES": "AC"}
+              "CAUSES": "CA", "INHIBITS": "IN", "ACTIVATES": "AC",
+              "COMPONENT_OF": "CO", "HAS_SIGNAL": "HS",
+              "HAS_COMPOUND": "HC", "HAS_IMAGE": "HI"}
         edge_list: list[list] = []
         total_edges = 0
         for name in names:
@@ -322,7 +325,9 @@ class KnowledgeGraph:
             _P_REV = {"A": "ALEPH", "I": "IS_A", "U": "USES", "D": "DEFINES",
                       "V": "ACHIEVES", "R": "REQUIRES", "C": "COMPOSED",
                       "S": "SPECTRAL_BRIDGE", "Q": "QUANTUM_BRIDGE",
-                      "CA": "CAUSES", "IN": "INHIBITS", "AC": "ACTIVATES"}
+                      "CA": "CAUSES", "IN": "INHIBITS", "AC": "ACTIVATES",
+                      "CO": "COMPONENT_OF", "HS": "HAS_SIGNAL",
+                      "HC": "HAS_COMPOUND", "HI": "HAS_IMAGE"}
             for i, edge_rows in enumerate(data["e"]):
                 src = names[i]
                 g.edges[src] = [

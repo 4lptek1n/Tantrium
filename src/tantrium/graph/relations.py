@@ -4,12 +4,13 @@ Metinden kavram çiftleri arasındaki mantıksal ilişkileri çıkarır,
 her ikisi de manifold'da olan çiftleri sertifikalar, TAU'ya typed edge ekler.
 
 Paradigma etiketleri (TAU edge):
-  IS_A      — taksonomik ilişki      (X is a Y)
-  USES      — araç/yöntem ilişkisi   (X uses Y)
-  DEFINES   — tanımlama              (X defined as Y)
-  ACHIEVES  — sonuç/hedef            (X achieves Y)
-  REQUIRES  — bağımlılık             (X requires Y)
-  COMPOSED  — bileşim                (X consists of Y)
+  IS_A         — taksonomik ilişki      (X is a Y)
+  USES         — araç/yöntem ilişkisi   (X uses Y)
+  DEFINES      — tanımlama              (X defined as Y)
+  ACHIEVES     — sonuç/hedef            (X achieves Y)
+  REQUIRES     — bağımlılık             (X requires Y)
+  COMPOSED     — bileşim                (X consists of Y / X forms Y)
+  COMPONENT_OF — parça ilişkisi (ters)  (X is part of Y / X belongs to Y)
 
 Bu modül hem batch (tools/semantic_research_os.py) hem real-time
 (chat döngüsü, language.auto_learn) tarafından kullanılır.
@@ -74,6 +75,19 @@ _RAW_PATTERNS: dict[str, list[str]] = {
         r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:composed?|comprised?)\s+of\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
         r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+contains?\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
         r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:includes?|incorporates?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        # Kausal bileşim (atom→molekül, gen→protein, pathway→bileşen)
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:forms?|assembles?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:builds?|constructs?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:generates?|creates?|encodes?)\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+makes?\s+up\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+    ],
+    "COMPONENT_OF": [
+        # Ters yön: X, Y'nin parçasıdır (atom is part of DNA)
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+is\s+(?:a\s+)?part\s+of\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+belongs?\s+to\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:resides?|exists?)\s+in\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+is\s+(?:found|located)\s+in\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
+        r"\b([a-z]{4,}(?:\s[a-z]{4,})?)\s+(?:participates?|involved?)\s+in\s+([a-z]{4,}(?:\s[a-z]{4,})?)\b",
     ],
 }
 
