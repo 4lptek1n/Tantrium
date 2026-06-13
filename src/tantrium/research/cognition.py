@@ -128,7 +128,7 @@ class ReflectPhase:
 
 
 class OperatePhase:
-    """Operasyon: AutonomousResearcher + Explorer ile boşlukları kapat."""
+    """Operasyon: AutonomousResearcher + Explorer + Genesis ile boşlukları kapat ve büyü."""
     name = "operate"
 
     def __init__(self, max_cycles: int = 2, time_budget_s: float = 120.0,
@@ -139,23 +139,37 @@ class OperatePhase:
 
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
         t0 = time.monotonic()
-        # AutonomousResearcher: veri-güdümlü kendi-araştırma
+        # Gerçek manifold deltasını ölç (rapor sayaçlarına güvenme)
+        concepts_before = len(engine.manifold.concepts)
+
+        # Genesis: boşluklardan yeni kavramlar doğur — her modda çalışır, ağa ihtiyaç yok
         try:
-            from tantrium.research.researcher import AutonomousResearcher
-            rep = AutonomousResearcher(engine).run(
-                max_cycles=self.max_cycles,
-                time_limit_s=self.time_budget_s * 0.6,
-                network=self.network,
-            )
-            state.concepts_added += rep.total_new_concepts
-            state.goals_created += getattr(rep, "total_goals_created", 0)
-            state.log(f"researcher: +{rep.total_new_concepts} kavram, {rep.total_bridges} köprü")
+            from tantrium.meta.synthesis import ConceptSynthesizer
+            max_gaps = min(len(state.open_gap_names), 8) if state.open_gap_names else 5
+            ConceptSynthesizer(engine).genesis(max_gaps=max_gaps)
+            born = len(engine.manifold.concepts) - concepts_before
+            state.log(f"genesis: +{born} yeni kavram ({max_gaps} boşluktan)")
         except Exception as exc:
-            state.log(f"researcher: atlandı — {exc}")
+            state.log(f"genesis: atlandı — {exc}")
+
+        # AutonomousResearcher: veri-güdümlü kendi-araştırma
+        remaining_r = self.time_budget_s * 0.5 - (time.monotonic() - t0)
+        if remaining_r > 5.0:
+            try:
+                from tantrium.research.researcher import AutonomousResearcher
+                rep = AutonomousResearcher(engine).run(
+                    max_cycles=self.max_cycles,
+                    time_limit_s=remaining_r,
+                    network=self.network,
+                )
+                state.goals_created += getattr(rep, "total_goals_created", 0)
+                state.log(f"researcher: +{rep.total_new_concepts} kavram, {rep.total_bridges} köprü")
+            except Exception as exc:
+                state.log(f"researcher: atlandı — {exc}")
 
         # Explorer: sınır paradigma keşfi
-        remaining = self.time_budget_s * 0.4 - (time.monotonic() - t0)
-        if remaining > 5.0:
+        remaining_e = self.time_budget_s * 0.3 - (time.monotonic() - t0)
+        if remaining_e > 5.0:
             try:
                 from tantrium.research.explorer import Explorer
                 results = Explorer(engine).run_loop(max_rounds=2, max_objectives=10)
@@ -164,7 +178,10 @@ class OperatePhase:
             except Exception as exc:
                 state.log(f"explorer: atlandı — {exc}")
 
-        state.log(f"operate: {time.monotonic() - t0:.1f}s")
+        # Gerçek delta: manifold büyümesi ne oldu
+        delta = len(engine.manifold.concepts) - concepts_before
+        state.concepts_added += delta
+        state.log(f"operate: +{delta} kavram, {time.monotonic() - t0:.1f}s")
         return state
 
 

@@ -217,8 +217,12 @@ class ProofLoop:
 
     # ── Research OS kampanyası ─────────────────────────────────────────────────
 
-    def launch_campaign(self, campaign_name: str) -> str:
-        """Subprocess ile Research OS kampanyasını çalıştır, durumu döndür."""
+    def launch_campaign(self, campaign_name: str, *, inject: bool = True) -> str:
+        """Subprocess ile Research OS kampanyasını çalıştır, sonuçları manifolda enjekte et.
+
+        inject=True (varsayılan): kampanya bittikten sonra theorem_graph güncelle +
+        sync_new_theorems() + inject_math_kernel() — tam kapalı döngü.
+        """
         if not _RESEARCH_OS_TOOL.exists():
             return "TOOL_NOT_FOUND"
 
@@ -232,18 +236,38 @@ class ProofLoop:
             )
             output = result.stdout + result.stderr
             # STATUS satırını parse et
+            status = f"EXIT_{result.returncode}"
             for line in output.splitlines():
                 if "_STATUS:" in line:
                     parts = line.split("_STATUS:")
                     if len(parts) == 2:
-                        return parts[1].strip()
-            if result.returncode == 0:
-                return "COMPLETED"
-            return f"EXIT_{result.returncode}"
+                        status = parts[1].strip()
+                        break
+            else:
+                if result.returncode == 0:
+                    status = "COMPLETED"
         except subprocess.TimeoutExpired:
             return "TIMEOUT"
         except Exception as exc:
             return f"ERROR: {exc}"
+
+        # Kampanya bitti — sonuçları manifolda enjekte et
+        if inject:
+            try:
+                self.update_theorem_graph_from_campaigns({campaign_name: status})
+            except Exception:
+                pass
+            try:
+                self.sync_new_theorems()
+            except Exception:
+                pass
+            try:
+                from tantrium.domains.math_kernel import inject_math_kernel
+                inject_math_kernel(self.engine)
+            except Exception:
+                pass
+
+        return status
 
     # ── Kampanya→Teorem köprüsü ────────────────────────────────────────────────
 
