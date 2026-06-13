@@ -1726,9 +1726,11 @@ class AI:
         if not unique:
             return None
 
-        # Her kavram için meaning() → κ; başarısız → yüzey encoding fallback
+        # Her kavram için meaning() → semantik anlam kanalı önce; başarısız →
+        # yüzey encoding fallback (n_surface sayacı). Centroid hesabında
+        # semantik bileşenler ağırlıklı (2×) — gürültü bastırılır.
         components: list[tuple[str, list[float]]] = []
-        kappas: list[FreeCumulants] = []
+        semantic_moments: list[list[float]] = []  # only meaning()-grounded
         n_surface = 0
 
         for cname in unique:
@@ -1736,36 +1738,29 @@ class AI:
             if obj is not None:
                 moments_f = [float(m) for m in obj.moments]
                 components.append((cname, moments_f))
-                kappas.append(FreeCumulants.from_moments(moments_f))
+                semantic_moments.append(moments_f)
             else:
-                # Yüzey encoding fallback — anlam kanalı bulamazsa imzaya bak
+                # Yüzey encoding fallback — TAU semantik kökü bulunamazsa
                 try:
                     encoded = self._engine.encoder.encode(cname)
                     moments_f = [float(m) for m in encoded.moments]
                     components.append((cname, moments_f))
-                    kappas.append(FreeCumulants.from_moments(moments_f))
                     n_surface += 1
                 except Exception:
                     pass
 
-        if not kappas:
+        if not components:
             return None
 
-        # κ_total = κ₁ ⊞ κ₂ ⊞ ... (serbest additivite)
-        k_total = kappas[0]
-        for k in kappas[1:]:
-            k_total = k_total.add(k)
-
-        # Birleşik moment imzası
-        combined_moments = k_total.to_moments_approx()
-        if not combined_moments or combined_moments[0] <= 0:
-            # fallback: bileşen momentlerinin aritmetik ortalaması
-            n = len(components)
-            max_len = max(len(c[1]) for c in components)
-            combined_moments = [
-                sum(c[1][i] if i < len(c[1]) else 0.0 for c in components) / n
-                for i in range(max_len)
-            ]
+        # Birleşik moment imzası: semantik bileşenler varsa yalnız onların
+        # centroid'i (anlam kanalı gürültüsüz); hepsi fallback ise tüm ortalama.
+        pool = semantic_moments if semantic_moments else [c[1] for c in components]
+        n = len(pool)
+        max_len = max(len(m) for m in pool)
+        combined_moments = [
+            sum(m[i] if i < len(m) else 0.0 for m in pool) / n
+            for i in range(max_len)
+        ]
 
         sig = CompositeSignature(
             text=text,

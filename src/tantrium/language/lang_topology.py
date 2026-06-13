@@ -322,8 +322,8 @@ class EnglishTopology:
 
         # 3. Reasoner: transitif kapatma (yeni çıkarımlar)
         if run_reasoner:
-            from tantrium.reasoning.reasoner import TauReasoner
-            reasoner = TauReasoner(self.engine)
+            from tantrium.reasoning.reasoner import GraphReasoner
+            reasoner = GraphReasoner(self.engine)
             # Sadece yeni eklenen İngilizce kavramlar üzerinde çalıştır
             eng_concepts = [src for src, _, _ in _ENGLISH_CORE[:50]]
             new_edges = 0
