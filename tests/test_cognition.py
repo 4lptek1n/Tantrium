@@ -1,4 +1,4 @@
-"""F5 Cognition döngüsü testleri — strateji-pluggable tek orkestratör."""
+"""F5+Kademe6 Cognition döngüsü testleri — strateji-pluggable tek orkestratör."""
 import pytest
 import tantrium
 from tantrium.research.cognition import (
@@ -9,6 +9,8 @@ from tantrium.research.cognition import (
     PerceivePhase,
     ReflectPhase,
     OperatePhase,
+    ComposePhase,
+    FlyWheelPhase,
     ProvePhase,
     PersistPhase,
 )
@@ -28,7 +30,8 @@ def engine(ai):
 
 def test_phase_objects_implement_protocol():
     """Tüm yerleşik fazlar CognitionStrategy protokolüne uyuyor mu?"""
-    phases = [PerceivePhase(), ReflectPhase(), OperatePhase(), ProvePhase(), PersistPhase()]
+    phases = [PerceivePhase(), ReflectPhase(), OperatePhase(),
+              ComposePhase(), FlyWheelPhase(), ProvePhase(), PersistPhase()]
     for p in phases:
         assert isinstance(p, CognitionStrategy), f"{p.name} protokolü uymuyor"
         assert callable(p.execute)
@@ -53,6 +56,8 @@ def test_cognition_state_defaults():
     assert s.concepts_added == 0
     assert not s.should_stop
     assert s.logs == []
+    assert s.compose_targets == []       # Kademe 6
+    assert s.campaigns_triggered == []  # Kademe 6
 
 
 def test_cognition_state_log():
@@ -69,6 +74,8 @@ def test_cognition_init_default_strategies(engine):
     assert len(cog._strategies) > 0
     names = [s.name for s in cog._strategies]
     assert "perceive" in names
+    assert "compose" in names    # Kademe 6
+    assert "flywheel" in names   # Kademe 6
     assert "persist" in names
 
 
@@ -198,3 +205,78 @@ def test_ai_cognition_default_strategies(ai):
     )
     assert isinstance(report, CognitionReport)
     assert report.elapsed_s < 30.0
+
+
+# ── Kademe 6: ComposePhase + FlyWheelPhase ──────────────────────────────────
+
+def test_compose_phase_protocol(engine):
+    """ComposePhase CognitionStrategy protokolüne uyuyor."""
+    cp = ComposePhase()
+    assert isinstance(cp, CognitionStrategy)
+    assert cp.name == "compose"
+
+
+def test_flywheel_phase_protocol(engine):
+    """FlyWheelPhase CognitionStrategy protokolüne uyuyor."""
+    fw = FlyWheelPhase()
+    assert isinstance(fw, CognitionStrategy)
+    assert fw.name == "flywheel"
+
+
+def test_compose_phase_populates_targets(engine):
+    """ComposePhase boşluk kavramlarını bulup state.compose_targets'a yazmalı."""
+    s = CognitionState()
+    cp = ComposePhase(top_n=3)
+    s = cp.execute(engine, s)
+    # compose_targets liste (içi boş da olabilir eğer boşluk yoksa)
+    assert isinstance(s.compose_targets, list)
+    assert any("compose:" in log for log in s.logs)
+
+
+def test_compose_phase_targets_are_strings(engine):
+    """compose_targets içindeki her eleman string olmalı."""
+    s = CognitionState()
+    s = ComposePhase(top_n=2).execute(engine, s)
+    for t in s.compose_targets:
+        assert isinstance(t, str), f"Hedef string değil: {t!r}"
+
+
+def test_flywheel_phase_empty_targets(engine):
+    """Hedef yoksa FlyWheelPhase sessizce atlamalı."""
+    s = CognitionState()
+    s.compose_targets = []
+    fw = FlyWheelPhase()
+    s = fw.execute(engine, s)
+    assert any("hedef yok" in log for log in s.logs)
+
+
+def test_flywheel_phase_with_targets(engine):
+    """Hedef varsa produce() denemeleli ve log yazmalı."""
+    s = CognitionState()
+    s.compose_targets = ["EGFR"]
+    fw = FlyWheelPhase(max_targets=1, time_budget_s=15.0)
+    s = fw.execute(engine, s)
+    assert any("flywheel:" in log for log in s.logs)
+
+
+def test_cognition_report_has_campaigns_field(engine):
+    """CognitionReport.campaigns_triggered alanı mevcut olmalı."""
+    cog = Cognition(engine, strategies=[PerceivePhase()])
+    report = cog.cycle(mode="batch", max_cycles=1, time_limit_s=5.0)
+    assert hasattr(report, "campaigns_triggered")
+    assert isinstance(report.campaigns_triggered, list)
+
+
+def test_compose_then_flywheel_pipeline(engine):
+    """ComposePhase → FlyWheelPhase pipeline: compose_targets FlyWheel'a aktarılmalı."""
+    s = CognitionState()
+    s = ComposePhase(top_n=2).execute(engine, s)
+    initial_targets = list(s.compose_targets)
+
+    fw = FlyWheelPhase(max_targets=1, time_budget_s=10.0)
+    s = fw.execute(engine, s)
+
+    # compose_targets değişmemiş olmalı (FlyWheel okur, yazmaz)
+    assert s.compose_targets == initial_targets
+    # flywheel log mevcut
+    assert any("flywheel:" in log for log in s.logs)

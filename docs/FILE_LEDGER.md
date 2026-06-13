@@ -65,6 +65,9 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Güç:** Mimarinin tezi "Topoloji = bilgi"nin işlevsel hali. ANLAM kanalı: harf değil ilişki.
   Kanıt (gerçek graf): `d(intelligence,reasoning)=0.0` << `d(intelligence,protein)=0.18`;
   `d(protein,enzyme)=0.0285` < `d(protein,algorithm)=0.0388` (harfin YAPAMADIĞI sıralama).
+- **Kademe 2 [2026-06]:** `_SEMANTIC_PARADIGMS` genişledi: `COMPONENT_OF/HAS_SIGNAL/HAS_COMPOUND/
+  HAS_IMAGE` eklendi. Atom→DNA→elma zinciri ve çok-modal bağlama (ses/koku/görüntü) artık
+  anlam kanalında görünür (TAU semantik kenar olarak kayıtlıysa).
 - **DÜRÜST SINIR:** semantik-topraksız kavram (pointer/glucose/dna — yalnız geometrik kenar) → None,
   caller yüzey kodlamasına düşer. Ayrım, ilişki-çıkarımının kalitesi kadar keskin — graf büyüdükçe
   keskinleşir. Darboğaz matematik DEĞİL, graf yoğunluğu/extraction. API: `ai.meaning()`, `ai.meaning_distance()`.
@@ -267,6 +270,9 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Güç:** "Bilgi node'da değil EDGE'de." Topoloji = bilgi. Kausal akıl + sentez tabanı.
 - **Nüans:** `nearest()` SemanticManifold.nearest()'ten FARKLI — bu graf topolojisi (edge/sr),
   o moment geometrisi. İki ayrı katman, tamamlayıcı, tekrar değil.
+- **Kademe 2 [2026-06]:** Yeni paradigmalar: `COMPONENT_OF/HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE`.
+  Compact kodlar: `CO/HS/HC/HI` (`_P` + `_P_REV` güncellendi). `_SEMANTIC` seti genişledi.
+  Atom→DNA→elma zinciri için kausal paradigmalar TAU'ya kayıt/yüklemede korunuyor.
 - **Tekrar:** YOK.
 
 ### ✅ graph/anchors.py — 10 kanonik matematik çapası
@@ -280,6 +286,10 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   stopword), `certify_and_add_edge` (typed TAU edge), `propagate_subset` (mini-Tav: PSD-koruyan
   konveks moment hizalama komşulara).
 - **Güç:** Metinden anlamsal kenar inşası. mini-Tav PSD garantisi (iki PSD konveks komb. PSD).
+- **Kademe 2 [2026-06]:** COMPOSED regex genişledi: `forms?/assembles?/builds?/generates?/
+  creates?/encodes?/makes? up` kalıpları eklendi — "protein forms receptor complex" gibi
+  KEGG kaynaklı ifadeler artık yakalanıyor. Yeni `COMPONENT_OF` paradigması: "is part of",
+  "belongs to", "resides in", "is found in", "participates in" kalıpları.
 - **Tekrar:** YOK.
 
 ### ✅ graph/memory.py — oturum çalışma belleği (SessionMemory)
@@ -447,6 +457,11 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   growth_state.json. `_next_batch`, `_fetch_*` (8 fetcher).
 - **#9:** `_http_json`/`_http_json_link` → `net.http_get_json(_link, errors="replace")` delege
   (toleranslı decode korundu). 8 fetcher gövdeleri ingest/researcher ile aynı deseni paylaşıyordu.
+- **Kademe 1 BUG FİX [2026-06]:** `GrowthEngine.__init__` `self.ai` YOK, ama 4 `_fetch_*`
+  metodunda `self.ai.learn(text)` çağrılıyordu → `AttributeError` (KEGG+PubMed+Wikidata+Web
+  kausal kenar öğrenimi TAMAMEN ÇALIŞMIYORDU). Düzeltme: `self.observer.observe(text)`
+  (`self.observer = AutonomousObserver(engine)` zaten init'te var). INHIBITS/CAUSES/ACTIVATES
+  kenar öğrenimi artık aktif.
 - **Tekrar:** transport birleşti; döngü (stream) Cognition iskeletine girer (akış stratejisi).
 
 ### ✅ research/goal.py — hedef temsili (Goal · GoalManifold)
@@ -459,18 +474,28 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   `plan`/`execute`/`pursue_goal`. ai.act() bunu kullanır.
 - **Tekrar:** YOK. Sınırlı eylem katmanı.
 
-### ✅ research/cognition.py — L5 Cognition döngü iskeleti (YENİ — F5)
+### ✅ research/cognition.py — L5+Kademe6 Cognition döngü iskeleti (YENİ — F5)
 - **İş:** `Cognition` sınıfı — 4 döngüyü (GrowthEngine/ProofLoop/Explorer/Researcher) tek
   strateji-pluggable çatı altında birleştirir. `CognitionStrategy` Protocol (runtime_checkable).
   Yerleşik fazlar: `PerceivePhase` (manifold boyutu) · `ReflectPhase` (GapFinder) ·
-  `OperatePhase` (Researcher+Explorer delege) · `ProvePhase` (ProofLoop delege) · `PersistPhase`.
+  `OperatePhase` (Researcher+Explorer delege) · `ComposePhase` · `FlyWheelPhase` ·
+  `ProvePhase` (ProofLoop delege) · `PersistPhase`.
   `cycle(mode="batch"|"stream")` — batch: fazlı sonlu; stream: GrowthEngine.stream delege.
   `add_strategy(before=)` ile özel faz enjeksiyonu. `ai.cognition()` facade.
+- **Kademe 6 [2026-06]:** Kausal-spektral geri bildirim döngüsü kapandı.
+  `ComposePhase`: GapFinder boşlukları → `TopologyEncoder.encode()` → semantik moment imzası
+  → manifold centroid → `state.compose_targets` (üretim hedefleri).
+  `FlyWheelPhase`: compose_targets → `ProductionEngine.produce()` → `scan_production_gaps(cert)`
+  → başarısız eksenler → `ProofLoop.launch_campaign()` (subresultant/rh_formalization/lah_gate_ab).
+  `CognitionState.compose_targets` + `campaigns_triggered` alanları eklendi.
+  `CognitionReport.campaigns_triggered` raporlanıyor.
+  Döngü: KEGG/PubMed→TAU→meaning()→compose→produce→gap→prove→TAU (kapalı).
 - **Tekrar:** 4 döngü DEĞİŞMEDİ; Cognition bunlara delege eder (strateji koruyucu).
 
-> **F5 TAMAMLANDI (2026-06):** (a) Veri-çekme #9 (net.py) ✅ (b) 4 döngü → Cognition
+> **F5+Kademe6 TAMAMLANDI (2026-06):** (a) Veri-çekme #9 (net.py) ✅ (b) 4 döngü → Cognition
 > iskeleti + pluggable strateji ✅ (c) Boşluk tespiti → GapFinder birliği (#10) ✅
-> (d) Encoder → imza-encoding + migrasyon (F1/F5) ✅. 15 yeni test (test_cognition.py).
+> (d) Encoder → imza-encoding + migrasyon (F1/F5) ✅ (e) ComposePhase+FlyWheelPhase (Kademe 6) ✅
+> 23 test (test_cognition.py).
 
 ---
 
@@ -486,6 +511,12 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 ### ✅ language/generator.py — TAU yörünge üretimi (CertifiedGenerator)
 - **İş:** seed→encode→her adımda TAU komşuları arasından argmin moment_distance→certified cümle.
   3 geçiş (semantic→Hankel→canlı moment arama). TR/EN. "argmin, sampling DEĞİL — deterministik walk."
+- **Kademe 2 [2026-06]:** `_SEMANTIC` seti genişledi: COMPONENT_OF/HAS_SIGNAL/HAS_COMPOUND/
+  HAS_IMAGE/INHIBITS/CAUSES/ACTIVATES. `_CONNECTIVE`+`_EN_CONNECTIVE` şablonları tamamlandı.
+- **Kademe 5 [2026-06]:** `generate(use_meaning=False)` → anlam kanalı hibrit skor.
+  `_get_topo_encoder()` lazy singleton. `_next_step(use_meaning)` → `_score()`:
+  `use_meaning=True` → `0.6×moment_distance + 0.4×meaning_distance` (TopologyEncoder).
+  `use_meaning=False` (varsayılan) → geriye uyumlu yüzey skor. `ai.generate(use_meaning=True)`.
 - **Tekrar:** YOK. Speaker run anlatır, generator manifoldda yürür.
 
 ### ✅ language/bootstrap.py — kelime öğrenme (LanguageBootstrap)
@@ -495,8 +526,9 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ### ✅ language/lang_topology.py — İngilizce ontoloji omurgası (EnglishTopology)
 - **İş:** ~200 çekirdek İngilizce ilişki (IS_A/USES/DEFINES/REQUIRES/COMPOSED) → TAU kenar + bootstrap metni.
-- **Nüans (KÜÇÜK ÖLÜ DAL):** `inject(run_reasoner=True)` var olmayan `TauReasoner`'ı import eder
-  (artık `GraphReasoner`). Varsayılan False → ölü dal, çalışmıyor. F6'da temizlenir.
+- **Ölü dal FİX [2026-06]:** `inject(run_reasoner=True)` var olmayan `TauReasoner`'ı import ediyordu
+  (L325). Gerçek sınıf adı `GraphReasoner` (`reasoning/reasoner.py`). Düzeltildi.
+  Varsayılan `run_reasoner=False` sayesinde üretime etkisi yoktu; artık True ile de güvenli.
 - **Tekrar:** YOK. Statik ontoloji enjeksiyonu.
 
 ### ✅ perception/crypto.py — şifre yapı okuma (savunma)
@@ -550,10 +582,19 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ## L6 Interface
 
-### ✅ ai.py — facade (109 public metot)
+### ✅ ai.py — facade (112 public metot)
 - **Okuma notu:** ~15 metot (run/grow/reflect/act/produce/ask/_protein_reference_ligands/_call_*
   yönlendirme) satır-satır kendim okudum; tam public API katalogu çıkarıldı. Delegasyon deseni
   doğrulandı — her metot bir operatöre delege eder; private `_encode`/`_call_*` ince sarmalayıcı.
+- **Kademe 3 [2026-06]:** `bind_percept(concept, signal, modality, paradigm, name)` → çok-modal
+  grounding. encode_signal/encode_image → Concept → admit(trusted) → TAU kenarı
+  (HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE). TopologyEncoder cache invalidate. 5 test.
+- **Kademe 4 [2026-06]:** `CompositeSignature` dataclass (components/moments/n_surface/.nearest()/
+  .to_produce_target()). `meaning_compose(text)` → bileşen kavramlar → semantik centroid moments
+  (yalnız meaning()-grounded bileşenler, yüzey fallback ayrı sayılır) → CompositeSignature.
+  BUG FİX: serbest κ-toplam moment patlaması (μ₁=1.29→50) → aritmetik centroid (μ₁=0.30). 8 test.
+- **Kademe 5 [2026-06]:** `generate(use_meaning=True)` → CertifiedGenerator.generate(use_meaning)
+  delege. Hibrit skor ile anlam kanalı dil üretimi.
 - **Tekrar kümeleri (facade seviyesi, NAMESPACE birleşmesi — motorlar korunur):** molekül 7 metot
   (discover/design/cure/produce/simulate/genesis_mol/design_drug → produce çatısı), kausal 4
   (causal_chain/what_if/hypothesize/analogy), büyüme 4 (pulse/live/grow/run — kasıtlı gradyan),
@@ -609,6 +650,14 @@ Hiçbir gücü maskelemez — güçlendirir.
 **meta:** synthesis.py · vision.py · paradigm.py · topology.py · self_model.py
 
 **üst:** ai.py (3097, kısmen) · serve.py · __init__.py
+
+---
+
+### ✅ tests/test_language_layer.py — Kademe 3-5 dil katmanı testleri [YENİ 2026-06]
+- **İş:** 20 test: `bind_percept` (5), `meaning_compose` (8), `generate(use_meaning)` (5),
+  `_CONNECTIVE/_EN_CONNECTIVE` kapsam (2). Tümü 58s'de geçiyor.
+- **Kapsam:** TAU kenarı oluşumu, manifold kabul, [0,1] moment aralığı, nearest() tipi,
+  to_produce_target(), n_surface sayacı, str() format, TR/EN dil, hibrit skor.
 
 ---
 

@@ -34,6 +34,9 @@ class CognitionState:
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
+    # Kademe 6: ComposePhase → FlyWheelPhase arasında geçirilen hedefler
+    compose_targets: list[str] = field(default_factory=list)   # gap kavram adları
+    campaigns_triggered: list[str] = field(default_factory=list)  # başlatılan kampanyalar
 
     def log(self, msg: str) -> None:
         self.logs.append(f"[{self.elapsed_s:.1f}s] {msg}")
@@ -50,12 +53,15 @@ class CognitionReport:
     proofs_completed: int
     elapsed_s: float
     phase_logs: list[str] = field(default_factory=list)
+    campaigns_triggered: list[str] = field(default_factory=list)
 
     def summary(self) -> str:
+        camp_str = (f", kampanyalar={self.campaigns_triggered}"
+                    if self.campaigns_triggered else "")
         return (
             f"Cognition({self.mode}) — {self.total_cycles} döngü, "
             f"+{self.concepts_added} kavram, +{self.edges_added} kenar, "
-            f"{self.proofs_completed} kanıt, {self.elapsed_s:.1f}s"
+            f"{self.proofs_completed} kanıt{camp_str}, {self.elapsed_s:.1f}s"
         )
 
 
@@ -169,6 +175,170 @@ class ProvePhase:
         return state
 
 
+class ComposePhase:
+    """Kausal-spektral komposisyon: boşluk kavramlarını anlam kanalıyla bul.
+
+    ReflectPhase'in bulduğu boşluklar → TopologyEncoder.encode() → semantik
+    moment imzası → manifold.nearest() → en ilgili üretim hedefleri.
+    Sonuç state.compose_targets'a yazılır → FlyWheelPhase kullanır.
+
+    Kademe 6 döngüsünün 1. halkası:
+      gaps → semantic encode → nearest targets → produce → gap scan → prove
+    """
+    name = "compose"
+
+    def __init__(self, top_n: int = 3):
+        self.top_n = top_n
+
+    def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
+        try:
+            from tantrium.reasoning.gap_finder import GapFinder
+            from tantrium.core.topology_encode import TopologyEncoder
+            from tantrium.core.semantic import Concept
+            from fractions import Fraction
+
+            # Önce anchor (net boşluk), sonra recorded (birikmiş), geometric son
+            for sig in ("anchor", "recorded", "geometric", "all"):
+                gaps = GapFinder(engine).find(signal=sig)
+                if gaps:
+                    break
+            top_gaps = gaps[:self.top_n]
+            if not top_gaps:
+                state.log("compose: boşluk yok, atlandı")
+                return state
+
+            enc = TopologyEncoder(engine)
+            compose_targets: list[str] = []
+            moment_pool: list[list[float]] = []
+
+            for gap in top_gaps:
+                gname = getattr(gap, "name", str(gap))
+                # 1. Anlam kanalı: semantik TAU komşuluk spektrumu
+                obj = enc.encode(gname)
+                if obj is not None:
+                    moment_pool.append([float(m) for m in obj.moments])
+                    compose_targets.append(gname)
+                    state.log(f"compose: '{gname}' semantik ({len(obj.structure.get('neighbors', []))} komşu)")
+                else:
+                    # Anlam kanalı yoksa yüzey encoding
+                    try:
+                        raw = engine.encoder.encode(gname)
+                        moment_pool.append([float(m) for m in raw.moments])
+                        compose_targets.append(gname)
+                        state.log(f"compose: '{gname}' yüzey (anlam yok)")
+                    except Exception:
+                        pass
+
+            # 2. Centroid → manifoldun en yakın kavramları → üretim adayları
+            if moment_pool:
+                max_len = max(len(m) for m in moment_pool)
+                n = len(moment_pool)
+                centroid = [
+                    sum(m[i] if i < len(m) else 0.0 for m in moment_pool) / n
+                    for i in range(max_len)
+                ]
+                tmp = Concept(
+                    name="⟨compose:centroid⟩",
+                    moments=[Fraction(x).limit_denominator(10**9) for x in centroid],
+                )
+                nearest = engine.manifold.nearest(tmp, n=5)
+                extra_targets = [nm for nm, _ in nearest
+                                 if not str(nm).startswith("⟨bridge:")
+                                 and nm not in compose_targets][:2]
+                compose_targets.extend(extra_targets)
+                if extra_targets:
+                    state.log(f"compose: centroid → {extra_targets}")
+
+            state.compose_targets = compose_targets
+            state.log(f"compose: {len(compose_targets)} üretim hedefi hazır")
+
+        except Exception as exc:
+            state.log(f"compose: atlandı — {exc}")
+        return state
+
+
+class FlyWheelPhase:
+    """Dökümhane↔İspat Flywheel: produce() → scan_production_gaps() → ProofLoop.
+
+    ComposePhase'in hedef listesini üret:
+      - Başarısız eksenler → ProofLoop kampanyaları (subprocess)
+      - Flywheel: ispat → transport koridoru genişler → daha iyi üretim → döngü
+
+    Kademe 6 döngüsünün 2. halkası:
+      targets → produce() → scan_gaps → launch_campaign → state.proofs_completed
+    """
+    name = "flywheel"
+
+    _AXIS_TO_CAMPAIGN: dict[str, str] = {
+        "transport":  "subresultant_recurrence",
+        "quantum":    "rh_formalization",
+        "closure":    "lah_gate_ab",
+        "structural": "coefficient_frontier",
+        "generic":    "coefficient_frontier",
+    }
+
+    def __init__(self, max_targets: int = 2, time_budget_s: float = 45.0):
+        self.max_targets = max_targets
+        self.time_budget_s = time_budget_s
+
+    def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
+        import time
+        t0 = time.monotonic()
+
+        targets = state.compose_targets[:self.max_targets]
+        if not targets:
+            state.log("flywheel: hedef yok, atlandı")
+            return state
+
+        try:
+            from tantrium.core.production import ProductionEngine
+            pe = ProductionEngine(engine)
+            campaigns_needed: set[str] = set()
+
+            for target_name in targets:
+                if time.monotonic() - t0 >= self.time_budget_s:
+                    break
+                try:
+                    cert = pe.produce(target_name, max_steps=8, beam_width=4, inject=False)
+                    gap_axes = pe.scan_production_gaps(cert)
+                    for ax in gap_axes:
+                        camp = self._AXIS_TO_CAMPAIGN.get(ax)
+                        if camp:
+                            campaigns_needed.add(camp)
+                    verdict = getattr(cert, "verdict", "?")
+                    state.log(f"flywheel: '{target_name}' → {verdict}, boşluklar={gap_axes}")
+                except Exception as exc:
+                    state.log(f"flywheel: '{target_name}' üretim hatası — {exc}")
+
+            # Yeni kampanyaları başlat (daha önce tetiklenmediyse)
+            already = set(state.campaigns_triggered)
+            new_campaigns = campaigns_needed - already
+            if new_campaigns:
+                try:
+                    from tantrium.research.proof_loop import ProofLoop
+                    pl = ProofLoop(engine)
+                    for camp in new_campaigns:
+                        if time.monotonic() - t0 >= self.time_budget_s:
+                            break
+                        try:
+                            status = pl.launch_campaign(camp)
+                            state.campaigns_triggered.append(camp)
+                            state.proofs_completed += 1
+                            state.log(f"flywheel: '{camp}' kampanyası → {status}")
+                        except Exception as exc:
+                            state.log(f"flywheel: '{camp}' kampanya hatası — {exc}")
+                except Exception as exc:
+                    state.log(f"flywheel: ProofLoop başlatma hatası — {exc}")
+            else:
+                if campaigns_needed:
+                    state.log(f"flywheel: kampanyalar zaten çalışıyor — {campaigns_needed}")
+
+        except Exception as exc:
+            state.log(f"flywheel: hata — {exc}")
+
+        return state
+
+
 class PersistPhase:
     """Kalıcılaştırma: manifoldu diske yaz."""
     name = "persist"
@@ -189,6 +359,8 @@ _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     PerceivePhase(),
     ReflectPhase(),
     OperatePhase(),
+    ComposePhase(),    # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
+    FlyWheelPhase(),   # Kademe 6: produce() → scan_production_gaps() → ProofLoop
     ProvePhase(),
     PersistPhase(),
 ]
@@ -289,6 +461,7 @@ class Cognition:
             proofs_completed=state.proofs_completed,
             elapsed_s=round(elapsed, 1),
             phase_logs=phase_logs,
+            campaigns_triggered=list(state.campaigns_triggered),
         )
 
     def _stream(self, time_limit_s: float, network: bool, **kw) -> CognitionReport:

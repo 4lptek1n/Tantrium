@@ -246,7 +246,25 @@ yeniden hesaplamaz. `grounder`/`truth`/`confidence` ekenleri Percept'ten okur.
 - **Reconstructor** ← `reconstruct.py`. Operatör sınıfı.
 - **Narrator** ← `Speaker` + `CertifiedGenerator` + `language/*`.
 
-### 6.6 L5 — Cognition (tek döngü)
+### 6.5b — Dil Katmanı (Kausal-Spektral Kompozisyon) [Kademe 1-5, 2026-06]
+
+**İlke:** Kavram = kausal zincirlerinin serbest kümülant toplamı + çok-modal TAU grounding.
+Dil = bu yapıya etiket. Atom→DNA→elma: elmanın kokusu + sesi + molekülü AYNI moment uzayında.
+
+**Uygulama:**
+- **Kademe 1:** `growth.py` bug fix — `self.ai.learn()` → `self.observer.observe()` (4 satır).
+  KEGG/PubMed/Wikidata kausal kenar öğrenimi aktif. INHIBITS/CAUSES/ACTIVATES akıyor.
+- **Kademe 2:** COMPOSED regex genişledi (forms/assembles/generates/makes up). Yeni `COMPONENT_OF`
+  paradigması. `knowledge_graph.py` CO/HS/HC/HI compact kodları. `topology_encode._SEMANTIC_PARADIGMS`
+  güncellendi.
+- **Kademe 3:** `ai.bind_percept(concept, signal, modality, paradigm)` → kavrama çok-modal grounding.
+  HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE kenarları TAU'ya eklenir. `meaning()` anında görür.
+- **Kademe 4:** `CompositeSignature` + `ai.meaning_compose(text)` → bileşen kavramlar → semantik
+  centroid → CompositeSignature. `.nearest()` manifold yakınları. `.to_produce_target()` → produce().
+- **Kademe 5:** `CertifiedGenerator.generate(use_meaning=True)` → hibrit skor:
+  `0.6×moment_distance + 0.4×TopologyEncoder_distance`. Anlam kanalı dil üretimi.
+
+### 6.6 L5 — Cognition (tek döngü) [F5+Kademe6]
 **Birleşir:** `research/cognition.py Cognition` ← `AI.run` + `AI.grow` + `engine.grow` +
 `ProofLoop` + `Explorer.run_loop` + `Researcher.run` + `GrowthEngine.stream`.
 
@@ -257,13 +275,20 @@ Cognition.cycle(mode="stream")  # eski grow() — sürekli, resumable
 ```
 Fazlar (paylaşılan durum, sırayla):
 ```
-perceive → certify → admit → reflect(GapFinder) → choose-goal →
-operate(reason|produce|synthesize) → infer → genesis → prove → persist
+perceive → reflect(GapFinder) → operate(Researcher+Explorer) →
+compose(Kademe6) → flywheel(Kademe6) → prove(ProofLoop) → persist
 ```
+- **ComposePhase [Kademe 6]:** gaps → `TopologyEncoder.encode()` → semantik moment centroid →
+  `manifold.nearest()` → `state.compose_targets`. Boşluk kavramlarını anlam uzayında yer-eder.
+- **FlyWheelPhase [Kademe 6]:** compose_targets → `ProductionEngine.produce()` →
+  `scan_production_gaps(cert)` → başarısız eksenler → `ProofLoop.launch_campaign()`.
+  Dökümhane↔İspat flywheel: ispat → transport koridoru genişler → daha iyi üretim → döngü.
+- **Kapalı döngü:** KEGG/PubMed → observe() → TAU kausal kenar → meaning() güçlenir →
+  meaning_compose() → produce() → scan_production_gaps → ProofLoop → ispat → TAU.
 - **Ingestor** ← tüm `_fetch_*`. Kaynak adaptörleri (PubChem/UniProt/OEIS/KEGG/
   ChEMBL/Wikipedia/PubMed/Wikidata), her biri resumable cursor.
 - **GapFinder** ← `find_manifold_gaps` + `assess_gaps` + `scan_frontier`. Tek
-  `find(kinds=[geometric, paradigm, frontier]) -> list[Gap]`.
+  `find(signal=[geometric|anchor|recorded|all]) -> list[Gap]`.
 - **reflect:** `SelfModel.reflect()` artık döngüyü **bilgilendirir** (zayıf eksen →
   hedef seçimi), salt-okunur değil.
 
