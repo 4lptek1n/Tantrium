@@ -194,6 +194,45 @@ class OperatePhase:
         except Exception as exc:
             state.log(f"genesis: atlandı — {exc}")
 
+        # ALEPH:X boşlukları → re-encoding ile düzelt
+        # Bu kavramlar Aleph paradigmasını geçemedi (encoding hatası) —
+        # kampanya değil, adaptif encoder ile yeniden encode edilir.
+        aleph_gaps = [g for g in state.open_gap_names if g.startswith("ALEPH:")]
+        if aleph_gaps:
+            recertified = 0
+            for gap_name in aleph_gaps[:10]:  # maks 10 re-encode
+                concept_name = gap_name[len("ALEPH:"):]
+                concept = engine.manifold.concepts.get(concept_name)
+                if concept is None:
+                    continue
+                try:
+                    new_enc = engine.encoder.encode(concept_name)
+                    if new_enc is None:
+                        continue
+                    from tantrium.core.unified import CoreMachine
+                    cert = CoreMachine(engine).certify(concept_name)
+                    if getattr(cert, "paradigms_passed", 0) > 0:
+                        # Geçti — manifolddaki moments'i güncelle
+                        import fractions
+                        concept.moments = [
+                            fractions.Fraction(m).limit_denominator(10**9)
+                            for m in new_enc.moments
+                        ]
+                        recertified += 1
+                except Exception:
+                    pass
+            if recertified:
+                state.log(f"operate/aleph-fix: {recertified}/{len(aleph_gaps)} kavram yeniden sertifikalandı")
+
+        # ⟨SELF⟩ TAU kenarlarını kur — her döngüde reflect(persist=True)
+        # böylece öz-konum WEAKLY_GROUNDED → GROUNDED'a çıkar
+        try:
+            from tantrium.meta.self_model import SelfModel
+            SelfModel(engine).reflect(persist=True)
+            state.log("operate/self: ⟨SELF⟩ TAU kenarları güncellendi")
+        except Exception as exc:
+            state.log(f"operate/self: atlandı — {exc}")
+
         # AutonomousResearcher: veri-güdümlü kendi-araştırma
         remaining_r = self.time_budget_s * 0.5 - (time.monotonic() - t0)
         if remaining_r > 5.0:
@@ -253,9 +292,17 @@ _GAP_KEYWORD_TO_CAMPAIGN: dict[str, str] = {
 
 
 def _gaps_to_campaigns(gap_names: list[str]) -> list[str]:
-    """Gap adı listesini → sıralı ProofLoop kampanya listesine çevirir."""
+    """Gap adı listesini → sıralı ProofLoop kampanya listesine çevirir.
+
+    ALEPH:X boşlukları filtrelenir — bunlar encoding hataları, kampanya
+    ile çözülmez; OperatePhase'in re-encoding mantığı ilgilenir.
+    """
     seen: dict[str, int] = {}  # kampanya → kaç gap işaret etti (öncelik)
     for name in gap_names:
+        # ALEPH: öneki = bir kavram Aleph paradigmasını geçemedi.
+        # Bu bir encoding/PSD sorunu — ProofLoop kampanyası bunu çözmez.
+        if name.startswith("ALEPH:"):
+            continue
         low = name.lower()
         matched = False
         for kw, camp in _GAP_KEYWORD_TO_CAMPAIGN.items():
@@ -623,20 +670,24 @@ class DeductivePhase:
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
         try:
             before = len(engine.manifold.concepts)
+            edges_before = sum(len(v) for v in engine.tau.edges.values())
             # engine.grow() = certify_theorem_graph + InferenceChain + Explorer + re-bootstrap
             result = engine.grow(
                 max_rounds=self.max_rounds,
                 time_limit_s=self.time_budget_s,
             )
             after = len(engine.manifold.concepts)
+            edges_after = sum(len(v) for v in engine.tau.edges.values())
             delta = after - before
+            edge_delta = edges_after - edges_before
             state.concepts_added += delta
+            state.edges_added += max(0, edge_delta)
             # InferenceChain'den türetilen çıkarım sayısı
             inferences = getattr(result, "inferences_derived", 0)
             gaps_closed = getattr(result, "gaps_closed", 0)
             state.log(
-                f"deduce: +{delta} kavram, {inferences} çıkarım, "
-                f"{gaps_closed} boşluk kapandı (engine.grow)"
+                f"deduce: +{delta} kavram, +{edge_delta} kenar, "
+                f"{inferences} çıkarım, {gaps_closed} boşluk kapandı (engine.grow)"
             )
         except Exception as exc:
             state.log(f"deduce: atlandı — {exc}")
