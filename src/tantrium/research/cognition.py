@@ -40,6 +40,7 @@ class CognitionState:
     # Döngüler arası teller
     open_gap_names: list[str] = field(default_factory=list)  # ReflectPhase→PerceivePhase/ProvePhase
     narration: list[str] = field(default_factory=list)        # her döngünün sesi (NarratePhase)
+    cycle_history: list[dict] = field(default_factory=list)   # her döngünün metrikleri (stagnasyon tespiti)
 
     def log(self, msg: str) -> None:
         self.logs.append(f"[{self.elapsed_s:.1f}s] {msg}")
@@ -167,8 +168,56 @@ class OperatePhase:
         return state
 
 
+# Gap adı → ProofLoop kampanya eşlemesi
+# Paradigma öneki veya anahtar kelime → kampanya adı
+_GAP_PREFIX_TO_CAMPAIGN: dict[str, str] = {
+    "TAV":   "rh_formalization",       # de Bruijn-Newman Λ≤0
+    "ALEPH": "coefficient_frontier",   # Aleph positivity
+    "TET":   "coefficient_frontier",   # Li eigenvalue
+    "HET":   "lah_gate_ab",            # Li toplam
+    "ZAYIN": "subresultant_recurrence",# path_sum / det
+    "EMET":  "coefficient_frontier",   # cross-check
+}
+
+_GAP_KEYWORD_TO_CAMPAIGN: dict[str, str] = {
+    "dyadic":     "subresultant_recurrence",
+    "transport":  "subresultant_recurrence",
+    "sturm":      "subresultant_recurrence",
+    "quantum":    "rh_formalization",
+    "riemann":    "rh_formalization",
+    "rh":         "rh_formalization",
+    "lah":        "lah_gate_ab",
+    "closure":    "lah_gate_ab",
+    "goldbach":   "goldbach_minor_arc",
+    "positivity": "coefficient_frontier",
+}
+
+
+def _gaps_to_campaigns(gap_names: list[str]) -> list[str]:
+    """Gap adı listesini → sıralı ProofLoop kampanya listesine çevirir."""
+    seen: dict[str, int] = {}  # kampanya → kaç gap işaret etti (öncelik)
+    for name in gap_names:
+        low = name.lower()
+        matched = False
+        for kw, camp in _GAP_KEYWORD_TO_CAMPAIGN.items():
+            if kw in low:
+                seen[camp] = seen.get(camp, 0) + 1
+                matched = True
+                break
+        if not matched:
+            prefix = name.split(":")[0].upper() if ":" in name else ""
+            camp = _GAP_PREFIX_TO_CAMPAIGN.get(prefix, "coefficient_frontier")
+            seen[camp] = seen.get(camp, 0) + 1
+    # En çok işaret edilen kampanya önce
+    return sorted(seen, key=lambda c: seen[c], reverse=True)
+
+
 class ProvePhase:
-    """Kanıtlama: ProofLoop ile açık teoremleri kapat."""
+    """Kanıtlama: boşluk adlarından kampanya türet → hedefli ProofLoop.
+
+    Tel kapanışı: ReflectPhase→open_gap_names → _gaps_to_campaigns() → launch_campaign().
+    Boşluk yoksa kör mod (genel run()).
+    """
     name = "prove"
 
     def __init__(self, max_cycles: int = 1, time_budget_s: float = 60.0):
@@ -176,16 +225,38 @@ class ProvePhase:
         self.time_budget_s = time_budget_s
 
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
+        import time as _time
+        t0 = _time.monotonic()
         try:
             from tantrium.research.proof_loop import ProofLoop
-            rep = ProofLoop(engine).run(
-                max_cycles=self.max_cycles,
-                time_limit_s=self.time_budget_s,
-            )
-            new = rep.total_new_concepts
-            state.proofs_completed += new
-            state.concepts_added += new
-            state.log(f"prove: +{new} kanıtlanan kavram")
+            pl = ProofLoop(engine)
+
+            if state.open_gap_names:
+                # Hedefli mod: gap adları → kampanyalar
+                campaigns = _gaps_to_campaigns(state.open_gap_names)[:2]
+                state.log(f"prove: hedefli kampanyalar ← {campaigns}")
+                for camp in campaigns:
+                    if _time.monotonic() - t0 >= self.time_budget_s:
+                        break
+                    if camp in state.campaigns_triggered:
+                        state.log(f"prove: '{camp}' zaten çalıştı, atlandı")
+                        continue
+                    try:
+                        status = pl.launch_campaign(camp)
+                        state.campaigns_triggered.append(camp)
+                        state.proofs_completed += 1
+                        state.log(f"prove→targeted: '{camp}' → {status}")
+                    except Exception as exc:
+                        state.log(f"prove→targeted: '{camp}' hata — {exc}")
+            else:
+                # Kör mod: genel ProofLoop (boşluk bilgisi yokken)
+                remaining = self.time_budget_s - (_time.monotonic() - t0)
+                rep = pl.run(max_cycles=self.max_cycles, time_limit_s=remaining)
+                new = rep.total_new_concepts
+                state.proofs_completed += new
+                state.concepts_added += new
+                state.log(f"prove (kör): +{new} kanıtlanan kavram")
+
         except Exception as exc:
             state.log(f"prove: atlandı — {exc}")
         return state
@@ -356,41 +427,60 @@ class FlyWheelPhase:
 
 
 class NarratePhase:
-    """Ses: döngünün öğrendiklerini Türkçe dile döker.
+    """Ses: döngünün öğrendiklerini Türkçe dile döker + stagnasyon tespiti.
 
     Doğrulanmış durumdan üretilen rapor — halüsinasyon imkansız.
     Ne öğrendim, hangi boşluklar açık, ne kanıtlandı, ne hedefleniyor.
+    Son N döngü 0 kavram eklediyse: stagnasyon uyarısı + state.should_stop=True.
     Tel 2: döngü biter → sistem konuşur.
     """
     name = "narrate"
+    STAGNATION_THRESHOLD = 3  # kaç arka arkaya 0-kavram döngüsü tolere edilir
 
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
         try:
+            # Döngü metriğini geçmişe ekle
+            state.cycle_history.append({
+                "cycle": state.cycle_num,
+                "concepts_added": state.concepts_added,
+                "gaps_found": state.gaps_found,
+                "proofs_completed": state.proofs_completed,
+            })
+
             parts: list[str] = [f"[Döngü {state.cycle_num}]"]
 
             n_total = len(engine.manifold.concepts)
             if state.concepts_added:
                 parts.append(f"{state.concepts_added} yeni kavram öğrendim (toplam: {n_total:,}).")
             else:
-                parts.append(f"Manifold sabit: {n_total:,} kavram.")
+                parts.append(f"Bu turda yeni kavram eklenmedi (toplam: {n_total:,}).")
 
             if state.gaps_found:
                 gap_preview = ", ".join(f"'{g}'" for g in state.open_gap_names[:3])
                 suffix = f" (+{len(state.open_gap_names) - 3} daha)" if len(state.open_gap_names) > 3 else ""
-                parts.append(f"{state.gaps_found} boşluk tespit ettim: {gap_preview}{suffix}.")
-                parts.append("Bu boşluklar bir sonraki turda hedeflenecek.")
+                parts.append(f"{state.gaps_found} boşluk: {gap_preview}{suffix}.")
+                if state.campaigns_triggered:
+                    parts.append(f"Hedeflenen kampanyalar: {', '.join(state.campaigns_triggered[-2:])}.")
+                else:
+                    parts.append("Boşluklar bir sonraki tur hedeflenecek.")
 
             if state.proofs_completed:
-                parts.append(f"{state.proofs_completed} teorem/kavram kanıtlandı veya bağlandı.")
+                parts.append(f"{state.proofs_completed} kanıt tamamlandı.")
 
-            if state.campaigns_triggered:
-                parts.append(f"Başlatılan kampanyalar: {', '.join(state.campaigns_triggered)}.")
+            # Stagnasyon tespiti: son N döngü 0 kavram?
+            recent = state.cycle_history[-self.STAGNATION_THRESHOLD:]
+            if (len(recent) >= self.STAGNATION_THRESHOLD
+                    and all(h["concepts_added"] == 0 for h in recent)):
+                parts.append(
+                    f"⚠ {self.STAGNATION_THRESHOLD} tur boyunca büyüme yok — "
+                    "strateji tükendi, duruyorum."
+                )
+                state.should_stop = True
 
-            # Öz-model: sistem kendini görüyor mu?
+            # Öz-konum
             try:
                 from tantrium.core.grounding import GroundingCertifier
-                gc = GroundingCertifier(engine)
-                cert = gc.certify("⟨SELF⟩")
+                cert = GroundingCertifier(engine).certify("⟨SELF⟩")
                 verdict = getattr(cert, "verdict", "UNKNOWN")
                 parts.append(f"Öz-konum: {verdict}.")
             except Exception:
@@ -512,13 +602,17 @@ class Cognition:
                 break
             state.cycle_num = cycle_i + 1
             state.elapsed_s = time.monotonic() - t0
-            # open_gap_names döngüler arası TAŞINIR (Tel 1: compounding)
-            # Diğer döngü-bazlı sayaçlar sıfırlanır
+            # Döngüler arası TAŞINANLAR: open_gap_names + cycle_history + campaigns_triggered
+            # Döngü-bazlı sayaçlar sıfırlanır (her tur kendi başına ölçülür)
             prev_gaps = list(state.open_gap_names)
+            prev_history = list(state.cycle_history)
+            prev_campaigns = list(state.campaigns_triggered)
             state.concepts_added = 0
             state.edges_added = 0
             state.gaps_found = 0
-            state.open_gap_names = prev_gaps  # önceki boşlukları koru
+            state.open_gap_names = prev_gaps
+            state.cycle_history = prev_history
+            state.campaigns_triggered = prev_campaigns
             if verbose:
                 print(f"[Cognition] döngü {cycle_i + 1}/{max_cycles}"
                       + (f" ({len(prev_gaps)} boşluk hedefte)" if prev_gaps else ""))
