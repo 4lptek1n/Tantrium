@@ -619,6 +619,14 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
   (GrowthEngine/ProofLoop/Explorer/Researcher) tek strateji-pluggable çatı altında.
   `CognitionStrategy` Protocol; 5 yerleşik faz (perceive/reflect/operate/prove/persist);
   `cycle(mode="batch"|"stream")`; `ai.cognition()` facade.
+  - **Kademe F11 — Corrigibility döngüye girdi + öksüz bağlandı [2026-06]:** Pipeline
+    `perceive→reflect→operate→VERIFY→deduce→compose→flywheel→prove→narrate→persist`.
+    **VerifyPhase** = YAPISAL (`corrigibility.detect_and_correct`, GIMEL kör noktası:
+    dejenere/çakışma → düzelt/işaretle) + DIŞSAL (`corrigibility.external_verify`, bilinen
+    olgu kausal isabeti). Döngü artık kendi hatasını görüp düzeltiyor + gerçeğe karşı
+    sınıyor. `corrigibility.py` PAYLAŞILAN çekirdek: growth + cognition + `ai.benchmark`
+    üçü de delege. **DeductivePhase'e `chain_all` bağlandı** (öksüzdü) — tipli forward-
+    chaining kapanışı. Dürüst kalan: encoder GLOBAL geri-besleme (hata sınıfı→encoder) henüz yok.
   - **3 Mantık Düzeltmesi (2026-06, commit 20283c7):**
     1. `_gaps_to_campaigns()`: `ALEPH:` önekli boşluklar artık ProofLoop kampanyasına
        GÖNDERİLMİYOR. ALEPH:X = bir kavram Aleph PSD testini geçemiyor — encoding/Hankel

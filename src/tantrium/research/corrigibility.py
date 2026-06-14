@@ -110,3 +110,48 @@ def detect_and_correct(
         "new_suspects": new_suspects,
         "logs": logs,
     }
+
+
+# Dış-doğrulama: küratörlü bilinen olgulara karşı kausal bilgi (TEK tanım — ai.benchmark
+# bu çekirdeğe delege eder). detect_and_correct YAPISAL (içsel) yanlışı yakalar; bu
+# DIŞSAL doğruyu sınar: "sistemin kausal bilgisi gerçek dünyayla uyuşuyor mu?".
+_DEFAULT_FACTS: list[tuple[str, str, str]] = [
+    ("erlotinib", "INHIBITS", "egfr"),
+    ("gefitinib", "INHIBITS", "egfr"),
+    ("egfr", "ACTIVATES", "ras"),
+    ("ras", "CAUSES", "tumor cell"),
+    ("aspirin", "INHIBITS", "cyclooxygenase"),
+    ("imatinib", "INHIBITS", "bcr-abl"),
+    ("p53", "INHIBITS", "tumor cell"),
+]
+_CAUSAL = {"CAUSES", "ACTIVATES", "INHIBITS"}
+
+
+def external_verify(engine: Any, facts: "list[tuple[str, str, str]] | None" = None) -> dict:
+    """Küratörlü bilinen olgulara karşı kausal TAU'yu sına (DIŞ-doğrulama).
+
+    İçsel sertifika ≠ dünyada doğru. Bu, sistemin kausal bilgisinin gerçek olgularla
+    uyumunu ölçer → ampirik isabet (track record). Döner: {score, correct, total, failures}.
+    """
+    test_facts = facts or _DEFAULT_FACTS
+    tau = engine.tau
+    fwd_idx: dict[str, set[tuple[str, str]]] = {}
+    for src, edges in tau.edges.items():
+        for e in edges:
+            if e.paradigm in _CAUSAL:
+                fwd_idx.setdefault(src, set()).add((e.paradigm, e.target))
+    correct = 0
+    failures: list[dict] = []
+    for src, rel, tgt in test_facts:
+        edges = fwd_idx.get(src.lower(), set()) | fwd_idx.get(src, set())
+        if any(r == rel and t in {tgt, tgt.lower()} for r, t in edges):
+            correct += 1
+        else:
+            failures.append({"fact": f"{src} {rel} {tgt}", "found": False})
+    total = len(test_facts)
+    return {
+        "score": (correct / total) if total else 0.0,
+        "correct": correct,
+        "total": total,
+        "failures": failures,
+    }

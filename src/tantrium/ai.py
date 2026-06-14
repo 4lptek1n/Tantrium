@@ -3505,48 +3505,20 @@ class AI:
         return "\n".join(lines)
 
     def benchmark(self, facts: list[tuple[str, str, str]] | None = None) -> dict:
-        """Bilinen olgulara karşı kausal bilgiyi sına.
+        """Bilinen olgulara karşı kausal bilgiyi sına (DIŞ-doğrulama).
 
-        facts: [(kaynak, ilişki, hedef), ...] listesi.
-        Varsayılan: dahili biyoloji gerçekleri.
-        Döner: {score, correct, total, failures:[...]}
+        facts: [(kaynak, ilişki, hedef), ...] listesi. Varsayılan: dahili biyoloji.
+        Çekirdek `research.corrigibility.external_verify`'a delege (TEK tanım —
+        VerifyPhase ile paylaşılır). Döner: {score, correct, total, failures, note}.
         """
-        _DEFAULT: list[tuple[str, str, str]] = [
-            ("erlotinib", "INHIBITS", "egfr"),
-            ("gefitinib", "INHIBITS", "egfr"),
-            ("egfr", "ACTIVATES", "ras"),
-            ("ras", "CAUSES", "tumor cell"),
-            ("aspirin", "INHIBITS", "cyclooxygenase"),
-            ("imatinib", "INHIBITS", "bcr-abl"),
-            ("p53", "INHIBITS", "tumor cell"),
-        ]
-        test_facts = facts or _DEFAULT
-        tau = self._engine.tau
-        _CAUSAL = {"CAUSES", "ACTIVATES", "INHIBITS"}
-        # Build forward index
-        fwd_idx: dict[str, set[tuple[str, str]]] = {}
-        for src, edges in tau.edges.items():
-            for e in edges:
-                if e.paradigm in _CAUSAL:
-                    fwd_idx.setdefault(src, set()).add((e.paradigm, e.target))
-
-        correct = 0
-        failures: list[dict] = []
-        for src, rel, tgt in test_facts:
-            edges = fwd_idx.get(src.lower(), set()) | fwd_idx.get(src, set())
-            hit = any(r == rel and t in {tgt, tgt.lower()} for r, t in edges)
-            if hit:
-                correct += 1
-            else:
-                failures.append({"fact": f"{src} {rel} {tgt}", "found": False})
-
-        total = len(test_facts)
+        from tantrium.research.corrigibility import external_verify
+        r = external_verify(self._engine, facts)
         return {
-            "score": round(correct / max(total, 1), 3),
-            "correct": correct,
-            "total": total,
-            "failures": failures,
-            "note": f"{correct}/{total} bilinen olgu doğrulandı",
+            "score": round(r["score"], 3),
+            "correct": r["correct"],
+            "total": r["total"],
+            "failures": r["failures"],
+            "note": f"{r['correct']}/{r['total']} bilinen olgu doğrulandı",
         }
 
     def consolidate(self, threshold: float = 0.015, dry_run: bool = True) -> dict:

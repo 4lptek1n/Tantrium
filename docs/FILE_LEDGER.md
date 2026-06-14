@@ -564,7 +564,23 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   3. `OperatePhase.execute()`: ALEPH boşlukları → CoreMachine re-encoding denemesi.
      Başarılıysa `concept.moments` yeni encoding'e güncelleniyor (≤10 kavram/döngü).
      + `SelfModel(engine).reflect(persist=True)` → ⟨SELF⟩ TAU kenarları her döngüde kök kazanıyor.
+- **Kademe F11 — Corrigibility döngüye girdi + öksüz bağlandı [2026-06]:**
+  - **VerifyPhase** eklendi (perceive→reflect→operate→**VERIFY**→deduce→...): YAPISAL
+    (`corrigibility.detect_and_correct` — dejenere/çakışma, GIMEL kör noktası) + DIŞSAL
+    (`corrigibility.external_verify` — bilinen olgu kausal isabeti) doğrulama. Döngü artık
+    yalnız büyümüyor, kendi temsil hatasını görüp düzeltiyor + gerçeğe karşı sınıyor.
+    `CognitionState/Report.corrected/suspects_flagged/benchmark_score`.
+  - **DeductivePhase'e `GraphReasoner.chain_all` bağlandı** (öksüzdü, 0 çağıran) — tipli
+    forward-chaining kapanışı (bounded max_concepts=80) → TAU türetilen ilişkilerle yoğunlaşır.
 - **Tekrar:** 4 döngü DEĞİŞMEDİ; Cognition bunlara delege eder (strateji koruyucu).
+
+### ✅ research/corrigibility.py — PAYLAŞILAN yanlış-tespiti çekirdeği [YENİ — F10/F11]
+- **İş:** `detect_and_correct(engine, seen)` (yapısal: dejenere encoding < 0.02 yayılım →
+  adaptif re-encode; çakışma L1 < 0.001 → işaretle) + `external_verify(engine, facts)`
+  (dışsal: küratörlü bilinen olgulara karşı kausal TAU isabeti). Eşikler TEK tanım.
+- **Güç:** growth (`_verify_consolidate`) + cognition (`VerifyPhase`) + `ai.benchmark` ÜÇÜ DE
+  buna delege — corrigibility mantığı tek yerde. GIMEL'in göremediği üniform hatayı kapatır.
+- **Tekrar:** YOK — birleştirme noktası (eskiden growth'a gömülü + ai.benchmark'ta kopya).
 
 > **F5+Kademe6 TAMAMLANDI (2026-06):** (a) Veri-çekme #9 (net.py) ✅ (b) 4 döngü → Cognition
 > iskeleti + pluggable strateji ✅ (c) Boşluk tespiti → GapFinder birliği (#10) ✅

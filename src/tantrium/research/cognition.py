@@ -33,6 +33,7 @@ class CognitionState:
     proofs_completed: int = 0
     corrected: int = 0          # VerifyPhase: dejenere encoding düzeltildi
     suspects_flagged: int = 0   # VerifyPhase: dejenere/çakışma şüphesi işaretlendi
+    benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet [0,1]
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
@@ -58,6 +59,9 @@ class CognitionReport:
     gaps_found: int
     proofs_completed: int
     elapsed_s: float
+    corrected: int = 0           # VerifyPhase: düzeltilen dejenere encoding
+    suspects_flagged: int = 0    # VerifyPhase: işaretlenen şüpheli temsil
+    benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet
     phase_logs: list[str] = field(default_factory=list)
     campaigns_triggered: list[str] = field(default_factory=list)
     narrations: list[str] = field(default_factory=list)
@@ -691,6 +695,17 @@ class DeductivePhase:
                 f"deduce: +{delta} kavram, +{edge_delta} kenar, "
                 f"{inferences} çıkarım, {gaps_closed} boşluk kapandı (engine.grow)"
             )
+            # ÖKSÜZ GÜÇ BAĞLANDI: GraphReasoner.chain_all — tipli forward-chaining
+            # kapanışı (IS_A+ACHIEVES→ACHIEVES, CAUSES+CAUSES→CAUSES...). Hiçbir döngüye
+            # bağlı değildi; burada bağlanıyor → TAU türetilen tipli ilişkilerle yoğunlaşır.
+            try:
+                from tantrium.reasoning.reasoner import GraphReasoner
+                new_edges = GraphReasoner(engine).chain_all(max_concepts=80)
+                if new_edges:
+                    state.edges_added += new_edges
+                    state.log(f"deduce/chain_all: +{new_edges} tipli türetilmiş kenar")
+            except Exception as exc:
+                state.log(f"deduce/chain_all: atlandı — {exc}")
         except Exception as exc:
             state.log(f"deduce: atlandı — {exc}")
         return state
@@ -712,7 +727,8 @@ class VerifyPhase:
 
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
         try:
-            from tantrium.research.corrigibility import detect_and_correct
+            from tantrium.research.corrigibility import detect_and_correct, external_verify
+            # YAPISAL (içsel): dejenere encoding/çakışma — GIMEL'in kör noktası.
             res = detect_and_correct(engine, self._seen)
             state.corrected += res["corrected"]
             state.suspects_flagged += (res["degenerate"] - res["corrected"]) + res["collided"]
@@ -721,6 +737,11 @@ class VerifyPhase:
                     f"verify: {res['checked']} denetlendi, {res['degenerate']} dejenere "
                     f"({res['corrected']} düzeltildi), {res['collided']} çakışma şüphesi"
                 )
+            # DIŞSAL (gerçek): kausal bilgi bilinen olgularla uyuşuyor mu? (ampirik isabet)
+            ev = external_verify(engine)
+            state.benchmark_score = ev["score"]
+            state.log(f"verify/dış: bilinen olgu isabeti {ev['correct']}/{ev['total']} "
+                      f"(skor {ev['score']:.2f})")
         except Exception as exc:
             state.log(f"verify: atlandı — {exc}")
         return state
@@ -860,6 +881,9 @@ class Cognition:
             gaps_found=state.gaps_found,
             proofs_completed=state.proofs_completed,
             elapsed_s=round(elapsed, 1),
+            corrected=state.corrected,
+            suspects_flagged=state.suspects_flagged,
+            benchmark_score=state.benchmark_score,
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
             narrations=list(state.narration),
