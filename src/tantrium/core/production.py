@@ -274,25 +274,7 @@ class ProductionEngine:
 
         kd = FreeCumulants.from_moments(mu_d)
         kh = self._canonical_kappa()
-        kappa_req = kh.subtract(kd)
-        mu_req_raw = kappa_req.to_moments_approx()
-
-        gap: float | None = None
-        mu_req = mu_req_raw
-        if any(x < -1e-6 for x in mu_req_raw[1:]):
-            try:
-                from tantrium.core.reconstruct import reconstruct_measure
-                rm = reconstruct_measure(mu_req_raw)
-                gap = float(rm.reconstruction_error)
-                mu_req = list(rm.reconstructed_moments[:len(mu_req_raw)])
-            except Exception:
-                gap = float("inf")
-                # clamp: at minimum keep first moment = 1
-                mu_req = [max(0.0, x) for x in mu_req_raw]
-                if mu_req:
-                    mu_req[0] = 1.0
-        else:
-            gap = 0.0
+        mu_req, gap = self._deconvolve_to_target(kd, kh)
 
         if network:
             try:
@@ -306,6 +288,57 @@ class ProductionEngine:
 
         return "disease", mu_req, [mu_req], "kanonik sağlıklı denge (ζ + wild-type)", gap, kd, kh
 
+    def _deconvolve_to_target(self, kd, kh) -> tuple[list[float], float]:
+        """κ_healthy ⊟ κ_disease → düzeltici ilaç imzası mu_req (+ gerçeklenebilirlik gap).
+
+        İlaç = hastalığı sağlıklıya taşıyan serbest-konvolüsyon tersi: κ_M = κ_healthy ⊟ κ_disease.
+        Negatif moment (gerçeklenemez ölçü) → reconstruct ile en yakın GERÇEK ölçüye düş;
+        gap = o düşüşün hatası (büyükse hastalık imzası tek molekülle düzeltilemez — DÜRÜST sinyal).
+        Hem hastalık-adı hem ÖLÇÜLEN-BULGU yolu bunu paylaşır (tek dekonvolüsyon çekirdeği).
+        """
+        kappa_req = kh.subtract(kd)
+        mu_req_raw = kappa_req.to_moments_approx()
+        if any(x < -1e-6 for x in mu_req_raw[1:]):
+            try:
+                from tantrium.core.reconstruct import reconstruct_measure
+                rm = reconstruct_measure(mu_req_raw)
+                return (list(rm.reconstructed_moments[:len(mu_req_raw)]),
+                        float(rm.reconstruction_error))
+            except Exception:
+                mu = [max(0.0, x) for x in mu_req_raw]
+                if mu:
+                    mu[0] = 1.0
+                return mu, float("inf")
+        return mu_req_raw, 0.0
+
+    def _read_findings(self, findings: list
+                       ) -> tuple[str, list[float], list[list[float]], str,
+                                  float | None, object | None, object | None]:
+        """Hastalığı ÖLÇÜLEN BULGUDAN oku — AD YOK, sözlük araması YOK.
+
+        Bulgu = hastalık durumunu karakterize eden ölçülmüş moleküler sinyaller:
+        dysregüle metabolit (SMILES) · mutasyon (DNA) · aşırı-aktif protein (dizi) ·
+        biyobelirteç · ham sinyal. Her bulgu AYNI moment uzayına çekilir, serbest-toplam
+        (κ-additivite) → κ_disease = hastalığın GERÇEK matematiksel imzası. İlaç =
+        κ_healthy ⊟ κ_disease'i kapatan M (de novo inşa). Bellekte OLMAYAN hastalık →
+        yakın ad değil, kendi bulgusu ölçülür; üretilen molekül de hiç olmayan olabilir.
+        """
+        from tantrium.core.quantum_moments import FreeCumulants
+        kd = FreeCumulants([0.0] * 6)
+        used = 0
+        for f in findings:
+            mu = self._encode(str(f))
+            if mu:
+                kd = kd.add(FreeCumulants.from_moments(mu))
+                used += 1
+        if used == 0:
+            return "invalid", [], [], "", None, None, None
+        kh = self._canonical_kappa()
+        mu_req, gap = self._deconvolve_to_target(kd, kh)
+        ref = f"ölçülen bulgu ({used} sinyal → κ_disease serbest-toplam)"
+        return "findings", mu_req, [mu_req], ref, gap, kd, kh
+
+
     # ── Ana üretici ───────────────────────────────────────────────────────
 
     def produce(self, target: "str | list[float]", max_steps: int = 16, beam_width: int = 6,
@@ -314,7 +347,13 @@ class ProductionEngine:
                 epsilon: float = 0.5, top_k: int = 10) -> "ProductionCertificate":
         """Tek giriş: çok-stratejili üret → evren-kapat → sertifikala.
 
-        target: kavram/hastalık/SMILES string VEYA moment listesi (meaning_compose().to_produce_target())
+        target:
+          • SMILES / protein / hastalık-adı (str) — bilinen hedefe tasarım
+          • moment listesi (list[float]) — meaning_compose().to_produce_target()
+          • ÖLÇÜLEN BULGU (list[str]) — hastalığın bulgusu: dysregüle metabolit/DNA/
+            dizi/biyobelirteç sinyalleri. κ_disease bulgudan serbest-toplamla hesaplanır
+            (AD aranmaz), ilaç = κ_healthy ⊟ κ_disease'i kapatan M. Bellekte OLMAYAN
+            hastalık için tek dürüst giriş — yakın ad söylemek DEĞİL, kendi bulgusu ölçülür.
         """
         from tantrium.core.production_judge import ProductionJudge, ProductionCertificate
         from tantrium.core.quantum_moments import FreeCumulants
@@ -324,8 +363,21 @@ class ProductionEngine:
         self._denovo_smiles = set()
         judge = ProductionJudge(self.engine, self)
 
+        self._disease_label = None
+        # ÖLÇÜLEN BULGU yolu: liste ama sayısal DEĞİL → hastalık bulguları (ölçülmüş
+        # moleküler sinyaller). κ_disease bulgudan hesaplanır, AD aranmaz. Bellekte
+        # olmayan hastalık için tek dürüst giriş: kendi bulgusu (bkz. _read_findings).
+        if isinstance(target, (list, tuple)) and not all(
+                isinstance(x, (int, float)) for x in target):
+            kind, mu_req, profiles, ref_name, gap, kd, kh = self._read_findings(list(target))
+            if kind == "invalid":
+                return ProductionCertificate(
+                    target="⟨bulgu⟩", target_kind="invalid",
+                    verdict="GEÇERSİZ", note="Bulgu sinyalleri encode edilemedi.")
+            self._disease_label = "ölçülen bulgu"
+            target_str = "⟨disease:measured⟩"
         # Moment listesi doğrudan verildi (meaning_compose entegrasyonu)
-        if isinstance(target, (list, tuple)):
+        elif isinstance(target, (list, tuple)):
             mu_req = [float(x) for x in target]
             if not mu_req or mu_req[0] <= 0:
                 return ProductionCertificate(
@@ -341,7 +393,6 @@ class ProductionEngine:
             # dahil) sürücünün GERÇEK ilaç-kimyasını kullansın. Eskiden "pancreatic cancer"
             # adıyla scaffold bulunamıyor → jenerik molekül (kafein). Şimdi egfr'ye çözülür
             # → gefitinib-sınıfı. Hastalığın matematiksel yapısı = sürücüsünün kimyası.
-            self._disease_label = None
             drivers = self._disease_drivers(target) if isinstance(target, str) else []
             if drivers:
                 primary = max(drivers, key=lambda d: len(self._reference_ligands(d)),
@@ -464,16 +515,16 @@ class ProductionEngine:
 
         # ── 6. 6 eksen yargısı (top-K adayda) ─────────────────────────
         ref_smiles_list = []
-        for _, smi in self._reference_ligands(target)[:4]:
+        for _, smi in self._reference_ligands(target_str)[:4]:
             ref_smiles_list.append(smi)
         # SMILES hedef: kütüphanede referans yok → hedefin kendisi yapısal kıyaslama
-        if kind == "smiles" and not ref_smiles_list and self._is_smiles(target):
-            ref_smiles_list = [target]
+        if kind == "smiles" and not ref_smiles_list and self._is_smiles(target_str):
+            ref_smiles_list = [target_str]
 
         for c in scored[:top_k]:
             axes_obj, coherent = judge.judge_all_axes(
                 c["smiles"], mu_req, profiles, kappa_thr, ref_smiles_list,
-                structural_soft=(kind == "disease"))
+                structural_soft=(kind in ("disease", "findings")))
             c["axes"] = [{"name": a.name, "ok": a.ok, "value": round(a.value, 4),
                           "threshold": a.threshold, "detail": a.detail}
                          for a in axes_obj]
@@ -544,7 +595,7 @@ class ProductionEngine:
         # ── 9. Enjeksiyon ─────────────────────────────────────────────
         injected_as = ""
         if inject and coh_best:
-            injected_as = self._inject_manifold(smi_best, target)
+            injected_as = self._inject_manifold(smi_best, target_str)
 
         # ── 10. Sertifika ─────────────────────────────────────────────
         from tantrium.core.production_judge import ClosureProof
