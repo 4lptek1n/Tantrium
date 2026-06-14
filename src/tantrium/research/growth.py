@@ -111,6 +111,44 @@ def _http_json_link(url: str, timeout: int = 15) -> tuple[Any, str | None]:
     return http_get_json_link(url, timeout=timeout, user_agent=_UA["User-Agent"], errors="replace")
 
 
+def _pubmed_clean(text: str) -> tuple[str | None, str | None]:
+    """PubMed efetch (rettype=abstract&retmode=text) → (başlık, özet gövdesi).
+
+    Yazar/afiliasyon/dergi/DOI/PMID satırlarını ELER — bunlar naif satır-kavramında
+    'shah'/'webb'/'young' gibi yazar-adı çöpü doğuruyordu. Özet gövdesi (en uzun
+    paragraf) kausal öğrenime, başlık kavram olarak gider. Yapısal, NER gerektirmez.
+    """
+    import re
+    paras = [re.sub(r"\s+", " ", p).strip()
+             for p in re.split(r"\n\s*\n", text) if p.strip()]
+    if not paras:
+        return None, None
+
+    _META = re.compile(
+        r"^(PMID|DOI|©|Author information|Comment(s)?|Erratum|Update|Conflict|"
+        r"Copyright|Published|Epub|\d+\.|In:|Reprint)", re.IGNORECASE)
+    _AFFIL = re.compile(r"^\(\d+\)")
+    # Yazar listesi: "Soyad AB, Soyad CD(1), ..." — kapital-initial + virgül + (rakam)
+    _AUTHORS = re.compile(
+        r"^([A-ZÀ-Ý][\w'\-]+ +[A-ZÀ-Ý]{1,4}\.?(\(\d+\))?[ ,]*)+\.?$")
+    # Dergi/tarih: yıl + ; (örn "Nature. 2021;590(1):12-20")
+    _JOURNAL = re.compile(r"\b(19|20)\d{2}\b.*[;:]")
+
+    def is_meta(p: str) -> bool:
+        if _META.match(p) or _AFFIL.match(p) or _AUTHORS.match(p):
+            return True
+        if _JOURNAL.search(p) and len(p) < 180:
+            return True
+        return False
+
+    clean = [p for p in paras if not is_meta(p)]
+    if not clean:
+        return None, None
+    body = max(clean, key=len)               # özet gövdesi = en uzun paragraf
+    title = next((p for p in clean if p != body), body)  # başlık = ilk gövde-dışı paragraf
+    return title, body
+
+
 class GrowthEngine:
     """Sınırsız kendi kendine büyüme döngüsü.
 
@@ -445,18 +483,18 @@ class GrowthEngine:
                 with urllib.request.urlopen(req, timeout=15) as resp:
                     abstract_text = resp.read().decode("utf-8", errors="replace")
                 if abstract_text and len(abstract_text) > 100:
-                    # Kausal kenar öğrenimi
-                    try:
-                        self.observer.observe(abstract_text[:2000])
-                    except Exception:
-                        pass
-                    # Başlık satırlarını kavram olarak döndür
-                    for line in abstract_text.split("\n"):
-                        line = line.strip()
-                        if 10 < len(line) < 120 and not line.startswith("PMID"):
-                            out.append(line)
-                            if len(out) >= n:
-                                break
+                    # Yapısal ayrıştırma: yalnız başlık + özet gövdesi (yazar/afiliasyon/
+                    # metadata satırlarını ele — bunlar 'shah'/'webb' gibi çöp kavram doğuruyordu).
+                    title, body = _pubmed_clean(abstract_text)
+                    # Kausal kenar öğrenimi: yalnız özet gövdesinden (yazar listesinden DEĞİL)
+                    if body:
+                        try:
+                            self.observer.observe(body[:2000])
+                        except Exception:
+                            pass
+                    # Kavram olarak yalnız başlık (yazar satırları değil)
+                    if title and 10 < len(title) < 200:
+                        out.append(title)
         except Exception:
             pass
         time.sleep(_RATE_LIMIT_S)
