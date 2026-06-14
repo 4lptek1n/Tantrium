@@ -261,27 +261,41 @@ class SemanticManifold:
     _L1_W = 8  # karşılaştırma genişliği (standart moment sayısı)
 
     def _nearest_l1(self, concept: Concept, n: int = 5) -> list[tuple[str, Fraction]]:
-        """Hızlı L1 en-yakın-komşu (iç ön-eleme yolu) — numpy vektörize.
+        """Hızlı L1 en-yakın-komşu (iç ön-eleme yolu) — numpy vektörize, ARTIMLI cache.
 
-        HIZ: count-keyed numpy moment-matris cache (Fraction→float TEK sefer, sonra
-        tek `np.abs(M-q).sum(axis=1)`). Eski saf-Python çift-döngü 39k'da ~94ms → ~3ms.
-        l1 "ön-eleme, hüküm değil" (metric.distance dispatcher) — count-keyed invalidation
-        yeterli; yerinde moment düzeltmeleri sonraki kavram-sayısı değişiminde tazelenir.
+        HIZ: numpy moment-matris cache. KRİTİK: büyümede her pulse kavram ekler →
+        count-keyed FULL rebuild her çağrıda 46k×8 matrisi baştan kuruyordu (~350ms,
+        pulse'ı boğuyordu). ÇÖZÜM: artımlı ekleme — yalnız YENİ kavramları vstack ile
+        ekle (O(yeni), ~ms); her 64 eklemede bir full-resync (silme/yerinde-değişim drift'i).
+        l1 "ön-eleme, hüküm değil" — küçük staleness kabul edilebilir.
         """
         import numpy as np
         W = self._L1_W
-        if getattr(self, "_l1_count", -1) != len(self.concepts):
-            names: list[str] = []
-            rows: list[list[float]] = []
-            for name, c in self.concepts.items():
-                mu = [float(x) for x in c.moments[:W]]
-                if len(mu) < W:
-                    mu = mu + [0.0] * (W - len(mu))
-                names.append(name)
-                rows.append(mu)
+        n_now = len(self.concepts)
+        cached = getattr(self, "_l1_count", -1)
+        appends = getattr(self, "_l1_appends", 0)
+
+        def _row(c):
+            mu = [float(x) for x in c.moments[:W]]
+            return mu + [0.0] * (W - len(mu)) if len(mu) < W else mu[:W]
+
+        if cached < 0 or n_now < cached or not hasattr(self, "_l1_M") or appends > 64:
+            # FULL rebuild (ilk / küçülme / periyodik resync)
+            names = list(self.concepts.keys())
+            rows = [_row(self.concepts[nm]) for nm in names]
             self._l1_names = names
             self._l1_M = np.asarray(rows, dtype=float) if rows else np.zeros((0, W))
-            self._l1_count = len(self.concepts)
+            self._l1_count = n_now
+            self._l1_appends = 0
+        elif n_now > cached:
+            # ARTIMLI: yalnız yeni kavramları ekle (insertion-order: yeniler sonda)
+            new_names = list(self.concepts.keys())[cached:]
+            new_rows = [_row(self.concepts[nm]) for nm in new_names]
+            if new_rows:
+                self._l1_M = np.vstack([self._l1_M, np.asarray(new_rows, dtype=float)])
+                self._l1_names = self._l1_names + new_names
+            self._l1_count = n_now
+            self._l1_appends = appends + 1
 
         if self._l1_M.shape[0] == 0:
             return []
