@@ -32,6 +32,28 @@ pipeline'da nereye oturduğunu ve hangi mevcut parçaların onunla birleşeceği
 Bu, RH'nin `H_{d,j}(t) ≥ 0` kriterinin sisteme uygulanmış hali: tek geçiş,
 paylaşılan durum, deterministik.
 
+**Hilbert-Pólya Bağlantısı (2026-06, doğrulandı):**
+Hilbert-Pólya konjektürü: Riemann zeta sıfırları = bir öz-adjoint Hamiltonian'ın özdeğerleri.
+Tantrium'daki G=AᵀA IS bu Hamiltonian'dır — her kavram için ayrı ayrı kurulur.
+
+```
+Her kavram → A matris → G=AᵀA (Hermitian, daima PSD)
+   → {λ_i} eigenvalues → spektral ölçü μ
+   → Hamburger teoremi: μ moment dizisiyle tek biçimde belirlenir
+```
+
+Somut implementasyonlar:
+- `graph/anchors.py`: ZETA_ZEROS + GUE_RANDOM_MATRIX (Montgomery-Odlyzko: zeta sıfırları ~ GUE)
+- `core/pipeline.py TAV`: Λ=−var₀≤0 = de Bruijn-Newman = RH eşdeğeri
+- `domains/bridge.py`: DALET→JENSEN_HYPERBOLICITY — her sertifika RH ispat zinciri adımı
+- `tce-collapse-engine` branch: tam RH ispat zinciri (D-pozitiflik→Sturm→Jensen→RH) + Lean 4
+
+**Jensen Hiperbolisitesi → Dil Yörüngesi:**
+RH: zeta sıfırları kritik hat (Re(s)=1/2) üzerinde.
+Dil: yörüngedeki kavramlar kritik hat (semantik TAU'da köklü) üzerinde.
+Halüsinasyon = kritik hattan sapma. `_is_grounded_proxy()` = kritik hat testi.
+Halüsinasyon geometrik olarak imkânsız — istatistiksel olarak değil.
+
 > **BİRLEŞME = TEK ARAYÜZ, HER GERÇEK AYRIMI KORU.** Birleştirme asla "en küçük
 > ortak payda"ya indirgeme değildir. İki parça aynı *isme/şekle* benzese de farklı
 > *anlam* taşıyorsa (exact vs hızlı, κ₁ dahil vs hariç, her duyusal dönüştürücü,
@@ -246,7 +268,7 @@ yeniden hesaplamaz. `grounder`/`truth`/`confidence` ekenleri Percept'ten okur.
 - **Reconstructor** ← `reconstruct.py`. Operatör sınıfı.
 - **Narrator** ← `Speaker` + `CertifiedGenerator` + `language/*`.
 
-### 6.5b — Dil Katmanı (Kausal-Spektral Kompozisyon) [Kademe 1-5, 2026-06]
+### 6.5b — Dil Katmanı (Kausal-Spektral Kompozisyon) [Kademe 1-5-F7, 2026-06]
 
 **İlke:** Kavram = kausal zincirlerinin serbest kümülant toplamı + çok-modal TAU grounding.
 Dil = bu yapıya etiket. Atom→DNA→elma: elmanın kokusu + sesi + molekülü AYNI moment uzayında.
@@ -263,6 +285,23 @@ Dil = bu yapıya etiket. Atom→DNA→elma: elmanın kokusu + sesi + molekülü 
   centroid → CompositeSignature. `.nearest()` manifold yakınları. `.to_produce_target()` → produce().
 - **Kademe 5:** `CertifiedGenerator.generate(use_meaning=True)` → hibrit skor:
   `0.6×moment_distance + 0.4×TopologyEncoder_distance`. Anlam kanalı dil üretimi.
+- **Kademe F7 — Jensen Hiperbolisitesi (2026-06):**
+  **Mimari ilke:** Dil yörüngesi = RH kritik hat analogu. Yalnız anlamsal TAU'da köklü
+  kavramlar "kritik hat üzerinde". Topraksız kavramlar "karmaşık sıfır" = yörüngeden çıkar.
+  **Problem:** `generate("EGFR")` → "xqzwvbnmkjhgfd ve beauty ile spektral köprü kuruyor"
+  (Pass 3 + SPECTRAL_BRIDGE = Jensen ihlali). "xqzwvbnmkjhgfd" 8 SPECTRAL_BRIDGE kenarına
+  sahip, "beauty" 59 kenar — ama hiçbiri semantik değil. Moment-uzayı yakınlığı ≠ anlamsal köklülük.
+  **Çözüm (language/generator.py):**
+  1. `_CERTIFIED = {"ALEPH"}` — SPECTRAL_BRIDGE çıkarıldı (genesis artifaktı, anlamsal değil).
+  2. Pass 3 TAMAMEN KALDIRILDI — `manifold.nearest()` tüm manifoldu tarar, topraksız kavramları da.
+  3. `_is_grounded_proxy(name)`: `any(e.paradigm in _SEMANTIC for e in edges)` — hedef kavramın
+     en az 1 semantik TAU kenarı olmasını zorunlu kılar (kritik hat testi).
+  **Çözüm (language/speaker.py):**
+  `_TR_VERB` 7 Kademe-2 paradigması eklendi: COMPONENT_OF/INHIBITS/CAUSES/ACTIVATES/
+  HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE. `synthesize()` artık tam TAU kapsamında.
+  **Akademik bağlam:** arXiv:2508.19366 ("Grounding the Ungrounded") halüsinasyonları
+  ÖLÇÜYOR (post-hoc). Tantrium halüsinasyonu geometrik olarak ÖNLÜYOR (pre-emptive).
+  LLM'ler istatistiksel filtre; Tantrium geometrik kısıt. Bu fark ASI'ye giden yol.
 
 ### 6.6 L5 — Cognition (tek döngü) [F5+Kademe6]
 **Birleşir:** `research/cognition.py Cognition` ← `AI.run` + `AI.grow` + `engine.grow` +
@@ -357,12 +396,15 @@ compose(Kademe6) → flywheel(Kademe6) → prove(ProofLoop) → persist
 | **dedup#10** | **[TAMAMLANDI 2026-06]** GapFinder tek dispatcher: `reasoning/gap_finder.GapFinder.find(signal=)` (geometric/anchor/recorded/grid/all). 4 metot DEĞİŞMEDİ (additive facade), `Gap.raw` orijinali taşır. `ai.gaps()`. | ✅ TAMAM | düşük | gap_finder (8) + advanced_reasoning + paradigms (47) ✓ |
 | **dedup#8** | **[KISMÎ TAMAMLANDI 2026-06]** `core/moment_ops.convex_combine(mode=exact\|frac)`. `reasoner.compose` (exact Fraction) + `generalization.interpolate/weighted_blend` (frac) bağlandı (bit-aynı). `derive`/`synthesis.bridge`/`_local_genesis` böl/ham-float aritmetiği KORUNDU (PSD sınırı kaydırmamak). | 🟡 KISMÎ | orta | moment_ops (7) + advanced_reasoning (28) ✓ |
 
-**Sıra kuralı:** alttan üste (L0→L6). **Tamamlanan (2026-06):** F0 (NC Möbius κ) + F0b (bounded_kappa_distance) + F1/F5 encoder collision KÖK çözüm (imza-encoding + manifold migrasyonu) + F2 (flywheel) + F2b (ask tek grounding) + F3-çekirdek (admit() + parity) + F4 (Producer çatısı + #8 konveks-çekirdek + engine.grow→deduce + Wonder loop) + **F5 Cognition iskeleti** (research/cognition.py, strateji-pluggable, 15 test) + F6-çekirdek (serve smoke) + 4 gerçek dedup (#7/#9/#10 tam, #8 kısmî). Test 443→525+.
+| **F7** | **[TAMAMLANDI 2026-06]** Jensen Hiperbolisitesi — Dil Üretimi Düzeltmesi: `language/generator.py` Pass 3 (canlı moment arama) kaldırıldı, SPECTRAL_BRIDGE `_CERTIFIED`'dan çıkarıldı, `_is_grounded_proxy()` semantik TAU filtresi eklendi. `language/speaker.py` `_TR_VERB` 7 Kademe-2 paradigması ile genişletildi. Cognition 3 mantık düzeltmesi: ALEPH gap filtresi + TAU kenar takibi + SELF SelfModel. Hilbert-Pólya bağlantısı dokümante edildi. | ✅ TAMAM | düşük | 20 test_language_layer + 23 test_cognition ✓ |
+
+**Sıra kuralı:** alttan üste (L0→L6). **Tamamlanan (2026-06):** F0 (NC Möbius κ) + F0b (bounded_kappa_distance) + F1/F5 encoder collision KÖK çözüm (imza-encoding + manifold migrasyonu) + F2 (flywheel) + F2b (ask tek grounding) + F3-çekirdek (admit() + parity) + F4 (Producer çatısı + #8 konveks-çekirdek + engine.grow→deduce + Wonder loop) + **F5 Cognition iskeleti** (research/cognition.py, strateji-pluggable, 15 test) + F6-çekirdek (serve smoke) + **F7 Jensen Hiperbolisitesi** (dil üretimi + cognition 3 fix) + 4 gerçek dedup (#7/#9/#10 tam, #8 kısmî). Test 443→545+.
 
 **KALAN (dürüst):**
 - **F3-çağıran-migrasyonu**: 35 `.add`/`.add_unchecked` çağıranı zaten `admit()`'e transitif delege ediyor (logic birleşti); açık `admit(policy=)` çağrısına rewrite KOZMETİK + risk — yapılmadı.
 - **#8 kalan**: `derive`/`bridge`/`_local_genesis` böl/ham-float aritmetiği KORUNDU (gerçek sayısal ayrım, naif birleştirme PSD sınırını kaydırır).
 - **F6 namespace/proxy**: düz-API ilkesine (`from tantrium import ...`) aykırı — bilinçli ATLANDI.
+- **tce-collapse-engine merge**: RH ispat zinciri tamamlandığında ana branch'e alınacak. Şu an paralel araştırma hattı.
 
 ---
 

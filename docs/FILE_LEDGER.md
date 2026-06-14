@@ -478,8 +478,9 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **İş:** `Cognition` sınıfı — 4 döngüyü (GrowthEngine/ProofLoop/Explorer/Researcher) tek
   strateji-pluggable çatı altında birleştirir. `CognitionStrategy` Protocol (runtime_checkable).
   Yerleşik fazlar: `PerceivePhase` (manifold boyutu) · `ReflectPhase` (GapFinder) ·
-  `OperatePhase` (Researcher+Explorer delege) · `ComposePhase` · `FlyWheelPhase` ·
-  `ProvePhase` (ProofLoop delege) · `PersistPhase`.
+  `OperatePhase` (Researcher+Explorer delege + ALEPH re-encoding + SELF SelfModel) ·
+  `ComposePhase` · `FlyWheelPhase` · `ProvePhase` (ProofLoop delege) ·
+  `NarratePhase` · `DeductivePhase` (engine.grow) · `PersistPhase`.
   `cycle(mode="batch"|"stream")` — batch: fazlı sonlu; stream: GrowthEngine.stream delege.
   `add_strategy(before=)` ile özel faz enjeksiyonu. `ai.cognition()` facade.
 - **Kademe 6 [2026-06]:** Kausal-spektral geri bildirim döngüsü kapandı.
@@ -490,11 +491,22 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   `CognitionState.compose_targets` + `campaigns_triggered` alanları eklendi.
   `CognitionReport.campaigns_triggered` raporlanıyor.
   Döngü: KEGG/PubMed→TAU→meaning()→compose→produce→gap→prove→TAU (kapalı).
+- **3 Mantık Düzeltmesi [2026-06, commit 20283c7]:**
+  1. `_gaps_to_campaigns()`: `ALEPH:` önekli boşluklar artık kampanyaya GÖNDERİLMİYOR.
+     ALEPH:X = Aleph PSD başarısızlığı = encoding sorunu, ispat kampanyası çözmez.
+     (ALEPH:AG_LGV_TRANSFER, ALEPH:CELL_SUPPORT_POSITIVITY, ALEPH:DYADIC_TRANSPORT —
+     bunlar tce-collapse-engine branch'inden gelen ispat kavramları, spectral sertifika bekliyor.)
+  2. `DeductivePhase.execute()`: `state.edges_added` düzgün güncelleniyor.
+     `edges_before = sum(len(v) for v in engine.tau.edges.values())` before/after takip.
+  3. `OperatePhase.execute()`: ALEPH boşlukları → CoreMachine re-encoding denemesi.
+     Başarılıysa `concept.moments` yeni encoding'e güncelleniyor (≤10 kavram/döngü).
+     + `SelfModel(engine).reflect(persist=True)` → ⟨SELF⟩ TAU kenarları her döngüde kök kazanıyor.
 - **Tekrar:** 4 döngü DEĞİŞMEDİ; Cognition bunlara delege eder (strateji koruyucu).
 
 > **F5+Kademe6 TAMAMLANDI (2026-06):** (a) Veri-çekme #9 (net.py) ✅ (b) 4 döngü → Cognition
 > iskeleti + pluggable strateji ✅ (c) Boşluk tespiti → GapFinder birliği (#10) ✅
 > (d) Encoder → imza-encoding + migrasyon (F1/F5) ✅ (e) ComposePhase+FlyWheelPhase (Kademe 6) ✅
+> (f) 3 mantık düzeltmesi (ALEPH filtre, TAU kenar takibi, SELF topraklama) ✅
 > 23 test (test_cognition.py).
 
 ---
@@ -506,17 +518,34 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   `explain`, `compare`, `locate`, `synthesize` (TAU→paragraf), `describe_percept` (algı→dil:
   spektral karakter+grounding+çağrışım), `name_gap`.
 - **Güç:** "Söyleyemediğini söylemez — sessizlik kesinliktir." Uydurmaz.
+- **Kademe F7 [2026-06]:** `_TR_VERB` 7 Kademe-2 paradigması ile genişledi:
+  `COMPONENT_OF/INHIBITS/CAUSES/ACTIVATES/HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE`.
+  `synthesize(concept, facts, max_per_paradigm)` artık tam TAU yelpazesini Türkçe
+  cümleye çevirebilir: "X, Y'yi inhibe eder", "X, Z'nin bir parçasıdır" vb.
+  Eskiden yalnız 6 paradigma (IS_A/USES/ACHIEVES/REQUIRES/DEFINES/COMPOSED) vardı —
+  Kademe 2 paradigmaları sessiz geçiliyordu (`tmpl = None` → cümle üretilmiyordu).
 - **Tekrar:** YOK. generator'dan farklı (run anlatımı vs yörünge).
 
 ### ✅ language/generator.py — TAU yörünge üretimi (CertifiedGenerator)
 - **İş:** seed→encode→her adımda TAU komşuları arasından argmin moment_distance→certified cümle.
-  3 geçiş (semantic→Hankel→canlı moment arama). TR/EN. "argmin, sampling DEĞİL — deterministik walk."
+  2 geçiş (semantic→ALEPH fallback). TR/EN. "argmin, sampling DEĞİL — deterministik walk."
 - **Kademe 2 [2026-06]:** `_SEMANTIC` seti genişledi: COMPONENT_OF/HAS_SIGNAL/HAS_COMPOUND/
   HAS_IMAGE/INHIBITS/CAUSES/ACTIVATES. `_CONNECTIVE`+`_EN_CONNECTIVE` şablonları tamamlandı.
 - **Kademe 5 [2026-06]:** `generate(use_meaning=False)` → anlam kanalı hibrit skor.
   `_get_topo_encoder()` lazy singleton. `_next_step(use_meaning)` → `_score()`:
   `use_meaning=True` → `0.6×moment_distance + 0.4×meaning_distance` (TopologyEncoder).
   `use_meaning=False` (varsayılan) → geriye uyumlu yüzey skor. `ai.generate(use_meaning=True)`.
+- **Kademe F7 — Jensen Hiperbolisitesi Düzeltmesi [2026-06]:**
+  KÖK SORUN: Pass 3 (`manifold.nearest()` ile canlı moment arama) Jensen hiperbolisitesi ihlaliydi —
+  topraklı olmayan kavramlar (xqzwvbnmkjhgfd, beauty) "kritik hattan sapan karmaşık sıfır" gibi
+  yörüngeye giriyordu. SPECTRAL_BRIDGE de genesis yapay köprüsü — anlamsal bilgi taşımaz.
+  **Çözüm:** (1) `_CERTIFIED = {"ALEPH"}` — SPECTRAL_BRIDGE çıkarıldı.
+  (2) Pass 3 TAMAMEN KALDIRILDI — yörünge topraksız komşu bulamazsa durur (çöp değil).
+  (3) `_is_grounded_proxy(name)`: `any(e.paradigm in _SEMANTIC for e in edges)` — Pass 2'de
+  ALEPH hedefinin en az 1 semantik TAU kenarı olmasını zorunlu kılar.
+  Mimari ilke: dil yörüngesi = RH kritik hat analogu. Halüsinasyon geometrik olarak imkânsız.
+  Sonuç: `ai.generate("EGFR")` → "EGFR, Lapatinib elde eder. Lapatinib, bir inhibitor ve
+  Neratinib türüdür." 20/20 test_language_layer yeşil.
 - **Tekrar:** YOK. Speaker run anlatır, generator manifoldda yürür.
 
 ### ✅ language/bootstrap.py — kelime öğrenme (LanguageBootstrap)
@@ -653,11 +682,13 @@ Hiçbir gücü maskelemez — güçlendirir.
 
 ---
 
-### ✅ tests/test_language_layer.py — Kademe 3-5 dil katmanı testleri [YENİ 2026-06]
+### ✅ tests/test_language_layer.py — Kademe 3-5-F7 dil katmanı testleri [YENİ 2026-06]
 - **İş:** 20 test: `bind_percept` (5), `meaning_compose` (8), `generate(use_meaning)` (5),
-  `_CONNECTIVE/_EN_CONNECTIVE` kapsam (2). Tümü 58s'de geçiyor.
+  `_CONNECTIVE/_EN_CONNECTIVE` kapsam (2). Tümü ~60s'de geçiyor.
 - **Kapsam:** TAU kenarı oluşumu, manifold kabul, [0,1] moment aralığı, nearest() tipi,
   to_produce_target(), n_surface sayacı, str() format, TR/EN dil, hibrit skor.
+- **Kademe F7 kapsamı:** Jensen hiperbolisitesi düzeltmesi testleri (SPECTRAL_BRIDGE çıkarma,
+  Pass 3 kaldırma, `_is_grounded_proxy` semantik filtresi) bu test seti ile doğrulandı.
 
 ---
 

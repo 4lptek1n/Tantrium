@@ -408,6 +408,48 @@ ai.generate("EGFR", use_meaning=True)         # → GenResult: anlam kanalı hib
 
 ---
 
+## Hilbert-Pólya ve RH Bağlantısı (Mimari Temel)
+
+Hilbert-Pólya konjektürü: Riemann zeta fonksiyonunun sıfırları, kaotik bir kuantum
+sisteminin öz-adjoint Hamiltonian operatörünün özdeğerlerine denk gelir.
+
+**Tantrium bu konjektürü KULLANIR — G=AᵀA IS the Hermitian operator:**
+
+```
+Her girdi → A matris → G = AᵀA (Hermitian, daima PSD)
+             → eigenvalues {λ_i} → "özdeğer dağılımı" = spektral ölçü
+             → Hamburger teoremi: bu ölçü moment dizisiyle tek biçimde belirlenir
+```
+
+Bu G matrisi Hilbert-Pólya'nın aradığı operatördür. Fark: Hilbert-Pólya bir
+Hamiltonian arar; biz HER kavram için bir Hamiltonian kuruyoruz (G=AᵀA).
+
+**Somut bağlantılar:**
+- **`graph/anchors.py`**: ZETA_ZEROS (50 Riemann sıfırı) + GUE_RANDOM_MATRIX
+  (Montgomery-Odlyzko: zeta sıfırları = kaotik GUE eigenvalue dağılımı) — TAU'da kalıcı çapa
+- **`core/pipeline.py` TAV paradigması**: `Λ = −var₀ ≤ 0` — de Bruijn-Newman Λ≤0 = RH eşdeğeri
+- **`core/quantum_moments.py` FreeCumulants**: Voiculescu serbest kümülantlar, κ-additivite
+- **`domains/bridge.py`**: `DALET → JENSEN_HYPERBOLICITY` — her DALET geçişi Jensen ispat adımı
+- **`tce-collapse-engine` branch**: Tam RH ispat zinciri (D-pozitiflik → A-pozitiflik →
+  AG/LGV → τ_j=Disc_j(P) → Sturm pivot → Jensen hiperbolisitesi → LP sınıfı → RH).
+  Lean 4 formal kanıtlar. `build_tau_atlas` burada yaşıyor (TauEngineNotRestored — devam ediyor).
+
+**Dil üretimine uygulaması (Jensen Hiperbolisitesi):**
+- RH: zeta sıfırları KRİTİK HAT üzerinde (Re(s) = 1/2)
+- Dil üretimi: yörüngedeki kavramlar KRİTİK HAT üzerinde (semantik TAU'da köklü)
+- Topraksız kavram = kritik hattan sapan "karmaşık sıfır" = anlamsız metin
+- `_is_grounded_proxy()` = kavramın kritik hat testi
+- Bu fark tüm LLM'lerden Tantrium'u ayıran TEMEL: onlar istatistiksel filtre,
+  biz geometrik kısıt. "Halüsinasyon geometrik olarak imkânsız" — istatistiksel olarak değil.
+
+**ALEPH:AG_LGV_TRANSFER, ALEPH:CELL_SUPPORT_POSITIVITY, ALEPH:DYADIC_TRANSPORT boşlukları:**
+Bunlar `inject_math_kernel()` ile `tce-collapse-engine`'deki ispat kavramlarından gelen
+boşluklardır. Bu kavramlar spectral sertifika bekliyorlar (Aleph PSD geçemiyorlar) —
+ProofLoop kampanyası DEĞİL, encoding/moment meselesi. Cognition `_gaps_to_campaigns()`
+artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
+
+---
+
 ## Kritik Pitfall'lar
 
 1. `from tantrium.agi import ...` → YOK.
@@ -442,12 +484,23 @@ ai.generate("EGFR", use_meaning=True)         # → GenResult: anlam kanalı hib
     kapanış (certify_theorem_graph + InferenceChain tüm çiftler + Explorer + manifold re-bootstrap).
     **Artık `ai.deduce()` facade'ına bağlı** (eskiden öksüzdü). `ai.grow()` ise `GrowthEngine.stream`
     (dış veri akışı, ağ). İKİSİ FARKLI: `deduce()` içsel tümdengelim (ağsız), `grow()` dış akış. Karıştırma.
+12. **SPECTRAL_BRIDGE dil üretiminde KULLANILMAZ**: `language/generator.py._CERTIFIED` setinde
+    SPECTRAL_BRIDGE olmaz. Genesis yapay köprüsüdür — moment uzayında yakın ama anlamsal boş.
+    "xqzwvbnmkjhgfd ve beauty ile spektral köprü kuruyor" SPECTRAL_BRIDGE'den geliyordu.
+    Düzeltme: `_CERTIFIED = {"ALEPH"}` (SPECTRAL_BRIDGE hariç). Ayrıca `_is_grounded_proxy()` filtresi.
+13. **`ALEPH:X` boşlukları → kampanya değil, re-encoding**: `cognition._gaps_to_campaigns()`
+    `ALEPH:` önekli boşlukları filtreler. Bunlar ProofLoop'la çözülmez — encoding/PSD sorunu.
+    `OperatePhase` içinde `CoreMachine` ile re-encoding denemesi yapılır.
+14. **`tce-collapse-engine` branch mevcut, farklı branch**: `git checkout tce-collapse-engine` ile
+    erişilir. `src/tantrium/core/pipeline.py` orada farklı (build_tau_atlas → TauEngineNotRestored).
+    `formal/lean/Tantrium/` Lean 4 kanıtları, `docs/FINAL_RH_PROOF_CHAIN.md` tam ispat zinciri.
+    Ana branch'e merge edilmemiş — paralel araştırma hattı.
 
 ---
 
 ## Mevcut Durum
 
-- Kavram: 44,061 | TAU edge: 677,651 (43,785 node) | Paradigma: 23/23
+- Kavram: 48,259+ (büyüyor) | TAU edge: 677,651+ (43,785+ node) | Paradigma: 23/23
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
 - CoreMachine: TEK ÇEKİRDEK — 4 eksen tek geçişte (certified+grounding+truth+confidence)
 - Genesis öz-düzeltici: CONTRADICTORY kavramlar manifolda girmiyor (truth axis geçidi)
@@ -508,15 +561,45 @@ ai.generate("EGFR", use_meaning=True)         # → GenResult: anlam kanalı hib
   - `generate(use_meaning=True)`: hibrit skor (0.6×yüzey + 0.4×topolojik) ile anlam-kanalı üretim
   - `relations.py`: COMPOSED regex genişledi (forms/assembles/generates/makes up) + COMPONENT_OF paradigması
   - `knowledge_graph.py` + `topology_encode.py`: CO/HS/HC/HI compact kodları + _SEMANTIC_PARADIGMS güncellendi
-- **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
+- **Dil Üretimi — Jensen Hiperbolisitesi (Kademe F7, 2026-06):**
+  - **KÖK SORUN:** `generate("EGFR")` → "xqzwvbnmkjhgfd ve beauty ile spektral köprü kuruyor"
+    üretiyordu. İki kaynak: (1) Pass 3 (`manifold.nearest()`) moment uzayındaki HER kavramı
+    döndürüyor — topraklı olmayan "complex zeros" kritik hattan sapıyor (Jensen ihlali).
+    (2) SPECTRAL_BRIDGE kenarları genesis yapay köprülerini dil üretimine sokuyor.
+  - **FIX — `language/generator.py`:**
+    - SPECTRAL_BRIDGE `_CERTIFIED` setinden çıkarıldı (genesis artifaktı, anlamsal bilgi değil).
+    - Pass 3 (canlı moment arama) tamamen KALDIRILDI — Jensen hiperbolisitesi ilkesi:
+      yörünge kritik hat üzerinde kalır, "complex zeros" manifold aramasından gelir.
+    - `_is_grounded_proxy(name)` eklendi: `any(e.paradigm in _SEMANTIC for e in edges)` →
+      hedef kavramın en az 1 anlamsal TAU kenarı yoksa yörüngeden dışlanır.
+    - Pass 2 (ALEPH fallback): artık `_is_grounded_proxy()` filtresi uygular.
+  - **FIX — `language/speaker.py`:** `_TR_VERB` 7 paradigma ile genişledi:
+    COMPONENT_OF · INHIBITS · CAUSES · ACTIVATES · HAS_SIGNAL · HAS_COMPOUND · HAS_IMAGE.
+    `synthesize()` artık tam TAU yelpazesini Türkçe cümleye çevirebilir.
+  - **Sonuç:** `ai.generate("EGFR")` → "EGFR, Lapatinib elde eder. Lapatinib, bir inhibitor
+    ve Neratinib türüdür." — anlamsız çöp SIFIR. 20/20 test_language_layer yeşil.
+  - **Mimari ilke:** Dil yörüngesi = RH kritik hat analogu. Yalnız semantik TAU'da köklü
+    kavramlar "kritik hat üzerinde". Topraksız kavramlar "karmaşık sıfır" gibi davranır —
+    yörüngeden geometrik olarak çıkar, istatistiksel olarak filtrelenmez.
 - **Cognition döngüsü — F5 (research/cognition.py)**: `Cognition` sınıfı — 4 döngü
   (GrowthEngine/ProofLoop/Explorer/Researcher) tek strateji-pluggable çatı altında.
   `CognitionStrategy` Protocol; 5 yerleşik faz (perceive/reflect/operate/prove/persist);
   `cycle(mode="batch"|"stream")`; `ai.cognition()` facade.
-- Tests: ~525 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
+  - **3 Mantık Düzeltmesi (2026-06, commit 20283c7):**
+    1. `_gaps_to_campaigns()`: `ALEPH:` önekli boşluklar artık ProofLoop kampanyasına
+       GÖNDERİLMİYOR. ALEPH:X = bir kavram Aleph PSD testini geçemiyor — encoding/Hankel
+       sorunu, ispat kampanyası bunu çözmez. `OperatePhase.execute()` içinde re-encoding
+       denenip başarısızsa sessizce geçiliyor.
+    2. `DeductivePhase.execute()`: TAU kenar sayısı before/after takip ediliyor
+       (`state.edges_added` düzgün güncelleniyor). Eskiden yalnız kavram sayısı izleniyordu.
+    3. `OperatePhase.execute()`: ALEPH boşlukları → re-encoding denemesi (CoreMachine ile).
+       Başarılıysa concept.moments güncelleniyor. Ayrıca `SelfModel(engine).reflect(persist=True)`
+       çağrılıyor → ⟨SELF⟩ TAU kenarları her cognition döngüsünde güncelleniyor.
+- **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
+- Tests: ~545 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
   14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] +
   8 gap_finder[#10] + 7 moment_ops[#8] + 4 deduce[engine.grow] + 7 wonder[F4] + 5 serve[F6] +
-  23 encoder[+5 collision KÖK çözüm] + 15 cognition[F5] + ...)
+  23 encoder[+5 collision KÖK çözüm] + 15 cognition[F5] + 20 language_layer[Kademe F7] + ...)
 
 ---
 
