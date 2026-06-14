@@ -49,6 +49,10 @@ _FOCUS_SOURCES: dict[str, set[str]] = {
         "_fetch_conceptnet", "_fetch_kegg_kgml",
     },
     "math": {"_fetch_oeis", "_fetch_web", "_fetch_wikidata"},
+    # DİL: yalnız İLİŞKİSEL-METİN/üçlü kaynaklar (molekül/dizi YOK). ConceptNet +
+    # Wikidata typed-triple üretir → her item doğrudan semantik kenar (izole düşürür);
+    # PubMed gövde + Wikipedia ilişkisel metin → extraction çok kenar örer.
+    "language": {"_fetch_conceptnet", "_fetch_wikidata", "_fetch_pubmed", "_fetch_web"},
 }
 
 # OEIS anahtar kelime rotasyonu — matematik gövdesini geniş tarar
@@ -305,15 +309,25 @@ class GrowthEngine:
         web_idx = self.state.get("web_gap_idx", 0)
         cache = self._gap_cache or ["mathematics", "biochemistry", "topology"]
         idx = web_idx % max(len(cache), 1)
-        gaps_labels = cache[idx:idx + 3]
+        gaps_labels = cache[idx:idx + 2]
         self.state["web_gap_idx"] = web_idx + 1
+        # SONSUZ ÇEŞİTLİ KAYNAK: gap-sorguları tükeniyordu (duplikat). Wikipedia RANDOM
+        # makaleler ekle → her döngü taze/farklı ilişkisel metin (veri-arzı darboğazı çözümü).
+        try:
+            rnd = _http_json("https://en.wikipedia.org/w/api.php?action=query"
+                             "&list=random&rnnamespace=0&rnlimit=3&format=json")
+            rand = (((rnd or {}).get("query") or {}).get("random") or [])
+            gaps_labels = gaps_labels + [r.get("title", "") for r in rand if r.get("title")]
+        except Exception:
+            pass
 
         concepts_list: list[str] = []
         _SKIP = ("All ", "Articles ", "Wikipedia ", "Pages ", "CS1 ",
                  "Webarchive", "Use ", "Short description")
 
-        def _fetch_one_wiki(query: str) -> list[str]:
+        def _fetch_one_wiki(query: str) -> tuple[list[str], list[tuple[str, str, str]]]:
             local: list[str] = []
+            edges: list[tuple[str, str, str]] = []  # (title, IS_A, category) — kategori grafı
             try:
                 q = urllib.parse.quote(str(query)[:80])
                 url = (f"https://en.wikipedia.org/w/api.php"
@@ -324,18 +338,24 @@ class GrowthEngine:
                     t = urllib.parse.quote(str(title)[:120])
                     url2 = (f"https://en.wikipedia.org/w/api.php"
                             f"?action=query&prop=categories|links|extracts"
-                            f"&titles={t}&format=json&exintro=1&exsentences=3"
+                            f"&titles={t}&format=json&exintro=1&exsentences=8"
                             f"&explaintext=1&cllimit=8&pllimit=12&redirects=1")
                     page_data = _http_json(url2)
                     pages = ((page_data or {}).get("query") or {}).get("pages") or {}
                     for pid, page in pages.items():
                         if pid == "-1":
                             continue
-                        local.append(str(page.get("title", "")))
+                        ptitle = str(page.get("title", "")).strip()
+                        local.append(ptitle)
                         for cat in (page.get("categories") or [])[:8]:
                             cname = cat.get("title", "").replace("Category:", "").strip()
                             if cname and len(cname) < 60 and not any(cname.startswith(s) for s in _SKIP):
                                 local.append(cname)
+                                # Wikipedia kategori yapısı = IS_A ilişki grafı.
+                                # Eskiden kategori izole kavram olarak ekleniyordu (kenar YOK)
+                                # → makale izole kalıyordu. Şimdi title IS_A category kenarı.
+                                if ptitle and 3 < len(ptitle) < 60:
+                                    edges.append((ptitle.lower(), "IS_A", cname.lower()))
                         for link in (page.get("links") or [])[:6]:
                             lname = link.get("title", "").strip()
                             if lname and len(lname) < 60 and not lname.startswith(("Wikipedia:", "Help:", "File:")):
@@ -348,16 +368,26 @@ class GrowthEngine:
                                 pass
             except Exception:
                 pass
-            return local
+            return local, edges
 
-        # 3 Wikipedia sorgusu paralel
+        # Wikipedia sorguları paralel (gap + random makaleler)
+        cat_edges: list[tuple[str, str, str]] = []
         with ThreadPoolExecutor(max_workers=3) as pool:
-            futs = [pool.submit(_fetch_one_wiki, q) for q in gaps_labels[:3]]
+            futs = [pool.submit(_fetch_one_wiki, q) for q in gaps_labels[:5]]
             for fut in as_completed(futs):
                 try:
-                    concepts_list += fut.result()
+                    loc, edg = fut.result()
+                    concepts_list += loc
+                    cat_edges += edg
                 except Exception:
                     pass
+        # Kategori IS_A kenarlarını ANA thread'de ör (race yok) — Wikipedia'nın
+        # ilişki grafını manifolda semantik kenar olarak yakala (izoleyi düşürür).
+        for subj, paradigm, obj in cat_edges[:40]:
+            try:
+                self._inject_direct_edge(subj, paradigm, obj)
+            except Exception:
+                pass
 
         seen: set[str] = set()
         out: list[str] = []
