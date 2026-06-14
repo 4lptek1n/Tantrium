@@ -61,6 +61,9 @@ class GrowthReport:
     edges_end: int = 0
     elapsed_s: float = 0.0
     stopped_reason: str = ""
+    # Anlam kanalı entegrasyonu (TopologyEncoder) bilançosu
+    meaning_enriched: int = 0  # anlam imzası hesaplanan (semantik-köklü) kavram
+    bridges_found: int = 0     # keşfedilen çapraz-boyutlu kuantum köprü
 
     def summary(self) -> str:
         dc = self.concepts_end - self.concepts_start
@@ -71,6 +74,8 @@ class GrowthReport:
             f"sınır: {self.frontier} | reddedilen: {self.rejected} | doğan: {self.born}\n"
             f"Kavram: {self.concepts_start:,} → {self.concepts_end:,} (+{dc})\n"
             f"TAU kenar: {self.edges_start:,} → {self.edges_end:,} (+{de})\n"
+            f"Anlam zenginleştirme: {self.meaning_enriched} kavram | "
+            f"kuantum köprü: {self.bridges_found}\n"
             f"Durma sebebi: {self.stopped_reason}"
         )
 
@@ -102,6 +107,9 @@ class GrowthEngine:
         self.state = self._load_state()
         self._gap_cache: list[str] = []  # _fetch_web için önceden hesaplanmış boşluklar
         self._gap_cache_cycle: int = -1  # cache'in güncellendiği döngü
+        # Anlam kanalı entegrasyonu (TopologyEncoder) — konsolidasyonda lazy kurulur.
+        self._topo_encoder: Any = None
+        self._meaning_seen: set[str] = set()  # anlam-zenginleştirmesi yapılmış kavramlar
 
     # ─── Resumable durum ─────────────────────────────────────────────────────
 
@@ -783,9 +791,9 @@ class GrowthEngine:
                 _log(f"döngü {rep.cycles}: +{len(batch)} işlendi "
                      f"(çek:{rep.core} sın:{rep.frontier} red:{rep.rejected} doğ:{rep.born})")
 
-                # Periyodik konsolidasyon: TAU örme + öz-kök
+                # Periyodik konsolidasyon: TAU örme + öz-kök + anlam zenginleştirme
                 if rep.cycles % consolidate_every == 0:
-                    self._consolidate(_log)
+                    self._consolidate(_log, rep)
 
         except KeyboardInterrupt:
             rep.stopped_reason = "klavye kesintisi"
@@ -806,7 +814,7 @@ class GrowthEngine:
         _log(rep.summary())
         return rep
 
-    def _consolidate(self, _log: Callable[[str], None]) -> None:
+    def _consolidate(self, _log: Callable[[str], None], rep: "GrowthReport | None" = None) -> None:
         """TAU geçişli kapanış + öz-model köklendirme (büyüdükçe kendini hatırla)."""
         try:
             from tantrium.reasoning.necessity import NecessityEngine
@@ -821,3 +829,66 @@ class GrowthEngine:
             _log("öz-model köklendirildi (⟨SELF⟩ güncel)")
         except Exception:
             pass
+        # Anlam kanalı (TopologyEncoder): yeni büyüyen semantik-köklü kavramların
+        # ilişki-grafı imzasını hesapla + çapraz-boyutlu kuantum köprüleri ortaya çıkar.
+        # F8 vizyonu: "Topoloji = bilgi" — büyüme yalnız node değil, ANLAM örer.
+        self._meaning_consolidate(_log, rep)
+
+    def _meaning_consolidate(
+        self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
+        *, max_per_pass: int = 40,
+    ) -> None:
+        """Anlam kanalını büyüme döngüsüne bağlar (additive, fail-open).
+
+        Yeni büyümüş, semantik TAU kenarı (CAUSES/INHIBITS/ACTIVATES/IS_A/...) olan
+        kavramlar için `TopologyEncoder.encode` (ilişkisel kodlama = "ne demek")
+        çalıştırır ve `manifold.quantum_bridges` ile klasik-uzak/kuantum-yakın gizli
+        bağlantıları yüzeye çıkarır. ground_full/bind_percept dış duyusal veri
+        ister (metin akışında yok) — bu yüzden büyümede doğal olan anlam kanalıdır.
+        """
+        try:
+            from tantrium.core.topology_encode import TopologyEncoder, _SEMANTIC_PARADIGMS
+        except Exception:
+            return
+        if self._topo_encoder is None:
+            try:
+                self._topo_encoder = TopologyEncoder(self.engine)
+            except Exception:
+                return
+        tau = self.engine.tau
+        manifold = self.engine.manifold
+        # Henüz zenginleştirilmemiş, en az 1 semantik kenarı olan kavramları seç.
+        candidates: list[str] = []
+        for name, edges in tau.edges.items():
+            if name in self._meaning_seen:
+                continue
+            if any(getattr(e, "paradigm", None) in _SEMANTIC_PARADIGMS for e in edges):
+                candidates.append(name)
+            if len(candidates) >= max_per_pass:
+                break
+        if not candidates:
+            return
+        enriched = 0
+        bridges = 0
+        for name in candidates:
+            self._meaning_seen.add(name)
+            try:
+                obj = self._topo_encoder.encode(name)  # anlam imzası (None = semantik-topraksız)
+            except Exception:
+                obj = None
+            if obj is None:
+                continue
+            enriched += 1
+            try:
+                br = manifold.quantum_bridges(name, top_k=3)
+            except Exception:
+                br = []
+            if br:
+                bridges += len(br)
+                top = br[0]
+                _log(f"anlam köprüsü: {name} ⟷ {top[0]} (κ-yakın {top[1]:.3f})")
+        if enriched:
+            _log(f"anlam kanalı: {enriched} kavram zenginleştirildi, {bridges} kuantum köprü")
+        if rep is not None:
+            rep.meaning_enriched += enriched
+            rep.bridges_found += bridges

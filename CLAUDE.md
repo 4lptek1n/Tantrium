@@ -664,6 +664,15 @@ Canlı doğrulama: 21 gerçek veri (PubChem+OEIS) 80.8s → 12 çekirdek, 5 sın
 4 CONTRADICTORY reddedildi, kimya↔biyoloji cross-domain köprüler canlı kuruldu.
 Motor "zeka" değil — neyi besleyeceğine karar veren zekadır. Tests: `test_growth.py` (10).
 
+**Kademe F9 — Anlam Kanalı Entegrasyonu [2026-06]:** Büyüme artık yalnız node değil ANLAM
+da örer. Her konsolidasyonda `_meaning_consolidate` çalışır: yeni büyümüş, semantik TAU
+kenarı (CAUSES/INHIBITS/ACTIVATES/IS_A/...) olan kavramlar için `TopologyEncoder.encode`
+(ilişkisel kodlama, "ne demek") + `quantum_bridges` (klasik-uzak/kuantum-yakın gizli
+bağlantı). `GrowthReport.meaning_enriched`/`bridges_found` raporlanır. ground_full/
+bind_percept dış duyusal veri ister (metin akışında yok) — bu yüzden büyümede doğal
+entegre olan F8 anlam kanalıdır ("Topoloji = bilgi"). Additive/fail-open: TopologyEncoder
+değişmedi. Doğrulama: 10/10 test_growth + ağsız büyümede 47 kavram zenginleşti.
+
 ---
 
 ## Evren Kapısı + Çekirdek Nabzı (`ai.pulse` / `ai.live`)

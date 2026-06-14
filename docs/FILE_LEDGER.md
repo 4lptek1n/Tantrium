@@ -469,6 +469,16 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   kausal kenar öğrenimi TAMAMEN ÇALIŞMIYORDU). Düzeltme: `self.observer.observe(text)`
   (`self.observer = AutonomousObserver(engine)` zaten init'te var). INHIBITS/CAUSES/ACTIVATES
   kenar öğrenimi artık aktif.
+- **Kademe F9 — Anlam Kanalı Entegrasyonu [2026-06]:** `_consolidate` artık `rep` alır ve
+  yeni `_meaning_consolidate(_log, rep, max_per_pass=40)` çağırır. Konsolidasyonda, henüz
+  zenginleştirilmemiş + en az 1 semantik TAU kenarı (`_SEMANTIC_PARADIGMS`:
+  CAUSES/INHIBITS/ACTIVATES/IS_A/...) olan kavramlar için `TopologyEncoder.encode` (anlam
+  imzası) + `manifold.quantum_bridges` (klasik-uzak/kuantum-yakın gizli bağlantı) çalışır.
+  `GrowthReport.meaning_enriched`/`bridges_found` raporlanır. `self._topo_encoder` lazy +
+  `self._meaning_seen` idempotent set. Additive/fail-open — TopologyEncoder DEĞİŞMEDİ.
+  ground_full/bind_percept dış duyusal veri ister (metin akışında yok) → büyümede doğal
+  olan anlam kanalı (meaning). Doğrulama: 10/10 test_growth + ağsız büyümede 47 kavram
+  zenginleşti.
 - **Tekrar:** transport birleşti; döngü (stream) Cognition iskeletine girer (akış stratejisi).
 
 ### ✅ research/goal.py — hedef temsili (Goal · GoalManifold)
