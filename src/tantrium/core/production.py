@@ -136,6 +136,7 @@ class MoleculeSignature:
     """
     smiles: str
     mu: list[float]
+    structure: dict = None        # CodexObject.structure (paradigma alanları, özdeğerler)
     _kappa: object = None
     _spectral: object = None
 
@@ -773,11 +774,15 @@ class ProductionEngine:
         """
         sig = self._sig_cache.get(x)
         if sig is None:
+            mu: list[float] = []
+            struct = None
             try:
-                mu = [float(m) for m in self.engine.encoder.encode(x).moments]
+                obj = self.engine.encoder.encode(x)
+                mu = [float(m) for m in obj.moments]
+                struct = getattr(obj, "structure", None)
             except Exception:
                 mu = []
-            sig = MoleculeSignature(smiles=x, mu=mu)
+            sig = MoleculeSignature(smiles=x, mu=mu, structure=struct)
             self._sig_cache[x] = sig
         return sig
 

@@ -29,6 +29,10 @@ if TYPE_CHECKING:
 # EGFR-içi çiftler ≤3.43, EGFR-dışı ≥4.25 → 3.8 = ayraç.
 _PARADIGM_WORKS_THR = 3.8
 
+# Spektral W2 eşiği (SOFT eksen — veto yok, yalnız kaydedilir/raporlanır).
+# Özdeğer-ölçüsü mesafesi; gevşek tutulur (yargı HARD eksenlerden gelir).
+_SPECTRAL_OK_THR = 0.5
+
 
 @dataclass
 class AxisVerdict:
@@ -105,10 +109,10 @@ class ProductionCertificate:
         lines.append(f"  Sturm yol geçidi: {'✓' if self.sturm_path_ok else '✗'}"
                      f"  (pivot {self.pivot_min:+.4f})   κ-uyum: {self.signature_fit:.4f}")
         if self.axes:
-            lines.append("  6 eksen:")
+            lines.append("  7 eksen:")
             for a in self.axes:
                 mark = "✓" if a.ok else "✗"
-                is_soft = (a.name == "grounding" or
+                is_soft = (a.name in ("grounding", "spectral") or
                            (a.name == "structural" and self.target_kind == "disease"))
                 soft = " (yumuşak)" if is_soft else ""
                 lines.append(f"    {mark} {a.name:<11} {a.value:.4f}"
@@ -117,7 +121,7 @@ class ProductionCertificate:
         if self.realizability_gap is not None:
             lines.append(f"  Gerçeklenebilirlik açığı (ters yol): {self.realizability_gap:.4f}")
         lines += [
-            f"  Tutarlı (5 HARD eksen): {'✓' if self.coherent else '✗'}"
+            f"  Tutarlı (HARD eksenler): {'✓' if self.coherent else '✗'}"
             f"   refine turu: {self.refine_rounds_used}",
             f"  Referans: {self.reference}",
             f"  YARGI: {self.verdict}",
@@ -268,21 +272,20 @@ class ProductionJudge:
         from tantrium.core.quantum_moments import QuantumSignature
 
         axes: list[AxisVerdict] = []
-        try:
-            obj = self.engine.encoder.encode(smiles)
-            cand_struct = obj.structure
-            cand_mu = [float(m) for m in obj.moments]
-        except Exception:
+        # TEK İMZA PIPELINE: aday momenti+yapısı paylaşılan imzadan gelir (re-encode YOK).
+        sig = self.pe._signature(smiles)
+        cand_mu = list(sig.mu)
+        cand_struct = sig.structure
+        if not cand_mu or cand_struct is None:
             return [AxisVerdict("encode", False, float("inf"), 0.0, "encode hatası")], False
 
         # ── structural (HARD): paradigma-matematik mesafesi bilinen aktiflere ──
         refs = ref_smiles or []
         ref_structs = []
         for smi in refs:
-            try:
-                ref_structs.append(self.engine.encoder.encode(smi).structure)
-            except Exception:
-                continue
+            rs = self.pe._signature(smi).structure
+            if rs is not None:
+                ref_structs.append(rs)
         if not ref_structs:               # ligand yok → gerekli imzanın yapısı
             try:
                 ref_structs = [self.engine.encoder.encode(mu_req).structure]
@@ -328,17 +331,28 @@ class ProductionJudge:
         axes.append(AxisVerdict("gimel", gimel_ok, 1.0 if gimel_ok else 0.0, 0.0,
                                 "kararlı" if gimel_ok else "zayıf bağ"))
 
+        # ── spektral (SOFT): özdeğer-ölçüsü W2 yakınlığı (TEK spektral motor) ──
+        # Aynı imzadan lazy özdeğer ölçüsü; gerekli imzanın spektrumuyla W2.
+        try:
+            from tantrium.domains.spectral import moments_to_spectral, spectral_distance
+            tgt_spec = moments_to_spectral(list(mu_req))
+            sd = float(spectral_distance(sig.spectral, tgt_spec))
+            axes.append(AxisVerdict("spectral", sd <= _SPECTRAL_OK_THR, sd,
+                                    _SPECTRAL_OK_THR, f"W2={sd:.3f}"))
+        except Exception:
+            axes.append(AxisVerdict("spectral", True, 0.0, _SPECTRAL_OK_THR, "hesaplanamadı→geç"))
+
         # ── grounding (SOFT): kaydedilir, veto YOK ──
         try:
-            gc = self.engine.grounder.certify(smiles, moments=obj.moments)
+            gc = self.engine.grounder.certify(smiles, moments=cand_mu)
             axes.append(AxisVerdict("grounding", gc.verdict != "UNGROUNDED",
                                     float(getattr(gc, "score", 0.0)), float("inf"),
                                     gc.verdict))
         except Exception:
             axes.append(AxisVerdict("grounding", False, 0.0, float("inf"), "UNGROUNDED"))
 
-        # coherent = HARD eksenler (grounding hariç; hastalık hedefinde structural da yumuşak)
-        soft_names = {"grounding"}
+        # coherent = HARD eksenler (grounding+spektral hariç; hastalık hedefinde structural da yumuşak)
+        soft_names = {"grounding", "spectral"}
         if structural_soft:
             soft_names.add("structural")
         hard = [a for a in axes if a.name not in soft_names]
