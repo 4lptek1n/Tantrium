@@ -80,6 +80,10 @@ _DISEASE_DRIVER_MAP: dict[str, list[str]] = {
 # Aday sıralamada tam özdeğer-W2'nin κ-fit'e harman ağırlığı (κ primary, spektrum keskinleştirir).
 _SPECTRAL_FIT_WEIGHT = 0.5
 
+# Serbest entropi χ(μ) uyum terimi ağırlığı — termodinamik özdeğer-yayılımı eşleşmesi.
+# κ-mesafe + spektral W2'den FARKLI mercek (düzensizlik); küçük tutulur (yardımcı yön).
+_FREE_ENTROPY_WEIGHT = 0.15
+
 _PRIMITIVES = [
     "c1ccccc1",        # benzen
     "c1ccncc1",        # piridin
@@ -139,6 +143,7 @@ class MoleculeSignature:
     structure: dict = None        # CodexObject.structure (paradigma alanları, özdeğerler)
     _kappa: object = None
     _spectral: object = None
+    _free_entropy: object = None
 
     @property
     def kappa(self):
@@ -155,6 +160,19 @@ class MoleculeSignature:
             from tantrium.domains.spectral import moments_to_spectral
             self._spectral = moments_to_spectral(list(self.mu))
         return self._spectral
+
+    @property
+    def free_entropy(self) -> float:
+        """Voiculescu serbest entropisi χ(μ) (lazy) — termodinamik özdeğer-yayılımı.
+
+        χ = ½log(2πe·κ₂) + yüksek-κ düzeltmesi. Şeklin 'ne kadar dağıldığı' (düzensizlik)
+        ölçüsü — κ-mesafeden FARKLI bir mercek (entropi ≠ mesafe). Hastalık daha bozuk =
+        daha düşük entropik çeşitlilik; sağlıklıya yaklaşan aday χ'yi de eşler.
+        """
+        if self._free_entropy is None:
+            from tantrium.core.quantum_moments import free_entropy
+            self._free_entropy = float(free_entropy(self.mu))
+        return self._free_entropy
 
 
 class ProductionEngine:
@@ -175,6 +193,8 @@ class ProductionEngine:
         # Tüm üretim aşamaları (ranking·judge·closure) AYNI imzadan okur — yeniden
         # encode YOK (CoreMachine "tek geçiş" ilkesi). produce() başında temizlenir.
         self._sig_cache: dict[str, "MoleculeSignature"] = {}
+        # De-novo (stage 6-7) aday kümesi — sıralamada proven-first için işaretlenir.
+        self._denovo_smiles: set[str] = set()
 
     # ── Hedef okuma ────────────────────────────────────────────────────────
 
@@ -301,6 +321,7 @@ class ProductionEngine:
 
         self._sync_transport_epsilon()
         self._sig_cache = {}   # TEK imza pipeline: her produce() taze cache (re-encode yok)
+        self._denovo_smiles = set()
         judge = ProductionJudge(self.engine, self)
 
         # Moment listesi doğrudan verildi (meaning_compose entegrasyonu)
@@ -343,12 +364,19 @@ class ProductionEngine:
         pool = self._build_pool(target_str, mu_req, profiles, max_steps, beam_width)
 
         # ── 2. Yargı + sırala ──────────────────────────────────────────
+        # proven-first: kanıtlanmış stratejilerden (1-5) gelen aday, de-novo yedeğinden
+        # (6-7) ÖNCE sıralanır — druggable hedef de-novo'nun küçük-molekül eşleştiricisine
+        # kapılmaz; de-novo yalnız kanıtlanmış aday yoksa öne çıkar.
+        denovo_set = getattr(self, "_denovo_smiles", set())
         scored: list[dict] = []
         for smi in pool:
-            ok, pmin, fit = self._judge_on_axis(smi, mu_req)
+            ok, pmin, fit, efit = self._judge_on_axis(smi, mu_req)
             scored.append({"smiles": smi, "sturm_ok": ok, "pivot_min": pmin,
-                           "kappa_fit": fit, "coherent": False, "axes": []})
-        scored.sort(key=lambda r: (not r["sturm_ok"], r["kappa_fit"]))
+                           "kappa_fit": fit, "entropy_fit": efit,
+                           "coherent": False, "axes": [],
+                           "_denovo": smi in denovo_set})
+        scored.sort(key=lambda r: (r["_denovo"], not r["sturm_ok"],
+                                   r["kappa_fit"], r["entropy_fit"]))
 
         # ── 3. Evren kapanışı (ters hedefte) ───────────────────────────
         if kd is not None and kh is not None:
@@ -362,10 +390,11 @@ class ProductionEngine:
                     "pivot_min": round(proof.pivot_min, 4),
                     "sturm_ok": proof.sturm_ok,
                 }
-            # öne al: kapananlar önce
+            # öne al: kapananlar önce (proven-first korunur, χ tiebreaker)
             scored.sort(key=lambda r: (
                 not r.get("closure", {}).get("universe_closes", False),
-                not r["sturm_ok"], r["kappa_fit"]))
+                r.get("_denovo", False),
+                not r["sturm_ok"], r["kappa_fit"], r.get("entropy_fit", 0.0)))
 
         # ── 4. Refine (kapatan yoksa) ───────────────────────────────────
         closes_count = sum(
@@ -377,9 +406,10 @@ class ProductionEngine:
             new_smi = self._refine(scored, mu_req, profiles, max_steps, beam_width)
             for smi in new_smi:
                 if smi not in {c["smiles"] for c in scored}:
-                    ok, pmin, fit = self._judge_on_axis(smi, mu_req)
+                    ok, pmin, fit, efit = self._judge_on_axis(smi, mu_req)
                     c = {"smiles": smi, "sturm_ok": ok, "pivot_min": pmin,
-                         "kappa_fit": fit, "coherent": False, "axes": []}
+                         "kappa_fit": fit, "entropy_fit": efit,
+                         "coherent": False, "axes": []}
                     if kd is not None and kh is not None:
                         proof = judge.close_universe(smi, kd, kh, mu_req, epsilon)
                         c["closure"] = {
@@ -396,7 +426,8 @@ class ProductionEngine:
             refine_used += 1
         scored.sort(key=lambda r: (
             not r.get("closure", {}).get("universe_closes", False),
-            not r["sturm_ok"], r["kappa_fit"]))
+            r.get("_denovo", False),
+            not r["sturm_ok"], r["kappa_fit"], r.get("entropy_fit", 0.0)))
 
         # ── 5. Kombinasyon (hâlâ kapanmıyorsa) ────────────────────────
         combo_pairs: list[tuple[str, str]] = []
@@ -550,7 +581,8 @@ class ProductionEngine:
     def _build_pool(self, target: str, mu_req: list[float],
                     profiles: list[list[float]], max_steps: int,
                     beam_width: int) -> list[str]:
-        """7 stratejiden aday havuzu: genesis · scaffold · inverse · morph · doğrudan."""
+        """Stratejilerden aday havuzu: genesis · scaffold · inverse · morph · doğrudan ·
+        de-novo-reconstruction (özdeğer-spektrumundan inşa) · kuantum-köprü scaffold."""
         seen: set[str] = set()
         pool: list[str] = []
 
@@ -608,6 +640,55 @@ class ProductionEngine:
         for _, smi in self._reference_ligands(target)[:4]:
             _add(smi)
 
+        # Stages 6-7 = DE-NOVO yedek hattı (kanıtlanmış 1-5 yetmezse). Her zaman havuza
+        # girer ama AYRI işaretlenir: sıralamada kanıtlanmış aday ÖNCE gelir (proven-first),
+        # böylece druggable hedefte reconstruction'ın saf moment-eşleştiricileri (küçük-
+        # molekül dejenerasyonu) kanıtlanmış ilacı GEÇEMEZ. De-novo yalnız başka coherent
+        # aday yoksa kazanır = tam ihtiyaç olan yerde (undruggable) güç açılır. Defter ilkesi:
+        # gerçek ayrımı koru, en-küçük-ortak-payda DEĞİL.
+        denovo: set[str] = set()
+
+        def _add_denovo(smi: str) -> None:
+            before = len(pool)
+            _add(smi)
+            if len(pool) > before:        # gerçekten eklendiyse de-novo olarak işaretle
+                denovo.add(pool[-1])
+
+        # 6. De novo reconstruction: hedefin moment-imzasından özdeğer-ölçüsünü GERİ KUR
+        #    (Gauss kuadratür/Prony) → temizlenmiş moment → genesis o ölçüye inşa eder.
+        #    LİGANDSIZ hedefin ASIL gücü: bilinen ilaç YOK, yalnız hedefin matematiği.
+        try:
+            from tantrium.core.reconstruct import reconstruct_measure
+            rec = reconstruct_measure(mu_req, max_atoms=4)
+            if rec.support and rec.reconstruction_error < 0.5:
+                mu_clean = [float(m) for m in rec.reconstructed_moments][:8]
+                from tantrium.core.molecular_genesis import MolecularGenesis
+                rep = MolecularGenesis(self.engine).simulate(
+                    seeds=_PRIMITIVES, max_steps=max_steps, beam_width=beam_width,
+                    toward_profile=[mu_clean])
+                for s in rep.frontier + list(reversed(rep.lineage)):
+                    _add_denovo(s.smiles)
+        except Exception:
+            pass
+
+        # 7. Kuantum köprü scaffold'u: hedefe κ-DOLANIK (klasik-uzak) çapraz-domain
+        #    kavramların molekülleri. Gizli matematiksel bağ → naif benzerliğin
+        #    göremediği yeni iskele. (F8 "elma-DNA × Fibonacci" ilkesi üretimde.)
+        try:
+            mani = getattr(self.engine, "manifold", None)
+            if mani is not None and hasattr(mani, "quantum_bridges"):
+                for bname, _qd in mani.quantum_bridges(target, top_k=6):
+                    if bname.startswith("⟨"):       # genesis yapay köprüsü — atla
+                        continue
+                    if self._is_smiles(bname):
+                        _add_denovo(bname)
+                    else:
+                        for _, smi in self._reference_ligands(bname)[:2]:
+                            _add_denovo(smi)
+        except Exception:
+            pass
+
+        self._denovo_smiles = denovo     # produce() sıralaması proven-first için okur
         return pool
 
     def _refine(self, scored: list[dict], mu_req: list[float],
@@ -695,16 +776,20 @@ class ProductionEngine:
     # ── Yargı = üretimle aynı eksen ────────────────────────────────────────
 
     def _judge_on_axis(self, smiles: str, mu_req: list[float]
-                       ) -> tuple[bool, float, float]:
-        """Pipeline aşaması: adayın TEK imzasından AK → Sturm pivot + yapısal fit.
+                       ) -> tuple[bool, float, float, float]:
+        """Pipeline aşaması: adayın TEK imzasından AK → Sturm pivot + yapısal fit + χ.
 
-        Aday imzadan okunur (bir kez encode); κ/spektrum imzada lazy+cache.
+        Aday imzadan okunur (bir kez encode); κ/spektrum/χ imzada lazy+cache.
         YAPISAL FİT = κ₂₋₄ (düşük-derece şekil) + tam özdeğer W2 (yüksek-derece yapı).
-        Tek skor, ayrım korunur (κ=şekil özeti, spektrum=tam dağılım — defter ilkesi).
+        χ-uyumu (serbest entropi) AYRI döner → sıralamada TIEBREAKER (birincil κ/yapı
+        sinyalini EZMEZ; yalnız κ+spektrum eşitken termodinamik yayılımı ayırır). Böylece
+        defter ilkesi: gerçek ayrım korunur, χ küçük-molekül eşleştirmesiyle gerçek ilacı
+        geçemez ama ölçü bilgisi skora girer.
         """
+        import math
         sig = self._signature(smiles)
         if not sig.mu:
-            return False, float("-inf"), float("inf")
+            return False, float("-inf"), float("inf"), float("inf")
         ok, pmin = self._sturm_path_pivot_min(sig.mu, mu_req)
         kfit = self._structural_kappa_distance(sig.mu, mu_req)
         # Spektral W2: adayın CACHE'li spektrumu vs hedef spektrumu (bir kez hesaplanır).
@@ -717,8 +802,20 @@ class ProductionEngine:
             sfit = float(spectral_distance(sig.spectral, self._target_spec))
         except Exception:
             pass
+        # Serbest entropi uyumu: adayın χ'si hedefin χ'sine ne kadar yakın (lazy, cache).
+        efit = 0.0
+        try:
+            from tantrium.core.quantum_moments import free_entropy
+            if getattr(self, "_target_chi_mu", None) != mu_req:
+                self._target_chi = float(free_entropy(list(mu_req)))
+                self._target_chi_mu = list(mu_req)
+            cand_chi = sig.free_entropy
+            if math.isfinite(cand_chi) and math.isfinite(self._target_chi):
+                efit = _FREE_ENTROPY_WEIGHT * abs(cand_chi - self._target_chi)
+        except Exception:
+            pass
         fit = kfit + _SPECTRAL_FIT_WEIGHT * sfit
-        return ok, pmin, fit
+        return ok, pmin, fit, efit
 
     @staticmethod
     def _spectral_fit(mu_a: list[float], mu_b: list[float]) -> float:
