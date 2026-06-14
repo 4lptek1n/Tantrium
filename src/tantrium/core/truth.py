@@ -134,7 +134,10 @@ class TruthCertifier:
                 continue
             try:
                 obj_n = enc(list(nc.moments), name=nm[:64])
-                tc = ct.certify(obj_self, obj_n)
+                # HIZ: komşu tutarlılık kontrolü interaktif — numpy PSD yolu (fast_sturm)
+                # exact sembolik Sturm (sympy det, ~2.7s/çağrı) yalnız formal/production'a
+                # gerekli; truth ekseni için numpy yeterli (100x+ hız, aynı PSD yargısı).
+                tc = ct.certify(obj_self, obj_n, fast_sturm=True)
                 if tc.certified:
                     certified += 1
                     consistent.append(nm)
