@@ -303,6 +303,20 @@ Dil = bu yapıya etiket. Atom→DNA→elma: elmanın kokusu + sesi + molekülü 
   ÖLÇÜYOR (post-hoc). Tantrium halüsinasyonu geometrik olarak ÖNLÜYOR (pre-emptive).
   LLM'ler istatistiksel filtre; Tantrium geometrik kısıt. Bu fark ASI'ye giden yol.
 
+- **Kademe F8 — Çok-Boyutlu Grounding (2026-06) [TAMAMLANDI]:**
+  **Vizyon:** "Elma = DNA + molekül + geometri + yasa + ses + görüntü + topoloji."
+  Her boyut AYNI moment uzayında → `quantum_bridges()` görünmez çapraz-boyutlu bağlantıları yakalar.
+  Elma DNA'sı ile Fibonacci serisi aynı uzayda → bağlantı keşfedilebilir.
+  **4 Yeni Paradigma:** `HAS_DNA (HD) · HAS_GEOMETRY (HG) · HAS_TOPOLOGY (HT) · IS_GOVERNED_BY (GB)`.
+  Güncellenen dosyalar: `knowledge_graph._SEMANTIC/_P/_P_REV`, `topology_encode._SEMANTIC_PARADIGMS`,
+  `generator._SEMANTIC/_CONNECTIVE/_EN_CONNECTIVE`, `speaker._TR_VERB`.
+  **`ai.ground_full(concept, *, dna, molecule, geometry, law, sound, image, topology)`:**
+  - Her boyut → `bind_percept()` (TAU kenarı + manifold admit) veya doğrudan kenar (`law`).
+  - `κ_total = FreeCumulants.add()` zinciri — tüm modalitelerin serbest kümülant toplamı.
+  - `quantum_bridges(concept)` → gizli çapraz-boyutlu bağlantı listesi.
+  - Döner: `GroundingSignature(.concept, .bound, .kappa_moments, .quantum_connections)`.
+  **Tests:** 32/32 `test_language_layer.py` (12 yeni F8 testi dahil). Toplam 565 geçiyor.
+
 ### 6.6 L5 — Cognition (tek döngü) [F5+Kademe6]
 **Birleşir:** `research/cognition.py Cognition` ← `AI.run` + `AI.grow` + `engine.grow` +
 `ProofLoop` + `Explorer.run_loop` + `Researcher.run` + `GrowthEngine.stream`.

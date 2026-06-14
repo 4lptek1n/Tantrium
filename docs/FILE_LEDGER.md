@@ -68,6 +68,9 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Kademe 2 [2026-06]:** `_SEMANTIC_PARADIGMS` genişledi: `COMPONENT_OF/HAS_SIGNAL/HAS_COMPOUND/
   HAS_IMAGE` eklendi. Atom→DNA→elma zinciri ve çok-modal bağlama (ses/koku/görüntü) artık
   anlam kanalında görünür (TAU semantik kenar olarak kayıtlıysa).
+- **Kademe F8 [2026-06]:** `_SEMANTIC_PARADIGMS`'e 4 yeni boyut eklendi: `HAS_DNA/HAS_GEOMETRY/
+  HAS_TOPOLOGY/IS_GOVERNED_BY`. "Elma = DNA + molekül + geometri + yasa" — tüm boyutlar anlam
+  kanalında görünür → `ai.meaning("apple")` çok-boyutlu komşuluğu tarar.
 - **DÜRÜST SINIR:** semantik-topraksız kavram (pointer/glucose/dna — yalnız geometrik kenar) → None,
   caller yüzey kodlamasına düşer. Ayrım, ilişki-çıkarımının kalitesi kadar keskin — graf büyüdükçe
   keskinleşir. Darboğaz matematik DEĞİL, graf yoğunluğu/extraction. API: `ai.meaning()`, `ai.meaning_distance()`.
@@ -273,6 +276,10 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Kademe 2 [2026-06]:** Yeni paradigmalar: `COMPONENT_OF/HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE`.
   Compact kodlar: `CO/HS/HC/HI` (`_P` + `_P_REV` güncellendi). `_SEMANTIC` seti genişledi.
   Atom→DNA→elma zinciri için kausal paradigmalar TAU'ya kayıt/yüklemede korunuyor.
+- **Kademe F8 [2026-06]:** 4 yeni paradigma + compact kodları: `HAS_DNA (HD) / HAS_GEOMETRY (HG) /
+  HAS_TOPOLOGY (HT) / IS_GOVERNED_BY (GB)`. `_SEMANTIC` + `_P` + `_P_REV` üçü birden güncellendi.
+  TAU'ya kayıt/yüklemede yeni boyutlar korunuyor — elma DNA'sı ile Fibonacci farklı dosya
+  oturumlarında da aynı kenar kalır.
 - **Tekrar:** YOK.
 
 ### ✅ graph/anchors.py — 10 kanonik matematik çapası
@@ -524,6 +531,10 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   cümleye çevirebilir: "X, Y'yi inhibe eder", "X, Z'nin bir parçasıdır" vb.
   Eskiden yalnız 6 paradigma (IS_A/USES/ACHIEVES/REQUIRES/DEFINES/COMPOSED) vardı —
   Kademe 2 paradigmaları sessiz geçiliyordu (`tmpl = None` → cümle üretilmiyordu).
+- **Kademe F8 [2026-06]:** `_TR_VERB`'e 4 yeni boyut eklendi:
+  `HAS_DNA → "{t} DNA'sına sahiptir"`, `HAS_GEOMETRY → "{t} geometrisine sahiptir"`,
+  `HAS_TOPOLOGY → "{t} topolojisine sahiptir"`, `IS_GOVERNED_BY → "{t} yasasıyla yönetilir"`.
+  Artık `synthesize("apple", facts)` DNA/yasa/geometri ilişkilerini de Türkçeye çevirebilir.
 - **Tekrar:** YOK. generator'dan farklı (run anlatımı vs yörünge).
 
 ### ✅ language/generator.py — TAU yörünge üretimi (CertifiedGenerator)
@@ -531,6 +542,10 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   2 geçiş (semantic→ALEPH fallback). TR/EN. "argmin, sampling DEĞİL — deterministik walk."
 - **Kademe 2 [2026-06]:** `_SEMANTIC` seti genişledi: COMPONENT_OF/HAS_SIGNAL/HAS_COMPOUND/
   HAS_IMAGE/INHIBITS/CAUSES/ACTIVATES. `_CONNECTIVE`+`_EN_CONNECTIVE` şablonları tamamlandı.
+- **Kademe F8 [2026-06]:** `_SEMANTIC`'e 4 yeni paradigma eklendi: `HAS_DNA/HAS_GEOMETRY/
+  HAS_TOPOLOGY/IS_GOVERNED_BY`. `_CONNECTIVE` + `_EN_CONNECTIVE` şablonları: "X, Y DNA'sına
+  sahiptir", "X is governed by Y" vb. `_is_grounded_proxy()` bu yeni paradigmaları da
+  semantik kök sayıyor — DNA/geometri/yasa kenarı olan kavramlar kritik hatta kalır.
 - **Kademe 5 [2026-06]:** `generate(use_meaning=False)` → anlam kanalı hibrit skor.
   `_get_topo_encoder()` lazy singleton. `_next_step(use_meaning)` → `_score()`:
   `use_meaning=True` → `0.6×moment_distance + 0.4×meaning_distance` (TopologyEncoder).
@@ -624,6 +639,14 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   BUG FİX: serbest κ-toplam moment patlaması (μ₁=1.29→50) → aritmetik centroid (μ₁=0.30). 8 test.
 - **Kademe 5 [2026-06]:** `generate(use_meaning=True)` → CertifiedGenerator.generate(use_meaning)
   delege. Hibrit skor ile anlam kanalı dil üretimi.
+- **Kademe F8 [2026-06]:** `GroundingSignature` dataclass (concept/bound/kappa_moments/
+  quantum_connections + summary()). `ground_full(concept, *, dna, molecule, geometry, law,
+  sound, image, topology)` metodu:
+  - Her sağlanan boyut → bind_percept() veya doğrudan TAU kenarı (law için)
+  - `FreeCumulants.add()` zinciri → κ_total (tüm modalitelerin serbest kümülant toplamı)
+  - `manifold.quantum_bridges(concept)` → çapraz-boyutlu gizli bağlantılar
+  - Döner: GroundingSignature(.bound, .kappa_moments, .quantum_connections)
+  - 12 yeni test (test_language_layer.py → toplam 32/32 geçiyor)
 - **Tekrar kümeleri (facade seviyesi, NAMESPACE birleşmesi — motorlar korunur):** molekül 7 metot
   (discover/design/cure/produce/simulate/genesis_mol/design_drug → produce çatısı), kausal 4
   (causal_chain/what_if/hypothesize/analogy), büyüme 4 (pulse/live/grow/run — kasıtlı gradyan),
