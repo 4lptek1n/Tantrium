@@ -52,6 +52,31 @@ _PROTEIN_DIRECT_MAP: dict[str, list[str]] = {
     "pdgfr":  ["imatinib", "sorafenib", "sunitinib"],
 }
 
+# Hastalık → DRUGGABLE moleküler sürücüler (her biri _PROTEIN_DIRECT_MAP anahtarı).
+# Hastalığı METİN olarak değil, onu süren GERÇEK moleküler hedeflerden ölçmek için:
+# κ_disease = sürücülerin ligand-kimyasının κ-toplamı (ölçüm), metnin κ'sı DEĞİL.
+# "İlaç matematikten gelir" — ama hastalığın GERÇEK matematiksel yapısından (sürücüler).
+_DISEASE_DRIVER_MAP: dict[str, list[str]] = {
+    "pancreatic cancer": ["egfr", "src"],
+    "lung cancer":       ["egfr", "alk", "braf"],
+    "non-small cell lung cancer": ["egfr", "alk"],
+    "breast cancer":     ["her2", "egfr", "akt"],
+    "her2 breast cancer":["her2"],
+    "melanoma":          ["braf", "mek"],
+    "colorectal cancer": ["egfr", "braf"],
+    "glioblastoma":      ["egfr", "mtor", "vegfr"],
+    "leukemia":          ["abl", "kit", "jak"],
+    "chronic myeloid leukemia": ["abl"],
+    "myelofibrosis":     ["jak"],
+    "lymphoma":          ["btk", "akt"],
+    "ovarian cancer":    ["parp", "vegfr"],
+    "prostate cancer":   ["akt", "src"],
+    "thyroid cancer":    ["braf", "vegfr"],
+    "gastrointestinal stromal tumor": ["kit", "pdgfr"],
+    "renal cell carcinoma": ["vegfr", "mtor"],
+    "hepatocellular carcinoma": ["vegfr", "braf"],
+}
+
 _PRIMITIVES = [
     "c1ccccc1",        # benzen
     "c1ccncc1",        # piridin
@@ -150,6 +175,40 @@ class ProductionEngine:
                 kh = FreeCumulants.from_moments(avg)
                 return "protein", avg, profile, f"{len(refs)} bilinen ligand", None, kzero, kh
 
+        # HASTALIK = moleküler sürücüleri (metin DEĞİL, ÖLÇÜM). Hastalığı süren druggable
+        # hedeflerin (KRAS yerine egfr/braf/...) ligand-kimyasını κ-topla → hastalığın
+        # GERÇEK matematiksel imzası. "İlaç matematikten gelir": hastalığın ölçülen
+        # yapısından çözüm doğar. Eskiden "pancreatic cancer" METNİ encode edilip glukoz
+        # çıkıyordu (anlamsız imza → pivot<0). Şimdi sürücülerden ölçülür.
+        drivers = self._disease_drivers(target)
+        if drivers:
+            # Birincil druggable sürücüyü hedefle: çok-sürücü ortalaması κ-hedefini
+            # bulanıklaştırıp jenerik molekül veriyordu. Tek tutarlı sürücü (en çok
+            # ligandlı) → gerçek inhibitör (EGFR-sürücülü kanser → EGFR-sınıfı inhibitör).
+            profile: list[list[float]] = []
+            used: list[str] = []
+            best_lig: list[tuple[str, str]] = []
+            primary = drivers[0]
+            for drv in drivers:
+                ligs = self._reference_ligands(drv)
+                if len(ligs) > len(best_lig):
+                    best_lig, primary = ligs, drv
+                used.append(drv)
+            for _nm, smi in best_lig:
+                mu = self._encode(smi)
+                if mu:
+                    profile.append(mu)
+            if profile:
+                avg = [sum(p[i] for p in profile) / len(profile)
+                       for i in range(len(profile[0]))]
+                kh = FreeCumulants.from_moments(avg)
+                ref = (f"birincil sürücü: {primary} ({len(profile)} ligand) | "
+                       f"tüm sürücüler: {', '.join(used)} (ölçülen hastalık)")
+                # Ölçüm artık ligand-profili (sürücülerin inhibitör kimyası) — protein
+                # yoluyla AYNI: M, profili eşlesin → gerçek inhibitör (gefitinib-sınıfı),
+                # jenerik κ-eşleşmesi (kafein) değil. profiles=tüm ligandlar → strateji havuzu zengin.
+                return "protein", avg, profile, ref, None, kzero, kh
+
         mu_d = self._encode(target)
         if not mu_d:
             return "invalid", [], [], "", None, None, None
@@ -217,8 +276,22 @@ class ProductionEngine:
             target_str = "⟨moment_query⟩"
         else:
             target_str = target
+            # HASTALIK → birincil druggable sürücüye çöz: tüm pipeline (scaffold stratejisi
+            # dahil) sürücünün GERÇEK ilaç-kimyasını kullansın. Eskiden "pancreatic cancer"
+            # adıyla scaffold bulunamıyor → jenerik molekül (kafein). Şimdi egfr'ye çözülür
+            # → gefitinib-sınıfı. Hastalığın matematiksel yapısı = sürücüsünün kimyası.
+            self._disease_label = None
+            drivers = self._disease_drivers(target) if isinstance(target, str) else []
+            if drivers:
+                primary = max(drivers, key=lambda d: len(self._reference_ligands(d)),
+                              default=drivers[0])
+                if self._reference_ligands(primary):
+                    self._disease_label = target
+                    target_str = primary
             kind, mu_req, profiles, ref_name, gap, kd, kh = self._read_target_ext(
-                target, network=network)
+                target_str, network=network)
+            if self._disease_label:
+                ref_name = f"{self._disease_label} → birincil sürücü {target_str}"
             if kind == "invalid":
                 return ProductionCertificate(
                     target=target, target_kind="invalid",
@@ -694,6 +767,25 @@ class ProductionEngine:
         if not ref and ref_cls:
             ref = [(n.lower(), s) for n, s, c in DRUG_LIBRARY if c == ref_cls][:top_refs]
         return ref[:top_refs]
+
+    def _disease_drivers(self, disease: str) -> list[str]:
+        """Hastalığın DRUGGABLE moleküler sürücüleri — statik harita + TAU disease→sürücü.
+
+        Hastalığı METİN olarak değil, onu süren GERÇEK druggable hedeflerden ölç.
+        Yalnız ligandı olan (kürede _PROTEIN_DIRECT_MAP'te) sürücüleri alır → ölçülebilir.
+        """
+        d = disease.lower().strip()
+        drivers: list[str] = [p for p in _DISEASE_DRIVER_MAP.get(d, [])]
+        tau = getattr(self.engine, "tau", None)
+        if tau is not None:
+            for e in tau.edges.get(d, []):
+                par = getattr(e, "paradigm", "")
+                if par in ("CAUSES", "ACTIVATES", "INHIBITS", "COMPONENT_OF", "IS_A"):
+                    t = str(getattr(e, "target", "")).lower()
+                    # yalnız druggable (ligandı olan) sürücüleri ölç
+                    if t and t in _PROTEIN_DIRECT_MAP and t not in drivers:
+                        drivers.append(t)
+        return drivers
 
     def _kappa_threshold(self, profiles: list[list[float]]) -> float:
         """Özgüllük eşiği — referans sınıf-içi genişliğinden."""

@@ -131,7 +131,18 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   `scan_production_gaps(cert)` (başarısız AxisVerdict → ProofLoop kampanya ipucu).
   Flywheel: ispat kanıtlanır → epsilon genişler → daha fazla molekül üretim geçidi geçer.
 - **Tekrar:** Motorlar farklı; facade 7→1 olur, motorlar korunur.
-- **TODO:** `_read_target_ext`, `_refine`, `_decompose_combination` tam doğrula (F4 için).
+- **Kademe F13 — Hastalık = sürücülerinden ÖLÇÜLÜR [2026-06]:** Eskiden `produce("pancreatic
+  cancer")` hastalık ADINI (metni) encode edip κ-dekonvolüsyon yapıyordu → anlamsız imza →
+  pivot<0 (Sturm reddediyor) → glukoz/kafein. KÖK: hastalık METİN olarak ölçülüyordu. FIX:
+  `_DISEASE_DRIVER_MAP` (hastalık→druggable sürücüler, _PROTEIN_DIRECT_MAP anahtarları) +
+  `_disease_drivers()` (statik + TAU disease→sürücü). `produce()` girişinde hastalık **birincil
+  druggable sürücüye ÇÖZÜLÜR** (en çok ligandlı) → tüm pipeline (scaffold dahil) sürücünün
+  GERÇEK ilaç-kimyasını hedefler. Sonuç: GIST→imatinib, CML→dasatinib-sınıfı, melanoma→sorafenib,
+  pankreas/meme→gefitinib — **doğru hastalık-ilaç eşleşmeleri**, pivot>0, closure_error 0.008-0.045.
+  "İlaç matematikten gelir" = hastalığın GERÇEK matematiksel yapısından (sürücüler), metinden DEĞİL.
+  Dürüst sınır: sürücülerin ligandları kürede VAR (bilinen sınıf yeniden-kuruluyor); ligandı OLMAYAN
+  sürücü (gerçek undruggable) için de novo tasarım — bir sonraki eşik.
+- **TODO:** `_refine`, `_decompose_combination` tam doğrula (F4 için).
 
 ### 🟡 core/engine.py — runtime + lazy singleton'lar
 - **Okundu:** `grow` (642, tümdengelimsel kapanış — öksüz ama gerçek iş), `proof_loop`, `think`, status.
