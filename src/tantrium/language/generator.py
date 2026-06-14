@@ -23,9 +23,10 @@ if TYPE_CHECKING:
 _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
              "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
              "INHIBITS", "CAUSES", "ACTIVATES"}
-# ALEPH and SPECTRAL_BRIDGE are Hankel/Wasserstein certified — used as fallback
-# when a concept has no text-extracted semantic edges (e.g. theorem names)
-_CERTIFIED = {"ALEPH", "SPECTRAL_BRIDGE"}
+# ALEPH (Hankel/Wasserstein certified) kullanılabilir — moment uzayında komşu.
+# SPECTRAL_BRIDGE hariç: genesis yapay köprüsüdür, anlamsal bilgi taşımaz.
+# Kritik hat: yalnız moment-uzayı değil, anlamsal TAU kökü olan kavramlar.
+_CERTIFIED = {"ALEPH"}
 
 _CONNECTIVE: dict[str, str] = {
     "IS_A":            "{src}, bir {tgt} türüdür",
@@ -122,6 +123,16 @@ class CertifiedGenerator:
             from tantrium.core.topology_encode import TopologyEncoder
             self._topo_enc = TopologyEncoder(self.engine)
         return self._topo_enc
+
+    def _is_grounded_proxy(self, name: str) -> bool:
+        """Kavramın anlamsal TAU kenarı ≥ 1 → 'kritik hat' üzerinde.
+
+        Hilbert-Pólya ilkesi: yörüngede yalnız semantik TAU'ya köklü kavramlar.
+        SPECTRAL_BRIDGE/ALEPH-only kavramlar (xqzwvbnmkjhgfd, beauty gibi) moment
+        uzayında yakın ama anlamsal yalıtık — kritik hattan sapan 'karmaşık sıfır'.
+        """
+        edges = self.engine.tau.edges.get(name, [])
+        return any(e.paradigm in _SEMANTIC for e in edges)
 
     def generate(
         self,
@@ -273,6 +284,8 @@ class CertifiedGenerator:
             candidates.append((_score(tc), edge.target, edge.paradigm))
 
         # Pass 2: no semantic edges → fall back to Hankel/Wasserstein certified edges
+        # Jensen hiperbolisitesi: sadece TAU'da topraklı (≥3 kenar) kavramlar — kritik hat.
+        # Topraklı olmayan kavramlar (xqzwvbnmkjhgfd, beauty) kritik hattan sapar → filtrelenir.
         if not candidates:
             for edge in tau.edges.get(current, []):
                 if edge.paradigm not in _CERTIFIED:
@@ -282,19 +295,13 @@ class CertifiedGenerator:
                 tc = manifold.concepts.get(edge.target)
                 if tc is None or not tc.is_real():
                     continue
+                if not self._is_grounded_proxy(edge.target):
+                    continue
                 candidates.append((_score(tc), edge.target, edge.paradigm))
 
-        # Pass 3: concept not yet in TAU (freshly encoded) → live moment-space search
-        if not candidates:
-            cur_concept = manifold.concepts.get(current) or fallback_concept
-            if cur_concept is not None:
-                for name, _dist in manifold.nearest(cur_concept, n=12):
-                    if name in visited or name == current:
-                        continue
-                    tc = manifold.concepts.get(name)
-                    if tc is None or not tc.is_real():
-                        continue
-                    candidates.append((_score(tc), name, "ALEPH"))
+        # Pass 3 (canlı moment arama) KALDIRILDI — Jensen hiperbolisitesi ihlali.
+        # manifold.nearest() topraklı olmayan kavramları da döndürür: kritik hattan
+        # sapma = anlamsız metin. Yörünge topraklı komşu bulamazsa durur.
 
         if not candidates:
             return None

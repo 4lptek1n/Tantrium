@@ -388,12 +388,19 @@ class Speaker:
     # ─── Synthesize TAU facts into fluent Turkish paragraph ───────────────
 
     _TR_VERB: dict[str, str] = {
-        "IS_A":     "bir {t} türüdür",
-        "USES":     "{t} kullanır",
-        "ACHIEVES": "{t} elde eder",
-        "REQUIRES": "{t} gerektirir",
-        "DEFINES":  "{t} tanımlar",
-        "COMPOSED": "bileşenlerinden biri {t}",
+        "IS_A":         "bir {t} türüdür",
+        "USES":         "{t} kullanır",
+        "ACHIEVES":     "{t} elde eder",
+        "REQUIRES":     "{t} gerektirir",
+        "DEFINES":      "{t} tanımlar",
+        "COMPOSED":     "bileşenlerinden biri {t}",
+        "COMPONENT_OF": "{t}'nin bir parçasıdır",
+        "INHIBITS":     "{t}'yi inhibe eder",
+        "CAUSES":       "{t}'ye neden olur",
+        "ACTIVATES":    "{t}'yi aktive eder",
+        "HAS_SIGNAL":   "{t} sinyaliyle algılanır",
+        "HAS_COMPOUND": "{t} bileşiğini içerir",
+        "HAS_IMAGE":    "{t} görüntüsüyle temsil edilir",
     }
 
     def synthesize(
