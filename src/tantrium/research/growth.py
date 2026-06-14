@@ -836,15 +836,24 @@ class GrowthEngine:
 
     def _meaning_consolidate(
         self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
-        *, max_per_pass: int = 40,
+        *, max_per_pass: int = 40, quantum_per_pass: int = 12,
     ) -> None:
         """Anlam kanalını büyüme döngüsüne bağlar (additive, fail-open).
 
         Yeni büyümüş, semantik TAU kenarı (CAUSES/INHIBITS/ACTIVATES/IS_A/...) olan
         kavramlar için `TopologyEncoder.encode` (ilişkisel kodlama = "ne demek")
-        çalıştırır ve `manifold.quantum_bridges` ile klasik-uzak/kuantum-yakın gizli
-        bağlantıları yüzeye çıkarır. ground_full/bind_percept dış duyusal veri
-        ister (metin akışında yok) — bu yüzden büyümede doğal olan anlam kanalıdır.
+        çalıştırır ve `manifold.quantum_bridges` ile klasik-uzak/κ-yakın GİZLİ
+        dolanıklığı KALICI `QUANTUM_BRIDGE` kenarına çevirir.
+
+        SPECTRAL_BRIDGE (autonomous._discover_bridges) klasik-YAKIN köprüleri kurar;
+        QUANTUM_BRIDGE bunların yapısal kaçırdığı klasik-uzak/κ-yakın gizli dolanıklığı
+        yüzeye çıkarır (F8: "elma-DNA × Fibonacci"). Paradigma + kompakt kod (Q) +
+        _SEMANTIC üyeliği zaten rezerve; tek eksik onu OLUŞTURAN kabloydu — burada
+        bağlanıyor. ground_full/bind_percept dış duyusal veri ister (metin akışında
+        yok) → büyümede doğal entegre olan anlam kanalı budur.
+
+        quantum_per_pass: `quantum_bridges` O(N) (tüm manifoldu tarar) — köprü-tarama
+        enrich'ten daha sıkı sınırlanır (büyük grafta maliyet kontrolü).
         """
         try:
             from tantrium.core.topology_encode import TopologyEncoder, _SEMANTIC_PARADIGMS
@@ -869,7 +878,8 @@ class GrowthEngine:
         if not candidates:
             return
         enriched = 0
-        bridges = 0
+        linked = 0
+        quantum_scans = 0
         for name in candidates:
             self._meaning_seen.add(name)
             try:
@@ -879,16 +889,51 @@ class GrowthEngine:
             if obj is None:
                 continue
             enriched += 1
+            # Kuantum köprü taraması pahalı (O(N)) — yalnız ilk quantum_per_pass kavram.
+            if quantum_scans >= quantum_per_pass:
+                continue
+            quantum_scans += 1
             try:
                 br = manifold.quantum_bridges(name, top_k=3)
             except Exception:
                 br = []
-            if br:
-                bridges += len(br)
-                top = br[0]
-                _log(f"anlam köprüsü: {name} ⟷ {top[0]} (κ-yakın {top[1]:.3f})")
+            for other, qdist in br:
+                # Genesis yapay köprüleri çapa olamaz (CLAUDE.md pitfall #8 + wonder
+                # self-grooming): ⟨bridge:...⟩ hedeflerini kuantum köprü saymayız.
+                if other.startswith("⟨bridge:"):
+                    continue
+                if self._add_quantum_bridge_edge(name, other, qdist):
+                    linked += 1
+                    _log(f"kuantum köprü: {name} ⟷ {other} (κ-yakın {qdist:.3f}) → QUANTUM_BRIDGE")
         if enriched:
-            _log(f"anlam kanalı: {enriched} kavram zenginleştirildi, {bridges} kuantum köprü")
+            _log(f"anlam kanalı: {enriched} kavram zenginleştirildi, "
+                 f"{linked} kuantum köprü kenarı örüldü")
         if rep is not None:
             rep.meaning_enriched += enriched
-            rep.bridges_found += bridges
+            rep.bridges_found += linked
+
+    def _add_quantum_bridge_edge(self, a: str, b: str, qdist: float) -> bool:
+        """TAU'ya çift yönlü KALICI QUANTUM_BRIDGE kenarı ekle (idempotent).
+
+        SPECTRAL_BRIDGE'in (moment-yakın) yanındaki ikinci köprü tipi: klasik-uzak/
+        κ-yakın gizli dolanıklık. `quantum_dist` alanına κ-mesafe yazılır (save/load
+        Q koduyla zaten destekli). Yeni kenar örüldüyse True döner."""
+        from tantrium.graph.knowledge_graph import KnowledgeEdge
+        if a == b:
+            return False
+        created = False
+        for src, tgt in ((a, b), (b, a)):
+            edges = self.engine.tau.edges.setdefault(src, [])
+            exists = any(
+                e.target == tgt and e.paradigm == "QUANTUM_BRIDGE" for e in edges
+            )
+            if not exists:
+                edges.append(KnowledgeEdge(
+                    source=src, target=tgt,
+                    distance=round(qdist, 6), paradigm="QUANTUM_BRIDGE",
+                    quantum_dist=round(qdist, 6),
+                ))
+                created = True
+        if created:
+            self.engine.tau._dirty = True
+        return created

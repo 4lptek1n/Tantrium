@@ -469,16 +469,20 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   kausal kenar öğrenimi TAMAMEN ÇALIŞMIYORDU). Düzeltme: `self.observer.observe(text)`
   (`self.observer = AutonomousObserver(engine)` zaten init'te var). INHIBITS/CAUSES/ACTIVATES
   kenar öğrenimi artık aktif.
-- **Kademe F9 — Anlam Kanalı Entegrasyonu [2026-06]:** `_consolidate` artık `rep` alır ve
-  yeni `_meaning_consolidate(_log, rep, max_per_pass=40)` çağırır. Konsolidasyonda, henüz
-  zenginleştirilmemiş + en az 1 semantik TAU kenarı (`_SEMANTIC_PARADIGMS`:
-  CAUSES/INHIBITS/ACTIVATES/IS_A/...) olan kavramlar için `TopologyEncoder.encode` (anlam
-  imzası) + `manifold.quantum_bridges` (klasik-uzak/kuantum-yakın gizli bağlantı) çalışır.
-  `GrowthReport.meaning_enriched`/`bridges_found` raporlanır. `self._topo_encoder` lazy +
-  `self._meaning_seen` idempotent set. Additive/fail-open — TopologyEncoder DEĞİŞMEDİ.
-  ground_full/bind_percept dış duyusal veri ister (metin akışında yok) → büyümede doğal
-  olan anlam kanalı (meaning). Doğrulama: 10/10 test_growth + ağsız büyümede 47 kavram
-  zenginleşti.
+- **Kademe F9 — Anlam Kanalı + QUANTUM_BRIDGE Kalıcılaştırma [2026-06]:** `_consolidate`
+  artık `rep` alır ve `_meaning_consolidate(_log, rep, max_per_pass=40, quantum_per_pass=12)`
+  çağırır. Henüz zenginleştirilmemiş + en az 1 semantik TAU kenarı (`_SEMANTIC_PARADIGMS`)
+  olan kavramlar için `TopologyEncoder.encode` (anlam imzası) + `manifold.quantum_bridges`.
+  **KRİTİK:** `QUANTUM_BRIDGE` paradigması rezerveydi (`_SEMANTIC` + kompakt kod `Q` + planner
+  anlatımı) ama hiçbir yer OLUŞTURMUYORDU (gerçek 48k grafta 0, SPECTRAL_BRIDGE 257k). F9 o
+  kabloyu bağlar: `_add_quantum_bridge_edge(a,b,qdist)` keşfedilen klasik-uzak/κ-yakın gizli
+  dolanıklığı çift-yönlü KALICI `QUANTUM_BRIDGE` kenarına (quantum_dist=κ) çevirir — idempotent,
+  save/load Q-koduyla roundtrip korunur (doğrulandı: 198→198). `⟨bridge:...⟩` genesis-yapayları
+  hedef olamaz (pitfall #8). `quantum_bridges` O(N) olduğundan köprü-tarama `quantum_per_pass`
+  ile enrich'ten sıkı sınırlı. `GrowthReport.meaning_enriched`/`bridges_found`. Additive/
+  fail-open — TopologyEncoder + quantum_bridges DEĞİŞMEDİ; yalnız OLUŞTURMA kablosu eklendi.
+  ground_full/bind_percept dış duyusal veri ister (metin akışında yok). Doğrulama: 10/10
+  test_growth + ağsız büyümede 96 kavram zenginleşti, 99 QUANTUM_BRIDGE örüldü.
 - **Tekrar:** transport birleşti; döngü (stream) Cognition iskeletine girer (akış stratejisi).
 
 ### ✅ research/goal.py — hedef temsili (Goal · GoalManifold)
