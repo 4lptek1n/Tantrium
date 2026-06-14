@@ -52,7 +52,9 @@ __pycache__/
 .tantrium/
 
 # Runtime outputs (not source code)
-results/
+results/agi/knowledge.jsonl
+results/agi/goals/
+results/agi/sessions/
 archive/
 infra/
 
