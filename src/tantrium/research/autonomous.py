@@ -117,18 +117,25 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
             if len(sub) < 5:
                 continue
             for pat, rel_type in _COMPILED_VERBS:
-                m = pat.search(sub)
-                if not m:
-                    continue
-                before = _re.sub(r"[,;\"'()]", " ", sub[:m.start()]).split()
-                after  = _re.sub(r"[,;\"'()]", " ", sub[m.end():]).split()
-                # Son 2 anlamlı kelime = özne, ilk 2 anlamlı kelime = nesne
-                subj = _clean_term(before[-4:], take_last=True)
-                obj  = _clean_term(after[:4],  take_last=False)
-                if 2 < len(subj) < 50 and 2 < len(obj) < 50:
-                    relations.append((subj, rel_type, obj))
-                break  # her alt cümleden tek ilişki
-    return relations
+                # TÜM fiil eşleşmeleri: eski `break` her alt-cümleden TEK ilişki
+                # çıkarıyordu → zengin metinden onlarca yerine 1 kenar = %89 izole.
+                # finditer ile her eşleşmeden ilişki: node+edge yoğunluğu metinle orantılı.
+                for m in pat.finditer(sub):
+                    before = _re.sub(r"[,;\"'()]", " ", sub[:m.start()]).split()
+                    after  = _re.sub(r"[,;\"'()]", " ", sub[m.end():]).split()
+                    # Son 2 anlamlı kelime = özne, ilk 2 anlamlı kelime = nesne
+                    subj = _clean_term(before[-4:], take_last=True)
+                    obj  = _clean_term(after[:4],  take_last=False)
+                    if 2 < len(subj) < 50 and 2 < len(obj) < 50:
+                        relations.append((subj, rel_type, obj))
+    # tekilleştir (sıra korunur)
+    _seen: set = set()
+    _uniq: list[tuple[str, str, str]] = []
+    for r in relations:
+        if r not in _seen:
+            _seen.add(r)
+            _uniq.append(r)
+    return _uniq
 
 
 # ─── Gözlem sonucu ────────────────────────────────────────────────────────────
@@ -402,7 +409,7 @@ class AutonomousObserver:
         if not relations:
             return
 
-        for subj, rel_type, obj in relations[:8]:  # max 8 ilişki / metin
+        for subj, rel_type, obj in relations[:20]:  # max 20 ilişki / metin (zengin metin)
             # Her iki kavramı manifolda ekle (yoksa)
             for cname in (subj, obj):
                 if cname not in self.engine.manifold.concepts:
