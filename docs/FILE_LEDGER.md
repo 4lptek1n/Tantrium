@@ -452,6 +452,15 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   her çapa için: asal/zeta/GUE/Lucas/Ramanujan-tau/elliptic... + OEIS/LMFDB/PubChem)→observe→ilerleme.
 - **#9:** `fetch_oeis/lmfdb/pubchem` 3 satır-içi urlopen → `net.http_get_json` delege (UA="Tantrium-AGI/1.0").
   Parse mantığı (OEIS A-numara, LMFDB zero, PubChem SMILES→Morgan) KORUNDU.
+- **MANIFOLD ŞİŞME KÖK NEDENİ [2026-06]:** `_generate_sequences` docstring "her seferinde
+  benzersiz" diyordu ama 4 aile (lucas/tribonacci/ramanujan_tau/elliptic_trace) `batch`'i YOK
+  SAYIYORDU → her batch özdeş dizi → `algo:<aile>_b0=_b1=…` aynı momente çöküyor. 8891 hayalet
+  kopya birikmişti (`tools/dedup_manifold.py` temizledi: 48,281→39,390). **Düzeltme:**
+  elliptic_trace artık batch-bağımlı asal penceresi (gerçekten çeşitlenir). lucas/tribonacci/
+  ramanujan ise üstel/kanonik — encoder-normalizasyonu altında tohum/rotasyon farkı yıkanır
+  (geometrik tek nokta); onları büyüme döngüsü `growth._dedup_family_windows` her konsolidasyonda
+  tek temsilciye indirir (kalıcı önlem). DÜRÜST: encoder suçsuz — farklı VERİ farklı moment verir
+  (gaussian/exp doğrulandı); kanonik üstel diziler gerçekten tek geometrik nesnedir.
 
 ### ✅ research/ingest.py — batch gerçek-veri (DataIngestor)
 - **İş:** UniProt/PubChem/OEIS gerçek veri, resumable state (.tantrium/ingest_state.json),
@@ -496,6 +505,11 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   (growth_state.json kalıcı → UNUTMAZ, #4 çürütme hafızası). `GrowthReport.corrected`/
   `suspect_flagged`. Additive/fail-open. Canlı doğrulamada gerçek hatalar yakalandı:
   `detail≈retail` (0.0005), `unity≈unify`, `ell5_q*_auto≈CELL_SUPPORT_POSITIVITY` (0.0000).
+- **Aile-pencere dedup [F10+]:** `_dedup_family_windows(max_per_pass=400)` — kanonik üreteç
+  tekrarını (lucas/tribonacci/ramanujan: encoder-normalizasyonu altında tek geometrik nokta)
+  her (aile, tam-moment) için tek temsilciye indirir, kenarları yönlendirir. `_family_reps`+
+  `_fam_seen` artımlı/sınırlı; `GrowthReport.windows_deduped`. `tools/dedup_manifold.py`'nin
+  döngü-içi hâli — manifold şişme kök-neden önlemi (bkz. researcher.py girişi).
 - **Tekrar:** transport birleşti; döngü (stream) Cognition iskeletine girer (akış stratejisi).
 
 ### ✅ research/goal.py — hedef temsili (Goal · GoalManifold)

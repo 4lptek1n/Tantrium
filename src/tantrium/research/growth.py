@@ -76,6 +76,7 @@ class GrowthReport:
     # Corrigibility (yanlıştan-dön) bilançosu
     suspect_flagged: int = 0   # dejenere/çakışma şüphesiyle işaretlenen (düzeltilemeyen)
     corrected: int = 0         # dejenere encoding adaptif re-encode ile düzeltilen
+    windows_deduped: int = 0   # aile-içi exact-moment pencere-kopyası silinen
 
     def summary(self) -> str:
         dc = self.concepts_end - self.concepts_start
@@ -89,7 +90,7 @@ class GrowthReport:
             f"Anlam zenginleştirme: {self.meaning_enriched} kavram | "
             f"kuantum köprü: {self.bridges_found}\n"
             f"Corrigibility: {self.corrected} düzeltildi | "
-            f"{self.suspect_flagged} şüpheli işaretlendi\n"
+            f"{self.suspect_flagged} şüpheli | {self.windows_deduped} pencere-kopya silindi\n"
             f"Durma sebebi: {self.stopped_reason}"
         )
 
@@ -125,6 +126,8 @@ class GrowthEngine:
         self._topo_encoder: Any = None
         self._meaning_seen: set[str] = set()  # anlam-zenginleştirmesi yapılmış kavramlar
         self._verify_seen: set[str] = set()   # corrigibility-denetimi yapılmış kavramlar
+        self._family_reps: dict[tuple, str] = {}  # (aile, moment) → temsilci (pencere-dedup)
+        self._fam_seen: set[str] = set()      # aile-dedup taranan pencere adları
 
     # ─── Resumable durum ─────────────────────────────────────────────────────
 
@@ -851,6 +854,9 @@ class GrowthEngine:
         # Corrigibility: yanlışı TESPİT et (dejenere encoding + çakışma — GIMEL'in
         # göremediği üniform hata), düzeltmeyi DENE (adaptif re-encode), kalanı HATIRLA.
         self._verify_consolidate(_log, rep)
+        # Aile-pencere dedup: kanonik dizilerin (lucas/tribonacci/ramanujan...) üreteç
+        # tekrar-ürettiği exact-moment kopyalarını tek temsilciye indir (kök neden önlemi).
+        self._dedup_family_windows(_log, rep)
 
     def _meaning_consolidate(
         self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
@@ -929,6 +935,76 @@ class GrowthEngine:
         if rep is not None:
             rep.meaning_enriched += enriched
             rep.bridges_found += linked
+
+    def _dedup_family_windows(
+        self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
+        *, max_per_pass: int = 400,
+    ) -> None:
+        """Aile-içi exact-moment pencere-kopyalarını tek temsilciye indir.
+
+        Kök neden önlemi: bazı kanonik üreteçler (lucas/tribonacci/ramanujan_tau)
+        her batch'te encoder-normalizasyonu altında AYNI momente inen `algo:<aile>_b<N>`
+        pencereleri üretir → tekrar birikir. Bu faz her (aile, tam-moment) için TEK
+        temsilci tutar, sonraki özdeş pencereleri siler (kenarları temsilciye yönlendirir).
+        `dedup_manifold.py` aracının döngü-içi, artımlı, sınırlı (max_per_pass) hâli.
+        Gerçek kelime/teorem isimlerine (öneksiz) DOKUNMAZ.
+        """
+        import re
+        fam_re = re.compile(r"^(.*?)_b\d+$")
+        manifold = self.engine.manifold
+        tau = self.engine.tau
+        remap: dict[str, str] = {}
+        processed = 0
+        for name in list(manifold.concepts.keys()):
+            if processed >= max_per_pass:
+                break
+            if name in self._fam_seen or ":" not in name:
+                continue
+            m = fam_re.match(name)
+            if not m:
+                continue
+            c = manifold.concepts.get(name)
+            if c is None:
+                continue
+            self._fam_seen.add(name)
+            processed += 1
+            key = (m.group(1), tuple(c.moments))  # (aile, tam-moment imzası)
+            existing = self._family_reps.get(key)
+            if existing is None or existing not in manifold.concepts:
+                self._family_reps[key] = name  # temsilci
+            elif existing != name:
+                remap[name] = existing  # özdeş kopya → sil
+        if not remap:
+            return
+        # silinenlere işaret eden kenarları temsilciye yönlendir
+        for src, edges in list(tau.edges.items()):
+            for e in edges:
+                if e.target in remap:
+                    e.target = remap[e.target]
+        # silinen düğümlerin kenarlarını temsilciye taşı + düğümü kaldır
+        for dead, repname in remap.items():
+            dead_edges = tau.edges.pop(dead, [])
+            for e in dead_edges:
+                e.source = repname
+            if dead_edges:
+                tau.edges.setdefault(repname, []).extend(dead_edges)
+            manifold.concepts.pop(dead, None)
+            tau.nodes.pop(dead, None)
+        # temsilcilerin kenarlarını tekilleştir (self-loop + (target,paradigm) tekrarı)
+        for src in set(remap.values()):
+            seen = set()
+            uniq = []
+            for e in tau.edges.get(src, []):
+                k = (e.target, e.paradigm)
+                if e.target == src or k in seen:
+                    continue
+                seen.add(k)
+                uniq.append(e)
+            tau.edges[src] = uniq
+        tau._dirty = True
+        _log(f"aile-dedup: {len(remap)} pencere-kopyası silindi")
+        if rep is not None:
+            rep.windows_deduped += len(remap)
 
     def _add_quantum_bridge_edge(self, a: str, b: str, qdist: float) -> bool:
         """TAU'ya çift yönlü KALICI QUANTUM_BRIDGE kenarı ekle (idempotent).

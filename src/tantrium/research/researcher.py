@@ -142,15 +142,18 @@ def _generate_sequences(anchor: str, batch: int = 0) -> list[tuple[str, list[flo
         return [(f"algo:GUE_wigner_{tag}", spacings)]
 
     if anchor == "GEOMETRIC_GROWTH":
+        # NOT: Lucas/Tribonacci üstel-büyüyen kanonik dizilerdir; encoder'ın
+        # eigenvalue-normalizasyonu altında tohum/pencere farkı yıkanır → hepsi
+        # AYNI moment şekline iner (geometrik olarak tek nesne). Batch-varyasyonu
+        # bunu çözmez. Tekrar-üretimi büyüme döngüsündeki aile-dedup temizler
+        # (growth._dedup_family_windows) — kanonik nokta = tek temsilci.
         seqs = []
-        # Lucas numbers
         a, b = 2, 1
         lucas = []
         for _ in range(24):
             lucas.append(float(a))
             a, b = b, a + b
         seqs.append((f"algo:lucas_{tag}", lucas))
-        # Tribonacci
         a, b, c = 0, 0, 1
         trib = []
         for _ in range(24):
@@ -173,14 +176,22 @@ def _generate_sequences(anchor: str, batch: int = 0) -> list[tuple[str, list[flo
         tau = [0, -24, 252, -1472, 4830, -6048, -16744, 84480, -113643,
                -196884, 1, -24, 252, -1472, 4830, -6048, -16744, 84480,
                -113643, -196884, 166320, 21492, -25830, 65520, -242208]
+        # NOT: sabit τ listesi; encoder normalizasyonu altında rotasyon/pencere
+        # moment'i değiştirmez (kanonik tek nokta) → tekrarı aile-dedup temizler.
         normalized = [float(abs(x)) / 200000 for x in tau[1:25]]
         return [(f"algo:ramanujan_tau_{tag}", normalized)]
 
     if anchor == "ELLIPTIC_CURVES":
         # Trace of Frobenius for elliptic curve y²=x³-x over F_p
+        # batch-bağımlı asal penceresi → her batch farklı asallar → farklı dizi
+        # (Eski hata: sabit 24 asal her batch'te özdeş → moment çökmesi.)
+        _prime_pool = [3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
+                       47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103,
+                       107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163,
+                       167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227]
+        start = (batch * 3) % max(1, len(_prime_pool) - 24)
         traces = []
-        for p in [3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
-                  47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]:
+        for p in _prime_pool[start:start + 24]:
             # simple heuristic: count points mod p
             count = sum(1 for x in range(p)
                         if pow(x*x*x - x, (p+1)//2, p) in (0, 1)) * 2 + 1
