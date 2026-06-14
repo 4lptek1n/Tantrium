@@ -38,6 +38,15 @@ _RATE_LIMIT_S = 0.34
 _STATE_DIR = pathlib.Path(".tantrium")
 _STATE_FILE = _STATE_DIR / "growth_state.json"
 
+# Corrigibility eşikleri (yanlış-tespit)
+_DEGEN_SPREAD = 0.02     # moment yayılımı (max-min) bunun altında = dejenere encoding
+                         # (protein/glucose çöküşü μ_k≡1 → yayılım 0; GIMEL göremez)
+_COLLISION_EPS = 0.001   # iki FARKLI kavram bu L1 mesafenin altında = çakışma şüphesi
+                         # (sıkı: 48k doymuş manifoldda saturasyon yoğunluğunu DEĞİL,
+                         #  neredeyse-tam çakışmayı = gerçek encoder ayırma hatasını yakala)
+_VERIFY_MAX = 60         # döngü başına denetlenen kavram (maliyet sınırı)
+_VERIFY_COLLISION_MAX = 20  # çakışma taraması O(N) — daha sıkı sınır
+
 # OEIS anahtar kelime rotasyonu — matematik gövdesini geniş tarar
 _OEIS_KEYWORDS = [
     "prime", "fibonacci", "catalan", "partition", "bernoulli", "euler",
@@ -64,6 +73,9 @@ class GrowthReport:
     # Anlam kanalı entegrasyonu (TopologyEncoder) bilançosu
     meaning_enriched: int = 0  # anlam imzası hesaplanan (semantik-köklü) kavram
     bridges_found: int = 0     # keşfedilen çapraz-boyutlu kuantum köprü
+    # Corrigibility (yanlıştan-dön) bilançosu
+    suspect_flagged: int = 0   # dejenere/çakışma şüphesiyle işaretlenen (düzeltilemeyen)
+    corrected: int = 0         # dejenere encoding adaptif re-encode ile düzeltilen
 
     def summary(self) -> str:
         dc = self.concepts_end - self.concepts_start
@@ -76,6 +88,8 @@ class GrowthReport:
             f"TAU kenar: {self.edges_start:,} → {self.edges_end:,} (+{de})\n"
             f"Anlam zenginleştirme: {self.meaning_enriched} kavram | "
             f"kuantum köprü: {self.bridges_found}\n"
+            f"Corrigibility: {self.corrected} düzeltildi | "
+            f"{self.suspect_flagged} şüpheli işaretlendi\n"
             f"Durma sebebi: {self.stopped_reason}"
         )
 
@@ -110,6 +124,7 @@ class GrowthEngine:
         # Anlam kanalı entegrasyonu (TopologyEncoder) — konsolidasyonda lazy kurulur.
         self._topo_encoder: Any = None
         self._meaning_seen: set[str] = set()  # anlam-zenginleştirmesi yapılmış kavramlar
+        self._verify_seen: set[str] = set()   # corrigibility-denetimi yapılmış kavramlar
 
     # ─── Resumable durum ─────────────────────────────────────────────────────
 
@@ -833,6 +848,9 @@ class GrowthEngine:
         # ilişki-grafı imzasını hesapla + çapraz-boyutlu kuantum köprüleri ortaya çıkar.
         # F8 vizyonu: "Topoloji = bilgi" — büyüme yalnız node değil, ANLAM örer.
         self._meaning_consolidate(_log, rep)
+        # Corrigibility: yanlışı TESPİT et (dejenere encoding + çakışma — GIMEL'in
+        # göremediği üniform hata), düzeltmeyi DENE (adaptif re-encode), kalanı HATIRLA.
+        self._verify_consolidate(_log, rep)
 
     def _meaning_consolidate(
         self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
@@ -937,3 +955,98 @@ class GrowthEngine:
         if created:
             self.engine.tau._dirty = True
         return created
+
+    def _verify_consolidate(
+        self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
+    ) -> None:
+        """Corrigibility — yanlışı TESPİT et, düzeltmeyi DENE, kalanı HATIRLA.
+
+        GIMEL (`pipeline.stage_l5_gimel`) içsel GÖRELİ zayıflığı bulur
+        (argmin_paradigma margin) ama hata ÜNİFORM olduğunda (protein/glucose:
+        G=PᵀP=I → μ_k≡1, bütün marjinler tekdüze iyi) göreli zayıf halka yoktur —
+        GIMEL temiz rapor verir, temsil yine de yanlıştır. Bu faz o kör noktayı
+        kapatır; iki yapısal yanlış-sinyali GIMEL'den bağımsız okur:
+
+          1. DEJENERE encoding: moment yayılımı (max−min) < _DEGEN_SPREAD
+             (faithful Hausdorff dizisi azalır; tekdüze = temsil çökmüş).
+          2. ÇAKIŞMA: en yakın FARKLI kavram L1 < _COLLISION_EPS
+             (iki ayrı şey aynı noktaya düşmüş = encoder ayırmıyor).
+
+        Tespit → adaptif derin re-encode (DÜZELT) → düzelmeyen suspect hafızaya
+        (`state["suspect"]`, growth_state.json ile kalıcı → unutmaz, #4). Düzeltme
+        yalnız düz isimlerde denenir (oeis:/algo:/theorem: önekli adlarda re-encode
+        yanlış temsile 'düzeltebilir' — güvenli taraf: önekli/⟨⟩ ad → yalnız işaretle).
+        """
+        manifold = self.engine.manifold
+        encoder = getattr(self.engine, "encoder", None)
+        suspect = self.state.setdefault("suspect", [])
+        suspect_set = set(suspect)
+        checked = degen = collided = corrected = 0
+        collision_scans = 0
+        for name, c in list(manifold.concepts.items()):
+            if checked >= _VERIFY_MAX:
+                break
+            if name in self._verify_seen or name.startswith("⟨"):
+                continue
+            mu = [float(m) for m in getattr(c, "moments", [])]
+            if len(mu) < 2:
+                continue
+            self._verify_seen.add(name)
+            checked += 1
+            spread = max(mu) - min(mu)
+
+            # 1) DEJENERE encoding (üniform moment = protein/glucose sınıfı)
+            if spread < _DEGEN_SPREAD:
+                degen += 1
+                fixed = False
+                # 2) DÜZELT: adaptif derin re-encode (yalnız düz/SMILES isimlerde)
+                safe_name = (":" not in name) and encoder is not None
+                if safe_name:
+                    try:
+                        new_enc = encoder.encode_adaptive(name)
+                        nmu = [float(m) for m in getattr(new_enc, "moments", [])]
+                        if nmu and (max(nmu) - min(nmu)) >= _DEGEN_SPREAD:
+                            import fractions
+                            c.moments = [
+                                fractions.Fraction(m).limit_denominator(10 ** 9)
+                                for m in new_enc.moments
+                            ]
+                            corrected += 1
+                            fixed = True
+                            _log(f"düzeltildi: {name} dejenere→ayrıştı "
+                                 f"(yayılım {max(nmu) - min(nmu):.3f})")
+                    except Exception:
+                        pass
+                if not fixed and name not in suspect_set:
+                    suspect.append(name)
+                    suspect_set.add(name)
+                    _log(f"şüpheli (dejenere, düzeltilemedi): {name}")
+                continue
+
+            # 3) ÇAKIŞMA: en yakın FARKLI kavram çok yakınsa (O(N) — sınırlı)
+            if collision_scans >= _VERIFY_COLLISION_MAX:
+                continue
+            collision_scans += 1
+            try:
+                hits = manifold.nearest(c, n=1, metric="l1")
+            except Exception:
+                hits = []
+            if hits:
+                other, d = hits[0]
+                if other != name and float(d) < _COLLISION_EPS:
+                    collided += 1
+                    pair = f"{name}~{other}"
+                    if pair not in suspect_set:
+                        suspect.append(pair)
+                        suspect_set.add(pair)
+                        _log(f"şüpheli (çakışma): {name} ≈ {other} (L1 {float(d):.4f})")
+
+        # suspect hafızayı sınırla (son 500 — kalıcı ama sınırsız büyümesin)
+        if len(suspect) > 500:
+            self.state["suspect"] = suspect[-500:]
+        if checked:
+            _log(f"doğrulama: {checked} denetlendi, {degen} dejenere "
+                 f"({corrected} düzeltildi), {collided} çakışma şüphesi")
+        if rep is not None:
+            rep.corrected += corrected
+            rep.suspect_flagged += (degen - corrected) + collided

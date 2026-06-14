@@ -679,6 +679,19 @@ fail-open: TopologyEncoder+quantum_bridges DEĞİŞMEDİ, yalnız OLUŞTURMA kab
 bind_percept dış duyusal veri ister. Doğrulama: 10/10 test_growth + ağsız büyümede 96 kavram
 zenginleşti, 99 QUANTUM_BRIDGE örüldü (roundtrip 198→198).
 
+**Kademe F10 — Corrigibility (yanlıştan-dön) [2026-06]:** Sistem *iç-tutarlı* olmaya kuruluydu
+(halüsinasyon imkânsız) ama *gerçek karşı çıkınca temsilini düzeltme* mekanizması yoktu — bu
+boyut defterlerde de yoktu. **Kritik ayrım:** GIMEL (`argmin_paradigma margin`) içsel GÖRELİ
+zayıflığı bulur ama ÜNİFORM hatayı göremez — protein/glucose çöküşünde (G=PᵀP=I → μ_k≡1) bütün
+marjinler tekdüze "iyi"ydi, GIMEL "Achilles yok" dedi, temsil yine de yanlıştı. GIMEL bir terazi:
+bir kefe ağırsa yakalar, iki kefe de yanlış maddeyle doluysa göremez. `growth._verify_consolidate`
+o kör noktayı kapatır: (1) DEJENERE encoding (moment yayılımı < 0.02) → adaptif derin re-encode
+ile DÜZELT; (2) ÇAKIŞMA (en yakın FARKLI kavram L1 < 0.001) → işaretle. Düzelmeyen `state["suspect"]`
+kalıcı hafızaya (UNUTMAZ). `GrowthReport.corrected`/`suspect_flagged`. Canlı: `detail≈retail`,
+`unity≈unify`, `ell5_q*≈CELL_SUPPORT_POSITIVITY` gerçek encoder hataları yakalandı. **DÜRÜST SINIR:**
+bu yalnız YAPISAL yanlış-tespiti (dejenere/çakışma) — DIŞ-doğrulama (OEIS/RDKit/sympy gerçeğe karşı)
+ve hata→encoder geri-besleme henüz otonom döngüde YOK (corrigibility omurgasının kalan parçaları).
+
 ---
 
 ## Evren Kapısı + Çekirdek Nabzı (`ai.pulse` / `ai.live`)

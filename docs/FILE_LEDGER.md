@@ -483,6 +483,19 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   fail-open — TopologyEncoder + quantum_bridges DEĞİŞMEDİ; yalnız OLUŞTURMA kablosu eklendi.
   ground_full/bind_percept dış duyusal veri ister (metin akışında yok). Doğrulama: 10/10
   test_growth + ağsız büyümede 96 kavram zenginleşti, 99 QUANTUM_BRIDGE örüldü.
+- **Kademe F10 — Corrigibility (yanlıştan-dön) [2026-06]:** `_consolidate` artık
+  `_verify_consolidate(_log, rep)` çağırır. Defterlerde OLMAYAN yeni eksen: sistem
+  *iç-tutarlı* olmaya kuruluydu ama *gerçek karşı çıkınca temsilini düzeltme* mekanizması
+  yoktu. GIMEL (argmin_paradigma margin) içsel GÖRELİ zayıflığı bulur ama ÜNİFORM hatayı
+  (protein/glucose: μ_k≡1, tüm marjinler tekdüze iyi) göremez. `_verify_consolidate` o kör
+  noktayı kapatır, iki yapısal yanlış-sinyalini GIMEL'den bağımsız okur: (1) DEJENERE
+  encoding (moment yayılımı max−min < `_DEGEN_SPREAD`=0.02) → adaptif derin re-encode ile
+  DÜZELT (yalnız düz/SMILES isim; oeis:/algo:/theorem: önekte yanlış-düzeltmeyi önlemek için
+  yalnız işaretle); (2) ÇAKIŞMA (en yakın FARKLI kavram L1 < `_COLLISION_EPS`=0.001 =
+  neredeyse-tam çakışma, saturasyon değil gerçek ayırma hatası). Düzelmeyen → `state["suspect"]`
+  (growth_state.json kalıcı → UNUTMAZ, #4 çürütme hafızası). `GrowthReport.corrected`/
+  `suspect_flagged`. Additive/fail-open. Canlı doğrulamada gerçek hatalar yakalandı:
+  `detail≈retail` (0.0005), `unity≈unify`, `ell5_q*_auto≈CELL_SUPPORT_POSITIVITY` (0.0000).
 - **Tekrar:** transport birleşti; döngü (stream) Cognition iskeletine girer (akış stratejisi).
 
 ### ✅ research/goal.py — hedef temsili (Goal · GoalManifold)
