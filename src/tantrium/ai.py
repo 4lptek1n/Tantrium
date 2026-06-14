@@ -3081,8 +3081,12 @@ class AI:
         persist_every: int = 20,
         consolidate_every: int = 3,
         verbose: bool = True,
+        focus: "str | None" = None,
     ) -> "object":
         """SINIRSIZ kendi kendine büyüme akışı — son mimari parça.
+
+        focus="oncology"|"math": odaklı büyüme — yalnız o domainin ilişki-zengin
+        kaynaklarını çek (yoğunluk > genişlik). None = tüm 10 kaynak.
 
         Ağdan resumable veri çeker (PubChem CID ilerler + OEIS anahtar rotasyonu),
         her veriyi çekirdek nabzından geçirir (evren kapısı + yerel genesis aynı
@@ -3115,6 +3119,7 @@ class AI:
             consolidate_every=consolidate_every,
             network=network,
             verbose=verbose,
+            focus=focus,
         )
 
     def run(

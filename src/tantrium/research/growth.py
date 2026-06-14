@@ -40,6 +40,17 @@ _STATE_FILE = _STATE_DIR / "growth_state.json"
 
 # Corrigibility eşikleri research.corrigibility'de (tek tanım — cognition ile paylaşılır)
 
+# Odaklı büyüme: domain → o domaine ilişki-zengin kaynak alt-kümesi (yoğunluk için
+# jenerik gürültüyü ele). Onkoloji kaynakları zaten kanser-ağırlıklı: KEGG yolakları
+# (MAPK/PI3K/ErbB/apoptoz), PubMed sorguları (EGFR/kinaz/tümör), ChEMBL ilaçlar.
+_FOCUS_SOURCES: dict[str, set[str]] = {
+    "oncology": {
+        "_fetch_chembl", "_fetch_uniprot", "_fetch_kegg", "_fetch_pubmed",
+        "_fetch_conceptnet", "_fetch_kegg_kgml",
+    },
+    "math": {"_fetch_oeis", "_fetch_web", "_fetch_wikidata"},
+}
+
 # OEIS anahtar kelime rotasyonu — matematik gövdesini geniş tarar
 _OEIS_KEYWORDS = [
     "prime", "fibonacci", "catalan", "partition", "bernoulli", "euler",
@@ -685,8 +696,12 @@ class GrowthEngine:
         time.sleep(_RATE_LIMIT_S)
         return [x for x in dict.fromkeys(out) if x][:n]
 
-    def _next_batch(self, network: bool) -> list[Any]:
-        """Bir sonraki karışık veri partisi: 10 kaynak (8 + ConceptNet + KEGG KGML)."""
+    def _next_batch(self, network: bool, focus: "str | None" = None) -> list[Any]:
+        """Bir sonraki karışık veri partisi: 10 kaynak (8 + ConceptNet + KEGG KGML).
+
+        focus: belirli bir domaine odaklan → yalnız o domainin kaynaklarını çek
+        (jenerik gürültüyü kıs, yoğunluğu artır). Bkz `_FOCUS_SOURCES`.
+        """
         if not network:
             # Ağsız: algoritmik diziler (resumable offset ile çeşitlilik)
             base = self.state.get("total_processed", 0)
@@ -707,6 +722,11 @@ class GrowthEngine:
             (self._fetch_conceptnet, 20),   # ConceptNet: dil sorununun çözümü
             (self._fetch_kegg_kgml, 10),    # KEGG KGML: doğrudan INHIBITS/ACTIVATES
         ]
+        # Odaklı büyüme: yalnız domain kaynaklarını tut (yoğunluk > genişlik).
+        if focus:
+            allow = _FOCUS_SOURCES.get(focus)
+            if allow:
+                sources = [(fn, n) for fn, n in sources if fn.__name__ in allow]
         batch: list[Any] = []
         with ThreadPoolExecutor(max_workers=10) as pool:
             futures = {pool.submit(fn, n): fn.__name__ for fn, n in sources}
@@ -729,8 +749,12 @@ class GrowthEngine:
         grow: bool = True,
         verbose: bool = True,
         should_stop: Callable[[], bool] | None = None,
+        focus: "str | None" = None,
     ) -> GrowthReport:
         """Sürekli büyüme akışı.
+
+        focus: "oncology"|"math"|None — odaklı büyüme (domain kaynak alt-kümesi,
+        yoğunluk > genişlik). None = tüm 10 kaynak.
 
         time_limit_s=None VE max_cycles=None → SINIRSIZ (should_stop ya da
           dış kesinti durdurana dek).
@@ -771,7 +795,7 @@ class GrowthEngine:
                 rep.cycles += 1
                 if network:
                     self._refresh_gap_cache()  # NecessityEngine'i paralel fetch öncesi çalıştır
-                batch = self._next_batch(network)
+                batch = self._next_batch(network, focus=focus)
                 if not batch:
                     _log("boş parti — kaynak geçici sustu, devam")
                     time.sleep(1.0)

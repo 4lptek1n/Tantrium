@@ -679,7 +679,17 @@ periyodik konsolidasyon (close + öz-model köklendirme) → persist → tekrar
 ai.grow(time_limit_s=600)            # 10 dk büyü
 ai.grow(time_limit_s=None)           # SINIRSIZ — kendi kendine
 ai.grow(network=False)               # ağsız (algoritmik diziler)
+ai.grow(focus="oncology")            # ODAKLI: yalnız onkoloji kaynakları (KEGG/PubMed/
+                                     #   ChEMBL/UniProt/ConceptNet/KGML) → yoğunluk > genişlik
+                                     #   _FOCUS_SOURCES: oncology|math. None = tüm 10 kaynak.
 ```
+
+**Eğitim stratejisi (geometrik-ilişkisel hafıza):** Bu ağırlık modeli DEĞİL — "eğitim" =
+manifold/TAU büyütme + temiz tutma. Kalite > nicelik: 1 iyi-bağlı kavram >> 100 yalıtık nokta
+(yoğun bölge=temiz üretim, seyrek=sapma). Domain-önce: `focus="oncology"` ile tek domaini uzman
+yoğunluğa çıkar, sonra genişlet. Corrigibility (dedup+VerifyPhase) büyümeyi GÜVENLİ kılar →
+agresif/sürekli koşulabilir. İlerleme ölçütü "loss" değil: benchmark isabeti + grounding oranı +
+suspect oranı + üretim tutarlılığı. Canlı: 150s odaklı onkoloji → +27 kausal kenar (benchmark 1.0).
 
 Canlı doğrulama: 21 gerçek veri (PubChem+OEIS) 80.8s → 12 çekirdek, 5 sınır,
 4 CONTRADICTORY reddedildi, kimya↔biyoloji cross-domain köprüler canlı kuruldu.
