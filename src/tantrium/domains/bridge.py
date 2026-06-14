@@ -486,10 +486,18 @@ class SemanticBridge:
             if not is_proven(node.get("status", "")):
                 continue
             paradigms = self.paradigms_for_theorem(node_id)
-            if is_proven(node.get("status", "")):
-                moments = [Fraction(1, 2) ** k for k in range(8)]
-            else:
-                moments = [Fraction(1, 3) ** k for k in range(8)]
+            # İDEMPOTENT: diskten yüklenen teorem kavramının momentini EZME
+            # (gerçek-matematiğe bağlanmış olabilir — bind_theorem_math). Eskiden
+            # uniform [1/2^k] placeholder ile üzerine yazıyordu → 90 teorem tek
+            # noktaya çöküyordu. Sadece domain/metadata tazele, moment KORUNUR.
+            existing = manifold.concepts.get(node_id)
+            if existing is not None:
+                existing.domain = "theorem_graph"
+                existing.metadata.setdefault("evidences", paradigms)
+                continue
+            # Yeni oluşturma: uniform placeholder DEĞİL, hash-distinct imza
+            # (`_theorem_moments` — theorem_to_codex_object ile aynı yol).
+            moments = _theorem_moments(node_id, node)
             concept = Concept(
                 name=node_id,
                 moments=moments,

@@ -504,6 +504,11 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     erişilir. `src/tantrium/core/pipeline.py` orada farklı (build_tau_atlas → TauEngineNotRestored).
     `formal/lean/Tantrium/` Lean 4 kanıtları, `docs/FINAL_RH_PROOF_CHAIN.md` tam ispat zinciri.
     Ana branch'e merge edilmemiş — paralel araştırma hattı.
+15. **`bridge.bootstrap_manifold` artık İDEMPOTENT [2026-06]**: eskiden proven teoremlere uniform
+    `[1/2^k]` placeholder atıp diskten yükleneni EZİYORDU → 90 teorem tek noktaya çöküyordu.
+    Artık mevcut kavramın momentini KORUR (yalnız domain tazeler) + yeni oluşturmada hash-distinct
+    `_theorem_moments`. 90 teorem `tools/bind_theorem_math.py` ile tce-collapse certificate
+    sayılarına bağlı (90 ayrık imza). Teorem moment'ini elle değiştirirsen reload'da korunur.
 
 ---
 

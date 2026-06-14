@@ -328,7 +328,22 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **Güç:** Her AGI sertifikası AYNI ANDA RH ispat zincirinde bir adım.
 - **Nüans:** `_theorem_moments` hash+yapı türevli SENTETİK encode (math_kernel ifade-encode'undan
   farklı amaç — paradigma-yapı eşlemesi için). İki teorem→moment yolu, farklı amaç.
+- **BUG FİX — bootstrap placeholder çökmesi [2026-06]:** `bootstrap_manifold` proven teoremlere
+  UNIFORM `[Fraction(1,2)**k]` = `[1,½,¼...]` atıyor + `manifold.add` ile diskten yükleneni
+  EZİYORDU → 90 teorem tek noktaya çöküyordu (GIMEL göremez). **Düzeltme:** (1) İDEMPOTENT —
+  mevcut kavramın momentini EZME (yalnız domain/metadata tazele); böylece `tools/bind_theorem_math.py`
+  ile bağlanan GERÇEK matematik (tce-collapse certificate sayıları) reload'da KORUNUR. (2) Yeni
+  oluşturmada uniform placeholder yerine hash-distinct `_theorem_moments`. Sonuç: 90 teorem 90 ayrık
+  imza (`ell2_q10`≠`ell2_q14` gerçek sertifika verisiyle). theorem_to_codex_object zaten doğruydu.
 - **Tekrar:** YOK (amaçlar farklı).
+
+### ✅ tools/bind_theorem_math.py — 90 teoreme GERÇEK matematik [YENİ 2026-06]
+- **İş:** Her placeholder-teorem kavramı için tce-collapse-engine kaynak dosyasından (theorems/*.md,
+  results/certificates/ell*_q*_auto.md, parametrik sertifika JSON) sayısal içeriği çıkar
+  (sources/deficits/edges/half-power + ell/q + tüm sayılar) + ad-imzası tie-breaker → UniversalEncoder
+  → teoreme ÖZGÜ moment. Önkoşul: `git archive origin/tce-collapse-engine ... | tar -x -C /tmp/tce`.
+- **Sonuç:** 90/90 bağlandı, 90 ayrık imza, 0 çakışma. Encoder sadık (farklı matematik→farklı moment).
+- **Tekrar:** YOK. Tek-seferlik kalıcılaştırma aracı (bootstrap idempotent fix ile reload'da korunur).
 
 ### ✅ domains/certifier.py — SMILES-listesi skorlama stratejisi
 - **İş:** `MolecularCertifier`: SMILES listesi→hedefe karşı certify→dyadic transport ile en iyi→3D.
