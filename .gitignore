@@ -55,6 +55,11 @@ __pycache__/
 results/agi/knowledge.jsonl
 results/agi/goals/
 results/agi/sessions/
+results/atlas/
+results/certificates/
+results/formalization/
+results/molecules/
+results/research_os/
 archive/
 infra/
 
