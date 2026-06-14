@@ -155,3 +155,37 @@ def external_verify(engine: Any, facts: "list[tuple[str, str, str]] | None" = No
         "total": total,
         "failures": failures,
     }
+
+
+def encoder_health(engine: Any, *, n_samples: int = 100) -> dict:
+    """Encoder'ın İÇSEL sadakatini ölç (CollisionHunter adversarial öz-test).
+
+    Rastgele FARKLI girdiler 8-momentte çakışıyor mu? Çakışanlar derinlik(16) ya da
+    label-aware kodlamayla AYRIŞIYOR mu (çözülebilir) yoksa İÇKİN mi (encoder sınırı)?
+    Bu, "8 moment yapıyı belirler" temel iddiasının canlı sağlık göstergesi —
+    encoder sadakatini GÖRÜNÜR/izlenir kılar (eskiden görünmez bir kör noktaydı).
+
+    DÜRÜST SINIR: bu ÖLÇER. Çözülebilir çakışmayı UYGULAMAK (manifoldu daha derin/
+    label-aware şemaya taşımak) manifold-geneli batch yeniden-encode'dur (metrik-uzay
+    tutarlılığı yerel takası yasaklar) — otonom faz değil, `migrate_text_encoding.py`
+    deseninde kasıtlı bir migrasyon. Döner: {collision_rate, collisions, resolved_*, inherent}.
+    """
+    try:
+        from tantrium.core.collision import CollisionHunter
+        rep = CollisionHunter(engine).hunt(n_samples=n_samples)
+    except Exception:
+        return {"collision_rate": 0.0, "collisions": 0, "resolved_by_depth": 0,
+                "resolved_by_labels": 0, "inherent": 0, "pairs_compared": 0}
+    inherent = sum(
+        1 for c in rep.collisions
+        if not c.resolved_by_depth and not getattr(c, "resolved_by_labels", False)
+    )
+    # Bu sayaçlar @property (metot değil) — parantezsiz.
+    return {
+        "collision_rate": rep.collision_rate,
+        "collisions": len(rep.collisions),
+        "resolved_by_depth": rep.resolved_count,
+        "resolved_by_labels": rep.resolved_by_labels_count,
+        "inherent": inherent,
+        "pairs_compared": rep.pairs_compared,
+    }

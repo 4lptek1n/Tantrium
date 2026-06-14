@@ -34,6 +34,7 @@ class CognitionState:
     corrected: int = 0          # VerifyPhase: dejenere encoding düzeltildi
     suspects_flagged: int = 0   # VerifyPhase: dejenere/çakışma şüphesi işaretlendi
     benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet [0,1]
+    encoder_health: float = 0.0   # VerifyPhase: encoder içsel çakışma oranı (düşük=sağlıklı)
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
@@ -724,10 +725,13 @@ class VerifyPhase:
 
     def __init__(self) -> None:
         self._seen: set[str] = set()  # döngüler arası artımlı "denetlendi" hafızası
+        self._health_done = False     # encoder-sağlık öz-testi oturum başına bir kez
 
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
         try:
-            from tantrium.research.corrigibility import detect_and_correct, external_verify
+            from tantrium.research.corrigibility import (
+                detect_and_correct, external_verify, encoder_health,
+            )
             # YAPISAL (içsel): dejenere encoding/çakışma — GIMEL'in kör noktası.
             res = detect_and_correct(engine, self._seen)
             state.corrected += res["corrected"]
@@ -742,6 +746,18 @@ class VerifyPhase:
             state.benchmark_score = ev["score"]
             state.log(f"verify/dış: bilinen olgu isabeti {ev['correct']}/{ev['total']} "
                       f"(skor {ev['score']:.2f})")
+            # ENCODER SAĞLIĞI: temel iddianın ("8 moment yapıyı belirler") canlı göstergesi.
+            # Oturum başına bir kez (encoder fonksiyonu oturum içinde sabit). Görünmeyen
+            # kör noktayı görünür kılar; içkin çakışma = encoder'ın dürüst sınırı.
+            if not self._health_done:
+                self._health_done = True
+                eh = encoder_health(engine)
+                state.encoder_health = eh["collision_rate"]
+                state.log(
+                    f"verify/encoder: çakışma oranı {eh['collision_rate']:.2e} "
+                    f"({eh['collisions']} çakışma; derinlikle {eh['resolved_by_depth']}, "
+                    f"label ile {eh['resolved_by_labels']} çözülür, {eh['inherent']} içkin)"
+                )
         except Exception as exc:
             state.log(f"verify: atlandı — {exc}")
         return state

@@ -574,12 +574,19 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
     forward-chaining kapanışı (bounded max_concepts=80) → TAU türetilen ilişkilerle yoğunlaşır.
 - **Tekrar:** 4 döngü DEĞİŞMEDİ; Cognition bunlara delege eder (strateji koruyucu).
 
-### ✅ research/corrigibility.py — PAYLAŞILAN yanlış-tespiti çekirdeği [YENİ — F10/F11]
-- **İş:** `detect_and_correct(engine, seen)` (yapısal: dejenere encoding < 0.02 yayılım →
-  adaptif re-encode; çakışma L1 < 0.001 → işaretle) + `external_verify(engine, facts)`
-  (dışsal: küratörlü bilinen olgulara karşı kausal TAU isabeti). Eşikler TEK tanım.
-- **Güç:** growth (`_verify_consolidate`) + cognition (`VerifyPhase`) + `ai.benchmark` ÜÇÜ DE
-  buna delege — corrigibility mantığı tek yerde. GIMEL'in göremediği üniform hatayı kapatır.
+### ✅ research/corrigibility.py — PAYLAŞILAN yanlış-tespiti çekirdeği [YENİ — F10/F11/F12]
+- **İş (3 eksen):** `detect_and_correct(engine, seen)` (YAPISAL: dejenere encoding < 0.02
+  yayılım → adaptif re-encode; çakışma L1 < 0.001 → işaretle) + `external_verify(engine, facts)`
+  (DIŞSAL: küratörlü bilinen olgulara karşı kausal TAU isabeti) + `encoder_health(engine)`
+  (TEMEL: CollisionHunter adversarial öz-test → encoder içsel çakışma oranı + çözülebilirlik;
+  "8 moment yapıyı belirler" iddiasının canlı göstergesi). Eşikler TEK tanım.
+- **Güç:** growth (`_verify_consolidate`) + cognition (`VerifyPhase`) + `ai.benchmark` hepsi buna
+  delege — corrigibility mantığı tek yerde. GIMEL'in göremediği üniform hatayı kapatır.
+- **F12 DÜRÜST SINIR:** `encoder_health` ÖLÇER ve GÖRÜNÜR kılar (eskiden kör nokta). Çözülebilir
+  çakışmayı UYGULAMAK (manifoldu daha derin/label-aware şemaya taşımak) manifold-geneli batch
+  yeniden-encode'dur — metrik-uzay tutarlılığı yerel takası yasaklar; otonom faz DEĞİL,
+  `migrate_text_encoding.py` deseninde kasıtlı migrasyon. Corrigibility omurgası: tespit+düzelt+
+  dış-doğrula+ölç DÖNGÜDE; global re-encode DELİBERE araç (mimari sınır, gizli boşluk değil).
 - **Tekrar:** YOK — birleştirme noktası (eskiden growth'a gömülü + ai.benchmark'ta kopya).
 
 > **F5+Kademe6 TAMAMLANDI (2026-06):** (a) Veri-çekme #9 (net.py) ✅ (b) 4 döngü → Cognition

@@ -626,7 +626,15 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     olgu kausal isabeti). Döngü artık kendi hatasını görüp düzeltiyor + gerçeğe karşı
     sınıyor. `corrigibility.py` PAYLAŞILAN çekirdek: growth + cognition + `ai.benchmark`
     üçü de delege. **DeductivePhase'e `chain_all` bağlandı** (öksüzdü) — tipli forward-
-    chaining kapanışı. Dürüst kalan: encoder GLOBAL geri-besleme (hata sınıfı→encoder) henüz yok.
+    chaining kapanışı.
+  - **Kademe F12 — Encoder sağlık ölçümü (corrigibility omurgası kapandı) [2026-06]:**
+    VerifyPhase'e `corrigibility.encoder_health` eklendi (oturum başına bir kez): CollisionHunter
+    adversarial öz-testi → encoder içsel çakışma oranı + çözülebilirlik. "8 moment yapıyı belirler"
+    iddiasının CANLI göstergesi — eskiden görünmez kör nokta, artık izlenir. **DÜRÜST MİMARİ SINIR:**
+    ölçüm DÖNGÜDE; çözülebilir çakışmayı UYGULAMAK = manifold-geneli batch re-encode (metrik-uzay
+    tutarlılığı yerel takası yasaklar) = `migrate_text_encoding.py` deseninde kasıtlı migrasyon,
+    otonom faz DEĞİL. Gizli boşluk değil, bilinçli mimari sınır. Corrigibility omurgası
+    (tespit→düzelt→dış-doğrula→ölç) DÖNGÜDE TAMAM.
   - **3 Mantık Düzeltmesi (2026-06, commit 20283c7):**
     1. `_gaps_to_campaigns()`: `ALEPH:` önekli boşluklar artık ProofLoop kampanyasına
        GÖNDERİLMİYOR. ALEPH:X = bir kavram Aleph PSD testini geçemiyor — encoding/Hankel
