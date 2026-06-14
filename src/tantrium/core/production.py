@@ -125,6 +125,37 @@ class ProductionResult:
         return "\n".join(lines)
 
 
+@dataclass
+class MoleculeSignature:
+    """Bir molekülün TEK evren-matematiği imzası — pipeline'ın taşıdığı nesne.
+
+    Bir kez encode → μ (moment). κ ve özdeğer-ölçüsü LAZY (ilk istendiğinde, sonra
+    cache). Tüm üretim aşamaları bu imzadan okur; yeniden encode/yeniden hesaplama YOK.
+    Yeni matematik (free_entropy vb.) buraya bir alan/property olarak eklenir → tüm
+    aşamalar otomatik görür (civata değil, akış).
+    """
+    smiles: str
+    mu: list[float]
+    _kappa: object = None
+    _spectral: object = None
+
+    @property
+    def kappa(self):
+        """Serbest kümülantlar κ (lazy) — κ-fit / kapanış için."""
+        if self._kappa is None:
+            from tantrium.core.quantum_moments import FreeCumulants
+            self._kappa = FreeCumulants.from_moments(self.mu)
+        return self._kappa
+
+    @property
+    def spectral(self):
+        """Özdeğer ölçüsü (lazy) — spektral W2 / free_entropy için. TEK spektral motor."""
+        if self._spectral is None:
+            from tantrium.domains.spectral import moments_to_spectral
+            self._spectral = moments_to_spectral(list(self.mu))
+        return self._spectral
+
+
 class ProductionEngine:
     """Çok-stratejili ilaç dökümhanesi.
 
@@ -139,6 +170,10 @@ class ProductionEngine:
         # _sync_transport_epsilon() theorem graph'taki Sturm sertifikasını okur,
         # qjr_degree_j_shift + qjr_degree_r_step kanıtlanınca -1e-5'e yükselir.
         self._transport_epsilon: float = -1e-9
+        # TEK İMZA PIPELINE: her molekül bir kez encode → {μ, κ, özdeğer} (lazy).
+        # Tüm üretim aşamaları (ranking·judge·closure) AYNI imzadan okur — yeniden
+        # encode YOK (CoreMachine "tek geçiş" ilkesi). produce() başında temizlenir.
+        self._sig_cache: dict[str, "MoleculeSignature"] = {}
 
     # ── Hedef okuma ────────────────────────────────────────────────────────
 
@@ -264,6 +299,7 @@ class ProductionEngine:
         from tantrium.core.quantum_moments import FreeCumulants
 
         self._sync_transport_epsilon()
+        self._sig_cache = {}   # TEK imza pipeline: her produce() taze cache (re-encode yok)
         judge = ProductionJudge(self.engine, self)
 
         # Moment listesi doğrudan verildi (meaning_compose entegrasyonu)
@@ -659,18 +695,27 @@ class ProductionEngine:
 
     def _judge_on_axis(self, smiles: str, mu_req: list[float]
                        ) -> tuple[bool, float, float]:
-        """Sturm yolu + κ-uyum. Aynı pozitiflik ekseni."""
-        mu = self._encode(smiles)
-        if not mu:
+        """Pipeline aşaması: adayın TEK imzasından AK → Sturm pivot + yapısal fit.
+
+        Aday imzadan okunur (bir kez encode); κ/spektrum imzada lazy+cache.
+        YAPISAL FİT = κ₂₋₄ (düşük-derece şekil) + tam özdeğer W2 (yüksek-derece yapı).
+        Tek skor, ayrım korunur (κ=şekil özeti, spektrum=tam dağılım — defter ilkesi).
+        """
+        sig = self._signature(smiles)
+        if not sig.mu:
             return False, float("-inf"), float("inf")
-        ok, pmin = self._sturm_path_pivot_min(mu, mu_req)
-        kfit = self._structural_kappa_distance(mu, mu_req)
-        # YAPISAL FİT = κ₂₋₄ (düşük-derece şekil) + tam özdeğer W2 (yüksek-derece yapı).
-        # κ tek başına yüksek-derece spektral farkı kaçırıyordu → adaylar κ'da eşit ama
-        # spektrumda farklı olabiliyordu. spectral_fit o ayrımı yakalar → daha keskin
-        # aday seçimi = daha iyi çıktı. İkisi de "yapısal fit" — birleşir (TEK skor),
-        # ayrım korunur (κ=şekil özeti, spektrum=tam dağılım). Mevcut spektral motor kullanılır.
-        sfit = self._spectral_fit(mu, mu_req)
+        ok, pmin = self._sturm_path_pivot_min(sig.mu, mu_req)
+        kfit = self._structural_kappa_distance(sig.mu, mu_req)
+        # Spektral W2: adayın CACHE'li spektrumu vs hedef spektrumu (bir kez hesaplanır).
+        sfit = 0.0
+        try:
+            from tantrium.domains.spectral import spectral_distance, moments_to_spectral
+            if getattr(self, "_target_spec_mu", None) != mu_req:
+                self._target_spec = moments_to_spectral(list(mu_req))
+                self._target_spec_mu = list(mu_req)
+            sfit = float(spectral_distance(sig.spectral, self._target_spec))
+        except Exception:
+            pass
         fit = kfit + _SPECTRAL_FIT_WEIGHT * sfit
         return ok, pmin, fit
 
@@ -720,11 +765,25 @@ class ProductionEngine:
 
     # ── Yardımcılar ────────────────────────────────────────────────────────
 
+    def _signature(self, x: str) -> "MoleculeSignature":
+        """Molekülün TEK imzası — bir kez encode, cache. Pipeline'ın taşıdığı nesne.
+
+        Tüm üretim aşamaları (ranking·judge·closure) bunu çağırır → molekül bir kez
+        encode edilir; κ/özdeğer imzadan lazy gelir. Yeniden-encode dağınıklığı biter.
+        """
+        sig = self._sig_cache.get(x)
+        if sig is None:
+            try:
+                mu = [float(m) for m in self.engine.encoder.encode(x).moments]
+            except Exception:
+                mu = []
+            sig = MoleculeSignature(smiles=x, mu=mu)
+            self._sig_cache[x] = sig
+        return sig
+
     def _encode(self, x: str) -> list[float]:
-        try:
-            return [float(m) for m in self.engine.encoder.encode(x).moments]
-        except Exception:
-            return []
+        """İmzanın momentleri (geriye-uyum). TEK imza cache'ine delege — re-encode yok."""
+        return self._signature(x).mu
 
     @staticmethod
     def _is_smiles(s: str) -> bool:

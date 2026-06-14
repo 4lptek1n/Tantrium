@@ -149,6 +149,14 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   0.5·spectral_fit (ikisi de "yapısal fit" → TEK skor, ayrım korunur: κ=şekil özeti, spektrum=
   tam dağılım). Yüksek-derece yapı ayrımı → daha keskin seçim. Sonuç: ilaçlar doğru kaldı,
   GIST imatinib→sunitinib (ikisi de gerçek GIST ilacı) rafine oldu.
+- **Kademe F15 — TEK İMZA PIPELINE (parça-parça → akış) [2026-06]:** Aday molekül üretim boyunca
+  5+ kez yeniden encode ediliyordu (ranking·judge·closure her biri ayrı `_encode` + ayrı κ/spektrum).
+  "Civata" deseni — math akmıyor, her aşama baştan hesaplıyordu. FIX (CoreMachine "tek geçiş"
+  ilkesi): `MoleculeSignature {smiles, μ, lazy κ, lazy spektral}` + `_signature()` cache (produce()
+  başında temiz). Molekül BİR KEZ encode → imza tüm aşamalara akar; κ/özdeğer imzada lazy+cache;
+  hedef spektrumu bir kez. `_encode` → `_signature().mu` (geriye-uyum). Yeni matematik (free_entropy
+  vb.) imzaya BİR ALAN olarak eklenir → tüm aşamalar otomatik görür (akış, civata değil). İlaçlar
+  doğru kaldı (gefitinib/sorafenib/dasatinib/sunitinib), re-encode dağınıklığı bitti.
 - **BİRLEŞME ADAYI (gelecek):** `reconstruct.reconstruct_measure` ≡ `spectral.moments_to_spectral`
   çekirdeği AYNI matematik (moment→özdeğer tersi: Gauss kuadratür düğümü = Jacobi özdeğeri =
   Hankel-pencil genel. özdeğer). Farkı çıktı (reconstruct: ağırlık+fidelity/collision; spectral:
