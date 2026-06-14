@@ -142,6 +142,18 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   "İlaç matematikten gelir" = hastalığın GERÇEK matematiksel yapısından (sürücüler), metinden DEĞİL.
   Dürüst sınır: sürücülerin ligandları kürede VAR (bilinen sınıf yeniden-kuruluyor); ligandı OLMAYAN
   sürücü (gerçek undruggable) için de novo tasarım — bir sonraki eşik.
+- **Kademe F14 — Spektral-fit aday seçimine eklendi [2026-06]:** Aday sıralaması yalnız κ₂₋₄
+  (düşük-derece şekil) ile yapılıyordu → κ'da eşit ama spektrumda farklı adaylar ayrışmıyordu.
+  `_spectral_fit` eklendi: tam özdeğer-dağılımı W2 (`domains/spectral.moments_to_spectral` +
+  `spectral_distance` — TEK spektral motor, reimplement YOK). `_judge_on_axis` fit = κ_fit +
+  0.5·spectral_fit (ikisi de "yapısal fit" → TEK skor, ayrım korunur: κ=şekil özeti, spektrum=
+  tam dağılım). Yüksek-derece yapı ayrımı → daha keskin seçim. Sonuç: ilaçlar doğru kaldı,
+  GIST imatinib→sunitinib (ikisi de gerçek GIST ilacı) rafine oldu.
+- **BİRLEŞME ADAYI (gelecek):** `reconstruct.reconstruct_measure` ≡ `spectral.moments_to_spectral`
+  çekirdeği AYNI matematik (moment→özdeğer tersi: Gauss kuadratür düğümü = Jacobi özdeğeri =
+  Hankel-pencil genel. özdeğer). Farkı çıktı (reconstruct: ağırlık+fidelity/collision; spectral:
+  W2-ölçü). Çekirdek tek fonksiyona inebilir, iki amaç (fidelity vs W2) korunarak. Riskli değil
+  ama ayrı temizlik — şimdilik üretim spektral motoru KULLANIYOR (reimplement yok).
 - **TODO:** `_refine`, `_decompose_combination` tam doğrula (F4 için).
 
 ### 🟡 core/engine.py — runtime + lazy singleton'lar

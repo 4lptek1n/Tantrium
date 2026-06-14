@@ -77,6 +77,9 @@ _DISEASE_DRIVER_MAP: dict[str, list[str]] = {
     "hepatocellular carcinoma": ["vegfr", "braf"],
 }
 
+# Aday sıralamada tam özdeğer-W2'nin κ-fit'e harman ağırlığı (κ primary, spektrum keskinleştirir).
+_SPECTRAL_FIT_WEIGHT = 0.5
+
 _PRIMITIVES = [
     "c1ccccc1",        # benzen
     "c1ccncc1",        # piridin
@@ -661,8 +664,30 @@ class ProductionEngine:
         if not mu:
             return False, float("-inf"), float("inf")
         ok, pmin = self._sturm_path_pivot_min(mu, mu_req)
-        fit = self._structural_kappa_distance(mu, mu_req)
+        kfit = self._structural_kappa_distance(mu, mu_req)
+        # YAPISAL FİT = κ₂₋₄ (düşük-derece şekil) + tam özdeğer W2 (yüksek-derece yapı).
+        # κ tek başına yüksek-derece spektral farkı kaçırıyordu → adaylar κ'da eşit ama
+        # spektrumda farklı olabiliyordu. spectral_fit o ayrımı yakalar → daha keskin
+        # aday seçimi = daha iyi çıktı. İkisi de "yapısal fit" — birleşir (TEK skor),
+        # ayrım korunur (κ=şekil özeti, spektrum=tam dağılım). Mevcut spektral motor kullanılır.
+        sfit = self._spectral_fit(mu, mu_req)
+        fit = kfit + _SPECTRAL_FIT_WEIGHT * sfit
         return ok, pmin, fit
+
+    @staticmethod
+    def _spectral_fit(mu_a: list[float], mu_b: list[float]) -> float:
+        """Tam özdeğer-dağılımı W2 mesafesi — `domains/spectral` (TEK spektral motor).
+
+        moment→özdeğer (Gauss kuadratür/Golub-Welsch) → sıralı-özdeğer W2. κ₂₋₄'ün
+        kaçırdığı yüksek-derece yapıyı yakalar (yapıcı Hamburger'in mesafe yüzü).
+        """
+        try:
+            from tantrium.domains.spectral import moments_to_spectral, spectral_distance
+            sa = moments_to_spectral(list(mu_a))
+            sb = moments_to_spectral(list(mu_b))
+            return float(spectral_distance(sa, sb))
+        except Exception:
+            return 0.0
 
     @staticmethod
     def _structural_kappa_distance(mu_a: list[float], mu_b: list[float]) -> float:
