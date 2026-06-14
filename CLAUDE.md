@@ -395,7 +395,8 @@ ai.meaning_distance("protein", "enzyme")       # → float: ANLAM mesafesi (topo
                                                #   protein~enzyme < protein~algorithm (harfin yapamadığı ayrım)
 ai.bind_percept("apple", signal, modality="signal", paradigm="HAS_SIGNAL")
                                                # → str: percept_name — kavrama çok-modal grounding bağlar
-                                               #   HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE paradigmaları
+                                               #   HAS_SIGNAL/HAS_COMPOUND/HAS_IMAGE/HAS_DNA/HAS_GEOMETRY/
+                                               #   HAS_TOPOLOGY/IS_GOVERNED_BY paradigmaları
                                                #   manifolda admit(trusted) + TAU kenarı → meaning() görür
 ai.meaning_compose("EGFR inhibitor that crosses BBB")
                                                # → CompositeSignature: dil komposisyonu
@@ -404,6 +405,14 @@ ai.meaning_compose("EGFR inhibitor that crosses BBB")
                                                #   produce(cs.to_produce_target()) ile doğrudan kullanılabilir
 ai.generate("EGFR", use_meaning=True)         # → GenResult: anlam kanalı hibrit skor (0.6×yüzey + 0.4×topolojik)
                                                #   use_meaning=False (varsayılan): yüzey moment mesafesi
+ai.ground_full("apple", dna="ATCGATCG", molecule="CC(O)C", law="fibonacci numbers",
+               sound=signal, image=img)        # → GroundingSignature: çok-boyutlu kavram grounding
+                                               #   her boyut → TAU kenarı (HAS_DNA/HAS_COMPOUND/HAS_GEOMETRY/
+                                               #   HAS_TOPOLOGY/IS_GOVERNED_BY/HAS_SIGNAL/HAS_IMAGE)
+                                               #   κ_total = tüm boyutların serbest kümülant toplamı
+                                               #   .bound (paradigm→percept), .kappa_moments, .quantum_connections
+                                               #   Ne kadar çok boyut → o kadar çok gizli çapraz-boyutlu bağlantı
+                                               #   apple DNA × matematik → quantum_bridges() ile görülür
 ```
 
 ---
@@ -561,6 +570,26 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
   - `generate(use_meaning=True)`: hibrit skor (0.6×yüzey + 0.4×topolojik) ile anlam-kanalı üretim
   - `relations.py`: COMPOSED regex genişledi (forms/assembles/generates/makes up) + COMPONENT_OF paradigması
   - `knowledge_graph.py` + `topology_encode.py`: CO/HS/HC/HI compact kodları + _SEMANTIC_PARADIGMS güncellendi
+- **Çok-Boyutlu Grounding (Kademe F8, 2026-06):**
+  - **VİZYON:** "Elma = DNA + molekül + geometri + yasa + ses + görüntü + topoloji" — tümü AYNI moment uzayı.
+    Ne kadar çok boyut → manifoldda o kadar çok gizli çapraz-boyutlu bağlantı keşfedilebilir.
+    Elma DNA'sı ile Fibonacci serisi arasındaki bağlantı ancak her ikisi de moment uzayında
+    temsil edilince `quantum_bridges()` aracılığıyla görülebilir.
+  - **4 Yeni Paradigma:**
+    - `HAS_DNA` (HD): biyolojik dizi grounding (DNA → encoder → moment)
+    - `HAS_GEOMETRY` (HG): geometrik form grounding (matris/sinyal → moment)
+    - `HAS_TOPOLOGY` (HT): topolojik yapı grounding (PD/matris → moment)
+    - `IS_GOVERNED_BY` (GB): yönetici yasa (Fibonacci, termodinamik 1. yasası, doğal seçilim — kavram adı → doğrudan TAU kenarı)
+  - **`ai.ground_full(concept, *, dna, molecule, geometry, law, sound, image, topology)`:**
+    - Her sağlanan boyut için `bind_percept()` çağırır + HAS_DNA/HAS_GEOMETRY/HAS_TOPOLOGY/IS_GOVERNED_BY kenarı
+    - κ_total = tüm boyutların serbest kümülant toplamı (`FreeCumulants.add` zinciri)
+    - `quantum_bridges(concept)` → gizli çapraz-boyutlu bağlantı listesi
+    - Döner: `GroundingSignature(.concept, .bound, .kappa_moments, .quantum_connections)`
+  - `knowledge_graph.py`: HD/HG/HT/GB compact kodları + `_SEMANTIC` + `_P` + `_P_REV` güncellendi
+  - `topology_encode.py`: HAS_DNA/HAS_GEOMETRY/HAS_TOPOLOGY/IS_GOVERNED_BY `_SEMANTIC_PARADIGMS`'e eklendi
+  - `language/generator.py`: 4 yeni paradigma `_SEMANTIC`, `_CONNECTIVE`, `_EN_CONNECTIVE`'ye eklendi
+  - `language/speaker.py`: 4 yeni paradigma `_TR_VERB`'e eklendi
+  - Tests: 32 geçiyor (`test_language_layer.py`)
 - **Dil Üretimi — Jensen Hiperbolisitesi (Kademe F7, 2026-06):**
   - **KÖK SORUN:** `generate("EGFR")` → "xqzwvbnmkjhgfd ve beauty ile spektral köprü kuruyor"
     üretiyordu. İki kaynak: (1) Pass 3 (`manifold.nearest()`) moment uzayındaki HER kavramı
@@ -596,10 +625,11 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
        Başarılıysa concept.moments güncelleniyor. Ayrıca `SelfModel(engine).reflect(persist=True)`
        çağrılıyor → ⟨SELF⟩ TAU kenarları her cognition döngüsünde güncelleniyor.
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: ~545 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
+- Tests: ~565 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
   14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] +
   8 gap_finder[#10] + 7 moment_ops[#8] + 4 deduce[engine.grow] + 7 wonder[F4] + 5 serve[F6] +
-  23 encoder[+5 collision KÖK çözüm] + 15 cognition[F5] + 20 language_layer[Kademe F7] + ...)
+  23 encoder[+5 collision KÖK çözüm] + 15 cognition[F5] +
+  32 language_layer[Kademe F7+F8: generate fix + 4 yeni paradigma + ground_full] + ...)
 
 ---
 

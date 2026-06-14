@@ -398,9 +398,13 @@ class Speaker:
         "INHIBITS":     "{t}'yi inhibe eder",
         "CAUSES":       "{t}'ye neden olur",
         "ACTIVATES":    "{t}'yi aktive eder",
-        "HAS_SIGNAL":   "{t} sinyaliyle algılanır",
-        "HAS_COMPOUND": "{t} bileşiğini içerir",
-        "HAS_IMAGE":    "{t} görüntüsüyle temsil edilir",
+        "HAS_SIGNAL":      "{t} sinyaliyle algılanır",
+        "HAS_COMPOUND":    "{t} bileşiğini içerir",
+        "HAS_IMAGE":       "{t} görüntüsüyle temsil edilir",
+        "HAS_DNA":         "{t} DNA'sına sahiptir",
+        "HAS_GEOMETRY":    "{t} geometrisine sahiptir",
+        "HAS_TOPOLOGY":    "{t} topolojisine sahiptir",
+        "IS_GOVERNED_BY":  "{t} yasasıyla yönetilir",
     }
 
     def synthesize(

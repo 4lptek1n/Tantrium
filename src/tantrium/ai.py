@@ -225,6 +225,48 @@ class CompositeSignature:
                 f"μ₁={mu1:.3f}): [{comp_str}]")
 
 
+@dataclass
+class GroundingSignature:
+    """ai.ground_full() — çok-boyutlu kavram grounding imzası.
+
+    "Elma" = DNA + molekül + geometri + yasa + ses + görüntü + topoloji.
+    Her boyut ayrı TAU kenarı (HAS_DNA/HAS_COMPOUND/HAS_GEOMETRY/...) ve
+    ayrı FreeCumulants κ imzası. κ_total = tüm boyutların serbest toplamı.
+
+    Ne kadar çok boyut → o kadar çok gizli çapraz-boyutlu bağlantı keşfedilebilir.
+    quantum_connections: bu birleşik imzaya göre TAU'da gizli kuantum köprüler.
+    """
+    concept: str
+    bound: dict   # paradigm → percept_name
+    kappa_moments: list   # κ_total birleşik serbest kümülant momenti
+    quantum_connections: list  # [(kavram, klasik_mesafe, kuantum_mesafe)]
+
+    def __str__(self) -> str:
+        dims = list(self.bound.keys())
+        qc = len(self.quantum_connections)
+        k2 = float(self.kappa_moments[1]) if len(self.kappa_moments) > 1 else 0.0
+        return (f"GroundingSignature('{self.concept}', "
+                f"{len(dims)} boyut={dims}, κ₂={k2:.4f}, "
+                f"{qc} kuantum köprü)")
+
+    def summary(self) -> str:
+        lines = [
+            f"══ {self.concept} — Çok-Boyutlu Grounding ══",
+            f"Bağlı boyutlar: {len(self.bound)}",
+        ]
+        for paradigm, percept in self.bound.items():
+            lines.append(f"  {paradigm} → {percept}")
+        if self.kappa_moments:
+            k1 = float(self.kappa_moments[0]) if self.kappa_moments else 0.0
+            k2 = float(self.kappa_moments[1]) if len(self.kappa_moments) > 1 else 0.0
+            lines.append(f"Birleşik κ: κ₁={k1:.4f}, κ₂={k2:.4f}")
+        if self.quantum_connections:
+            lines.append(f"Kuantum köprüler ({len(self.quantum_connections)}):")
+            for name, cd, qd in self.quantum_connections[:5]:
+                lines.append(f"  {name}: klasik={cd:.3f} kuantum={qd:.3f}")
+        return "\n".join(lines)
+
+
 # ─── Ana AI sınıfı ───────────────────────────────────────────────────────────
 
 class AI:
@@ -1789,6 +1831,158 @@ class AI:
 
         sig.nearest = _nearest  # type: ignore[method-assign]
         return sig
+
+    def ground_full(
+        self,
+        concept_name: str,
+        *,
+        dna: "str | None" = None,
+        molecule: "str | None" = None,
+        geometry=None,
+        law: "str | None" = None,
+        sound=None,
+        image=None,
+        topology=None,
+    ) -> "GroundingSignature":
+        """Kavramı tüm boyutlarda eşzamanlı groundla — çok-boyutlu TAU bağlama.
+
+        "Elma" = DNA + molekül + geometri + yasa + ses + görüntü + topoloji.
+        Her sağlanan boyut için bir TAU kenarı eklenir:
+          dna       → HAS_DNA      (DNA dizesi "ATCGATCG" → moment uzayı)
+          molecule  → HAS_COMPOUND (SMILES dizesi → moleküler grafi)
+          geometry  → HAS_GEOMETRY (geometrik matris/sinyal → moment)
+          law       → IS_GOVERNED_BY (yasa kavram adı — doğrudan TAU kenarı)
+          sound     → HAS_SIGNAL   (ses sinyali → Wiener-Khinchin moment)
+          image     → HAS_IMAGE    (görüntü → singular değer dağılımı moment)
+          topology  → HAS_TOPOLOGY (topolojik veri/PD → moment)
+
+        κ_total = tüm bağlı boyutların serbest kümülant toplamı (κ-additivite).
+        Ne kadar çok boyut → manifoldda o kadar çok gizli çapraz-boyutlu bağlantı.
+
+        Döner: GroundingSignature — bağlı kenarlar + κ_total + quantum_connections.
+        """
+        from functools import reduce
+        from tantrium.core.quantum_moments import FreeCumulants
+
+        bound: dict[str, str] = {}
+        all_kappas: list[FreeCumulants] = []
+
+        def _collect_kappa(percept_name: str) -> None:
+            c = self._engine.manifold.concepts.get(percept_name)
+            if c is not None and c.moments:
+                try:
+                    kappa = FreeCumulants.from_moments(list(c.moments))
+                    all_kappas.append(kappa)
+                except Exception:
+                    pass
+
+        # DNA boyutu — HAS_DNA
+        if dna is not None:
+            pname = f"⟨percept:{concept_name}:dna⟩"
+            obj = self._engine.encoder.encode(dna, name=pname)
+            from tantrium.core.semantic import Concept
+            from tantrium.graph.knowledge_graph import KnowledgeEdge
+            c = Concept(name=pname, moments=list(obj.moments), domain="percept",
+                        source="ground_full:dna")
+            self._engine.manifold.admit(c, policy="trusted")
+            if pname not in self._engine.tau.nodes:
+                self._engine.tau.add_node(c)
+            edges = self._engine.tau.edges.setdefault(concept_name, [])
+            if not any(e.target == pname and e.paradigm == "HAS_DNA" for e in edges):
+                edges.append(KnowledgeEdge(source=concept_name, target=pname,
+                                           distance=0.0, paradigm="HAS_DNA"))
+                self._engine.tau._dirty = True
+            bound["HAS_DNA"] = pname
+            _collect_kappa(pname)
+
+        # Molekül boyutu — HAS_COMPOUND (SMILES)
+        if molecule is not None:
+            pname = self.bind_percept(concept_name, molecule, modality="smiles",
+                                      paradigm="HAS_COMPOUND",
+                                      name=f"⟨percept:{concept_name}:molecule⟩")
+            bound["HAS_COMPOUND"] = pname
+            _collect_kappa(pname)
+
+        # Geometri boyutu — HAS_GEOMETRY
+        if geometry is not None:
+            pname = self.bind_percept(concept_name, geometry, modality="matrix",
+                                      paradigm="HAS_GEOMETRY",
+                                      name=f"⟨percept:{concept_name}:geometry⟩")
+            bound["HAS_GEOMETRY"] = pname
+            _collect_kappa(pname)
+
+        # Yasa boyutu — IS_GOVERNED_BY (kavram adı, doğrudan TAU kenarı)
+        if law is not None:
+            from tantrium.graph.knowledge_graph import KnowledgeEdge
+            edges = self._engine.tau.edges.setdefault(concept_name, [])
+            if not any(e.target == law and e.paradigm == "IS_GOVERNED_BY" for e in edges):
+                edges.append(KnowledgeEdge(source=concept_name, target=law,
+                                           distance=0.0, paradigm="IS_GOVERNED_BY"))
+                self._engine.tau._dirty = True
+            bound["IS_GOVERNED_BY"] = law
+            # Yasa kavramının kendisini manifolddan oku
+            lc = self._engine.manifold.concepts.get(law)
+            if lc is not None and lc.moments:
+                try:
+                    kappa = FreeCumulants.from_moments(list(lc.moments))
+                    all_kappas.append(kappa)
+                except Exception:
+                    pass
+
+        # Ses boyutu — HAS_SIGNAL
+        if sound is not None:
+            pname = self.bind_percept(concept_name, sound, modality="signal",
+                                      paradigm="HAS_SIGNAL",
+                                      name=f"⟨percept:{concept_name}:sound⟩")
+            bound["HAS_SIGNAL"] = pname
+            _collect_kappa(pname)
+
+        # Görüntü boyutu — HAS_IMAGE
+        if image is not None:
+            pname = self.bind_percept(concept_name, image, modality="image",
+                                      paradigm="HAS_IMAGE",
+                                      name=f"⟨percept:{concept_name}:image⟩")
+            bound["HAS_IMAGE"] = pname
+            _collect_kappa(pname)
+
+        # Topoloji boyutu — HAS_TOPOLOGY
+        if topology is not None:
+            pname = self.bind_percept(concept_name, topology, modality="matrix",
+                                      paradigm="HAS_TOPOLOGY",
+                                      name=f"⟨percept:{concept_name}:topology⟩")
+            bound["HAS_TOPOLOGY"] = pname
+            _collect_kappa(pname)
+
+        # Topology encoder cache temizle
+        if hasattr(self, "_topo_encoder"):
+            self._topo_encoder._indeg = None
+
+        # κ_total: tüm boyutların serbest kümülant toplamı
+        if all_kappas:
+            kappa_total = reduce(lambda a, b: a.add(b), all_kappas)
+            kappa_moments = list(kappa_total.k)
+        else:
+            kappa_moments = []
+
+        # quantum_connections: κ_total'den manifoldda gizli köprüler
+        quantum_connections: list = []
+        if kappa_moments:
+            try:
+                bridges = self._engine.manifold.quantum_bridges(
+                    concept_name, top_k=8
+                )
+                quantum_connections = [
+                    (b[0], 0.0, float(b[1])) for b in bridges
+                ]
+            except Exception:
+                pass
+
+        return GroundingSignature(
+            concept=concept_name,
+            bound=bound,
+            kappa_moments=kappa_moments,
+            quantum_connections=quantum_connections,
+        )
 
     def witness(
         self,

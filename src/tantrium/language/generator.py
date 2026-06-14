@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
              "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
+             "HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY",
              "INHIBITS", "CAUSES", "ACTIVATES"}
 # ALEPH (Hankel/Wasserstein certified) kullanılabilir — moment uzayında komşu.
 # SPECTRAL_BRIDGE hariç: genesis yapay köprüsüdür, anlamsal bilgi taşımaz.
@@ -39,6 +40,10 @@ _CONNECTIVE: dict[str, str] = {
     "HAS_SIGNAL":      "{src}, {tgt} sinyaliyle algılanır",
     "HAS_COMPOUND":    "{src}, {tgt} bileşiğini içerir",
     "HAS_IMAGE":       "{src}, {tgt} görüntüsüyle temsil edilir",
+    "HAS_DNA":         "{src}, {tgt} DNA'sına sahiptir",
+    "HAS_GEOMETRY":    "{src}, {tgt} geometrisine sahiptir",
+    "HAS_TOPOLOGY":    "{src}, {tgt} topolojisine sahiptir",
+    "IS_GOVERNED_BY":  "{src}, {tgt} yasasıyla yönetilir",
     "INHIBITS":        "{src}, {tgt}'yi engeller",
     "CAUSES":          "{src}, {tgt}'ye yol açar",
     "ACTIVATES":       "{src}, {tgt}'yi etkinleştirir",
@@ -57,6 +62,10 @@ _EN_CONNECTIVE: dict[str, str] = {
     "HAS_SIGNAL":      "{src} is sensed via {tgt}",
     "HAS_COMPOUND":    "{src} contains compound {tgt}",
     "HAS_IMAGE":       "{src} is represented by {tgt}",
+    "HAS_DNA":         "{src} has DNA sequence {tgt}",
+    "HAS_GEOMETRY":    "{src} has geometry {tgt}",
+    "HAS_TOPOLOGY":    "{src} has topology {tgt}",
+    "IS_GOVERNED_BY":  "{src} is governed by {tgt}",
     "INHIBITS":        "{src} inhibits {tgt}",
     "CAUSES":          "{src} causes {tgt}",
     "ACTIVATES":       "{src} activates {tgt}",

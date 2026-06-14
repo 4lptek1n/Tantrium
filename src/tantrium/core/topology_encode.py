@@ -36,6 +36,8 @@ _SEMANTIC_PARADIGMS = frozenset({
     "DEFINES", "INHIBITS", "CAUSES", "ACTIVATES", "TARGETS", "BINDS",
     # Multi-modal ve kausal zincir paradigmaları (atom→DNA→elma)
     "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
+    # Çok-boyutlu grounding: DNA + geometri + topoloji + yasa (elma = tüm boyutlar)
+    "HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY",
 })
 
 _MAX_NEIGHBORS = 24       # alt-graf kenarı ≤ 25 → eigvalsh O(n³) hızlı

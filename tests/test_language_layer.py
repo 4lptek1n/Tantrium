@@ -180,3 +180,99 @@ def test_generator_en_lang(ai):
     r = g.generate("protein", max_steps=3)
     assert r.lang == "en"
     assert r.certified
+
+
+# ─── ground_full: çok-boyutlu grounding ────────────────────────────────────────
+
+def test_ground_full_returns_signature(ai):
+    sig = ai.ground_full("apple", law="fibonacci numbers")
+    from tantrium.ai import GroundingSignature
+    assert isinstance(sig, GroundingSignature)
+    assert sig.concept == "apple"
+
+
+def test_ground_full_sound_creates_tau_edge(ai):
+    rng = np.random.default_rng(123)
+    sound = rng.standard_normal(800)
+    sig = ai.ground_full("apple", sound=sound)
+    edges = ai._engine.tau.edges.get("apple", [])
+    has_signal = [e for e in edges if e.paradigm == "HAS_SIGNAL"]
+    assert len(has_signal) >= 1
+
+
+def test_ground_full_dna_creates_tau_edge(ai):
+    sig = ai.ground_full("apple", dna="ATCGATCGATCG")
+    edges = ai._engine.tau.edges.get("apple", [])
+    has_dna = [e for e in edges if e.paradigm == "HAS_DNA"]
+    assert len(has_dna) >= 1
+
+
+def test_ground_full_molecule_creates_tau_edge(ai):
+    sig = ai.ground_full("apple", molecule="CC(O)C")
+    edges = ai._engine.tau.edges.get("apple", [])
+    has_cmp = [e for e in edges if e.paradigm == "HAS_COMPOUND"]
+    assert len(has_cmp) >= 1
+
+
+def test_ground_full_law_edge(ai):
+    sig = ai.ground_full("apple", law="golden ratio")
+    edges = ai._engine.tau.edges.get("apple", [])
+    governed = [e for e in edges if e.paradigm == "IS_GOVERNED_BY" and e.target == "golden ratio"]
+    assert len(governed) >= 1
+
+
+def test_ground_full_multi_dim_bound(ai):
+    rng = np.random.default_rng(77)
+    sig = ai.ground_full(
+        "apple",
+        dna="GCTAGCTAGCTA",
+        sound=rng.standard_normal(600),
+        law="natural selection",
+    )
+    assert "HAS_DNA" in sig.bound
+    assert "HAS_SIGNAL" in sig.bound
+    assert "IS_GOVERNED_BY" in sig.bound
+
+
+def test_ground_full_kappa_moments_nonempty(ai):
+    rng = np.random.default_rng(55)
+    sig = ai.ground_full("apple", sound=rng.standard_normal(500))
+    assert len(sig.kappa_moments) >= 2
+
+
+def test_ground_full_str(ai):
+    sig = ai.ground_full("apple", law="fibonacci numbers")
+    s = str(sig)
+    assert "GroundingSignature" in s
+    assert "apple" in s
+
+
+def test_ground_full_summary(ai):
+    rng = np.random.default_rng(88)
+    sig = ai.ground_full("apple", sound=rng.standard_normal(400), law="gravity")
+    summary = sig.summary()
+    assert "apple" in summary
+    assert "Grounding" in summary
+
+
+def test_new_paradigms_in_connective():
+    from tantrium.language.generator import _CONNECTIVE, _EN_CONNECTIVE, _SEMANTIC
+    new = {"HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY"}
+    for p in new:
+        assert p in _CONNECTIVE, f"{p} TR connective'de eksik"
+        assert p in _EN_CONNECTIVE, f"{p} EN connective'de eksik"
+        assert p in _SEMANTIC, f"{p} _SEMANTIC'de eksik"
+
+
+def test_new_paradigms_in_speaker():
+    from tantrium.language.speaker import Speaker
+    new = {"HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY"}
+    for p in new:
+        assert p in Speaker._TR_VERB, f"{p} _TR_VERB'de eksik"
+
+
+def test_new_paradigms_in_topology_encode():
+    from tantrium.core.topology_encode import _SEMANTIC_PARADIGMS
+    new = {"HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY"}
+    for p in new:
+        assert p in _SEMANTIC_PARADIGMS, f"{p} _SEMANTIC_PARADIGMS'de eksik"
