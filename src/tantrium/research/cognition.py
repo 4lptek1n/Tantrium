@@ -31,6 +31,8 @@ class CognitionState:
     gaps_found: int = 0
     goals_created: int = 0
     proofs_completed: int = 0
+    corrected: int = 0          # VerifyPhase: dejenere encoding düzeltildi
+    suspects_flagged: int = 0   # VerifyPhase: dejenere/çakışma şüphesi işaretlendi
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
@@ -694,12 +696,43 @@ class DeductivePhase:
         return state
 
 
+class VerifyPhase:
+    """Corrigibility — döngünün YANLIŞINI tespit et + düzelt (ASI döngüsü doğrulama adımı).
+
+    GIMEL içsel göreli zayıflığı bulur ama ÜNİFORM hatayı (protein/glucose μ_k≡1)
+    göremez. Bu faz `research.corrigibility.detect_and_correct` ile o kör noktayı
+    kapatır — growth akış döngüsüyle AYNI çekirdek (tek tanım). Dejenere encoding'i
+    adaptif re-encode ile düzeltir, çakışmaları işaretler. Döngü artık yalnız
+    BÜYÜMÜYOR, kendi temsil hatasını da görüp düzeltiyor.
+    """
+    name = "verify"
+
+    def __init__(self) -> None:
+        self._seen: set[str] = set()  # döngüler arası artımlı "denetlendi" hafızası
+
+    def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
+        try:
+            from tantrium.research.corrigibility import detect_and_correct
+            res = detect_and_correct(engine, self._seen)
+            state.corrected += res["corrected"]
+            state.suspects_flagged += (res["degenerate"] - res["corrected"]) + res["collided"]
+            if res["checked"]:
+                state.log(
+                    f"verify: {res['checked']} denetlendi, {res['degenerate']} dejenere "
+                    f"({res['corrected']} düzeltildi), {res['collided']} çakışma şüphesi"
+                )
+        except Exception as exc:
+            state.log(f"verify: atlandı — {exc}")
+        return state
+
+
 # ── Cognition Ana Sınıf ──────────────────────────────────────────────────────
 
 _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     PerceivePhase(),
     ReflectPhase(),
     OperatePhase(),
+    VerifyPhase(),      # Corrigibility: yanlışı tespit+düzelt (growth ile paylaşılan çekirdek)
     DeductivePhase(),   # engine.grow(): InferenceChain + certify_theorem_graph (öksüz bağlandı)
     ComposePhase(),     # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
     FlyWheelPhase(),    # Kademe 6: produce() → scan_production_gaps() → ProofLoop

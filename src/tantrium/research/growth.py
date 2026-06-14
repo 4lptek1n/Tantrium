@@ -38,14 +38,7 @@ _RATE_LIMIT_S = 0.34
 _STATE_DIR = pathlib.Path(".tantrium")
 _STATE_FILE = _STATE_DIR / "growth_state.json"
 
-# Corrigibility eşikleri (yanlış-tespit)
-_DEGEN_SPREAD = 0.02     # moment yayılımı (max-min) bunun altında = dejenere encoding
-                         # (protein/glucose çöküşü μ_k≡1 → yayılım 0; GIMEL göremez)
-_COLLISION_EPS = 0.001   # iki FARKLI kavram bu L1 mesafenin altında = çakışma şüphesi
-                         # (sıkı: 48k doymuş manifoldda saturasyon yoğunluğunu DEĞİL,
-                         #  neredeyse-tam çakışmayı = gerçek encoder ayırma hatasını yakala)
-_VERIFY_MAX = 60         # döngü başına denetlenen kavram (maliyet sınırı)
-_VERIFY_COLLISION_MAX = 20  # çakışma taraması O(N) — daha sıkı sınır
+# Corrigibility eşikleri research.corrigibility'de (tek tanım — cognition ile paylaşılır)
 
 # OEIS anahtar kelime rotasyonu — matematik gövdesini geniş tarar
 _OEIS_KEYWORDS = [
@@ -1049,80 +1042,28 @@ class GrowthEngine:
              (iki ayrı şey aynı noktaya düşmüş = encoder ayırmıyor).
 
         Tespit → adaptif derin re-encode (DÜZELT) → düzelmeyen suspect hafızaya
-        (`state["suspect"]`, growth_state.json ile kalıcı → unutmaz, #4). Düzeltme
-        yalnız düz isimlerde denenir (oeis:/algo:/theorem: önekli adlarda re-encode
-        yanlış temsile 'düzeltebilir' — güvenli taraf: önekli/⟨⟩ ad → yalnız işaretle).
+        (`state["suspect"]`, growth_state.json ile kalıcı → unutmaz, #4). Çekirdek
+        mantık `research.corrigibility.detect_and_correct`'ta (cognition VerifyPhase
+        ile PAYLAŞILIR — tek tanım). Burada yalnız suspect-kalıcılık + rapor eşlemesi.
         """
-        manifold = self.engine.manifold
-        encoder = getattr(self.engine, "encoder", None)
-        suspect = self.state.setdefault("suspect", [])
-        suspect_set = set(suspect)
-        checked = degen = collided = corrected = 0
-        collision_scans = 0
-        for name, c in list(manifold.concepts.items()):
-            if checked >= _VERIFY_MAX:
-                break
-            if name in self._verify_seen or name.startswith("⟨"):
-                continue
-            mu = [float(m) for m in getattr(c, "moments", [])]
-            if len(mu) < 2:
-                continue
-            self._verify_seen.add(name)
-            checked += 1
-            spread = max(mu) - min(mu)
+        from tantrium.research.corrigibility import detect_and_correct
 
-            # 1) DEJENERE encoding (üniform moment = protein/glucose sınıfı)
-            if spread < _DEGEN_SPREAD:
-                degen += 1
-                fixed = False
-                # 2) DÜZELT: adaptif derin re-encode (yalnız düz/SMILES isimlerde)
-                safe_name = (":" not in name) and encoder is not None
-                if safe_name:
-                    try:
-                        new_enc = encoder.encode_adaptive(name)
-                        nmu = [float(m) for m in getattr(new_enc, "moments", [])]
-                        if nmu and (max(nmu) - min(nmu)) >= _DEGEN_SPREAD:
-                            import fractions
-                            c.moments = [
-                                fractions.Fraction(m).limit_denominator(10 ** 9)
-                                for m in new_enc.moments
-                            ]
-                            corrected += 1
-                            fixed = True
-                            _log(f"düzeltildi: {name} dejenere→ayrıştı "
-                                 f"(yayılım {max(nmu) - min(nmu):.3f})")
-                    except Exception:
-                        pass
-                if not fixed and name not in suspect_set:
-                    suspect.append(name)
-                    suspect_set.add(name)
-                    _log(f"şüpheli (dejenere, düzeltilemedi): {name}")
-                continue
-
-            # 3) ÇAKIŞMA: en yakın FARKLI kavram çok yakınsa (O(N) — sınırlı)
-            if collision_scans >= _VERIFY_COLLISION_MAX:
-                continue
-            collision_scans += 1
-            try:
-                hits = manifold.nearest(c, n=1, metric="l1")
-            except Exception:
-                hits = []
-            if hits:
-                other, d = hits[0]
-                if other != name and float(d) < _COLLISION_EPS:
-                    collided += 1
-                    pair = f"{name}~{other}"
-                    if pair not in suspect_set:
-                        suspect.append(pair)
-                        suspect_set.add(pair)
-                        _log(f"şüpheli (çakışma): {name} ≈ {other} (L1 {float(d):.4f})")
-
-        # suspect hafızayı sınırla (son 500 — kalıcı ama sınırsız büyümesin)
-        if len(suspect) > 500:
-            self.state["suspect"] = suspect[-500:]
-        if checked:
-            _log(f"doğrulama: {checked} denetlendi, {degen} dejenere "
-                 f"({corrected} düzeltildi), {collided} çakışma şüphesi")
+        res = detect_and_correct(self.engine, self._verify_seen)
+        for line in res["logs"]:
+            _log(line)
+        if res["new_suspects"]:
+            suspect = self.state.setdefault("suspect", [])
+            suspect_set = set(suspect)
+            for s in res["new_suspects"]:
+                if s not in suspect_set:
+                    suspect.append(s)
+                    suspect_set.add(s)
+            # suspect hafızayı sınırla (son 500 — kalıcı ama sınırsız büyümesin)
+            if len(suspect) > 500:
+                self.state["suspect"] = suspect[-500:]
+        if res["checked"]:
+            _log(f"doğrulama: {res['checked']} denetlendi, {res['degenerate']} dejenere "
+                 f"({res['corrected']} düzeltildi), {res['collided']} çakışma şüphesi")
         if rep is not None:
-            rep.corrected += corrected
-            rep.suspect_flagged += (degen - corrected) + collided
+            rep.corrected += res["corrected"]
+            rep.suspect_flagged += (res["degenerate"] - res["corrected"]) + res["collided"]
