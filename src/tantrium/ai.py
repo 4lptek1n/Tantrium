@@ -1914,6 +1914,76 @@ class AI:
         c = self.converse(request)
         return {"intent": "knowledge", "answer": c["answer"], "result": c}
 
+    # İnsan-gibi anlatım için doğal cümle parçaları (log değil, akıcı dil)
+    _N_WHAT = {"IS_A": "bir {t}", "COMPONENT_OF": "{t}'nin bir parçası",
+               "COMPOSED": "{t}'den oluşan bir şey", "DEFINES": "{t}'yi tanımlayan bir kavram"}
+    _N_DOES = {"INHIBITS": "{t}'yi baskılar", "ACTIVATES": "{t}'yi etkinleştirir",
+               "CAUSES": "{t}'ye yol açar", "USES": "{t}'den yararlanır",
+               "ACHIEVES": "{t} sağlar", "REQUIRES": "çalışmak için {t} gerektirir"}
+    _N_PHYS = {"HAS_COMPOUND": "kimyasal yapısı {t}", "HAS_DNA": "DNA dizisi {t}",
+               "HAS_GEOMETRY": "geometrik formu {t}", "HAS_SIGNAL": "{t} sinyaliyle algılanır",
+               "HAS_IMAGE": "{t} görüntüsüyle temsil edilir", "HAS_TOPOLOGY": "topolojisi {t}",
+               "IS_GOVERNED_BY": "{t} yasasıyla yönetilir"}
+
+    @staticmethod
+    def _nat_join(ts: list) -> str:
+        ts = [str(t) for t in ts if t]
+        if not ts:
+            return ""
+        if len(ts) == 1:
+            return ts[0]
+        if len(ts) == 2:
+            return f"{ts[0]} ve {ts[1]}"
+        return ", ".join(ts[:-1]) + " ve " + ts[-1]
+
+    def _narrate_rich(self, topic: str, facts: dict) -> str:
+        """İnsan gibi AKICI, detaylı anlatım — ne olduğu + ne yaptığı + fiziksel temeli +
+        (doğal cümle içinde) NEDEN köklü. Log değil, vernikli dil."""
+        Topic = topic[:1].upper() + topic[1:]
+        what = [t.format(t=self._nat_join(facts[p][:3]))
+                for p, t in self._N_WHAT.items() if facts.get(p)]
+        does = [t.format(t=self._nat_join(facts[p][:3]))
+                for p, t in self._N_DOES.items() if facts.get(p)]
+        phys = [t.format(t=self._nat_join(facts[p][:2]))
+                for p, t in self._N_PHYS.items() if facts.get(p)]
+        parts: list[str] = []
+        if what:
+            parts.append(f"{Topic}, {self._nat_join(what)} türüdür.")
+        if does:
+            opener = "İşlevine gelince, " if what else f"{Topic} "
+            parts.append(f"{opener}{self._nat_join(does)}.")
+        if phys:
+            parts.append(f"Fiziksel temeli açısından {self._nat_join(phys)}.")
+        if not parts:
+            parts.append(f"{Topic} hakkında doğrulanmış bir bilgim henüz yok.")
+        # Topraklamayı DOĞAL cümleyle ör (log değil)
+        try:
+            g = self.grounding(topic)
+            total = (len(self._engine.tau.edges.get(topic, []))
+                     + sum(1 for _s, el in self._engine.tau.edges.items()
+                           for e in el if str(getattr(e, "target", "")) == topic))
+            # "iç içe" komşuları: gerçek anlamsal ilişkiler (facts hedefleri) — moment
+            # komşusu değil; daha temiz ve dürüst (kavramın GERÇEKTEN bağlı olduğu şeyler).
+            near, _seen = [], set()
+            for _p, ts in facts.items():
+                for t in ts:
+                    if t and t.lower() != topic.lower() and t.lower() not in _seen:
+                        _seen.add(t.lower()); near.append(t)
+            near = near[:3]
+            if g.verdict == "GROUNDED":
+                cümle = (f"Bütün bunları güvenle söyleyebiliyorum çünkü {topic}, bilgi "
+                         f"dünyamda {total} farklı doğrulanmış ilişkiyle sağlam köklü")
+                if near:
+                    cümle += f"; {self._nat_join(near)} gibi kavramlarla anlamsal olarak iç içe"
+                cümle += ". Köklü olmasaydı bu konuda hiç konuşmaz, asla uydurmazdım."
+                parts.append(cümle)
+            elif g.verdict == "WEAKLY_GROUNDED":
+                parts.append(f"Ancak dürüst olmam gerekirse, {topic} bilgi dünyamda zayıf "
+                             f"köklü ({total} ilişki) — bu yüzden temkinli konuşuyorum.")
+        except Exception:
+            pass
+        return " ".join(parts)
+
     def _grounding_detail(self, topic: str) -> str:
         """Cevabın NEDEN köklü olduğunu detaylı açıkla — topraklama sertifikası.
 
@@ -1961,12 +2031,11 @@ class AI:
                 learned = True
                 facts = self._tau_facts(topic)
         if facts:
-            from tantrium.language.speaker import Speaker
-            answer = Speaker(self._engine).synthesize(topic, facts)
             if detail:
-                gd = self._grounding_detail(topic)
-                if gd:
-                    answer = answer + "\n" + gd
+                answer = self._narrate_rich(topic, facts)   # insan-gibi akıcı + topraklama
+            else:
+                from tantrium.language.speaker import Speaker
+                answer = Speaker(self._engine).synthesize(topic, facts)
         else:
             answer = (f"'{topic}' hakkında henüz doğrulanmış bir bilgim yok"
                       + (" (internetten de öğrenemedim)." if learned else "."))
