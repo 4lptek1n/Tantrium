@@ -1878,7 +1878,18 @@ class AI:
         köklü bilgi-kümesi oluşur (kendi kendine yeten ajan). Döner: öğrenilen toplam.
         """
         total = 0
-        main = self._fetch_wikipedia(topic, full=True)
+        # DISAMBIGUATION: kısa all-alpha konu (gen/akronim: kras/egfr/tp53) → Wikipedia BÜYÜK
+        # harf ister; küçük harf "kras" → "Kras" (Slovenya Karst bölgesi!) yanlış sayfaya gider.
+        # Akronim konvansiyonu: ≤6 harf, boşluksuz → önce UPPERCASE dene.
+        fetch_title = topic
+        if topic.isalpha() and len(topic) <= 6 and " " not in topic:
+            up = self._fetch_wikipedia(topic.upper(), full=True)
+            if up:
+                fetch_title, main = topic.upper(), up
+            else:
+                main = self._fetch_wikipedia(topic, full=True)
+        else:
+            main = self._fetch_wikipedia(topic, full=True)
         if main:
             # KISALTMA/TAKMA-AD yeniden-bağlama: "FullName (; ABBR) is/are X." — Wikipedia
             # redirect'i sorguyu (dna) tam-ada (deoxyribonucleic acid) çevirir, tanım baş-isme
@@ -2898,10 +2909,12 @@ class AI:
         # Metinden nedensel ilişkileri çıkar ve TAU'ya ekle
         relations = _extract_relations(text)
         causal_added = 0
-        # DEFİNİSYON OTORİTESİ (corrigibility): metnin İLK IS_A'sı tanımdır. O özne için
-        # eski/bayat IS_A kenarlarını TEMİZLE → yeniden-araştırma yanlışı düzeltir
-        # ("photosynthesis→orange carotenoid protein" yeni "process" tanımıyla ezilir).
-        # Sonraki IS_A'lar eklenir (çok-sınıf: hem protein hem enzim olabilir).
+        # DEFİNİSYON OTORİTESİ (corrigibility): metnin İLK IS_A'sının ÖZNESİ = belgenin ANA
+        # konusu; YALNIZ onun eski/bayat IS_A'sı TEMİZLENİR (yeniden-araştırma yanlışı düzeltir).
+        # KRİTİK [F54 fix]: çok-makale öğrenmede (research 1-hop/corpus/growth) BAŞKA makalede
+        # geçen "X is a Y" X'in iyi tanımını EZMESİN — yalnız ana özne otoriter. (KRAS örneği:
+        # ilgili makaledeki stray "kras is a..." kras→gene'i siliyordu.)
+        _first_isa_subj = next((s for s, r, _o in relations if r == "IS_A"), None)
         refreshed_isa: set = set()
         obs = AutonomousObserver(self._engine)
         for subj, rel_type, obj in relations[:10]:
@@ -2921,7 +2934,9 @@ class AI:
                     except Exception:
                         pass
             edges = self._engine.tau.edges.setdefault(subj, [])
-            if rel_type == "IS_A" and subj not in refreshed_isa:
+            # otorite-değişim YALNIZ ana özneye (ilk IS_A öznesi) — çapraz-makale ezme yok
+            if (rel_type == "IS_A" and subj == _first_isa_subj
+                    and subj not in refreshed_isa):
                 refreshed_isa.add(subj)
                 if any(e.paradigm == "IS_A" and e.target != obj for e in edges):
                     edges[:] = [e for e in edges if e.paradigm != "IS_A"]

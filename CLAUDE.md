@@ -600,6 +600,15 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     Artık mevcut kavramın momentini KORUR (yalnız domain tazeler) + yeni oluşturmada hash-distinct
     `_theorem_moments`. 90 teorem `tools/bind_theorem_math.py` ile tce-collapse certificate
     sayılarına bağlı (90 ayrık imza). Teorem moment'ini elle değiştirirsen reload'da korunur.
+16. **`learn()` IS_A otorite-değişimi YALNIZ ana özneye [F54 fix, canlı araştırmadan]**: F43
+    "ilk IS_A = tanım otoritesi → eski IS_A'yı sil" çok-makale öğrenmede (research 1-hop/corpus/
+    growth) ÇAPRAZ-MAKALE EZİYORDU — başka makaledeki stray "kras is a..." kras→gene'i siliyordu.
+    Fix: otorite-değişim yalnız metnin İLK IS_A öznesine (`_first_isa_subj` = belgenin ana konusu);
+    başka özneler yalnız EKLER. relearn (def-edge sil + tek-konu araştır) korunur.
+17. **`_research_deep` kısa konu için Wikipedia BÜYÜK harf dener [F54 fix]**: küçük harf "kras" →
+    Wikipedia "Kras" (Slovenya Karst bölgesi!) yanlış sayfaya gidiyordu. Gen/akronim konvansiyonu
+    BÜYÜK harf → ≤6 harf + boşluksuz + all-alpha topic için önce `topic.upper()` çekilir
+    (kras→KRAS gen, egfr→EGFR). Re-attribute hâlâ küçük-harf topic'e bağlar (kras IS_A gene).
 
 ---
 
