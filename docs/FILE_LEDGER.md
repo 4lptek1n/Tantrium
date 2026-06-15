@@ -310,6 +310,17 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   primitif/derinlik genişledikçe büyür. P3 doğrulama (örnek-çalıştırma) sentezde içkin.
 - **Tekrar:** YOK. molecular_genesis (SMILES) ile AYNI DESEN, FARKLI uzay (terim vs atom) — strateji çeşitliliği.
 
+### ✅ core/code_research.py — GERÇEK koddan operasyon grounding [YENİ — ASI §12, dar→geniş]
+- **İş:** `ground_stdlib_operations()` Python introspection (builtins + str-method + math) → onlarca
+  GERÇEK, test-edilmiş operasyon (sum/sqrt/factorial/upper/floor...) compose-edilebilir şablonla +
+  docstring-anahtarlarıyla grounded. `relevant_primitives(task)` göreve ilgili op'ları DETERMİNİSTİK
+  seçer → sentezleyiciye `extra_primitives` olarak verilir.
+- **Güç:** "Dar"ın kökü 20 elle-yazılı op'tu; artık GERÇEK koddan grounded (geniş). 'Görmediği yüzü
+  hayal edemez' — sıfırdan uydurmaz, grounded gerçek op'ları birleştirir. Modül ekledikçe (itertools/
+  statistics...) yüzlerce op. `ai.code(task=)` + `code_from_nl` kullanır; her çıktı yine VERIFY.
+- **DÜRÜST SINIR:** Türkçe NL → İngilizce stdlib eşanlamlı katmanı dar (kapsam: synonym ekle).
+- **Tekrar:** YOK. nl_code (NL→op) + code_synthesis (compose) + bu (op-corpus) tamamlayıcı.
+
 ### ✅ core/nl_code.py — DOĞAL DİL → KOD: grounded anlama [YENİ — ASI §12]
 - **İş:** `parse_operations(task)` (NL kelime → grounded operasyon, KELİME-SINIRI eşleme: "son"
   "sonra"da eşleşmez) + `nl_to_program(task)` (operasyonları SIRAYLA zincirle). `_OP_VOCAB`

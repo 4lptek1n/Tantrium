@@ -33,15 +33,18 @@ class CertifiedProgram:
     def source(self) -> str:
         if self.full_source:
             return self.full_source
-        return f"def solve({', '.join(self.args)}):\n    return {self.program}"
+        imp = "import math\n" if "math." in self.program else ""
+        return f"{imp}def solve({', '.join(self.args)}):\n    return {self.program}"
 
 
 _SENTINEL = object()
+import math as _math  # güvenli (I/O yok) — grounded math operasyonları için
 # Güvenli yerleşikler (kapalı küme — kod sentezi yalnız bunları kullanır)
 _SAFE_GLOBALS = {
     "__builtins__": {},
     "abs": abs, "len": len, "sum": sum, "max": max, "min": min, "sorted": sorted,
-    "str": str, "int": int, "round": round,
+    "str": str, "int": int, "round": round, "list": list, "set": set, "tuple": tuple,
+    "reversed": reversed, "any": any, "all": all, "math": _math,
 }
 
 # ── Tip-bazlı primitif şablonları ({c} = mevcut aday; {a}/{b} = argümanlar) ──
@@ -131,7 +134,7 @@ def _score(expr: str, examples, argnames) -> tuple[int, float] | None:
             continue
         try:
             err += abs(float(r) - float(out))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             err += 1.0e9
     return (exact, -err)
 
@@ -213,7 +216,7 @@ def _synthesize_recursive(examples) -> str | None:
 
 
 def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
-               primitives=None) -> CertifiedProgram:
+               primitives=None, extra_primitives=None) -> CertifiedProgram:
     """examples: [(girdi, çıktı), ...] → CertifiedProgram (kanıtlı veya verified=False).
 
     Beam arama: argümanlardan başla, operasyon-operasyon genişlet, her aday örneklere karşı
@@ -223,7 +226,9 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
     examples = list(examples)
     n = len(examples)
     argnames = _detect_args(examples)
-    unary = primitives or _primitive_pool(examples, argnames)
+    unary = list(primitives or _primitive_pool(examples, argnames))
+    if extra_primitives:                      # GROUNDED stdlib operasyonları (geniş kapsam)
+        unary = list(dict.fromkeys(unary + list(extra_primitives)))
 
     def _make(expr, steps, passed):
         from tantrium.core.encoder import _code_to_graph_moments

@@ -2773,20 +2773,22 @@ class AI:
         # düz metin: tüm sayılar
         return self._extract_numbers(s)
 
-    def code(self, examples, *, max_depth: int = 5) -> dict:
+    def code(self, examples, *, task: str = "", max_depth: int = 5) -> dict:
         """ASI §12 — ÖRNEKTEN KANITLI PROGRAM SENTEZİ (saf Tantrium, dış model YOK).
 
         Sertifikalı kod sentezleyici (`core/code_synthesis`, molecular_genesis deseni): operasyon-
         operasyon beam arama, her aday örneklere karşı ÇALIŞTIRILIR → spec'i sağlayan = kanıtlı.
         HALÜSİNASYON İMKÂNSIZ: doğrulamadan geçmeyen program elenir (Curry-Howard: spec'i sağlamak
-        = kanıt). LLM olası kod verir (incele/düzelt); biz GARANTİLİ-doğru veririz.
+        = kanıt). GENİŞ: `task` ipucu verilirse GERÇEK koddan (Python stdlib) grounded operasyonlar
+        (sqrt/factorial/sorted/...) primitif havuzuna eklenir — 'dar' değil, gerçek-kod-grounded.
 
-        examples: [(girdi, çıktı), ...] (sayısal/aritmetik). DÜRÜST SINIR: dar ama gerçek —
-        iyi-tanımlı dönüşüm sentezi; primitif/derinlik genişledikçe kapsam büyür.
+        examples: [(girdi, çıktı), ...]. task: NL ipucu (grounded operasyon seçimi için).
         Döner: {program, source, verified, examples_passed, steps, answer, cert}.
         """
         from tantrium.core.code_synthesis import synthesize
-        cp = synthesize(list(examples), max_depth=max_depth)
+        from tantrium.core.code_research import relevant_primitives
+        extra, _imps = relevant_primitives(task, examples) if task else ([], set())
+        cp = synthesize(list(examples), max_depth=max_depth, extra_primitives=extra)
         if cp.verified:
             ans = (f"Kanıtlı program: def solve(x): return {cp.program} — "
                    f"{cp.examples_total}/{cp.examples_total} örnek DOĞRULANDI ({cp.steps} operasyon). "
@@ -2895,12 +2897,14 @@ class AI:
         # örnek varsa: NL-türetilen programı doğrula; geçmezse sentezle (örnek otoritedir)
         if examples:
             from tantrium.core.code_synthesis import synthesize, _run, _detect_args
+            from tantrium.core.code_research import relevant_primitives
             argnames = _detect_args(list(examples))
             ok = ops and all(_run(prog, inp, argnames) == out for inp, out in examples)
             if ok:
                 verified = True
             else:
-                cp = synthesize(list(examples))
+                _extra, _ = relevant_primitives(task, examples)   # GERÇEK-kod grounded ops
+                cp = synthesize(list(examples), extra_primitives=_extra)
                 if cp.verified:
                     prog = cp.program
                     nl["understood"] = (nl["understood"] + " — ama örneklerle DOĞRULANAMADI; "
