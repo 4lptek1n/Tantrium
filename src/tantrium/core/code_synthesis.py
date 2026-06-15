@@ -28,7 +28,8 @@ class CertifiedProgram:
     steps: int                         # arama derinliği (kaç operasyon)
     args: list = field(default_factory=lambda: ["x"])
     moments: list = field(default_factory=list)   # AST-graf imzası (YAPISAL — refactor denkliği)
-    behavior: list = field(default_factory=list)  # DAVRANIŞSAL imza (I/O → moment; gerçek konum)
+    behavior: list = field(default_factory=list)  # DAVRANIŞSAL moment (I/O→moment; geometrik konum)
+    behavior_exact: tuple = ()                    # KAYIPSIZ extensional kimlik (tam truth-table)
     full_source: str = ""                         # özyinelemeli/çok-satırlı için TAM kaynak
 
     def source(self) -> str:
@@ -286,8 +287,17 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
 
     # DAVRANIŞSAL imza: spec'in (örneklerin) moment-uzayındaki GERÇEK konumu (yapısal AST değil).
     # Örnek = ölçü — kodu molekül/kavramla aynı rejime koyar. Bir kez hesaplanır (tüm adaylar paylaşır).
-    from tantrium.core.code_behavior import behavior_signature
+    from tantrium.core.code_behavior import behavior_signature, _canonical_basis, _exact
     behav = [float(m) for m in (behavior_signature(examples) or [])]
+    _fp_basis = _canonical_basis(len(argnames))
+
+    def _fp_expr(expr):
+        """Adayın KAYIPSIZ extensional kimliği: kanonik tabanda TAM I/O (moment sıkıştırması DEĞİL)."""
+        rows = []
+        for inp in _fp_basis:
+            r = _run(expr, inp, argnames)
+            rows.append((_exact(inp), _exact(r) if r is not _SENTINEL else "⊥"))
+        return tuple(rows)
 
     def _make(expr, steps, passed):
         from tantrium.core.encoder import _code_to_graph_moments
@@ -295,7 +305,8 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
         mom = _code_to_graph_moments(src) or []
         return CertifiedProgram(program=expr, verified=(passed == n), examples_passed=passed,
                                 examples_total=n, steps=steps, args=list(argnames),
-                                moments=[float(m) for m in mom], behavior=list(behav))
+                                moments=[float(m) for m in mom], behavior=list(behav),
+                                behavior_exact=_fp_expr(expr))
 
     # başlangıç adayları = her argüman (identity); birini doğruluyorsa hemen dön
     seeds = list(argnames)
@@ -342,9 +353,18 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
     rec_src = _synthesize_recursive(examples)
     if rec_src is not None:
         from tantrium.core.encoder import _code_to_graph_moments
+        from tantrium.core.code_behavior import behavior_fingerprint_of
         mom = _code_to_graph_moments(rec_src) or []
+        rec_fp: tuple = ()
+        try:
+            _ns: dict = {}
+            exec(rec_src, _ns)  # noqa: S102 (kapalı şablon)
+            rec_fp = behavior_fingerprint_of(_ns.get("solve"), nargs=len(argnames),
+                                             basis=_fp_basis) or ()
+        except Exception:
+            pass
         return CertifiedProgram(program="<özyinelemeli>", verified=True, examples_passed=n,
                                 examples_total=n, steps=-1, args=list(argnames),
                                 moments=[float(m) for m in mom], behavior=list(behav),
-                                full_source=rec_src)
+                                behavior_exact=rec_fp, full_source=rec_src)
     return _make(best_expr, max_depth, max(best_key[0], 0))

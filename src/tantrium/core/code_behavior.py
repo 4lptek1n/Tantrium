@@ -19,6 +19,61 @@ from __future__ import annotations
 from fractions import Fraction
 
 
+def _exact(value):
+    """Bir değeri KAYIPSIZ, hashable, deterministik forma indir (extensional kimlik için).
+    sayı→Fraction (tam), bool→bool, metin→str, dizi→tuple(özyineli). Hamburger'in tam-bilgi tarafı."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return Fraction(value)
+    if isinstance(value, float):
+        return Fraction(value).limit_denominator(10 ** 12)
+    if isinstance(value, Fraction):
+        return value
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)):
+        return tuple(_exact(v) for v in value)
+    try:
+        return Fraction(value)
+    except Exception:
+        return repr(value)
+
+
+def _canonical_basis(nargs: int) -> list:
+    """Davranışı KAYIPSIZ ölçmek için sabit, deterministik girdi tabanı (truth-table satırları)."""
+    if nargs >= 2:
+        return [(a, b) for a in range(1, 6) for b in range(1, 6)]
+    return list(range(0, 12))
+
+
+def fingerprint_from_examples(examples) -> tuple:
+    """Örnek kümesinin KAYIPSIZ davranışsal kimliği (tam I/O, kesme/sıkıştırma YOK). Hashable."""
+    return tuple((_exact(i), _exact(o)) for i, o in examples)
+
+
+def behavior_fingerprint_of(fn, *, nargs: int | None = None, basis=None) -> tuple | None:
+    """Çalıştırılabilir fonksiyonun KAYIPSIZ extensional kimliği: kanonik tabanda TAM I/O cevabı.
+    İki farklı davranış (add vs sub) ASLA çakışmaz — moment sıkıştırması değil, tam truth-table."""
+    try:
+        import inspect
+        if nargs is None:
+            try:
+                nargs = len(inspect.signature(fn).parameters)
+            except (TypeError, ValueError):
+                nargs = 1
+        rows: list = []
+        for inp in (basis if basis is not None else _canonical_basis(nargs)):
+            args = inp if isinstance(inp, tuple) else (inp,)
+            try:
+                rows.append((_exact(inp), _exact(fn(*args))))
+            except Exception:
+                rows.append((_exact(inp), "⊥"))      # tanımsız nokta da kimliğin parçası (kayıpsız)
+        return tuple(rows)
+    except Exception:
+        return None
+
+
 def _to_features(value) -> list:
     """Herhangi bir değeri (sayı/dizi/metin/bool) sayısal özellik vektörüne indir (davranış ölçüsü).
     Tip-kör: encoder felsefesi — her şey AYNI sayısal rejime."""
