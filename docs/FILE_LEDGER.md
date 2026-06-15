@@ -310,16 +310,19 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   primitif/derinlik genişledikçe büyür. P3 doğrulama (örnek-çalıştırma) sentezde içkin.
 - **Tekrar:** YOK. molecular_genesis (SMILES) ile AYNI DESEN, FARKLI uzay (terim vs atom) — strateji çeşitliliği.
 
-### ✅ core/code_research.py — GERÇEK koddan operasyon grounding [YENİ — ASI §12, dar→geniş]
-- **İş:** `ground_stdlib_operations()` Python introspection (builtins + str-method + math) → onlarca
-  GERÇEK, test-edilmiş operasyon (sum/sqrt/factorial/upper/floor...) compose-edilebilir şablonla +
-  docstring-anahtarlarıyla grounded. `relevant_primitives(task)` göreve ilgili op'ları DETERMİNİSTİK
-  seçer → sentezleyiciye `extra_primitives` olarak verilir.
-- **Güç:** "Dar"ın kökü 20 elle-yazılı op'tu; artık GERÇEK koddan grounded (geniş). 'Görmediği yüzü
-  hayal edemez' — sıfırdan uydurmaz, grounded gerçek op'ları birleştirir. Modül ekledikçe (itertools/
-  statistics...) yüzlerce op. `ai.code(task=)` + `code_from_nl` kullanır; her çıktı yine VERIFY.
-- **DÜRÜST SINIR:** Türkçe NL → İngilizce stdlib eşanlamlı katmanı dar (kapsam: synonym ekle).
-- **Tekrar:** YOK. nl_code (NL→op) + code_synthesis (compose) + bu (op-corpus) tamamlayıcı.
+### ✅ core/code_research.py — GERÇEK koddan operasyon grounding + ARAŞTIRMA WIRE [ASI §12 #1+#2]
+- **İş:** `ground_stdlib_operations()` generic introspection (`_RESEARCH_MODULES`+`_ground_module`:
+  statistics/itertools/functools/operator/string + builtins/str/math) → **174 GERÇEK** test-edilmiş
+  operasyon, compose-şablonu + docstring-anahtarlarıyla grounded. `relevant_primitives(task, research=)`
+  göreve ilgili op'ları DETERMİNİSTİK seçer (`top_k` sınırlı) → `extra_primitives`. **#2 wire:**
+  `research_operation(keyword)` (_research_deep'in KOD eşleniği): bilinmeyen op → güvenli stdlib modülü
+  keşfet (`_CAPABILITY_SEED` deterministik + `_discover_modules_web` Wikipedia) → introspect-ground.
+- **Güç:** "Dar"ın kökü 41 op'tu; introspection → 174, araştırma → allowlist'ten daha da geniş.
+  'Görmediği yüzü hayal edemez' — uydurmaz, GROUNDED gerçek op'ları birleştirir. HALLUCINATION-PROOF:
+  research yalnız gerçek-import-edilebilen `_SAFE_RESEARCH_ALLOWLIST` modülü grounding eder (os RED).
+  `ai.code(task=, research=)` + `code_from_nl` + `code_intent` kullanır; her çıktı yine VERIFY.
+- **DÜRÜST SINIR:** allowlist saf/I-O-kenarda modülle sınırlı (güvenlik); web yoksa seed/fail-open.
+- **Tekrar:** YOK. nl_code (NL→op) + code_synthesis (compose) + bu (op-corpus + research) tamamlayıcı.
 
 ### ✅ core/nl_code.py — DOĞAL DİL → KOD: grounded anlama [YENİ — ASI §12]
 - **İş:** `parse_operations(task)` (NL kelime → grounded operasyon, KELİME-SINIRI eşleme: "son"
@@ -340,6 +343,29 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   `ai.verify_code` (HERHANGİ kodu doğrula). Saf Tantrium, dış model SIFIR.
 - **DÜRÜST SINIR:** test-runner ajanın `_UNSAFE` sandbox'ından AYRI, kasıtlı kontrollü araç (izole).
 - **Tekrar:** YOK. code_synthesis (üretim) ile tamamlayıcı (doğrulama).
+
+### ✅ core/code_compose.py — ÇOK-FONKSİYON KOMPOZİSYONU: app = birçok fonksiyon [ASI §12 #3]
+- **İş:** `compose(specs) → ComposedModule` — her spec ({name, examples}|{name, examples, uses:[...]}|
+  {name, calls:[...]}) bağımsız sentezlenir + DOĞRULANIR; önceki sertifikalı fonksiyonlar sonrakine
+  grounded primitif olur (`synthesize(extra_globals=)` callable enjeksiyon + `extra_primitives`);
+  `calls=` deterministik zincir (pipeline). Importlar tepeye toplanır, fonksiyonlar spec sırasında.
+- **Güç:** "Bir yerden bir yere bağlantı var" — gerçek app çok fonksiyon, fonksiyonlar birbirini çağırır.
+  Modül YALNIZ kanıtlı parçalardan kurulur (hayali fonksiyon çağrılamaz) → HALLUCINATION-PROOF.
+  `_rename_solve` (solve→ad, özyineleme dahil) + `_compile_into` (ns'e derle, sonrakiler çağırsın).
+  `ai.code_app` kullanır. Doğrulanamayan parça DÜRÜSTÇE `failed`'e (kısmi modül yine güvenli).
+- **DÜRÜST SINIR:** alt-fonksiyona BÖLME spec'i kullanıcı/çağıran verir (otomatik dekompozisyon ayrı iş).
+- **Tekrar:** YOK. code_synthesis (tek fonksiyon) üstüne kompozisyon katmanı — strateji genişlemesi.
+
+### ✅ core/code_intent.py — MUĞLAK İSTEK → SPEC: anla→türet→sentezle [ASI §12 #4]
+- **İş:** `derive_spec(intent) → DerivedSpec` — kullanıcı örnek vermez, NİYET söyler. nl_code ile
+  operasyonu anla; bilinmiyorsa `research_operation` (#2); örnekleri GERÇEK operasyonu kanonik girdide
+  (`_CANON_INPUTS`: liste/sayı/metin) ÇALIŞTIRARAK türet (`_run_chain` → ground-truth, uydurma DEĞİL).
+  Bağlanamazsa `clarify` (DÜRÜST örnek-isteği). `ai.build(intent)` tam boru hattı (→ çalışan kod).
+- **Güç:** "İsteği anla→araştır→tasarla→çalıştır" giriş kapısı. Örnek operasyon ÇALIŞTIRILARAK
+  türetildiği için spec ground-truth — sonra sentez+VERIFY → halüsinasyonsuz. Niyet bağlanamazsa
+  uydurmaz, dürüstçe örnek ister. Deterministik (aynı niyet → birebir aynı türetim).
+- **DÜRÜST SINIR:** kanonik girdi 3 tip (liste/sayı/metin); atipik girdi → kullanıcı örnek versin.
+- **Tekrar:** YOK. nl_code (NL→op zinciri) + code_synthesis (sentez) üstüne niyet→spec köprüsü.
 
 ### ✅ core/molecular_3d.py — TEK kanonik 3D SDF util [#7 dedup ÇÖZÜLDÜ 2026-06]
 - **İş:** `embed_3d_sdf(smiles, name, out_dir, *, prefix, props, remove_hs, enforce_chirality)`.

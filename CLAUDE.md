@@ -383,10 +383,19 @@ ai.ingest_corpus([doc1, doc2, ...])            # → dict: ASI Pilar E — SINIR
 ai.read_data([1,1,2,3,5], analyze="law")       # → dict: ASI Pilar D — yapısal sayısal veri (liste/CSV/
                                                #   JSON/metin) → deterministik dinamik-yasa/forecast/anomali
                                                #   {series, analyze, result, answer} (figür-semantiği DIŞARIDA)
-ai.code([(1,3),(2,5),(3,7)])                   # → dict: SERTİFİKALI KOD SENTEZİ (ASI §12 P2, kod ajanı)
+ai.code([(1,3),(2,5),(3,7)], task="", research=True) # → dict: SERTİFİKALI KOD SENTEZİ (ASI §12 P2)
                                                #   örnekten KANITLI program (her örneği DOĞRULAYAN); dış model YOK
                                                #   sayı/liste/string/çok-argüman; {program, source, verified, answer}
+                                               #   task= grounded op ipucu (174 introspection); research= #2 wire
                                                #   verified=False → dürüst başarısızlık (halüsinasyon imkânsız)
+ai.build("listeyi tersine çevir")              # → dict: MUĞLAK İSTEK → ÇALIŞAN KOD (ASI §12 #4)
+                                               #   örnek YOK, NİYET → anla→araştır→ground-truth örnek→sentezle→VERIFY
+                                               #   {understood, program, source, verified, clarify, researched}
+                                               #   bağlanamazsa DÜRÜSTÇE örnek ister (clarify) — uydurmaz
+ai.code_app([{"name":"double","examples":[(2,4)]}, # → dict: ÇOK-FONKSİYON UYGULAMA (ASI §12 #3)
+            {"name":"pipe","calls":["double"]}])#   app=birçok sertifikalı fonksiyon; uses=/calls= bağlantı
+                                               #   {source, verified, n_functions, functions, failed}
+                                               #   her parça kanıtlı; modül yalnız doğrulanmış parçalardan kurulur
 ai.code_task(examples=[(1,3),(2,5)],           # → dict: AGENTIC kod görevi (ASI §12 P4) — kapalı döngü
             tests="def test(): assert solve(5)==11",#   SENTEZLE→KÖKLÜLÜK→TEST üç kapı; {verified, grounded, tests_passed}
             codebase={"lib.py":"..."})          #   üç kapı geçerse verified — halüsinasyonsuz

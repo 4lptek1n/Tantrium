@@ -642,10 +642,35 @@ GÖREV/SPEC (girdi-çıktı örneği · test · property)
 **═══ §12 KOD AJANI ÇEKİRDEĞİ TAMAM (P1-P4): saf Tantrium, dış model SIFIR. ═══**
 Kod = matematik = topoloji (Curry-Howard: tip-kontrol/test = kanıt). Encode→sentez→köklülük→test
 zinciri; her çıktı KANITLI + KÖKLÜ + halüsinasyonsuz. Pazarın #1 acısı (güvenilmezlik) = tek
-satırlık vaadimiz. DÜRÜST: dar ama gerçek (iyi-tanımlı görev) → primitif/derinlik/repo ile büyür.
+satırlık vaadimiz.
+
+### Kapsam Genişlemesi (4 modül — "dar değil GENİŞ", deterministik büyümeyle)
+Kapsam açığı YÖNTEMLE değil KODLAMAYLA kapanır (kullanıcı ilkesi: "dar değil geniş"). 4 parça:
+- **#1 — Operasyon ölçeği** [✅ KURULDU]: `code_research.ground_stdlib_operations` generic
+  introspection (`_RESEARCH_MODULES` + `_ground_module`) → elle ~41 değil **174 GERÇEK** grounded
+  operasyon (statistics/itertools/functools/operator/string/math/builtins/str). `relevant_primitives`
+  `top_k` ile arama sınırlı. Canlı: `statistics.median` introspect→compose→verify→import.
+- **#2 — İnternet araştırma wire** [✅ KURULDU]: `code_research.research_operation` — `_research_deep`'in
+  KOD eşleniği. Bilinmeyen operasyon → hangi GÜVENLİ stdlib modülü sağlıyor keşfet (deterministik
+  `_CAPABILITY_SEED` + opsiyonel Wikipedia web) → `register_safe_module` (allowlist geçidi) →
+  introspect-ground → sentezlenebilir. HALLUCINATION-PROOF: yalnız gerçek-import-edilebilen
+  `_SAFE_RESEARCH_ALLOWLIST` modülleri girer (os/subprocess RED); web yoksa fail-open.
+- **#3 — Çok-fonksiyon kompozisyonu** [✅ KURULDU]: `core/code_compose.compose` + `ai.code_app` —
+  app = BİRÇOK sertifikalı fonksiyon; her parça bağımsız doğrulanır, önceki fonksiyonlar sonrakine
+  grounded primitif olur (`synthesize(extra_globals=)` → callable enjeksiyon), pipeline (`calls=`)
+  deterministik zincir. "Bir yerden bir yere bağlantı var" — modül yalnız kanıtlı parçalardan kurulur.
+- **#4 — Muğlak istek → spec** [✅ KURULDU]: `core/code_intent.derive_spec` + `ai.build(intent)` —
+  kullanıcı örnek vermez, NİYET söyler. Niyet → grounded operasyon (nl_code + #2 araştırma) →
+  örnekler GERÇEK operasyonu kanonik girdide ÇALIŞTIRARAK türetilir (uydurma değil, ground-truth) →
+  sentezle + DOĞRULA. Bağlanamazsa DÜRÜSTÇE örnek ister. "İsteği anla→araştır→tasarla→çalıştır" kapısı.
+
+**Boru hattı:** `ai.build(niyet)` → anla(nl_code) → araştır(#2) → ground-truth örnek(#4) →
+sentezle(#1 grounded havuz) → doğrula(P3) → çalışan kod. Çok-fonksiyon: `ai.code_app(specs)` (#3).
+Tests: code_synthesis 12 + code_research 8 + code_compose 7 + code_intent 7 + code_agent 6 + nl_code 6.
 
 ### Dürüst sınırlar
-- Sıfırdan sertifikalı kod-sentezi ZOR (arama-uzayı patlaması) → DAR başla: iyi-tanımlı, testli
-  fonksiyon/dönüşüm sentezi (pazarın zaten güvendiği nokta) → orada GARANTİ → kapsam büyür.
-- Actor `_UNSAFE` test-çalıştırmayı engelliyor → kontrollü/izole test-runner gerekir (güvenlik korunur).
-- "Belirsiz koca uygulama" değil (LLM'in bulanık gücü); **iyi-tanımlı görevde garantili-doğru** = bizim sahamız.
+- Sentez deterministik beam araması: iyi-tanımlı, testli/örnekli fonksiyon-dönüşüm sentezi →
+  GARANTİ. Kapsam (hangi operasyon/modül) deterministik büyümeyle (introspection + araştırma) genişler.
+- `_SAFE_RESEARCH_ALLOWLIST` saf/I-O-kenarda modüllerle sınırlı (güvenlik — keyfi modül grounding YOK).
+- Actor `_UNSAFE` test-çalıştırmayı engelliyor → kontrollü/izole test-runner (code_agent.run_tests) ayrı.
+- Serbest yaratıcı üretim (keyfi prose) = istatistik/Kova B → kapsam-dışı; biz örnek/spec-doğrulanan kod veririz.
