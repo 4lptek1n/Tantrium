@@ -4441,6 +4441,58 @@ class AI:
             verbose=verbose,
         )
 
+    def set_goal(self, goal: str) -> dict:
+        """ASI Pilar B — hedef koy: ALEPH-sertifikalı Goal + GoalManifold (kalıcı).
+        Döner: {goal, set, progress}. set=False → Aleph PSD geçemedi."""
+        from tantrium.research.goal import encode_goal, GoalManifold
+        g = encode_goal(self._engine, str(goal))
+        if g is None:
+            return {"goal": str(goal), "set": False,
+                    "reason": "Aleph PSD geçemedi (yapısal değil)"}
+        gm = getattr(self._engine, "_goal_manifold", None) or GoalManifold.load()
+        gm.add(g)
+        self._engine._active_goal = g
+        self._engine._goal_manifold = gm
+        return {"goal": g.name, "set": True, "progress": round(g.progress, 3)}
+
+    def pursue(self, goal: str, *, time_limit_s: "float | None" = None,
+               max_rounds: int = 12, network: bool = True, verbose: bool = False) -> dict:
+        """ASI Pilar B — HEDEF-GÜDÜMLÜ uzun-ufuk özerk döngü (Mythos'tan ders, denetlenebilir).
+
+        Öksüz Goal/GoalManifold/Planner/Actor'ı Cognition'a `GoalPhase` ile bağlar: hedef koy →
+        boşluk(GapFinder) → araştır(Operate) → ÖZ-DOĞRULA(corrigibility VerifyPhase) → hedefe
+        yönelik eylem(Actor.pursue_goal) → geometrik ilerleme → tekrar. progress≥1 veya
+        stagnasyonda durur; GoalManifold.save ile resumable. time_limit_s=None → 300s default tur.
+
+        FARK: Mythos öz-denetimi istatistik; bizimki sertifika + bilinen-olgu oracle + RH-math.
+        Döner: {goal, pursued, progress, reached, cycles, concepts_added, answer}.
+        """
+        from tantrium.research.cognition import Cognition, GoalPhase
+        info = self.set_goal(goal)
+        if not info.get("set"):
+            return {"goal": str(goal), "pursued": False, "progress": 0.0,
+                    "reached": False, "answer": f"'{goal}' hedefi yapısal değil (Aleph geçemedi)."}
+        g = self._engine._active_goal
+        cog = Cognition(self._engine)
+        cog.add_strategy(GoalPhase(), before="reflect")
+        report = cog.cycle(mode="batch", max_cycles=max_rounds,
+                           time_limit_s=time_limit_s or 300.0, network=network, verbose=verbose)
+        from tantrium.research.cognition import _goal_grounding_progress
+        prog = _goal_grounding_progress(g, self._engine)
+        try:
+            self._engine._goal_manifold.save()
+        except Exception:
+            pass
+        reached = prog >= 0.999
+        return {
+            "goal": g.name, "pursued": True, "progress": round(float(prog), 3),
+            "reached": reached, "cycles": getattr(report, "cycles", None),
+            "concepts_added": getattr(report, "concepts_added", None),
+            "answer": (f"'{g.name}' hedefine ilerleme {prog:.0%}"
+                       + (" — ULAŞILDI." if reached else ". Her tur corrigibility ile "
+                          "öz-doğrulandı; ilerleme geometrik (moment-mesafe) ölçüldü.")),
+        }
+
     def grow(
         self,
         time_limit_s: "float | None" = 300.0,

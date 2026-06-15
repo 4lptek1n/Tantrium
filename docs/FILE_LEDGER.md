@@ -578,9 +578,15 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   döngü-içi hâli — manifold şişme kök-neden önlemi (bkz. researcher.py girişi).
 - **Tekrar:** transport birleşti; döngü (stream) Cognition iskeletine girer (akış stratejisi).
 
-### ✅ research/goal.py — hedef temsili (Goal · GoalManifold)
+### ✅ research/goal.py — hedef temsili (Goal · GoalManifold) [F51 BAĞLANDI]
 - **İş:** `Goal` (manifold-certified kavram), `GoalManifold.pursue` (nearest + semantic bonus),
   `update_progress`, save/load, `encode_goal`.
+- **F51 [2026-06] — ÖKSÜZ→BAĞLI (ASI Pilar B):** `goal.py`/`planner.py`/`actor.pursue_goal`
+  eskiden öksüzdü (yalnız ai.plan/ai.act facade'ından). Artık `cognition.GoalPhase` ile Cognition
+  döngüsüne bağlı: `ai.set_goal`+`ai.pursue`. **DÜRÜST METRİK FİX:** `Goal.update_progress`'in
+  geometrik "en yakın kavram" yaklaşımı DOYMUŞ 55k manifoldda hep ~%100 (pitfall #8) +
+  self-grooming + persist-launder ile oyunlanıyordu → `cognition._goal_grounding_progress`
+  (içerik kelimesi GERÇEK köklü mü, ≥3 kenar = grounding.py eşiği, source-bağımsız) ile değişti.
 - **Tekrar:** YOK.
 
 ### ✅ research/actor.py — sandbox eylem (Actor)

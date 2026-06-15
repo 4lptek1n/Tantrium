@@ -317,6 +317,12 @@ ai.cognition(mode="batch", max_cycles=2)       # → CognitionReport: L5 stratej
                                                #   strategies=[...]: özel CognitionStrategy listesi enjekte et
 ai.run(cycles=3, time_limit_s=600)             # → dict: KAPALI DÖNGÜ (tüm büyüme adımları)
                                                #   blind_spots → auto_research → close → genesis → prove → persist
+ai.set_goal("understand egfr signaling")       # → dict: ASI Pilar B — ALEPH-sertifikalı Goal kur
+ai.pursue("understand egfr signaling")         # → dict: HEDEF-GÜDÜMLÜ uzun-ufuk özerk döngü
+                                               #   {goal, pursued, progress, reached, answer}; öksüz Goal/
+                                               #   Planner/Actor'ı GoalPhase ile bağlar; her tur corrigibility
+                                               #   öz-doğrular; ilerleme GERÇEK köklülük (≥3 kenar, doyma+
+                                               #   self-grooming bağışık); resumable (GoalManifold.save)
 ai.pulse("CCO")                                # → dict: TEK ÇEKİRDEK NABZI (veri girer + genesis aynı anda)
                                                #   evren kapısı: rejected/frontier/core + doğan ara kavramlar
 ai.live(["CCO", "caffeine", [2,3,5,7]])        # → dict: veri AKIŞI nabızla (her veri girer + büyür, parça parça değil)
@@ -642,6 +648,16 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
   yoğun temiz graf gelince açılır. Canlı (beslemesiz): "egfr CAUSES tumor cell", "imatinib INHIBITS
   chronic myeloid" — RH-sertifikalı, deterministik. `reason()` "yeni hipotez üret" → bu intent.
   Tests: test_reason.py +4 (certified/deterministic/analogy-optin/route).
+- **ASI Pilar B — Hedef-Güdümlü Uzun-Ufuk Özerk Döngü (Kademe F51, 2026-06):** `ai.set_goal` +
+  `ai.pursue`. Mythos günlerce özerk + öz-denetim; bizimki sertifikalı öz-doğrulama. ÖKSÜZ
+  `Goal`/`GoalManifold`/`Planner`/`Actor.pursue_goal` artık `cognition.GoalPhase` ile döngüye
+  bağlandı (hedef yoksa NO-OP → varsayılan döngü etkilenmez). Döngü: hedef → boşluk → araştır →
+  ÖZ-DOĞRULA(corrigibility) → hedef-eylem(Actor) → ilerleme → tekrar; resumable (GoalManifold.save).
+  **DÜRÜST METRİK (canlı denemeden, 3 oyunlama düzeltildi):** geometrik-yakınlık DOYMUŞ manifoldda
+  ~%100 (pitfall #8); Actor self-grooming; persist-launder. ÇÖZÜM `_goal_grounding_progress` =
+  hedef İÇERİK kelimelerinin GERÇEK köklülük oranı (sistem eşiği çıkan+gelen ≥3, grounding.py ile
+  tutarlı, source'a bakmaz=launder-bağışık, doyma+self-grooming bağışık). DÜRÜST: coarse köklülük
+  sinyali, 'anlama' ölçüsü değil; değer hedef-güdümlü büyüme + öz-doğrulama. Tests: test_cognition +3.
 - **Kausal Görselleştirme**: `ai.visualize_causal(concept, mode=ascii|dot|both)` — ASCII ağaç + Graphviz DOT
 - **Araştırma Raporu**: `ai.report(topic)` — sertifikasyon + kausal + hipotez tek belgede
 - **Benchmark**: `ai.benchmark(facts)` — bilinen olgulara karşı kausal TAU doğrulama

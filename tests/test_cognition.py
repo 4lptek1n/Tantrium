@@ -280,3 +280,36 @@ def test_compose_then_flywheel_pipeline(engine):
     assert s.compose_targets == initial_targets
     # flywheel log mevcut
     assert any("flywheel:" in log for log in s.logs)
+
+
+# ───────────── ASI Pilar B (Kademe F51): Hedef-Güdümlü Döngü ─────────────
+
+def test_goalphase_noop_without_goal():
+    """GoalPhase hedef set değilse NO-OP (varsayılan döngü etkilenmez)."""
+    import tantrium
+    from tantrium.research.cognition import GoalPhase, CognitionState
+    ai = tantrium.AI()
+    st = CognitionState()
+    out = GoalPhase().execute(ai._engine, st)
+    assert out is st and not out.logs        # hiçbir şey yapmadı
+
+
+def test_set_goal_aleph_certified():
+    """ai.set_goal → ALEPH-sertifikalı Goal + GoalManifold."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.set_goal("understand egfr signaling")
+    assert r["set"] is True
+    assert getattr(ai._engine, "_active_goal", None) is not None
+
+
+def test_goal_progress_meaningful_and_immune():
+    """İlerleme doyma+self-grooming bağışık: köklü içerik kelimesi (≥3 kenar) sayılır,
+    yoksa sayılmaz. Doymuş manifoldda trivial %100 OLMAZ."""
+    import tantrium
+    from tantrium.research.cognition import _goal_grounding_progress
+    ai = tantrium.AI()
+    ai.set_goal("understand egfr zzqwxnonsenseword")
+    g = ai._engine._active_goal
+    prog = _goal_grounding_progress(g, ai._engine)
+    assert 0.0 <= prog < 1.0    # egfr köklü olabilir ama nonsense değil → < 1.0

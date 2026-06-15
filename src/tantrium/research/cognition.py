@@ -890,6 +890,80 @@ class VerifyPhase:
         return state
 
 
+# Hedef-fiil/dolgu kelimeleri — ilerleme içerik kelimesine bakar (understand/öğren değil)
+_GOAL_FILLER = frozenset({
+    "understand", "learn", "study", "explore", "research", "investigate", "know",
+    "find", "discover", "analyze", "the", "a", "an", "of", "to", "and", "in", "on",
+    "öğren", "anla", "araştır", "keşfet", "incele", "bul", "bil", "ve", "ile", "için",
+})
+
+
+_GOAL_SELF_SRC = frozenset({"goal", "goal_learning", "goal_manifold"})
+
+
+def _goal_grounding_progress(goal, engine) -> float:
+    """Hedefin İÇERİK kelimelerinin GERÇEK TAU-köklülük oranı — doyma-bağışık + self-grooming-bağışık.
+
+    "understand egfr signaling" → {egfr, signaling}. Bir kelime yalnız KENDİ-YARATMADIĞI
+    (goal_learning olmayan) gerçek bir kavramla + semantik kenarla köklüyse sayılır. Dış veri
+    olmadan (network=False) Actor'ın sentetik kenarları sayılmaz → ilerleme dürüstçe düşük kalır;
+    gerçek bilgi (research/network) geldikçe yükselir. DÜRÜST: bu coarse bir köklülük sinyali,
+    'anlama' ölçüsü değil — Pilar B'nin değeri hedef-güdümlü büyüme + öz-doğrulama döngüsü."""
+    words = [w.strip("?.,!:;'\"").lower() for w in str(goal.name).split()]
+    content = [w for w in words if len(w) >= 3 and w not in _GOAL_FILLER]
+    if not content:
+        return goal.progress
+    tau = getattr(engine, "tau", None)
+    if tau is None:
+        return goal.progress
+    # KÖKLÜLÜK EŞİĞİ = sistemin kendi tanımı (grounding.py: çıkan+gelen kenar ≥ 3 = "köklü").
+    # Self-grooming sentetik kenarlar (~2) bu eşiği geçmez; gerçek öğrenme (çok olgu) geçer.
+    # Source'a bakmaz → persist-launder'a bağışık (goal_learning kaydedilince "saved" olur).
+    grounded = 0
+    for w in content:
+        out_e = len(tau.edges.get(w, []))
+        in_e = sum(1 for _s, el in tau.edges.items()
+                   for e in el if str(getattr(e, "target", "")) == w)
+        if out_e + in_e >= 3:
+            grounded += 1
+    prog = grounded / len(content)
+    goal.progress = max(goal.progress, prog)
+    return goal.progress
+
+
+class GoalPhase:
+    """ASI Pilar B — hedef-güdümlü faz (öksüz Goal/Planner/Actor'ı döngüye bağlar).
+
+    `engine._active_goal` + `engine._goal_manifold` set DEĞİLSE no-op (varsayılan döngü etkilenmez).
+    Aksi halde: Actor.pursue_goal (GoalManifold.pursue → plan → güvenli execute → progress) çalışır,
+    geometrik ilerleme ölçülür; hedefe ulaşılınca `should_stop`. Öz-doğrulama VerifyPhase'de zaten var.
+    """
+    name = "goal"
+
+    def execute(self, engine: "CertificationEngine", state: "CognitionState") -> "CognitionState":
+        goal = getattr(engine, "_active_goal", None)
+        gm = getattr(engine, "_goal_manifold", None)
+        if goal is None or gm is None:
+            return state
+        try:
+            from tantrium.research.actor import Actor
+            results = Actor(engine).pursue_goal(goal, gm)
+            learned = sum(len(getattr(r, "concepts_learned", []) or []) for r in results)
+            # ANLAMLI ilerleme (doyma-bağışık): geometrik "en yakın kavram" DOYMUŞ 55k
+            # manifoldda hep ~%100 verir (pitfall #8). Onun yerine: hedefin İÇERİK kelimeleri
+            # TAU'da KÖKLÜ mü (semantik kenarı var mı)? Köklülük doymadan ölçülür.
+            prog = _goal_grounding_progress(goal, engine)
+            state.goals_created = max(getattr(state, "goals_created", 0), 1)
+            state.logs.append(
+                f"[goal] '{goal.name[:34]}' ilerleme {prog:.0%} (+{learned} kavram bu tur)")
+            if prog >= 0.999:
+                state.should_stop = True
+                state.logs.append(f"[goal] '{goal.name[:34]}' ULAŞILDI — döngü durdu")
+        except Exception as e:  # fail-open: hedef hatası döngüyü kırmaz
+            state.logs.append(f"[goal] hata: {e}")
+        return state
+
+
 # ── Cognition Ana Sınıf ──────────────────────────────────────────────────────
 
 _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [

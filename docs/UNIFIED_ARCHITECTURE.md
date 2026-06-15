@@ -517,7 +517,7 @@ kaynaklı + kalibre + corrigibility-öz-doğrulanan.
 | Pilar | Mythos yeteneği | Bizde ZATEN var | Mimari yer | Durum |
 |-------|-----------------|-----------------|------------|-------|
 | **A** | Bilimsel hipotez üretimi | hypothesize+quantum_bridges+_discover_frontier+wonder+sturm | L4 Reasoner/Synthesizer | ✅ F50 |
-| **B** | Uzun-ufuk özerklik + öz-denetim | Cognition.cycle+corrigibility+GrowthEngine; **ÖKSÜZ** Goal/Planner/Actor | L5 Cognition + L4 | planlı |
+| **B** | Uzun-ufuk özerklik + öz-denetim | Cognition.cycle+corrigibility+GrowthEngine; ÖKSÜZ Goal/Planner/Actor BAĞLANDI | L5 Cognition + L4 | ✅ F51 |
 | **C** | Protein/peptit tasarımı | molecular_genesis(atom-Sturm)+encode_protein+CertifiedTransport | L4 Producer + L1 | planlı |
 | **D** | Belge/figür → veri | perception.encode_image + structure.discover_law/forecast | L1 + L4 | planlı |
 | **E** | Milyon-token bağlam | "bağlam=manifold" + _research_deep + synthesize_docs | L3 + L5 | planlı |
@@ -530,3 +530,10 @@ kapanır (gerçek veri al), yöntem değiştirmeden.
 her biri RH-Sturm sertifikalı + köklü + kaynaklı; WonderScorer (ölü kod) tohum-seçimine bağlandı;
 `_good_analogy_target` iç ispat-artifaktını eler; ham κ-analoji opt-in (dürüst sınır). FARK:
 Mythos hipotezi parlak ama doğrulanamaz; bizimki neden-zinciri + Sturm pivotu + kaynak taşır.
+
+**Pilar B [F51, KURULDU]:** `ai.set_goal`/`ai.pursue` — ÖKSÜZ Goal/GoalManifold/Planner/Actor
+`cognition.GoalPhase` ile döngüye bağlandı (hedef yoksa NO-OP). Döngü: hedef → boşluk →
+araştır → corrigibility öz-doğrula → Actor hedef-eylem → ilerleme → tekrar; resumable.
+İlerleme metriği DÜRÜSTÇE düzeltildi (geometrik-yakınlık doymuş manifoldda ~%100 oyunlanıyordu;
+self-grooming + persist-launder): `_goal_grounding_progress` = içerik kelimelerinin GERÇEK
+köklülük oranı (sistem eşiği ≥3 kenar, source-bağımsız). FARK: öz-denetim sertifika+oracle+RH-math.
