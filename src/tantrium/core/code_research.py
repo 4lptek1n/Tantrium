@@ -28,6 +28,10 @@ _STR_METHODS = ("upper", "lower", "strip", "lstrip", "rstrip", "title", "capital
 _MATH_FUNCS = ("sqrt", "factorial", "floor", "ceil", "log", "log2", "log10", "exp",
                "isqrt", "gcd", "degrees", "radians", "trunc")
 
+# Generic introspection ile grounding edilecek GÜVENLİ modüller (I/O yok) — yüzlerce operasyon.
+# Çok-argümanlı olanlar sentezde eval-prune olur (zararsız); relevant_primitives task'a göre filtreler.
+_RESEARCH_MODULES = ("statistics", "itertools", "functools", "operator", "string")
+
 _CACHE: dict | None = None
 
 
@@ -70,6 +74,30 @@ def ground_stdlib_operations() -> dict:
                                  "kind": "math", "needs_import": "math"}
     except Exception:
         pass
+    # GENERIC INTROSPECTION — güvenli modüllerden YÜZLERCE operasyon (elle liste DEĞİL).
+    # dir(mod) → tek-argümanlı çağrılabilirler → "mod.fn({c})" şablonu. Çok-argümanlı/private
+    # olanlar atlanır (sentezde eval-prune zararsız ama gürültü olmasın). string sabitleri (ascii_*
+    # vb.) çağrılamaz → atlanır. functools.reduce gibi yüksek-mertebe → tek-arg değil → atlanır.
+    import importlib
+    for modname in _RESEARCH_MODULES:
+        try:
+            mod = importlib.import_module(modname)
+        except Exception:
+            continue
+        for fn in dir(mod):
+            if fn.startswith("_"):
+                continue
+            f = getattr(mod, fn, None)
+            if not callable(f):
+                continue
+            op_id = modname + "." + fn
+            if op_id in ops:
+                continue
+            doc = (inspect.getdoc(f) or "").splitlines()
+            doc0 = doc[0] if doc else ""
+            ops[op_id] = {"template": modname + "." + fn + "({c})",
+                          "keywords": _doc_keywords(fn, doc0) | {modname},
+                          "kind": modname, "needs_import": modname}
     _CACHE = ops
     return ops
 

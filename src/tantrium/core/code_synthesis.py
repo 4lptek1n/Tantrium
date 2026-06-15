@@ -33,18 +33,29 @@ class CertifiedProgram:
     def source(self) -> str:
         if self.full_source:
             return self.full_source
-        imp = "import math\n" if "math." in self.program else ""
+        imp = "".join(f"import {m}\n" for m in _SAFE_MODULES if (m + ".") in self.program)
         return f"{imp}def solve({', '.join(self.args)}):\n    return {self.program}"
 
 
 _SENTINEL = object()
-import math as _math  # güvenli (I/O yok) — grounded math operasyonları için
+import importlib
+
+# Güvenli (I/O yok) stdlib modülleri — grounded operasyonlar bunlardan introspection ile gelir.
+# code_research._RESEARCH_MODULES ile AYNI küme + math; eval ve üretilen source ikisi de görür.
+_SAFE_MODULES = ("math", "statistics", "itertools", "functools", "operator", "string")
+_MODULE_OBJS = {}
+for _mn in _SAFE_MODULES:
+    try:
+        _MODULE_OBJS[_mn] = importlib.import_module(_mn)
+    except Exception:
+        pass
 # Güvenli yerleşikler (kapalı küme — kod sentezi yalnız bunları kullanır)
 _SAFE_GLOBALS = {
     "__builtins__": {},
     "abs": abs, "len": len, "sum": sum, "max": max, "min": min, "sorted": sorted,
     "str": str, "int": int, "round": round, "list": list, "set": set, "tuple": tuple,
-    "reversed": reversed, "any": any, "all": all, "math": _math,
+    "reversed": reversed, "any": any, "all": all,
+    **_MODULE_OBJS,
 }
 
 # ── Tip-bazlı primitif şablonları ({c} = mevcut aday; {a}/{b} = argümanlar) ──
