@@ -1839,6 +1839,81 @@ class AI:
             pass
         return ""
 
+    @staticmethod
+    def _extract_numbers(text: str) -> list:
+        """İstekten sayı dizisini çıkar (virgül/boşluk ayrık, ondalık/negatif dahil)."""
+        import re
+        return [float(x) for x in re.findall(r"-?\d+\.?\d*(?:[eE][-+]?\d+)?", str(text))]
+
+    def reason(self, request: str) -> dict:
+        """AKIL + BEYİN — dil isteği anlar, BEYNİN (matematik motoru) doğru yeteneğini
+        çağırır, sonucu sertifikasıyla Türkçe açıklar. İkisi birleşince tek zihin.
+
+        Yönlendirme (niyet + veri): tahmin→forecast · yasa→discover_law · anomali→
+        detect_anomalies · yapı→reverse_engineer · ilaç→produce · bağ→entangle · bilgi→converse.
+        Döner: {intent, answer, result}. answer = beynin çıktısının dile dökülmüş hali.
+        """
+        text = str(request).lower()
+        nums = self._extract_numbers(request)
+        has = lambda *ks: any(k in text for k in ks)
+
+        # ── SAYISAL veri varsa → dinamik beyin yetenekleri ──
+        if len(nums) >= 4:
+            if has("tahmin", "forecast", "gelecek", "predict", "sonra", "öngör"):
+                r = self.forecast(nums)
+                conf = "güvenilir" if r["reliable"] else "GÜVENİLMEZ (yapı zayıf/gürültülü)"
+                ans = (f"Veriyi {r['model']} model yönetiyor. Sonraki değerler: "
+                       f"{r['forecast']}. Tahmin {conf} (holdout hatası {r['holdout_error']}).")
+                return {"intent": "forecast", "answer": ans, "result": r}
+            if has("anomali", "sahte", "manipül", "fraud", "anomaly", "aykırı", "bozuk"):
+                r = self.detect_anomalies(nums)
+                if r["clean"]:
+                    ans = "Veride yapısal anomali yok — yasaya uyuyor."
+                else:
+                    yer = ", ".join(f"#{a['index']}(z={a['z']})" for a in r["anomalies"][:6])
+                    ans = f"{r['n']} anomali buldum (yasaya uymayan nokta): {yer}."
+                return {"intent": "anomaly", "answer": ans, "result": r}
+            if has("yapı", "üreten", "reverse", "tersine", "structure", "mod"):
+                r = self.reverse_engineer(nums)
+                ans = (f"Bu veriyi üreten gizli yapı {r.n_modes} moddan oluşuyor "
+                       f"(modlar: {[round(float(m) if not isinstance(m, complex) else m.real, 4) for m in r.modes[:6]]}).")
+                return {"intent": "reverse_engineer", "answer": ans, "result": r}
+            # varsayılan sayısal: yönetici yasayı keşfet
+            r = self.discover_law(nums, holdout=min(4, len(nums) // 4))
+            tutar = "ve görülmemiş geleceği doğru tahmin etti" if r.law_holds else "(tahmin zayıf)"
+            ans = (f"Veriyi yöneten yasa: {r.order}. mertebe yineleme. "
+                   + (f"Dinamik: {'; '.join(r.dynamics[:3])}. " if r.dynamics else "")
+                   + f"Yasayı keşfettim {tutar}.")
+            return {"intent": "discover_law", "answer": ans, "result": r}
+
+        # ── İLAÇ / TASARIM ──
+        if has("ilaç", "drug", "tedavi", "cure", "tasarla", "üret") and not has("nedir"):
+            topic = self._converse_topic(request)
+            try:
+                cert = self.produce(topic)
+                ans = (f"'{topic}' için tasarladığım molekül: {cert.designed_smiles} "
+                       f"({cert.n_atoms} atom) — yargı: {cert.verdict}, tutarlı: {cert.coherent}.")
+                return {"intent": "produce", "answer": ans, "result": cert}
+            except Exception:
+                pass
+
+        # ── GİZLİ BAĞ / DOLANIKLIK (iki kavram) ──
+        if has("bağ", "ilişki", "dolanık", "entangle", "ortak", "bağlantı"):
+            words = [w.strip("?.,!:;'\"").lower() for w in str(request).split()
+                     if len(w) >= 3 and w.lower() not in self._STOP_TR]
+            cc = [w for w in words if w in self._engine.manifold.concepts]
+            if len(cc) >= 2:
+                e = self.entangle(cc[0], cc[1])
+                ans = (f"'{cc[0]}' ve '{cc[1]}': klasik mesafe {e['classical_dist']}, "
+                       f"κ-mesafe {e['kappa_dist']} → "
+                       + ("gizli matematiksel bağ VAR (klasik-uzak/κ-yakın)."
+                          if e["entangled"] else "normal ayrışma, gizli bağ yok."))
+                return {"intent": "entangle", "answer": ans, "result": e}
+
+        # ── BİLGİ SORUSU → bilinçli sohbet (gerekirse öğrenir) ──
+        c = self.converse(request)
+        return {"intent": "knowledge", "answer": c["answer"], "result": c}
+
     def converse(self, question: str, learn_if_unknown: bool = True) -> dict:
         """BİLİNÇLİ SOHBET — bilmezse internetten ÖĞRENİR, sonra köklü cevaplar.
 
