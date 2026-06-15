@@ -44,6 +44,7 @@ def detect_and_correct(
     manifold = engine.manifold
     encoder = getattr(engine, "encoder", None)
     checked = degenerate = collided = corrected = 0
+    resolved_collisions = 0
     collision_scans = 0
     new_suspects: list[str] = []
     logs: list[str] = []
@@ -98,15 +99,42 @@ def detect_and_correct(
         if hits:
             other, d = hits[0]
             if other != name and float(d) < _COLLISION_EPS:
-                collided += 1
-                new_suspects.append(f"{name}~{other}")
-                logs.append(f"şüpheli (çakışma): {name} ≈ {other} (L1 {float(d):.4f})")
+                # ÇÖZME (öz-keskinleştirme): çakışma = injektiflik ihlali (Kaf paradigması).
+                # "8 moment yapıyı belirler" aksiyomu: iki FARKLI kavram AYNI imzaya düşemez.
+                # Derin re-encode name'i other'dan ayırabilir mi? — bounded, per-concept,
+                # idempotent (manifold-geneli batch DEĞİL, yasak). Ayrışırsa düzelt+kalıcı;
+                # değilse şüpheli. Döngü her turda temsili DAHA injektif yapar.
+                resolved = False
+                if correct and encoder is not None and ":" not in name:
+                    try:
+                        new_enc = encoder.encode_adaptive(name)
+                        nmu = [float(m) for m in getattr(new_enc, "moments", [])]
+                        other_c = manifold.concepts.get(other)
+                        omu = [float(m) for m in getattr(other_c, "moments", [])] if other_c else []
+                        if nmu and omu and len(nmu) == len(omu):
+                            new_d = sum(abs(a - b) for a, b in zip(nmu, omu))
+                            if new_d >= _COLLISION_EPS:
+                                c.moments = [
+                                    Fraction(x).limit_denominator(10 ** 9) for x in new_enc.moments
+                                ]
+                                resolved_collisions += 1
+                                resolved = True
+                                logs.append(
+                                    f"çözüldü (çakışma→ayrıştı): {name}↔{other} (L1 {new_d:.4f})"
+                                )
+                    except Exception:
+                        pass
+                if not resolved:
+                    collided += 1
+                    new_suspects.append(f"{name}~{other}")
+                    logs.append(f"şüpheli (çakışma): {name} ≈ {other} (L1 {float(d):.4f})")
 
     return {
         "checked": checked,
         "degenerate": degenerate,
         "collided": collided,
         "corrected": corrected,
+        "resolved_collisions": resolved_collisions,
         "new_suspects": new_suspects,
         "logs": logs,
     }

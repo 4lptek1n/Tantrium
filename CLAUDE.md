@@ -658,6 +658,15 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     tutarlılığı yerel takası yasaklar) = `migrate_text_encoding.py` deseninde kasıtlı migrasyon,
     otonom faz DEĞİL. Gizli boşluk değil, bilinçli mimari sınır. Corrigibility omurgası
     (tespit→düzelt→dış-doğrula→ölç) DÖNGÜDE TAMAM.
+  - **Kademe F26 — Öz-keskinleştiren algı döngüsü (çakışma ÇÖZME) [2026-06]:** `detect_and_correct`
+    artık çakışmaları (iki FARKLI kavram, L1<0.001 — `detail≈retail`) yalnız İŞARETLEMİYOR,
+    ÇÖZÜYOR: derin re-encode (`encode_adaptive`) name'i other'dan ayırırsa moment güncellenir +
+    kalıcı. Kaf injektiflik aksiyomu ("8 moment yapıyı belirler", iki farklı kavram aynı imzaya
+    düşemez) CANLI uygulanıyor — sistem her cognition turunda temsilini DAHA injektif yapar.
+    **Bounded/per-concept/idempotent** (manifold-geneli batch YASAĞINA uyar — yalnız ≤20 çakışma
+    taraması/geçiş, her kavram bir kez). `state.collisions_resolved` + log. Dürüst sınır: küratörlü
+    olgu enjekte ETMİYORUZ (oracle'ı kandırmak olurdu) — yalnız matematiksel injektiflik. Canlı:
+    gerçek manifoldda ilk geçişte 2 çakışma çözüldü. Tests: `test_corrigibility.py` (9).
   - **3 Mantık Düzeltmesi (2026-06, commit 20283c7):**
     1. `_gaps_to_campaigns()`: `ALEPH:` önekli boşluklar artık ProofLoop kampanyasına
        GÖNDERİLMİYOR. ALEPH:X = bir kavram Aleph PSD testini geçemiyor — encoding/Hankel

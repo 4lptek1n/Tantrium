@@ -32,6 +32,7 @@ class CognitionState:
     goals_created: int = 0
     proofs_completed: int = 0
     corrected: int = 0          # VerifyPhase: dejenere encoding düzeltildi
+    collisions_resolved: int = 0  # VerifyPhase: çözülen çakışma (injektiflik öz-keskinleştirme)
     suspects_flagged: int = 0   # VerifyPhase: dejenere/çakışma şüphesi işaretlendi
     benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet [0,1]
     encoder_health: float = 0.0   # VerifyPhase: encoder içsel çakışma oranı (düşük=sağlıklı)
@@ -63,6 +64,7 @@ class CognitionReport:
     proofs_completed: int
     elapsed_s: float
     corrected: int = 0           # VerifyPhase: düzeltilen dejenere encoding
+    collisions_resolved: int = 0  # VerifyPhase: çözülen çakışma (injektiflik)
     suspects_flagged: int = 0    # VerifyPhase: işaretlenen şüpheli temsil
     benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet
     math_verify_score: float = 1.0  # VerifyPhase: hesap-oracle matematiksel doğruluk
@@ -739,13 +741,17 @@ class VerifyPhase:
                 computational_verify, empirical_verify,
             )
             # YAPISAL (içsel): dejenere encoding/çakışma — GIMEL'in kör noktası.
+            # ÖZ-KESKİNLEŞTİRME: çakışmalar artık yalnız işaretlenmiyor, ÇÖZÜLÜYOR (derin
+            # re-encode ile ayrıştırılıyor) — Kaf injektiflik aksiyomu canlı uygulanıyor.
             res = detect_and_correct(engine, self._seen)
             state.corrected += res["corrected"]
+            state.collisions_resolved += res.get("resolved_collisions", 0)
             state.suspects_flagged += (res["degenerate"] - res["corrected"]) + res["collided"]
             if res["checked"]:
                 state.log(
                     f"verify: {res['checked']} denetlendi, {res['degenerate']} dejenere "
-                    f"({res['corrected']} düzeltildi), {res['collided']} çakışma şüphesi"
+                    f"({res['corrected']} düzeltildi), {res.get('resolved_collisions', 0)} çakışma "
+                    f"ÇÖZÜLDÜ, {res['collided']} çakışma şüphesi (çözülemedi)"
                 )
             # DIŞSAL (gerçek): kausal bilgi bilinen olgularla uyuşuyor mu? (ampirik isabet)
             ev = external_verify(engine)
@@ -927,6 +933,7 @@ class Cognition:
             proofs_completed=state.proofs_completed,
             elapsed_s=round(elapsed, 1),
             corrected=state.corrected,
+            collisions_resolved=state.collisions_resolved,
             suspects_flagged=state.suspects_flagged,
             benchmark_score=state.benchmark_score,
             math_verify_score=state.math_verify_score,

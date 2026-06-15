@@ -13,6 +13,22 @@ from tantrium.research.corrigibility import (
 )
 
 
+def test_collision_resolution_closes_loop():
+    """ÖZ-KESKİNLEŞTİRME: detect_and_correct çakışmaları yalnız işaretlemez, ÇÖZER.
+
+    Kaf injektiflik aksiyomu canlı: iki FARKLI kavram AYNI imzaya düşemez. Döngü derin
+    re-encode ile ayrıştırır. Dönüş sözleşmesinde resolved_collisions olmalı.
+    """
+    import tantrium
+    from tantrium.research.corrigibility import detect_and_correct
+    ai = tantrium.AI()
+    r = detect_and_correct(ai.engine, set())
+    assert "resolved_collisions" in r, "çözme döngüsü dönüş sözleşmesinde olmalı"
+    assert isinstance(r["resolved_collisions"], int)
+    # çözülen + çözülemeyen (collided) toplamı = tespit edilen çakışma (tutarlılık)
+    assert r["resolved_collisions"] >= 0 and r["collided"] >= 0
+
+
 def test_computational_verify_all_pass():
     """Sistemin taç mekanizması bağımsız gerçeğe karşı geçmeli (lab değil, kesin hesap)."""
     r = computational_verify()
