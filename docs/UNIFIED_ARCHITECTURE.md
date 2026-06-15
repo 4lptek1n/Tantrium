@@ -519,8 +519,8 @@ kaynaklı + kalibre + corrigibility-öz-doğrulanan.
 | **A** | Bilimsel hipotez üretimi | hypothesize+quantum_bridges+_discover_frontier+wonder+sturm | L4 Reasoner/Synthesizer | ✅ F50 |
 | **B** | Uzun-ufuk özerklik + öz-denetim | Cognition.cycle+corrigibility+GrowthEngine; ÖKSÜZ Goal/Planner/Actor BAĞLANDI | L5 Cognition + L4 | ✅ F51 |
 | **C** | Protein/peptit tasarımı | molecular_genesis(atom-Sturm)+encode_protein+CertifiedTransport | L4 Producer + L1 | planlı |
-| **D** | Belge/figür → veri | perception.encode_image + structure.discover_law/forecast | L1 + L4 | planlı |
-| **E** | Milyon-token bağlam | "bağlam=manifold" + _research_deep + synthesize_docs | L3 + L5 | planlı |
+| **D** | Belge/figür → veri | structure.discover_law/forecast + deterministik sayı-çıkarım | L1 + L4 | ✅ F52 |
+| **E** | Milyon-token bağlam | "bağlam=manifold" + ingest_corpus + çapraz-belge çelişki | L3 + L5 | ✅ F52 |
 
 **Dürüst kapsam-dışı (doğamıza aykırı = istatistik):** serbest yaratıcı üretim (şiir/kod),
 protein 3D fold (istatistiksel), bulanık figür-semantiği. Kapsam açığı **deterministik büyümeyle**
@@ -537,3 +537,11 @@ araştır → corrigibility öz-doğrula → Actor hedef-eylem → ilerleme → 
 İlerleme metriği DÜRÜSTÇE düzeltildi (geometrik-yakınlık doymuş manifoldda ~%100 oyunlanıyordu;
 self-grooming + persist-launder): `_goal_grounding_progress` = içerik kelimelerinin GERÇEK
 köklülük oranı (sistem eşiği ≥3 kenar, source-bağımsız). FARK: öz-denetim sertifika+oracle+RH-math.
+
+**Pilar E [F52, KURULDU]:** `ai.ingest_corpus(docs)` — çok belgeyi KALICI köklü hafızaya ör
+(token-penceresi YOK = manifold modeli); **çapraz-belge ÇELİŞKİ** tespiti (farklı belgelerde
+zıt kenar INHIBITS↔ACTIVATES → LLM'in uzun bağlamda kaçırdığı). reason/check_claim çapraz-belge çalışır.
+
+**Pilar D [F52, KURULDU]:** `ai.read_data(source)` — yapısal sayısal veri (liste/CSV/JSON/metin)
+deterministik çıkarılır → `discover_law`/`forecast`/`detect_anomalies` (sertifikalı). Bulanık
+figür-semantiği / ekran→uygulama (istatistik) AÇIKÇA kapsam-dışı — yalnız deterministik çıkarım.

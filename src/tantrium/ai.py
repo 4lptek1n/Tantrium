@@ -2588,6 +2588,127 @@ class AI:
         return {"topic": topic, "synthesis": syn, "n_docs": len(docs),
                 "n_relations": len(all_rels)}
 
+    def ingest_corpus(self, docs: list, *, detect_contradictions: bool = True) -> dict:
+        """SINIRSIZ BAĞLAM = MANİFOLD (ASI Pilar E) — çok belgeyi KALICI köklü hafızaya örer.
+
+        LLM her şeyi token-penceresine zorlar (istatistiksel attention); biz deterministik
+        kalıcı hafızaya yazarız (pencere YOK). İngest sonrası reason/summarize/contrast/check_claim
+        ÇAPRAZ-BELGE çalışır. Ayrıca **çapraz-belge ÇELİŞKİ** tespiti: farklı belgelerde aynı
+        (özne,nesne) için ZIT kenar (INHIBITS↔ACTIVATES) → LLM'in uzun bağlamda kaçırdığı tutarsızlık.
+        Döner: {n_docs, new_concepts, new_relations, contradictions, topics, answer}.
+        """
+        from collections import Counter
+        from tantrium.research.autonomous import _extract_relations, _normalize_entity
+        c_before = len(self._engine.manifold.concepts)
+        e_before = sum(len(v) for v in self._engine.tau.edges.values())
+        freq: Counter = Counter()
+        seen_rel: dict = {}            # (subj_n, obj_n) → {paradigmalar} (çelişki için)
+        contradictions: list = []
+        cseen: set = set()
+        for d in docs:
+            rels = _extract_relations(str(d))
+            for s, r, o in rels:
+                freq[s] += 1
+                if detect_contradictions:
+                    key = (_normalize_entity(s), _normalize_entity(o))
+                    prev = seen_rel.setdefault(key, set())
+                    for opp in self._OPPOSITE_REL.get(r, set()):
+                        if opp in prev:
+                            ck = tuple(sorted([r, opp])) + key
+                            if ck not in cseen:
+                                cseen.add(ck)
+                                contradictions.append(
+                                    {"subject": s, "object": o, "claim_a": f"{s} {r} {o}",
+                                     "claim_b": f"{s} {opp} {o}"})
+                    prev.add(r)
+            try:
+                self.learn(str(d))
+            except Exception:
+                pass
+        try:
+            self._engine.auto_persist()
+        except Exception:
+            pass
+        c_after = len(self._engine.manifold.concepts)
+        e_after = sum(len(v) for v in self._engine.tau.edges.values())
+        topics = [t for t, _ in freq.most_common(5) if self._is_clean_concept(t)]
+        from tantrium.language.fluent import gen_join
+        ans = (f"{len(docs)} belgeyi kalıcı hafızaya ördüm (+{c_after - c_before} kavram, "
+               f"+{e_after - e_before} ilişki; pencere limiti YOK). Ana konular: "
+               f"{gen_join(topics[:4])}.")
+        if contradictions:
+            ans += (f" DİKKAT: {len(contradictions)} çapraz-belge ÇELİŞKİ buldum "
+                    f"(ör. {contradictions[0]['claim_a']} vs {contradictions[0]['claim_b']}) "
+                    f"— LLM'in uzun bağlamda kaçırdığı tutarsızlık.")
+        return {"n_docs": len(docs), "new_concepts": c_after - c_before,
+                "new_relations": e_after - e_before, "contradictions": contradictions,
+                "topics": topics, "answer": ans}
+
+    def _parse_numeric_series(self, source) -> list:
+        """Yapısal kaynaktan (liste/JSON/CSV/metin) sayı dizisini DETERMİNİSTİK çıkar."""
+        if isinstance(source, (list, tuple)):
+            out = []
+            for x in source:
+                try:
+                    out.append(float(x))
+                except (TypeError, ValueError):
+                    pass
+            return out
+        s = str(source).strip()
+        # JSON listesi dene
+        try:
+            import json as _json
+            v = _json.loads(s)
+            if isinstance(v, list):
+                return self._parse_numeric_series(v)
+            if isinstance(v, dict):
+                return self._parse_numeric_series(list(v.values()))
+        except Exception:
+            pass
+        # CSV/TSV: her satırın SON sayısal alanı (zaman serisi sütunu)
+        lines = [ln for ln in s.splitlines() if ln.strip()]
+        if len(lines) >= 3 and any(("," in ln or "\t" in ln) for ln in lines):
+            col = []
+            for ln in lines:
+                nums = self._extract_numbers(ln)
+                if nums:
+                    col.append(nums[-1])
+            if len(col) >= 3:
+                return col
+        # düz metin: tüm sayılar
+        return self._extract_numbers(s)
+
+    def read_data(self, source, *, analyze: str = "law") -> dict:
+        """BELGE/VERİ → KÖKLÜ ANALİZ (ASI Pilar D) — yapısal sayısal veriyi DETERMİNİSTİK çıkar,
+        dinamik-yasa/tahmin/anomali ile sertifikalı analiz et. CSV/JSON/liste/metin → sayı dizisi →
+        `discover_law`/`forecast`/`detect_anomalies` (core/structure.py).
+
+        DÜRÜST KAPSAM: bulanık figür-semantiği / "ekran→uygulama" = istatistik (Kova B) → DIŞARIDA;
+        yalnız yapısal/sayısal deterministik çıkarım. "gereken gerçek veriyi al" — uydurmaz.
+        Döner: {series, analyze, result, answer}.
+        """
+        series = self._parse_numeric_series(source)
+        if len(series) < 3:
+            return {"series": series, "analyze": analyze, "result": None,
+                    "answer": "Yapısal sayısal seri çıkaramadım (en az 3 sayı gerekli)."}
+        if analyze == "forecast":
+            r = self.forecast(series)
+            conf = "güvenilir" if r.get("reliable") else "GÜVENİLMEZ"
+            ans = f"{len(series)} veri noktası okudum. Sonraki: {r['forecast']} ({conf})."
+        elif analyze == "anomaly":
+            r = self.detect_anomalies(series)
+            ans = ("Veride yapısal anomali yok — yasaya uyuyor."
+                   if r.get("clean") else
+                   f"{r['n']} anomali (yasaya uymayan nokta): "
+                   + ", ".join(f"#{a['index']}" for a in r['anomalies'][:6]) + ".")
+        else:
+            r = self.discover_law(series, holdout=min(4, len(series) // 4))
+            tut = "ve görülmemiş geleceği doğru tahmin etti" if getattr(r, "law_holds", False) \
+                else "(tahmin zayıf)"
+            ans = (f"{len(series)} veri noktasını yöneten yasa: {r.order}. mertebe yineleme. "
+                   f"Yasayı keşfettim {tut} — deterministik, sertifikalı.")
+        return {"series": series, "analyze": analyze, "result": r, "answer": ans}
+
     def solve_word_problem(self, text: str) -> dict:
         """MATEMATİK SÖZEL PROBLEM — doğal dil → sayı + işlem → kesin sonuç (deterministik).
 

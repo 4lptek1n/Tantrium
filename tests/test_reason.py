@@ -255,3 +255,32 @@ def test_reason_routes_hypothesize_novel():
     ai.learn("Erlotinib inhibits EGFR. EGFR activates ras.")
     r = ai.reason("erlotinib için yeni hipotez üret")
     assert r["intent"] == "hypothesize_novel"
+
+
+# ───────────── ASI Pilar E (Kademe F52): Sınırsız Bağlam = Manifold ─────────────
+
+def test_ingest_corpus_cross_doc_contradiction():
+    """Çapraz-belge çelişki: farklı belgelerde zıt kenar (INHIBITS↔ACTIVATES) yakalanır."""
+    import tantrium
+    ai = tantrium.AI()
+    docs = [
+        "Drug X inhibits protein Y.",
+        "Protein Y activates pathway Z.",
+        "Drug X activates protein Y.",   # belge 1 ile çelişir
+    ]
+    r = ai.ingest_corpus(docs)
+    assert r["n_docs"] == 3
+    assert r["contradictions"]          # en az 1 çapraz-belge çelişki
+    assert "ÇELİŞKİ" in r["answer"]
+
+
+# ───────────── ASI Pilar D (Kademe F52): Belge/Veri → Köklü Analiz ─────────────
+
+def test_read_data_law_from_list_and_csv():
+    """Yapısal sayısal veri (liste/CSV) → deterministik dinamik-yasa keşfi."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.read_data([1, 1, 2, 3, 5, 8, 13, 21], analyze="law")
+    assert r["result"].order >= 1 and len(r["series"]) == 8
+    r2 = ai.read_data("t,v\n1,2\n2,4\n3,8\n4,16\n5,32", analyze="forecast")
+    assert r2["series"] == [2.0, 4.0, 8.0, 16.0, 32.0]   # CSV son sütun

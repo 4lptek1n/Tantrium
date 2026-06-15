@@ -372,6 +372,13 @@ ai.contrast("erlotinib", "imatinib")           # → dict: KARŞILAŞTIR/FARK �
                                                #   {a, b, shared, distinct_a, distinct_b, distance, entangled, answer}
 ai.enumerate_kind("egfr", relation="INHIBITS") # → dict: LİSTELE — TAU ters arama (X inhibitörleri/türleri)
                                                #   {category, relation, items, answer}  (markup gürültüsü ayıklanır)
+ai.ingest_corpus([doc1, doc2, ...])            # → dict: ASI Pilar E — SINIRSIZ BAĞLAM=MANİFOLD
+                                               #   çok belgeyi kalıcı hafızaya ör (pencere YOK) +
+                                               #   ÇAPRAZ-BELGE çelişki tespiti (INHIBITS↔ACTIVATES)
+                                               #   {n_docs, new_concepts, new_relations, contradictions, topics}
+ai.read_data([1,1,2,3,5], analyze="law")       # → dict: ASI Pilar D — yapısal sayısal veri (liste/CSV/
+                                               #   JSON/metin) → deterministik dinamik-yasa/forecast/anomali
+                                               #   {series, analyze, result, answer} (figür-semantiği DIŞARIDA)
 ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}  [Geri BFS]
 ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}   [İleri BFS]
 ai.analogy("erlotinib", "egfr", "imatinib")   # → [("bcr-abl", 0.0)]  TAU ilişki tutarlılığı
