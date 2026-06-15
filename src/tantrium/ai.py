@@ -1914,13 +1914,38 @@ class AI:
         c = self.converse(request)
         return {"intent": "knowledge", "answer": c["answer"], "result": c}
 
-    def converse(self, question: str, learn_if_unknown: bool = True) -> dict:
+    def _grounding_detail(self, topic: str) -> str:
+        """Cevabın NEDEN köklü olduğunu detaylı açıkla — topraklama sertifikası.
+
+        Halüsinasyonsuzluğun kanıtı: kaç TAU ilişkisi, hangi köklü kavramların yakınında,
+        topraklama yargısı + skor. Context sınırsız → şeffaf, detaylı.
+        """
+        try:
+            g = self.grounding(topic)
+            out_e = len(self._engine.tau.edges.get(topic, []))
+            in_e = sum(1 for _s, el in self._engine.tau.edges.items()
+                       for e in el if str(getattr(e, "target", "")) == topic)
+            total = out_e + in_e
+            lines = [f"  ↳ Topraklama: {g.verdict} (skor {g.score:.2f}) — '{topic}' TAU "
+                     f"bilgi-grafında {total} doğrulanmış ilişkiyle köklü."]
+            near = [n for n in getattr(g, "nearest_grounded", [])
+                    if n.lower() != topic.lower()][:4]
+            if near:
+                lines.append(f"     Anlam komşuları (köklü): {', '.join(near)}.")
+            lines.append("     Bu yüzden cevap UYDURMA DEĞİL — her ifade grafta gerçek bir "
+                         "kenara dayanıyor; topraksız olsa söylemezdim.")
+            return "\n".join(lines)
+        except Exception:
+            return ""
+
+    def converse(self, question: str, learn_if_unknown: bool = True,
+                 detail: bool = True) -> dict:
         """BİLİNÇLİ SOHBET — bilmezse internetten ÖĞRENİR, sonra köklü cevaplar.
 
         1. sorudan konuyu çıkar  2. biliyor mu (TAU'da semantik kenar)  3. bilmiyorsa
         Wikipedia'dan çekip learn() ile kendini BÜYÜTÜR  4. doğrulanmış TAU'dan akıcı
-        cümleyle cevaplar. Söylediği her şey köklü — halüsinasyon yapamaz; bilmiyorsa
-        ÖĞRENİR ya da dürüstçe "bilmiyorum" der.
+        cümleyle cevaplar + (detail) TOPRAKLAMA açıklaması (neden köklü, kaç ilişki, komşular).
+        Söylediği her şey köklü — halüsinasyon yapamaz; bilmiyorsa ÖĞRENİR ya da dürüstçe der.
         Döner: {topic, answer, learned, grounded}.
         """
         topic = self._converse_topic(question)
@@ -1938,6 +1963,10 @@ class AI:
         if facts:
             from tantrium.language.speaker import Speaker
             answer = Speaker(self._engine).synthesize(topic, facts)
+            if detail:
+                gd = self._grounding_detail(topic)
+                if gd:
+                    answer = answer + "\n" + gd
         else:
             answer = (f"'{topic}' hakkında henüz doğrulanmış bir bilgim yok"
                       + (" (internetten de öğrenemedim)." if learned else "."))
