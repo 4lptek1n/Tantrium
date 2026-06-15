@@ -267,6 +267,45 @@ class GroundingSignature:
         return "\n".join(lines)
 
 
+@dataclass
+class UniverseReconstruction:
+    """ai.reverse_engineer() — EVRENE TERSİNE MÜHENDİSLİK.
+
+    Herhangi bir fenomenin GÖZLEMİNDEN onu ÜRETEN gizli yapıyı geri kurar.
+    Hilbert-Pólya işlevi: her fenomenin bir operatörü (Hamiltonian) var; biz onu
+    yalnız gözlemden (spektral imza) geri çıkarıyoruz — domain-kör.
+
+      signature : fenomenin spektral parmak-izi (gözlem → moment)
+      modes     : geri-çıkarılan özdeğerler = gizli ÜRETEN yapı (operatörün spektrumu)
+      weights   : her modun ağırlığı (atomik ölçü)
+      n_modes   : kaç mod üretiyor = fenomenin GERÇEK karmaşıklığı (Hankel rank)
+      fidelity  : yapı gözlemi ne kadar açıklıyor [0,1]
+      realizable: geçerli fiziksel yapı mı (Hankel-PSD = var olabilir)
+      exact     : gizli yapı KESİN mi belirlendi (well_determined)
+    """
+    name: str
+    signature: list
+    modes: list
+    weights: list
+    n_modes: int
+    fidelity: float
+    realizable: bool
+    exact: bool
+
+    def summary(self) -> str:
+        r = lambda xs: [round(float(x), 4) for x in xs]
+        return "\n".join([
+            f"══ {self.name} — EVRENE TERSİNE MÜHENDİSLİK ══",
+            f"  gözlem imzası      : {r(self.signature)}",
+            f"  ÜRETEN yapı (mod)  : {r(self.modes)}",
+            f"  ağırlıklar         : {r(self.weights)}",
+            f"  karmaşıklık (mod#) : {self.n_modes}",
+            f"  sadakat            : {self.fidelity:.4f}"
+            f"   {'(KESİN belirlendi)' if self.exact else '(yaklaşık)'}",
+            f"  gerçeklenebilir    : {'✓ var olabilir' if self.realizable else '✗'}",
+        ])
+
+
 # ─── Ana AI sınıfı ───────────────────────────────────────────────────────────
 
 class AI:
@@ -567,6 +606,46 @@ class AI:
         from tantrium.core.reconstruct import reconstruct_measure
         obj = self._engine.encoder.encode(query, name=query[:64])
         return reconstruct_measure(obj.moments, max_atoms=max_atoms)
+
+    def reverse_engineer(self, observations, name: str = "fenomen",
+                         max_modes: int = 8) -> "UniverseReconstruction":
+        """EVRENE TERSİNE MÜHENDİSLİK — gözlemden onu ÜRETEN gizli yapıyı geri çıkar.
+
+        Bir domain DEĞİL, META-güç: drug/material/math bunun örnekleri. Herhangi bir
+        fenomen (sayı dizisi · molekül · DNA/protein · sinyal · görüntü · yapı) gözleminden
+        onu üreten atomik yapıyı (özdeğer 'modları' = gizli operatör/yasa) geri kurar +
+        sertifikalar. Hilbert-Pólya işlevi domain-kör: her şeyin bir Hamiltonian'ı var,
+        biz onu GÖZLEMDEN buluyoruz. Evrensel yasayla (F24) girdi gerçek formuyla girer.
+
+        observations: ham gözlem — sayı listesi (ölçüm) / SMILES / DNA / sinyal / metin.
+        Döner: UniverseReconstruction (.modes = üreten yapı, .summary()).
+        """
+        from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
+        from tantrium.core.codex import CertifiableObject
+        from fractions import Fraction
+        try:
+            obj = self._engine.encoder.encode_adaptive(observations, name=str(name)[:64])
+        except Exception:
+            obj = self._engine.encoder.encode(observations, name=str(name)[:64])
+        mu = [float(m) for m in obj.moments]
+        rec = reconstruct_measure(mu, max_atoms=max_modes)
+        try:
+            psd = CertifiableObject(
+                name=str(name),
+                moments=[Fraction(x).limit_denominator(10 ** 9) for x in mu]
+            ).is_moment_sequence(size=4)
+        except Exception:
+            psd = False
+        return UniverseReconstruction(
+            name=str(name),
+            signature=list(mu),
+            modes=[float(x) for x in rec.support],
+            weights=[float(w) for w in rec.weights],
+            n_modes=int(rec.rank),
+            fidelity=float(reconstruction_fidelity(mu)),
+            realizable=bool(psd),
+            exact=bool(rec.well_determined),
+        )
 
     def collisions(
         self,
