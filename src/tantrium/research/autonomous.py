@@ -56,8 +56,24 @@ _CAUSAL_VERB_MAP: list[tuple[str, str]] = [
     (r"\bbinds?\b",       "CAUSES"),
     (r"\brequires?\b",    "REQUIRES"),
     (r"\bneeds?\b",       "REQUIRES"),
+    # Tanımsal/yapısal fiiller (ansiklopedik metin — IS_A darboğazını kapatır)
+    (r"\bconsists? of\b", "COMPOSED"),
+    (r"\bcomposed of\b",  "COMPOSED"),
+    (r"\bmade (?:up )?of\b", "COMPOSED"),
+    (r"\bcontains?\b",    "COMPOSED"),
+    (r"\bfound in\b",     "COMPONENT_OF"),
+    (r"\blocated in\b",   "COMPONENT_OF"),
+    (r"\bpart of\b",      "COMPONENT_OF"),
+    (r"\bused (?:for|in|to|as)\b", "USES"),
+    (r"\bproduces?\b",    "ACHIEVES"),
+    (r"\bgenerates?\b",   "ACHIEVES"),
 ]
 _COMPILED_VERBS = [(_re.compile(p, _re.IGNORECASE), rel) for p, rel in _CAUSAL_VERB_MAP]
+
+# Tanım kalıbı: "X is/are a/an/the Y" → (X, IS_A, Y). Ansiklopedik metnin temel cümlesi.
+_ISA_PAT = _re.compile(
+    r"\b([A-Za-z][\w\-]{2,30}(?:\s+[\w\-]{2,20}){0,2})\s+(?:is|are|was|were)\s+"
+    r"(?:a|an|the|one of|a type of|a kind of)\s+([\w\-]{3,30})", _re.IGNORECASE)
 
 
 _STOPWORDS = {
@@ -107,8 +123,21 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
     Sonuç: TAU'ya CAUSES/INHIBITS/ACTIVATES kenarları olarak eklenir.
     """
     relations: list[tuple[str, str, str]] = []
+    # Parantez içi açıklamaları at (özneyi yüklemden ayırıp kalıbı kırıyor:
+    # "X (pl. ...) is a Y" → "X  is a Y").
+    text = _re.sub(r"\([^)]*\)", " ", text)
     # Önce bağlaç "and" üzerinden alt cümlelere ayır
     sentences = _re.split(r"[.!?;]", text)
+    # TANIM (IS_A) — "X is a Y" kalıbı (ansiklopedik metnin temel bilgisi)
+    for sent in sentences:
+        for m in _ISA_PAT.finditer(sent):
+            subj = _re.sub(r"[,;\"'()]", " ", m.group(1)).strip().lower()
+            obj = m.group(2).strip().lower()
+            # öznenin son 1-3 kelimesi (sıfat zincirini at)
+            sw = subj.split()
+            subj = " ".join(sw[-2:]) if len(sw) > 2 else subj
+            if 2 < len(subj) < 40 and 2 < len(obj) < 30 and obj not in _STOPWORDS:
+                relations.append((subj, "IS_A", obj))
     for sent in sentences:
         # "X verb Y and Z verb W" → ["X verb Y", "Z verb W"]
         sub_sents = _re.split(r"\band\b", sent, flags=_re.IGNORECASE)

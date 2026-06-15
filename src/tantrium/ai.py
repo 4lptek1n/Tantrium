@@ -1799,13 +1799,16 @@ class AI:
                 "is", "are", "a", "an", "of", "how", "why", "açıkla", "anlat"}
 
     def _converse_topic(self, question: str) -> str:
-        """Sorudan ana konuyu çıkar: manifoldda olan ilk aday, yoksa en uzun anlamlı kelime."""
+        """Sorudan ana konuyu çıkar (robust): manifoldda tek kelime, yoksa içerik öbeği
+        (çok-kelimeli başlıklar için: 'lung cancer')."""
         words = [w.strip("?.,!:;'\"").lower() for w in str(question).split()]
         cands = [w for w in words if len(w) >= 3 and w not in self._STOP_TR]
         for w in cands:
             if w in self._engine.manifold.concepts:
                 return w
-        return max(cands, key=len) if cands else (cands[0] if cands else "")
+        if len(cands) >= 2:
+            return " ".join(cands[:4])
+        return cands[0] if cands else ""
 
     def _tau_facts(self, topic: str, max_per: int = 3) -> dict:
         """Konunun semantik TAU kenarlarını {paradigma: [hedef,...]} olarak topla."""
@@ -1821,23 +1824,51 @@ class AI:
                     facts[p].append(t)
         return facts
 
-    def _fetch_wikipedia(self, topic: str) -> str:
-        """Wikipedia'dan konunun özetini çek (bilinçli öz-büyüme için ham metin)."""
+    def _fetch_wikipedia(self, topic: str, full: bool = False) -> str:
+        """Wikipedia özeti (intro) ya da TAM makale (full=True, derin araştırma)."""
         from tantrium.research.net import http_get_json
         import urllib.parse as _up
         try:
             q = _up.quote(topic)
+            intro = "" if full else "&exintro=1"
+            chars = "&exchars=6000" if full else ""
             url = ("https://en.wikipedia.org/w/api.php?action=query&format=json"
-                   "&prop=extracts&exintro=1&explaintext=1&redirects=1&titles=" + q)
+                   "&prop=extracts&explaintext=1&redirects=1" + intro + chars + "&titles=" + q)
             data = http_get_json(url, errors="replace")
             pages = data.get("query", {}).get("pages", {})
             for _pid, page in pages.items():
                 ex = page.get("extract", "")
                 if ex and len(ex) > 40:
-                    return ex[:2000]
+                    return ex[:6000 if full else 2000]
         except Exception:
             pass
         return ""
+
+    def _research_deep(self, topic: str, expand: int = 3) -> int:
+        """DERİN OTONOM ARAŞTIRMA — tek cümle değil, çok kaynaktan zengin köklü bilgi kur.
+
+        1. Konunun TAM Wikipedia makalesini çek → learn() (çok ilişki).  2. Yeni öğrenilen,
+        henüz köklenmemiş ilişkili kavramları (1-hop) çek → learn(). Soru başına zengin bir
+        köklü bilgi-kümesi oluşur (kendi kendine yeten ajan). Döner: öğrenilen toplam.
+        """
+        total = 0
+        main = self._fetch_wikipedia(topic, full=True)
+        if main:
+            r = self.learn(main)
+            total += int(r.get("relations", 0)) + int(r.get("new_concepts", 0))
+        related, seen = [], set()
+        for e in self._engine.tau.edges.get(topic, []):
+            t = str(getattr(e, "target", ""))
+            if (t and not t.startswith("⟨") and t.lower() not in seen
+                    and not self._tau_facts(t)):
+                seen.add(t.lower()); related.append(t)
+            if len(related) >= expand:
+                break
+        for rt in related:
+            txt = self._fetch_wikipedia(rt)
+            if txt:
+                total += int(self.learn(txt).get("relations", 0))
+        return total
 
     # İlişki → akıcı fiil (çıkarım zincirini dile dökmek için)
     _REL_V = {"INHIBITS": ("baskılar", "acc"), "ACTIVATES": ("etkinleştirir", "acc"),
@@ -1946,9 +1977,17 @@ class AI:
                 return {"intent": "entangle", "answer": ans, "result": e}
 
         # ── ÇOK-ADIMLI MANTIK (köklü çıkarım, zinciri açıklar) ──
+        # Bilmiyorsa ÖNCE araştır (kendi kendine yeten ajan): akıl yürütmeden önce kapsamı sağla.
+        def _ensure(t):
+            if t and not self._tau_facts(t):
+                try:
+                    self._research_deep(t)
+                except Exception:
+                    pass
         if has("ne olur", "ne yapar", "etkisi", "sonucu", "olursa", "yaparsa",
                "ne işe yarar"):
             topic = self._converse_topic(request)
+            _ensure(topic)
             wf = self.what_if(topic)
             ans = self._narrate_reasoning(topic, wf.get("chains", []),
                                           wf.get("effects", []), "forward")
@@ -1956,6 +1995,7 @@ class AI:
         if has("sebebi", "nedeni", "neden olur", "yol açan", "kaynağı",
                "nasıl oluş", "niçin"):
             topic = self._converse_topic(request)
+            _ensure(topic)
             cc = self.causal_chain(topic)
             ans = self._narrate_reasoning(topic, cc.get("chains", []),
                                           cc.get("actionable", []), "backward")
@@ -2089,11 +2129,15 @@ class AI:
         facts = self._tau_facts(topic)
         learned = False
         if not facts and learn_if_unknown:
-            text = self._fetch_wikipedia(topic)
-            if text:
-                self.learn(text)
-                learned = True
-                facts = self._tau_facts(topic)
+            self._research_deep(topic)          # DERİN araştırma (tek cümle değil)
+            learned = True
+            facts = self._tau_facts(topic)
+            if not facts and " " in topic:
+                # öbek köklenmediyse son içerik kelimesini dene ("lung cancer"→"cancer")
+                last = topic.split()[-1]
+                lf = self._tau_facts(last)
+                if lf:
+                    topic, facts = last, lf
         if facts:
             if detail:
                 # AKICI anlatım motoru (ek-uyumlu Türkçe + köklülük doğal cümlede)
