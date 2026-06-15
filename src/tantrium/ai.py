@@ -293,7 +293,16 @@ class UniverseReconstruction:
     exact: bool
 
     def summary(self) -> str:
-        r = lambda xs: [round(float(x), 4) for x in xs]
+        def _r(xs):
+            out = []
+            for x in xs:
+                if isinstance(x, complex):
+                    out.append(complex(round(x.real, 3), round(x.imag, 3))
+                               if abs(x.imag) > 1e-9 else round(x.real, 4))
+                else:
+                    out.append(round(float(x), 4))
+            return out
+        r = _r
         return "\n".join([
             f"══ {self.name} — EVRENE TERSİNE MÜHENDİSLİK ══",
             f"  gözlem imzası      : {r(self.signature)}",
@@ -623,6 +632,29 @@ class AI:
         from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
         from tantrium.core.codex import CertifiableObject
         from fractions import Fraction
+
+        # SAYISAL GÖZLEM (sinyal/ölçüm/dizi) → HAM matematik (Kronecker/Prony Hankel rank).
+        # Encoder'ın 8-moment sıkıştırmasından GEÇİRMEYİZ (yapıyı siler: 8 moment hep ~4 atom).
+        # Ham veriden üreten yapıyı okur — yapılı=düşük rank, gürültü=tam rank, manipüle=rank fırlar.
+        if isinstance(observations, (list, tuple)) and observations and all(
+                isinstance(x, (int, float)) for x in observations):
+            from tantrium.core.structure import structural_decomposition
+            x = [float(v) for v in observations]
+            sd = structural_decomposition(x, max_modes=max_modes)
+            real_modes = [m.real for m in sd.modes if abs(m.imag) < 1e-6]
+            return UniverseReconstruction(
+                name=str(name),
+                signature=[round(v, 6) for v in x[:8]],
+                modes=[round(m.real, 6) if abs(m.imag) < 1e-9 else complex(m)
+                       for m in sd.modes],
+                weights=list(sd.singular_values[:max_modes]),
+                n_modes=sd.rank,
+                fidelity=float(sd.sv_gap),
+                realizable=bool(sd.structured),     # gizli düzen var mı (rank ≪ tam)
+                exact=bool(sd.sv_gap > 0.05),        # rank'ta keskin spektral boşluk
+            )
+
+        # SEMBOLİK GÖZLEM (molekül/DNA/metin) → evrensel yasayla gerçek-form encode → spektral imza
         try:
             obj = self._engine.encoder.encode_adaptive(observations, name=str(name)[:64])
         except Exception:

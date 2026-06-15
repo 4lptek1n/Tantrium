@@ -42,6 +42,35 @@ def test_different_phenomena_different_structure():
     assert a.modes != b.modes
 
 
+def test_raw_hankel_reads_structure():
+    """HAM matematik (Kronecker/Prony): yapılı sinyal düşük rank, gürültü tam rank."""
+    import math, random
+    from tantrium.core.structure import structural_decomposition
+    random.seed(1)
+    structured = [math.sin(0.3 * t) + 0.5 * math.sin(0.7 * t) + 0.3 * math.sin(1.3 * t)
+                  for t in range(64)]
+    noise = [random.gauss(0, 1) for _ in range(64)]
+    s = structural_decomposition(structured)
+    n = structural_decomposition(noise)
+    assert s.rank <= 8, f"3 sinüs → düşük rank (Kronecker ~6), got {s.rank}"
+    assert s.structured is True
+    assert n.rank > s.rank * 2, "gürültü tam-rank'a yakın olmalı"
+    assert n.structured is False
+
+
+def test_reverse_engineer_detects_tampering():
+    """Manipülasyon yapıyı bozar → düzen kaybolur (sahtelik/anomali okuma)."""
+    import math
+    import tantrium
+    ai = tantrium.AI()
+    structured = [math.sin(0.3 * t) + 0.5 * math.sin(0.7 * t) for t in range(64)]
+    tampered = list(structured); tampered[30] += 2.0
+    clean = ai.reverse_engineer(structured, name="temiz")
+    bad = ai.reverse_engineer(tampered, name="manipüle")
+    assert clean.realizable is True          # temiz yapı düzenli
+    assert bad.n_modes > clean.n_modes        # manipülasyon rank'ı fırlatır
+
+
 def test_summary_and_certificate():
     """UniverseReconstruction sertifika alanları + okunur özet döner."""
     ai = tantrium.AI()
