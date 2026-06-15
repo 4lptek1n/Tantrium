@@ -284,13 +284,18 @@ _PANEL_TARGETS = ["egfr", "vegfr", "abl", "alk", "kit", "bcr-abl",
                   "braf", "her2", "cyclooxygenase", "mtor"]
 
 
-def empirical_verify(engine: Any, *, targets: "list[str] | None" = None) -> dict:
-    """Sertifikanın moleküler κ-fit'i bilinen ilaç→hedef eşleşmesini geri kazanıyor mu.
+def empirical_verify(engine: Any, *, targets: "list[str] | None" = None,
+                     metric: str = "kappa") -> dict:
+    """Sertifikanın moleküler ayrımı bilinen ilaç→hedef eşleşmesini geri kazanıyor mu.
 
     Leave-one-out geriye-dönük: her ligand kendi hedefinin DİĞER ligandlarından kurulan
-    profile karşı + tüm panel hedeflerine κ-fit; gerçek hedef tepe-1/tepe-2'de mi.
-    Çok-hedefli ilaç (imatinib→abl+kit) tepe-2 ile dürüstçe kapsanır. Lab YOK.
-    Döner: {top1, top2, mrr, tested, per_target, note}.
+    profile karşı + tüm panel hedeflerine sıralanır; gerçek hedef tepe-1/tepe-2'de mi.
+
+    metric: "kappa"  → κ-mesafe (YAKINLIK — dil ekseni; düşük=iyi).
+            "sturm"  → Sturm-yol pivotu (RH evren-kapanışı matematiği; pivot yüksek=iyi
+                       gerçek-ölçü yolu). Üretimin GERÇEK mekanizması — yakınlık değil.
+    İkisini karşılaştırmak: "sınır yakınlık-proxy'sinin mi, RH matematiğinin mi" sorusunu
+    dürüstçe yanıtlar. Lab YOK.
     """
     from tantrium.core.production import ProductionEngine
     pe = ProductionEngine(engine)
@@ -341,7 +346,14 @@ def empirical_verify(engine: Any, *, targets: "list[str] | None" = None) -> dict
                     prof = _profile(tgt_ligs[t])
                 if not prof:
                     continue
-                fits.append((t, pe._structural_kappa_distance(lig_mu, prof)))
+                if metric == "sturm":
+                    # RH evren-kapanışı matematiği: gerçek-ölçü Sturm yolu pivotu.
+                    # Pivot YÜKSEK = sağlam yol → maliyet = -pivot (düşük=iyi, tek sıralama).
+                    _ok, pmin = pe._sturm_path_pivot_min(lig_mu, prof)
+                    cost = -float(pmin)
+                else:
+                    cost = pe._structural_kappa_distance(lig_mu, prof)
+                fits.append((t, cost))
             if not fits:
                 continue
             fits.sort(key=lambda kv: kv[1])
@@ -372,9 +384,14 @@ def empirical_verify(engine: Any, *, targets: "list[str] | None" = None) -> dict
         "tested": tested,
         "n_targets": len(panel),
         "per_target": per_target,
-        "note": (f"{top1}/{tested} ligand gerçek hedefini tepe-1, {top2}/{tested} tepe-2, "
-                 f"{top1_rel}/{tested} akraba-hedef buldu ({len(panel)} hedefli panel, LOO). "
-                 f"Kaba sınıf (NSAID/kinaz/rapalog) ayrılır; sınıf-içi ince seçicilik AYRILMAZ."),
+        "metric": metric,
+        "note": (f"[{metric}] {top1}/{tested} ligand gerçek hedefini tepe-1, "
+                 f"{top1_rel}/{tested} akraba-hedef ({len(panel)} hedefli panel, LOO). "
+                 + ("RH-Sturm: yapısal-benzer kinaz-içi seçicilik (egfr) ayrılır; "
+                    "yapısal-farklı sınıf zayıf — κ-yakınlıkla TAMAMLAYICI."
+                    if metric == "sturm" else
+                    "κ-yakınlık: kaba sınıf (NSAID/rapalog) ayrılır; kinaz-içi ince "
+                    "seçicilik AYRILMAZ — RH-Sturm ile TAMAMLAYICI.")),
     }
 
 

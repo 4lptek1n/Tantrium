@@ -101,10 +101,26 @@ def test_empirical_verify_recovers_distinct_classes():
 
 
 def test_calibrate_facade():
-    """ai.calibrate() facade ampirik kalibrasyonu döner."""
+    """ai.calibrate() facade ampirik kalibrasyonu döner (varsayılan: RH-Sturm)."""
     import tantrium
     ai = tantrium.AI()
     r = ai.calibrate()
     assert "top1_related" in r and "mrr" in r
     assert r["tested"] > 0
-    assert "ince seçicilik" in r["note"]
+    assert "TAMAMLAYICI" in r["note"]
+    assert r["metric"] == "sturm"
+
+
+def test_calibrate_both_complementary():
+    """RH-Sturm kinaz-içi (egfr), κ-yakınlık yapısal-farklı sınıfı (cox/mtor) ayırır.
+
+    Sen haklıydın: 'sınır' yakınlık-proxy'sinin sınırıydı, RH matematiğinin değil.
+    RH-Sturm tam da κ-yakınlığın kaçırdığı kinazları (egfr) ayırır — tamamlayıcı.
+    """
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.calibrate(metric="both")
+    # κ-yakınlık: yapısal-farklı sınıflar (rapalog/NSAID) — kinaz egfr ZAYIF
+    assert r["kappa_yakinlik"]["per_target"].get("mtor", {}).get("top1", 0) >= 1
+    # RH-Sturm: kinaz-içi egfr seçiciliği — κ'nın kaçırdığını yakalar
+    assert r["sturm_rh"]["per_target"].get("egfr", {}).get("top1", 0) >= 1

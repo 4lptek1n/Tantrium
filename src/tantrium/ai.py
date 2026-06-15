@@ -3550,18 +3550,35 @@ class AI:
                      f"(Sturm↔hiperbolisite + Hankel-PSD)"),
         }
 
-    def calibrate(self, targets: list[str] | None = None) -> dict:
+    def calibrate(self, targets: list[str] | None = None,
+                  metric: str = "sturm") -> dict:
         """AMPİRİK KALİBRASYON: sertifika bilinen ilaç→hedef farmakolojisini geri kazanıyor mu.
 
-        Geriye-dönük, wet-lab GEREKMEZ — zaten ölçülmüş farmakoloji (küratörlü). Leave-one-out:
-        her ligand kendi hedefinin DİĞER ligand profiline + tüm panel hedeflerine κ-fit ile
-        sıralanır; gerçek hedef tepe-k'de mi. "İçsel sertifika gerçeği ne kadar öngörüyor"un
-        DÜRÜST sayısı. Çekirdek `research.corrigibility.empirical_verify` (VerifyPhase paylaşır).
-        Döner: {top1, top2, top1_related, mrr, tested, per_target, note}.
+        Geriye-dönük, wet-lab GEREKMEZ. Leave-one-out: her ligand kendi hedefinin DİĞER
+        ligand profiline + tüm panele sıralanır; gerçek hedef tepe-k'de mi.
+
+        metric: "sturm" → RH evren-kapanışı matematiği (üretimin GERÇEK mekanizması; Sturm-yol
+                          pivotu). "kappa" → YAKINLIK (dil ekseni). "both" → karşılaştırma.
+        Çekirdek `research.corrigibility.empirical_verify` (VerifyPhase paylaşır).
         """
         from tantrium.research.corrigibility import empirical_verify
-        r = empirical_verify(self._engine, targets=targets)
+        if metric == "both":
+            k = empirical_verify(self._engine, targets=targets, metric="kappa")
+            s = empirical_verify(self._engine, targets=targets, metric="sturm")
+            return {
+                "kappa_yakinlik": {"top1": round(k["top1"], 3),
+                                   "top1_related": round(k["top1_related"], 3),
+                                   "per_target": k["per_target"]},
+                "sturm_rh": {"top1": round(s["top1"], 3),
+                             "top1_related": round(s["top1_related"], 3),
+                             "per_target": s["per_target"]},
+                "tested": k["tested"], "n_targets": k["n_targets"],
+                "note": ("RH-Sturm ve κ-yakınlık FARKLI sınıfları ayırır "
+                         "(Sturm→kinaz-içi, κ→yapısal-farklı sınıf) — tamamlayıcı."),
+            }
+        r = empirical_verify(self._engine, targets=targets, metric=metric)
         return {
+            "metric": metric,
             "top1": round(r["top1"], 3),
             "top2": round(r["top2"], 3),
             "top1_related": round(r["top1_related"], 3),

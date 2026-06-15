@@ -779,13 +779,13 @@ class VerifyPhase:
                 if mv["failures"]:
                     state.log(f"verify/hesap UYUŞMAZLIK: {mv['failures'][:2]}")
                 # AMPİRİK: sertifika bilinen farmakolojiyi geri kazanıyor mu (geriye-dönük,
-                # lab değil). Dürüst kalibrasyon — kaba sınıf yakalanır, ince seçicilik henüz değil.
-                em = empirical_verify(engine)
+                # lab değil). metric="sturm" = üretimin GERÇEK mekanizması (RH evren-kapanışı),
+                # yakınlık değil. RH-Sturm yapısal-benzer kinaz-içi seçiciliği ayırır.
+                em = empirical_verify(engine, metric="sturm")
                 state.pharma_recall = em["top1_related"]
                 state.log(
-                    f"verify/ampirik: farmakoloji geri-kazanım tepe-1 {em['top1']:.2f}, "
-                    f"akraba {em['top1_related']:.2f} ({em['tested']} ligand/{em['n_targets']} hedef) "
-                    f"— kaba sınıf ayrılır, ince seçicilik AYRILMAZ (dürüst sınır)"
+                    f"verify/ampirik (RH-Sturm): farmakoloji geri-kazanım tepe-1 {em['top1']:.2f}, "
+                    f"akraba {em['top1_related']:.2f} ({em['tested']} ligand/{em['n_targets']} hedef)"
                 )
         except Exception as exc:
             state.log(f"verify: atlandı — {exc}")
