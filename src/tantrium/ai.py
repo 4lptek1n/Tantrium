@@ -1162,6 +1162,22 @@ class AI:
         from tantrium.core.production import ProductionEngine
         return ProductionEngine(self.engine).produce_math(disease, build=build)
 
+    def cross(self, disease, drug: str, dna: str) -> "object":
+        """ÜÇLÜ CROSS — sanal wet-lab: hastalık × ilaç × KİŞİNİN DNA'sı → işe yarar mı.
+
+        disease: ölçülen hastalık (sayı/bulgu/isim) → κ_disease
+        drug   : ilaç (SMILES) → κ_drug
+        dna    : kişinin DNA dizisi (ATCG...) → κ_dna  (kişinin sağlıklı tabanı)
+
+        İki eksen (κ-uzayı, kişiye özel):
+          ETKİLİLİK: κ(hastalık ⊞ ilaç) kişinin DNA tabanına dönüyor mu (Sturm + κ-hata).
+          UYUMLULUK: κ(ilaç ⊞ DNA) gerçeklenebilir mi (Hankel-PSD + pürüzsüz yol = advers yok).
+        Aynı hastalık+ilaç, FARKLI DNA → farklı yargı. Wet-lab'in eleme işini matematik yapar.
+        Döner: CrossResult (.summary() insan-okunur; .works/.verdict).
+        """
+        from tantrium.core.production import ProductionEngine
+        return ProductionEngine(self.engine).cross_check(disease, drug, dna)
+
     # Paradigma-matematik mesafe eşiği (45-özellik normalize imza):
     # EGFR-içi ≤3.43, kinaz-sınıfı ≤4.18, kinaz-dışı ≥4.25 → 4.5 = sınıf ayracı.
     # judge_binding "aynı terapötik sınıf mı?" sorar — üretimden daha geniş.

@@ -61,6 +61,43 @@ def test_facade():
     assert hasattr(d, "eigenvalues") and hasattr(d, "kappa_drug")
 
 
+def test_cross_discriminates_drugs():
+    """ÜÇLÜ CROSS: etkili ilaç, etkisizden (etanol/benzen) AYRILMALI (etkililik ekseni)."""
+    pe = _pe()
+    disease = [1.0, 0.62, 0.43, 0.31, 0.24, 0.19, 0.15, 0.12]
+    dna = "ATCGATCGATCGTTAACCGGATCGATCGAACCGGTTATCG"
+    good = pe.cross_check(disease, "Cn1cnc2c1c(=O)n(c(=O)n2C)C", dna)
+    ethanol = pe.cross_check(disease, "CCO", dna)
+    benzene = pe.cross_check(disease, "c1ccccc1", dna)
+    # tasarlanan ilaç tedavi edici sinyali daha güçlü olmalı (yanıt skoru yüksek)
+    assert good.response_score > ethanol.response_score
+    assert good.response_score > benzene.response_score
+    assert good.efficacy_ok and not ethanol.efficacy_ok
+
+
+def test_cross_personalizes_by_dna():
+    """Aynı hastalık+ilaç, FARKLI DNA → farklı kişiye-özel yanıt (sanal wet-lab)."""
+    pe = _pe()
+    disease = [1.0, 0.62, 0.43, 0.31, 0.24, 0.19, 0.15, 0.12]
+    drug = "Cn1cnc2c1c(=O)n(c(=O)n2C)C"
+    scores = {
+        d: pe.cross_check(disease, drug, d).response_score
+        for d in ("ATCGATCGATCGTTAACCGGATCGATCGAACCGGTTATCG",
+                  "TTTTAAAACCCCGGGGTTTTAAAACCCCGGGGTTTTAAAA",
+                  "ATATATATGCGCGCGCATATGCGCATGCATGCATGCATGC")
+    }
+    # kişiler farklı yanıt skoru almalı (personalizasyon gerçekten DNA'ya bağlı)
+    assert len(set(round(s, 1) for s in scores.values())) >= 2
+
+
+def test_cross_facade():
+    """ai.cross() facade üçlü cross sonucu döner."""
+    ai = tantrium.AI()
+    r = ai.cross([1.0, 0.6, 0.4, 0.28, 0.2, 0.15, 0.11, 0.08], "CCO", "ATCGATCGATCG")
+    assert hasattr(r, "works") and hasattr(r, "response_score")
+    assert "wet-lab" in r.summary()
+
+
 def test_end_to_end_numbers_to_structure():
     """build=True: ölçülen hastalık (sayı) → gerçek YAPI (molekül) baştan sona tek akış.
 
