@@ -2773,6 +2773,33 @@ class AI:
         # düz metin: tüm sayılar
         return self._extract_numbers(s)
 
+    def code(self, examples, *, max_depth: int = 5) -> dict:
+        """ASI §12 — ÖRNEKTEN KANITLI PROGRAM SENTEZİ (saf Tantrium, dış model YOK).
+
+        Sertifikalı kod sentezleyici (`core/code_synthesis`, molecular_genesis deseni): operasyon-
+        operasyon beam arama, her aday örneklere karşı ÇALIŞTIRILIR → spec'i sağlayan = kanıtlı.
+        HALÜSİNASYON İMKÂNSIZ: doğrulamadan geçmeyen program elenir (Curry-Howard: spec'i sağlamak
+        = kanıt). LLM olası kod verir (incele/düzelt); biz GARANTİLİ-doğru veririz.
+
+        examples: [(girdi, çıktı), ...] (sayısal/aritmetik). DÜRÜST SINIR: dar ama gerçek —
+        iyi-tanımlı dönüşüm sentezi; primitif/derinlik genişledikçe kapsam büyür.
+        Döner: {program, source, verified, examples_passed, steps, answer, cert}.
+        """
+        from tantrium.core.code_synthesis import synthesize
+        cp = synthesize(list(examples), max_depth=max_depth)
+        if cp.verified:
+            ans = (f"Kanıtlı program: def solve(x): return {cp.program} — "
+                   f"{cp.examples_total}/{cp.examples_total} örnek DOĞRULANDI ({cp.steps} operasyon). "
+                   f"Tahmin değil, sertifikalı: her örneği sağladığı KANITLI. LLM olası kod "
+                   f"verir, sen incelersin; ben garantili-doğru veririm — halüsinasyon imkânsız.")
+        else:
+            ans = (f"Bu örneklerden SERTİFİKALI program kuramadım (en iyi "
+                   f"{cp.examples_passed}/{cp.examples_total}). Uydurmam — yalnız DOĞRULANMIŞ "
+                   f"program veririm (örnekleri genişlet ya da daha derin ara).")
+        return {"program": cp.program, "source": cp.source(), "verified": cp.verified,
+                "examples_passed": cp.examples_passed, "examples_total": cp.examples_total,
+                "steps": cp.steps, "answer": ans, "cert": cp}
+
     def read_data(self, source, *, analyze: str = "law") -> dict:
         """BELGE/VERİ → KÖKLÜ ANALİZ (ASI Pilar D) — yapısal sayısal veriyi DETERMİNİSTİK çıkar,
         dinamik-yasa/tahmin/anomali ile sertifikalı analiz et. CSV/JSON/liste/metin → sayı dizisi →
