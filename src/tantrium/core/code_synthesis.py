@@ -149,24 +149,31 @@ def _string_affix_prims(examples) -> list:
     return prims
 
 
-def _run(expr: str, inp, argnames: list):
-    """Adayı güvenli değerlendir (kapalı primitiflerden üretildiği için güvenli)."""
+def _run(expr: str, inp, argnames: list, extra_globals: dict | None = None):
+    """Adayı güvenli değerlendir (kapalı primitiflerden üretildiği için güvenli).
+
+    extra_globals: çok-fonksiyon kompozisyonunda önceki SERTİFİKALI fonksiyonlar (callable) —
+    sonraki fonksiyon onları çağırabilir (grounded: yalnız doğrulanmış fonksiyonlar enjekte edilir).
+    """
     try:
         if len(argnames) == 1:
             local = {argnames[0]: inp}
         else:
             local = dict(zip(argnames, inp))
-        return eval(expr, dict(_SAFE_GLOBALS), local)  # noqa: S307 (kapalı küme)
+        g = dict(_SAFE_GLOBALS)
+        if extra_globals:
+            g.update(extra_globals)
+        return eval(expr, g, local)  # noqa: S307 (kapalı küme)
     except Exception:
         return _SENTINEL
 
 
-def _score(expr: str, examples, argnames) -> tuple[int, float] | None:
+def _score(expr: str, examples, argnames, extra_globals: dict | None = None) -> tuple[int, float] | None:
     """(tam_eşleşme, -toplam_hata). Sayısal yakınlık ara adımları ödüllendirir."""
     exact = 0
     err = 0.0
     for inp, out in examples:
-        r = _run(expr, inp, argnames)
+        r = _run(expr, inp, argnames, extra_globals)
         if r is _SENTINEL:
             return None
         if r == out:
@@ -256,12 +263,14 @@ def _synthesize_recursive(examples) -> str | None:
 
 
 def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
-               primitives=None, extra_primitives=None) -> CertifiedProgram:
+               primitives=None, extra_primitives=None,
+               extra_globals: dict | None = None) -> CertifiedProgram:
     """examples: [(girdi, çıktı), ...] → CertifiedProgram (kanıtlı veya verified=False).
 
     Beam arama: argümanlardan başla, operasyon-operasyon genişlet, her aday örneklere karşı
     ÇALIŞTIRILIR. TÜM örneği sağlayan = sertifikalı çözüm. Bulunamazsa en yakın aday (verified=False)
     — UYDURMAZ. Sayı/liste/string/çoklu-argüman destekler.
+    extra_globals: çok-fonksiyon kompozisyonunda önceki sertifikalı fonksiyonlar (callable).
     """
     examples = list(examples)
     n = len(examples)
@@ -282,7 +291,7 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
     seeds = list(argnames)
     best_expr, best_key = seeds[0], (-1, -1e18)
     for s in seeds:
-        sc = _score(s, examples, argnames)
+        sc = _score(s, examples, argnames, extra_globals)
         if sc and sc[0] == n:
             return _make(s, 0, n)
         if sc and sc > best_key:
@@ -306,7 +315,7 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
                 if expr in seen:
                     continue
                 seen.add(expr)
-                sc = _score(expr, examples, argnames)
+                sc = _score(expr, examples, argnames, extra_globals)
                 if sc is None:
                     continue
                 if sc[0] == n:

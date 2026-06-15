@@ -2806,6 +2806,31 @@ class AI:
                 "examples_passed": cp.examples_passed, "examples_total": cp.examples_total,
                 "steps": cp.steps, "answer": ans, "cert": cp}
 
+    def code_app(self, specs, *, max_depth: int = 5, research: bool = False) -> dict:
+        """ASI §12 #3 — ÇOK-FONKSİYON UYGULAMA SENTEZİ (app = birçok sertifikalı fonksiyon).
+
+        Tek fonksiyon yetmez; gerçek uygulama BİRÇOK fonksiyondur, fonksiyonlar BİRBİRİNİ çağırır
+        ('bir yerden bir yere bağlantı var'). Her parça bağımsız sentezlenir + DOĞRULANIR (Curry-
+        Howard: örnek = kanıt); önceki sertifikalı fonksiyonlar sonrakine grounded primitif olur
+        (hayali fonksiyon çağrılamaz). HALÜSİNASYON İMKÂNSIZ: modül yalnız kanıtlı parçalardan kurulur.
+
+        specs: [{name, examples}|{name, examples, uses:[...]}|{name, calls:[...]}].
+        Döner: {source, verified, n_functions, functions, failed, answer, cert}.
+        """
+        from tantrium.core.code_compose import compose
+        m = compose(specs, max_depth=max_depth, research=research)
+        names = [n for n, _ in m.functions]
+        if m.verified:
+            ans = (f"Sertifikalı uygulama: {m.n_functions} fonksiyon ({', '.join(names)}) — "
+                   f"HEPSİ örneklerini sağladığı KANITLI, grounded kompozisyon (her fonksiyon yalnız "
+                   f"doğrulanmış parçalardan kurulur). LLM olası app verir, sen test edersin; ben "
+                   f"garantili-doğru modül veririm — halüsinasyon imkânsız.")
+        else:
+            ans = (f"Tam sertifikalı modül kuramadım — doğrulanamayan: {', '.join(m.failed)}. "
+                   f"Uydurmam; o fonksiyonların örneklerini genişlet ya da alt-fonksiyona böl.")
+        return {"source": m.source, "verified": m.verified, "n_functions": m.n_functions,
+                "functions": names, "failed": m.failed, "answer": ans, "cert": m}
+
     def ground_codebase(self, files: dict) -> dict:
         """ASI §12 P4 — repo'yu KÖKLÜ manifolda çevir (kod-tabanı = topoloji).
         files: {path: source}. Döner: {symbols, imports, functions, edges, n_symbols}."""
