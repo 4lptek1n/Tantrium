@@ -725,7 +725,7 @@ class ProductionEngine:
 
     # ── SAF MATEMATİK kapanışı (harf yok) ─────────────────────────────────
 
-    def produce_math(self, disease, build: bool = False) -> "MathDrug":
+    def produce_math(self, disease, build: bool = False, healthy=None) -> "MathDrug":
         """Hastalık → ilaç, TAMAMEN matematik (harf/SMILES yok). RH parçalarının zinciri.
 
         disease:
@@ -763,7 +763,19 @@ class ProductionEngine:
             mu_d = self._encode(str(disease))
             kd = FreeCumulants.from_moments(mu_d) if mu_d else FreeCumulants([0.0] * 6)
 
-        kh = self._canonical_kappa()
+        # Sağlıklı taban: KİŞİSELLEŞTİRME — None → genel ζ; DNA/moment → BU kişinin imzası.
+        if healthy is None:
+            kh = self._canonical_kappa()
+        elif isinstance(healthy, (list, tuple)) and healthy and all(
+                isinstance(x, (int, float)) for x in healthy):
+            kh = FreeCumulants.from_moments([float(x) for x in healthy])
+        else:                                    # DNA dizisi → gerçek biyofiziksel form
+            try:
+                from tantrium.perception.encode import encode_dna
+                kh = FreeCumulants.from_moments(
+                    [float(m) for m in encode_dna(str(healthy)).moments])
+            except Exception:
+                kh = self._canonical_kappa()
         # κ_drug = κ_healthy ⊟ κ_disease (serbest dekonvolüsyon) + gerçeklenebilir μ'ye düş
         mu_drug, gap = self._deconvolve_to_target(kd, kh)
         k_drug = FreeCumulants.from_moments(mu_drug)
@@ -845,7 +857,13 @@ class ProductionEngine:
 
         mu_drug = self._encode(str(drug))
         k_drug = FreeCumulants.from_moments(mu_drug) if mu_drug else FreeCumulants([0.0] * 6)
-        mu_dna = self._encode(str(dna))
+        # DNA GERÇEK matematiksel formunda (EIIP biyofiziksel sinyal spektrumu) — metin
+        # yolu değil. Genomun dizi yapısını (periyodiklik/kompozisyon) ölçer → kişiler ayrılır.
+        try:
+            from tantrium.perception.encode import encode_dna
+            mu_dna = [float(m) for m in encode_dna(str(dna)).moments]
+        except Exception:
+            mu_dna = self._encode(str(dna))
         k_dna = FreeCumulants.from_moments(mu_dna) if mu_dna else FreeCumulants([0.0] * 6)
         mu_dna_full = k_dna.to_moments_approx()
 

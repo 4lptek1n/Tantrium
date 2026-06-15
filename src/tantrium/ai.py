@@ -1142,7 +1142,7 @@ class AI:
             refine_rounds=refine_rounds, combination=combination, network=network,
             inject=inject, epsilon=epsilon, top_k=top_k)
 
-    def produce_math(self, disease, build: bool = False) -> "object":
+    def produce_math(self, disease, build: bool = False, healthy=None) -> "object":
         """Hastalık → ilaç, TAMAMEN MATEMATİK (harf/SMILES yok) — RH parçaları zinciri.
 
         disease:
@@ -1160,7 +1160,7 @@ class AI:
         Döner: MathDrug (.summary() insan-okunur; .eigenvalues = ilacın spektrumu).
         """
         from tantrium.core.production import ProductionEngine
-        return ProductionEngine(self.engine).produce_math(disease, build=build)
+        return ProductionEngine(self.engine).produce_math(disease, build=build, healthy=healthy)
 
     def cross(self, disease, drug: str, dna: str) -> "object":
         """ÜÇLÜ CROSS — sanal wet-lab: hastalık × ilaç × KİŞİNİN DNA'sı → işe yarar mı.

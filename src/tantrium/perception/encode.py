@@ -157,6 +157,31 @@ def encode_signal(
     return CodexObject(name=name, moments=moments, structure=structure)
 
 
+# EIIP — Electron-Ion Interaction Potential: nükleotitlerin GERÇEK biyofiziksel
+# değeri (genomik sinyal işlemenin standardı). DNA'yı "harf" değil FİZİKSEL SİNYAL
+# yapar → dizi periyodikliği/kompozisyonu/tekrarları momente geçer. İki farklı
+# genom → farklı otokorelasyon → farklı imza (metin yolu bunları benzer kılıyordu).
+_EIIP = {"A": 0.1260, "G": 0.0806, "C": 0.1340, "T": 0.1335, "U": 0.1335}
+
+
+def encode_dna(seq: str, name: str = "dna", lags: int = 23) -> CodexObject:
+    """DNA/RNA dizisi → GERÇEK matematiksel form (biyofiziksel sinyal spektrumu).
+
+    Bazlar EIIP değerlerine (elektron-iyon etkileşim potansiyeli) çevrilir → dizi
+    bir FİZİKSEL SİNYAL olur → encode_signal (Wiener–Khinchin otokorelasyon → moment).
+    Metin-yolu harf-bigramı okur (genomları benzer gösterir); bu yol dizinin GERÇEK
+    yapısını (periyodiklik, kompozisyon, tekrar) ölçer → farklı genom = farklı imza.
+    """
+    s = "".join(c for c in seq.upper() if c in _EIIP)
+    if len(s) < 2:
+        return encode_signal([0.0, 0.0], name=name, lags=1)
+    samples = [_EIIP[c] for c in s]
+    obj = encode_signal(samples, name=name, lags=min(lags, len(samples) - 1))
+    obj.structure.update({"modality": "dna", "n_bases": len(s),
+                          "gc_content": (s.count("G") + s.count("C")) / len(s)})
+    return obj
+
+
 def encode_signal_temporal(
     samples: Sequence[float],
     name: str = "signal",
