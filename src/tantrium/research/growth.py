@@ -953,6 +953,16 @@ class GrowthEngine:
     # Transitif kausal kural tablosu — ai.hypothesize ile TEK-GERÇEK kaynak (kopya yok)
     from tantrium.reasoning.causal_rules import (
         TRANSITIVE_CAUSAL as _SCI_TRANS, CAUSAL_PARADIGMS as _SCI_CAUSAL)
+    # JENERİK terimler: hipotez öznesi/nesnesi olamaz (role/complex/factor → anlamsız "bilim").
+    _SCI_GENERIC = frozenset({
+        "role", "complex", "factor", "system", "activity", "expression", "degradation",
+        "process", "function", "mechanism", "response", "regulation", "component",
+        "structure", "level", "type", "form", "member", "family", "group", "part",
+        "effect", "result", "change", "state", "region", "site", "domain", "unit",
+        "product", "aspects", "fundamental", "protein", "proteins", "gene", "genes",
+        "cell", "cells", "molecule", "pathway", "signal", "signals", "subunit",
+        "undefined", "unknown", "other", "various", "several", "many", "thing",
+    })
 
     def _science_consolidate(
         self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
@@ -965,7 +975,7 @@ class GrowthEngine:
             tau = self.engine.tau
             seeds: list = []
             for s, el in tau.edges.items():
-                if s.startswith("⟨") or len(s) > 40:
+                if s.startswith("⟨") or len(s) > 40 or s.lower() in self._SCI_GENERIC:
                     continue
                 cz = [e for e in el if getattr(e, "paradigm", "") in self._SCI_CAUSAL]
                 if len(cz) >= 2:
@@ -984,7 +994,9 @@ class GrowthEngine:
                             continue
                         c = str(getattr(e2, "target", ""))
                         derived = self._SCI_TRANS.get((e1.paradigm, p2))
-                        if not derived or c == s or c == b:
+                        if (not derived or c == s or c == b
+                                or c.lower() in self._SCI_GENERIC
+                                or b.lower() in self._SCI_GENERIC):
                             continue
                         key = (s, derived, c)
                         if key in seen:
