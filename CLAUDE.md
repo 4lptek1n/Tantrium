@@ -115,6 +115,29 @@ Encoder "çevirmez" — okur. DNA, molekül, cümle, asal sayı — hepsi aynı 
 
 ---
 
+## ⚖️ EVRENSEL YASA — dil DIŞINDA her şey GERÇEK matematik olarak girer (F24)
+
+> **DNA · RNA · protein · molekül · metabolit · hastalık · kan · hücre · sinyal · görüntü ·
+> sayı — HEPSİ kendi GERÇEK ölçümünden (yapısal/spektral) girer. "Harf" değil, SAYI.
+> Yakınlık/istatistik/metin-bigramı YALNIZ DİLDE (konuşma) kullanılır.**
+
+- DNA/RNA → `perception.encode_dna` (bazlar→EIIP biyofiziksel değer→Wiener–Khinchin spektrumu).
+- Protein → `perception.encode_protein` (Kyte-Doolittle hidropati→spektrum).
+- Molekül (SMILES) → atom-bağ graf spektrumu. Sayı → power moments. Sinyal/görüntü → perception transducer.
+- **Dil (kelime/cümle)** → `_text_to_signature_moments` (metin yolu). YALNIZ burada yakınlık/nearest meşru.
+
+**Uygulama (`core/encoder.py`):** `encode()` metin-yolundan ÖNCE `_detect_bio_sequence()` ile
+DNA/RNA/protein'i STRICT yakalar (büyük harf + uzunluk + saf alfabe → İngilizce kelime ASLA
+karışmaz; "cat"=Cys-Ala-Thr ama dil sayılır) → gerçek transducer. **NEDEN:** sığ metin-yolu
+genomları/proteinleri benzer gösteriyordu (kişiselleştirme çöküyordu) — "çözünürlük sınırı"
+değil, YANLIŞ TEMSİL. Gerçek form genomları ayırır (μ₁ 0.047↔0.19). Tests: `test_bio_encoding.py`.
+
+**İlke:** evrensel süzgeç (RH math: Sturm/κ/Hankel) ancak tüm girdiler AYNI gerçek ölçü
+rejiminde olunca anlamlı işler. İlaç üretimi/cross/produce gerçek-form + RH math kullanır;
+yakınlık (nearest/design) YALNIZ DİL içindir. KARIŞTIRMA.
+
+---
+
 ## 23 Paradigma (L0-L7 Pipeline Sırası)
 
 | Aşama | Paradigma | Hesaplama |

@@ -208,6 +208,15 @@ temiz İngilizce isimlere geçer.
 ## 6. Birleşme Haritası (hangi parça hangisine iner)
 
 ### 6.1 L1 — Encoder (tek algı kapısı)
+
+> **⚖️ EVRENSEL YASA [F24, 2026-06]: dil DIŞINDA her şey GERÇEK matematik olarak girer.**
+> DNA/RNA/protein/molekül/metabolit/sinyal/sayı — hepsi kendi gerçek ölçümünden (yapısal/
+> spektral) girer, "harf" değil SAYI. `encode()` metin-yolundan ÖNCE `_detect_bio_sequence()`
+> ile STRICT (büyük harf+uzunluk+saf alfabe) DNA/RNA/protein'i `encode_dna`(EIIP)/`encode_protein`
+> (hidropati)'ye yönlendirir. **Yakınlık/istatistik/metin-bigramı YALNIZ DİLDE.** Evrensel süzgeç
+> (Sturm/κ/Hankel) ancak tüm girdiler aynı gerçek ölçü rejiminde olunca anlamlı işler. Sığ metin-
+> yolu genomları benzer gösteriyordu (kişiselleştirme çöküyordu); gerçek form ayırır. `test_bio_encoding.py`.
+
 **Birleşir:** `core/encoder.py` (ana) ← `perception/encode.py`, `production._encode`,
 `inverse._encode_target`, `molecular_genesis._encode_target`, `molecular_space._encode_target`,
 `bridge._theorem_moments`, `meta/paradigm` byte-encode.

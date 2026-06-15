@@ -169,6 +169,32 @@ def _is_valid_smiles(s: str) -> bool:
         return False
 
 
+_DNA_ALPHA = set("ACGT")
+_RNA_ALPHA = set("ACGU")
+_AA_ALPHA = set("ACDEFGHIKLMNPQRSTVWY")
+
+
+def _detect_bio_sequence(s: str):
+    """STRICT biyolojik dizi tespiti → 'dna'|'rna'|'protein'|None.
+
+    EVRENSEL YASA: dil dışı her şey gerçek formuyla girer. Ama tespit STRICT olmalı —
+    İngilizce kelime ('cat'=Cys-Ala-Thr) yanlışlıkla peptide sayılmamalı. Bu yüzden:
+    BÜYÜK HARF zorunlu (kelimeler küçük harf/karışık), uzunluk eşiği, saf alfabe.
+    """
+    if not s or not s.isupper() or any(c.isspace() for c in s):
+        return None
+    chars = set(s)
+    n = len(s)
+    if n >= 16 and chars <= _DNA_ALPHA:
+        return "dna"
+    if n >= 16 and chars <= _RNA_ALPHA and "U" in chars:
+        return "rna"
+    # protein: ≥25 rezidü, saf 20-AA, DNA/RNA-DIŞI harf içermeli (yoksa o DNA'dır)
+    if n >= 25 and chars <= _AA_ALPHA and (chars - _DNA_ALPHA - {"U"}):
+        return "protein"
+    return None
+
+
 def _char_signature(c: str) -> float:
     """Karaktere deterministik, iyi-yayılmış [0.3, 1.0] imza değeri.
 
@@ -475,6 +501,26 @@ class UniversalEncoder:
                 "moment_path": "power_moments_fast",
             })
             return CodexObject(name=obj_name, moments=moments, structure=structure)
+
+        # ── EVRENSEL YASA: dil DIŞINDA her şey GERÇEK matematiksel formuyla girer ──
+        # DNA/RNA/protein dizileri "harf" değildir — gerçek fiziksel sinyaldir (EIIP /
+        # hidropati → spektrum). Bunları metin-yolundan (bigram istatistiği) ÖNCE yakala.
+        # YALNIZ dil (kelime/cümle) metin-yoluna düşer. Tespit STRICT (büyük harf + uzunluk +
+        # alfabe) → İngilizce kelime asla biyolojik diziye karışmaz.
+        if isinstance(input, str):
+            bio = _detect_bio_sequence(input)
+            if bio is not None:
+                try:
+                    if bio in ("dna", "rna"):
+                        from tantrium.perception.encode import encode_dna
+                        obj = encode_dna(input, name=obj_name)
+                    else:
+                        from tantrium.perception.encode import encode_protein
+                        obj = encode_protein(input, name=obj_name)
+                    obj.structure.setdefault("moment_path", f"bio_{bio}")
+                    return obj
+                except Exception:
+                    pass
 
         # Metin yolu: pozisyon+codepoint imza momentleri (encoder collision KÖK çözümü).
         # SMILES gibi eigenvalue-normalize [0,1] Hausdorff; Hankel-rekonstrüksiyon ile

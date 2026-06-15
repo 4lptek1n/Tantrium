@@ -54,6 +54,12 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   protein/pointer 0.62). `_char_signature` çarpımsal-hash kimlik yayar; pozisyon anagramı kırar.
   `_EPS=0.02` uniform harman → az-karakterli kelimede Hankel-PSD (ALEPH geçer). `encode()` str→imza yolu.
   **MİGRASYON:** `tools/migrate_text_encoding.py` (27853 metin kavramı yeni encoding, 16330 molekül korundu).
+- **EVRENSEL YASA [F24, 2026-06]:** `encode()` metin-yolundan ÖNCE `_detect_bio_sequence()` ile
+  DNA/RNA/protein dizilerini STRICT yakalar (büyük harf + uzunluk≥16/25 + saf alfabe → İngilizce
+  kelime ASLA karışmaz) → `perception.encode_dna` (EIIP) / `encode_protein` (Kyte-Doolittle).
+  **Dil dışı her şey gerçek matematiksel formuyla girer, yakınlık/istatistik YALNIZ dilde.**
+  Sığ metin-yolu genomları benzer gösteriyordu (μ₁ sıkışık) → gerçek form ayırır (0.047↔0.19).
+  Kişiye-özel ilaç/cross bunu gerektiriyordu. `test_bio_encoding.py` (4).
 - **Tekrar:** Dağınık `_encode_target`'lar bunu ÇAĞIRAN kısayol; moment matematiği burada tek.
 
 ### ✅ core/topology_encode.py — ANLAM kanalı (ilişkisel kodlama, YENİ)
@@ -83,6 +89,9 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   (Bochner PSD); görüntü=DC-çıkarma+downsample; temporal=pencereleme (zamanı KORUR,
   otokorelasyon zamanı yok eder). Hepsi [0,1] Hausdorff → dil/molekülle aynı bölge.
 - **Gerçek hayat:** Göz/kulak — ses ve görüntüyü kelimeyle aynı uzaya çeker.
+- **F24 [2026-06] — biyolojik transducer'lar:** `encode_dna` (bazlar→EIIP elektron-iyon potansiyeli
+  →sinyal spektrumu), `encode_protein` (amino asit→Kyte-Doolittle hidropati→spektrum). DNA/protein
+  artık "harf" değil FİZİKSEL SİNYAL — `encoder._detect_bio_sequence` buraya yönlendirir (EVRENSEL YASA).
 - **Nüans (DÜZELTME):** "float vs Fraction yarık" YANLIŞTI — çıktı Fraction, kasıtlı
   karşılaştırılabilir. float yalnız ara-hesap (büyük matriste determinant patlamasını önler).
 - **Tekrar:** YOK — dönüştürücüler farklı fizik. Tek `Encoder.encode` arkasına yönlendirilir,

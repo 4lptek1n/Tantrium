@@ -182,6 +182,31 @@ def encode_dna(seq: str, name: str = "dna", lags: int = 23) -> CodexObject:
     return obj
 
 
+# Kyte-Doolittle hidropati — amino asitlerin GERÇEK fiziksel değeri (protein dizisini
+# fiziksel sinyale çevirir; harf değil). Protein → hidropati profili → spektrum.
+_KD_HYDROPATHY = {
+    "A": 1.8, "R": -4.5, "N": -3.5, "D": -3.5, "C": 2.5, "E": -3.5, "Q": -3.5,
+    "G": -0.4, "H": -3.2, "I": 4.5, "L": 3.8, "K": -3.9, "M": 1.9, "F": 2.8,
+    "P": -1.6, "S": -0.8, "T": -0.7, "W": -0.9, "Y": -1.3, "V": 4.2,
+}
+
+
+def encode_protein(seq: str, name: str = "protein", lags: int = 23) -> CodexObject:
+    """Protein dizisi → GERÇEK matematiksel form (hidropati sinyal spektrumu).
+
+    Amino asitler Kyte-Doolittle hidropati değerlerine çevrilir → dizi bir FİZİKSEL
+    SİNYAL (katlanma eğilimini taşıyan) → encode_signal. Metin-yolu harf okur; bu yol
+    proteinin fiziksel yapısını (hidrofobik periyodiklik, motif) ölçer.
+    """
+    s = "".join(c for c in seq.upper() if c in _KD_HYDROPATHY)
+    if len(s) < 2:
+        return encode_signal([0.0, 0.0], name=name, lags=1)
+    samples = [_KD_HYDROPATHY[c] for c in s]
+    obj = encode_signal(samples, name=name, lags=min(lags, len(samples) - 1))
+    obj.structure.update({"modality": "protein", "n_residues": len(s)})
+    return obj
+
+
 def encode_signal_temporal(
     samples: Sequence[float],
     name: str = "signal",
