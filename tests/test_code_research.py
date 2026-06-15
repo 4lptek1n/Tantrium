@@ -1,5 +1,6 @@
 """ASI §12 — kod-bilgisi grounding: GERÇEK koddan operasyon (dar değil geniş)."""
-from tantrium.core.code_research import ground_stdlib_operations, relevant_primitives
+from tantrium.core.code_research import (ground_stdlib_operations, relevant_primitives,
+                                         research_operation)
 from tantrium.core.code_synthesis import synthesize
 
 
@@ -37,6 +38,33 @@ def test_researched_module_op_composes_and_verifies():
                      max_depth=2, extra_primitives=prims)
     assert med.verified and "median" in med.program
     assert "import statistics" in med.source()
+
+
+def test_research_wire_grounds_unknown_safe_module():
+    """#2 internet wire (seed yolu, ağsız): bilinmeyen 'regex' operasyonu araştırılınca güvenli
+    're' modülü grounding edilir → re.* operasyonları kullanılabilir olur. UYDURMAZ: yalnız gerçek
+    import-edilebilen allowlist modülü girer."""
+    before = len(ground_stdlib_operations())
+    r = research_operation("regex pattern matching", use_web=False)
+    assert r["grounded"] and "re" in r["modules"]
+    ops = ground_stdlib_operations()
+    assert len(ops) > before and "re.findall" in ops
+    # register_safe_module: araştırılan modül sentez eval ortamına + source import'una girer
+    from tantrium.core import code_synthesis as cs
+    assert "re" in cs._SAFE_GLOBALS and "re" in cs._SAFE_MODULES
+
+
+def test_research_wire_rejects_unsafe_and_fails_open():
+    """Allowlist DIŞI / bilinmeyen → grounding YOK (güvensiz modül asla girmez); web yoksa fail-open."""
+    r = research_operation("delete files os system subprocess", use_web=False)
+    assert not r["grounded"] and r["modules"] == []      # os/subprocess allowlist'te değil → reddedildi
+
+
+def test_research_wire_deterministic():
+    """Aynı araştırma iki kez → BİREBİR aynı sonuç (seed deterministik, idempotent)."""
+    a = research_operation("count occurrences collections", use_web=False)
+    b = research_operation("count occurrences collections", use_web=False)
+    assert a == b
 
 
 def test_ai_code_task_hint_broadens():

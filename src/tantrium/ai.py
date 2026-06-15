@@ -2773,7 +2773,8 @@ class AI:
         # düz metin: tüm sayılar
         return self._extract_numbers(s)
 
-    def code(self, examples, *, task: str = "", max_depth: int = 5) -> dict:
+    def code(self, examples, *, task: str = "", max_depth: int = 5,
+             research: bool = True) -> dict:
         """ASI §12 — ÖRNEKTEN KANITLI PROGRAM SENTEZİ (saf Tantrium, dış model YOK).
 
         Sertifikalı kod sentezleyici (`core/code_synthesis`, molecular_genesis deseni): operasyon-
@@ -2781,13 +2782,16 @@ class AI:
         HALÜSİNASYON İMKÂNSIZ: doğrulamadan geçmeyen program elenir (Curry-Howard: spec'i sağlamak
         = kanıt). GENİŞ: `task` ipucu verilirse GERÇEK koddan (Python stdlib) grounded operasyonlar
         (sqrt/factorial/sorted/...) primitif havuzuna eklenir — 'dar' değil, gerçek-kod-grounded.
+        research=True: bilinmeyen operasyon istenirse internetten/seed'den GÜVENLİ modül araştırır
+        (#2 wire) → grounding genişler (re/collections/datetime…), sonra sentezler.
 
         examples: [(girdi, çıktı), ...]. task: NL ipucu (grounded operasyon seçimi için).
         Döner: {program, source, verified, examples_passed, steps, answer, cert}.
         """
         from tantrium.core.code_synthesis import synthesize
         from tantrium.core.code_research import relevant_primitives
-        extra, _imps = relevant_primitives(task, examples) if task else ([], set())
+        extra, _imps = (relevant_primitives(task, examples, research=research)
+                        if task else ([], set()))
         cp = synthesize(list(examples), max_depth=max_depth, extra_primitives=extra)
         if cp.verified:
             ans = (f"Kanıtlı program: def solve(x): return {cp.program} — "

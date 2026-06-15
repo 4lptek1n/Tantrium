@@ -40,10 +40,18 @@ class CertifiedProgram:
 _SENTINEL = object()
 import importlib
 
-# Güvenli (I/O yok) stdlib modülleri — grounded operasyonlar bunlardan introspection ile gelir.
-# code_research._RESEARCH_MODULES ile AYNI küme + math; eval ve üretilen source ikisi de görür.
-_SAFE_MODULES = ("math", "statistics", "itertools", "functools", "operator", "string")
-_MODULE_OBJS = {}
+# Güvenli (I/O-yok / saf) stdlib modülleri — grounded operasyonlar bunlardan introspection ile gelir.
+# code_research._RESEARCH_MODULES ile AYNI çekirdek + math. Araştırma wire'ı (research_operation)
+# _SAFE_RESEARCH_ALLOWLIST'ten YENİ modül ekleyebilir (register_safe_module) — yalnız bu güvenli küme.
+_SAFE_MODULES: tuple = ("math", "statistics", "itertools", "functools", "operator", "string")
+# Araştırmayla genişletilebilen güvenli modüller (ağdan/seed'den keşfedilince eklenir). Saf/
+# deterministik, I/O kenarda kalır (synthesize yalnız değer-dönüşü kullanır; random/os/sys DIŞ).
+_SAFE_RESEARCH_ALLOWLIST: frozenset = frozenset({
+    "math", "statistics", "itertools", "functools", "operator", "string",
+    "re", "json", "collections", "datetime", "textwrap", "unicodedata",
+    "fractions", "decimal", "calendar", "bisect", "heapq", "cmath", "html", "base64",
+})
+_MODULE_OBJS: dict = {}
 for _mn in _SAFE_MODULES:
     try:
         _MODULE_OBJS[_mn] = importlib.import_module(_mn)
@@ -57,6 +65,27 @@ _SAFE_GLOBALS = {
     "reversed": reversed, "any": any, "all": all,
     **_MODULE_OBJS,
 }
+
+
+def register_safe_module(name: str):
+    """Araştırma wire'ı için: ALLOWLIST'teki güvenli bir modülü import edip eval ortamına +
+    source() import-listesine ekle. Döner: modül objesi (başarısızsa None). Allowlist DIŞI → None
+    (uydurma/güvensiz modül asla girmez — grounding hallucination-proof)."""
+    global _SAFE_MODULES
+    if name not in _SAFE_RESEARCH_ALLOWLIST:
+        return None
+    mod = _MODULE_OBJS.get(name)
+    if mod is not None:
+        return mod
+    try:
+        mod = importlib.import_module(name)
+    except Exception:
+        return None
+    _MODULE_OBJS[name] = mod
+    _SAFE_GLOBALS[name] = mod
+    if name not in _SAFE_MODULES:
+        _SAFE_MODULES = _SAFE_MODULES + (name,)
+    return mod
 
 # ── Tip-bazlı primitif şablonları ({c} = mevcut aday; {a}/{b} = argümanlar) ──
 _NUM_UNARY = [
