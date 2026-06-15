@@ -77,3 +77,29 @@ def test_synthesize_two_args():
     add = synthesize([((1, 2), 3), ((5, 5), 10), ((10, 3), 13)])
     assert add.verified and add.args == ["x", "y"]
     assert synthesize([((2, 3), 6), ((4, 5), 20), ((1, 9), 9)]).verified        # x*y
+
+
+# ── S4 sınır aşma: ÖZYİNELEME (faktöriyel/fibonacci — kontrol akışı) ──
+
+def test_synthesize_factorial():
+    """Faktöriyel: gerçek özyinelemeli program, exec ile sertifikalı."""
+    cp = synthesize([(1, 1), (2, 2), (3, 6), (4, 24), (5, 120)])
+    assert cp.verified and "solve(x - 1)" in cp.source()
+    ns = {"__builtins__": {"abs": abs, "max": max, "min": min}}
+    exec(cp.source(), ns)                 # tek-namespace → solve kendini bulur
+    assert ns["solve"](6) == 720          # görülmemiş girdi de doğru
+
+
+def test_synthesize_fibonacci():
+    """Fibonacci: iki-dallı özyineleme sentezlenir."""
+    cp = synthesize([(1, 1), (2, 1), (3, 2), (4, 3), (5, 5), (6, 8), (7, 13)])
+    assert cp.verified
+    ns = {"__builtins__": {}}
+    exec(cp.source(), ns)
+    assert ns["solve"](8) == 21
+
+
+def test_recursive_does_not_break_expression():
+    """Regresyon: tek-ifade hâlâ ifade olarak döner (özyinelemeye düşmez)."""
+    cp = synthesize([(1, 3), (2, 5), (3, 7)])
+    assert cp.verified and cp.full_source == "" and "solve" not in cp.program

@@ -28,8 +28,11 @@ class CertifiedProgram:
     steps: int                         # arama derinliği (kaç operasyon)
     args: list = field(default_factory=lambda: ["x"])
     moments: list = field(default_factory=list)   # AST-graf imzası (manifold grounding)
+    full_source: str = ""                         # özyinelemeli/çok-satırlı için TAM kaynak
 
     def source(self) -> str:
+        if self.full_source:
+            return self.full_source
         return f"def solve({', '.join(self.args)}):\n    return {self.program}"
 
 
@@ -147,6 +150,68 @@ def _primitive_pool(examples, argnames) -> list:
     return pool or _NUM_UNARY
 
 
+# ── S4: ÖZYİNELEME sentezi (faktöriyel/fibonacci — tek-ifade sentezleyicinin ötesi) ──
+# Yapısal şablon: solve(x) = BASE if x<=k else REC.  REC = solve(x-1)/solve(x-2)/x bileşimi.
+_REC_EXPRS = [
+    "x * solve(x - 1)",                  # faktöriyel
+    "solve(x - 1) + solve(x - 2)",       # fibonacci
+    "solve(x - 1) * 2",
+    "solve(x - 1) + x",
+    "x + solve(x - 1)",
+    "solve(x - 1) + 1",
+    "solve(x - 1) * x",
+    "2 * solve(x - 1)",
+    "solve(x - 1) + solve(x - 1)",
+    "solve(x - 1) - 1",
+    "solve(x - 1) + solve(x - 2) + 1",
+    "max(x, solve(x - 1))",
+]
+
+
+def _verify_recursive(src: str, examples) -> bool:
+    """Özyinelemeli adayı exec'leyip örneklere karşı doğrula (recursion-guard'lı, güvenli)."""
+    import sys
+    ns = {"__builtins__": {"abs": abs, "max": max, "min": min, "sum": sum, "len": len}}
+    try:
+        exec(src, ns)  # noqa: S102 (kapalı şablon)
+        solve = ns.get("solve")
+        if solve is None:
+            return False
+    except Exception:
+        return False
+    old = sys.getrecursionlimit()
+    sys.setrecursionlimit(1500)
+    try:
+        for inp, out in examples:
+            try:
+                if solve(inp) != out:
+                    return False
+            except (RecursionError, Exception):
+                return False
+        return True
+    finally:
+        sys.setrecursionlimit(old)
+
+
+def _synthesize_recursive(examples) -> str | None:
+    """Tamsayı tek-argüman için özyinelemeli program sentezle (yapısal şablon araması)."""
+    if not examples or not all(
+            isinstance(i, int) and not isinstance(i, bool) for i, _ in examples):
+        return None
+    for base_n in (0, 1, 2):
+        base_vals = {0, 1, "x"}
+        for i, o in examples:
+            if i <= base_n:
+                base_vals.add(o)
+        for base_v in base_vals:
+            for rec in _REC_EXPRS:
+                src = (f"def solve(x):\n    if x <= {base_n}:\n        return {base_v}\n"
+                       f"    return {rec}")
+                if _verify_recursive(src, examples):
+                    return src
+    return None
+
+
 def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
                primitives=None) -> CertifiedProgram:
     """examples: [(girdi, çıktı), ...] → CertifiedProgram (kanıtlı veya verified=False).
@@ -208,4 +273,13 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
             break
         cands.sort(key=lambda t: (-t[1][0], -t[1][1], len(t[0]), t[0]))
         beam = [e for e, _ in cands[:beam_width]]
+
+    # S4: tek-ifade bulunamadıysa ÖZYİNELEME dene (faktöriyel/fibonacci)
+    rec_src = _synthesize_recursive(examples)
+    if rec_src is not None:
+        from tantrium.core.encoder import _code_to_graph_moments
+        mom = _code_to_graph_moments(rec_src) or []
+        return CertifiedProgram(program="<özyinelemeli>", verified=True, examples_passed=n,
+                                examples_total=n, steps=-1, args=list(argnames),
+                                moments=[float(m) for m in mom], full_source=rec_src)
     return _make(best_expr, max_depth, max(best_key[0], 0))
