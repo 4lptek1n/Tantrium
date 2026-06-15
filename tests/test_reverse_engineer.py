@@ -71,6 +71,34 @@ def test_reverse_engineer_detects_tampering():
     assert bad.n_modes > clean.n_modes        # manipülasyon rank'ı fırlatır
 
 
+def test_discover_law_fibonacci():
+    """Ham Fibonacci → yasa (x[n]=x[n-1]+x[n-2]) + altın oran + görülmemiş tahmin KESİN."""
+    ai = tantrium.AI()
+    fib = [1, 1]
+    while len(fib) < 20:
+        fib.append(fib[-1] + fib[-2])
+    r = ai.discover_law([float(x) for x in fib], name="fib", holdout=4)
+    assert r.order == 2, "Fibonacci 2. mertebe"
+    # yineleme katsayıları ≈ [1, 1]
+    assert all(abs(c - 1.0) < 1e-3 for c in r.recurrence)
+    # altın oran modlar arasında
+    phi = (1 + 5 ** 0.5) / 2
+    reals = [m if isinstance(m, float) else m.real for m in r.modes]
+    assert any(abs(m - phi) < 1e-3 for m in reals), "altın oran keşfedilmeli"
+    # görülmemiş geleceği KESİN tahmin etti = yasa sertifikası
+    assert r.law_holds and r.predict_error < 1e-4
+
+
+def test_discover_law_exponential():
+    """Üstel bozunum → makine bozunum sabitini bulup geleceği tahmin etmeli."""
+    import numpy as np
+    ai = tantrium.AI()
+    dec = np.exp(-0.2 * np.arange(24)).tolist()
+    r = ai.discover_law(dec, name="bozunum", holdout=5)
+    assert r.law_holds, "üstel yasa tahmini tutmalı"
+    assert r.predict_error < 1e-3
+
+
 def test_summary_and_certificate():
     """UniverseReconstruction sertifika alanları + okunur özet döner."""
     ai = tantrium.AI()

@@ -315,6 +315,47 @@ class UniverseReconstruction:
         ])
 
 
+@dataclass
+class LawDiscovery:
+    """ai.discover_law() — HAM VERİDEN DOĞA YASASI KEŞFİ (domain-kör, sertifikalı).
+
+    Hiçbir formül/etiket verilmeden, yalnız gözlemlerden o veriyi YÖNETEN yasayı
+    (lineer yineleme + karakteristik kökler = dinamik modlar) çıkarır, sonra GÖRÜLMEMİŞ
+    geleceği tahmin eder ve doğrular. Kronecker/Prony: ham dizi r üstelin toplamıysa
+    Hankel rank r → yasa r. Fibonacci→altın oran, sönümlü salınım→frekans+sönüm, üstel→sabit.
+
+      order      : yasanın mertebesi (kaç önceki terime bağlı = Hankel rank)
+      modes      : karakteristik kökler (dinamik modlar: büyüme/sönüm/salınım)
+      recurrence : keşfedilen yineleme katsayıları  x[n]=Σ c_i x[n-i]
+      dynamics   : modların insan-okunur yorumu
+      forecast   : keşfedilen yasayla tahmin edilen sonraki değerler
+      predict_error: GÖRÜLMEMİŞ kuyruğa karşı tahmin hatası (yasanın SERTİFİKASI)
+      law_holds  : tahmin gerçeği tutuyor mu (hata küçük)
+    """
+    name: str
+    order: int
+    modes: list = field(default_factory=list)
+    recurrence: list = field(default_factory=list)
+    dynamics: list = field(default_factory=list)
+    forecast: list = field(default_factory=list)
+    predict_error: float = 0.0
+    law_holds: bool = False
+
+    def summary(self) -> str:
+        lines = [f"══ {self.name} — KEŞFEDİLEN YASA ══",
+                 f"  mertebe (yineleme derinliği): {self.order}"]
+        if self.recurrence:
+            terms = " + ".join(f"{c:+.4f}·x[n-{i+1}]" for i, c in enumerate(self.recurrence))
+            lines.append(f"  yineleme: x[n] = {terms}")
+        for d in self.dynamics:
+            lines.append(f"  • {d}")
+        if self.forecast:
+            lines.append(f"  tahmin (görülmemiş): {[round(float(x),4) for x in self.forecast]}")
+        lines.append(f"  tahmin hatası: {self.predict_error:.2e}  → "
+                     f"{'✓ YASA GERÇEĞİ TUTUYOR' if self.law_holds else '✗ tutmuyor'}")
+        return "\n".join(lines)
+
+
 # ─── Ana AI sınıfı ───────────────────────────────────────────────────────────
 
 class AI:
@@ -678,6 +719,83 @@ class AI:
             realizable=bool(psd),
             exact=bool(rec.well_determined),
         )
+
+    def discover_law(self, observations, name: str = "veri",
+                     holdout: int = 4) -> "LawDiscovery":
+        """HAM VERİDEN DOĞA YASASI KEŞFİ — hiçbir formül verilmeden, domain-kör.
+
+        Gözlemleri YÖNETEN lineer yineleme + karakteristik kökleri (dinamik modlar) çıkarır
+        (Kronecker/Prony), sonra GÖRÜLMEMİŞ kuyruğu tahmin edip doğrular. Keşfet + tahmin =
+        sertifika. Fibonacci→altın oran, sönümlü salınım→frekans+sönüm, üstel bozunum→sabit.
+
+        observations: ham sayı dizisi (zaman serisi / ölçüm / dizi).
+        holdout     : son kaç değer SAKLANSIN (yasa onları tahmin edip doğrulayacak).
+        Döner: LawDiscovery (.summary(); .recurrence = yasa; .forecast = tahmin).
+        """
+        import numpy as np, math
+        from tantrium.core.structure import structural_decomposition
+        x = [float(v) for v in observations]
+        h = max(0, min(holdout, len(x) - 4))
+        fit = x[:len(x) - h] if h else x
+        sd = structural_decomposition(fit, tol=1e-6)
+        modes = sd.modes
+        r = max(1, len(modes))
+
+        # Karakteristik kökler → lineer yineleme katsayıları (x[n]=Σ c_i x[n-i])
+        try:
+            poly = np.poly(np.array([complex(m) for m in modes]))  # [1,-c1,-c2,...]
+            recurrence = [float((-poly[i + 1]).real) for i in range(len(poly) - 1)]
+        except Exception:
+            recurrence = []
+
+        # Modların yorumu (büyüme/sönüm/salınım)
+        dynamics, seen = [], set()
+        for m in modes:
+            z = complex(m)
+            if abs(z.imag) < 1e-6:
+                rate = z.real
+                if abs(rate - 1) < 1e-4:
+                    desc = "sabit mod (λ≈1)"
+                elif rate > 0:
+                    desc = (f"büyüme oranı λ={rate:.5f}"
+                            + (f"  (= altın oran φ!)" if abs(rate - (1 + 5 ** .5) / 2) < 1e-3 else ""))
+                    if rate < 1:
+                        desc = f"üstel bozunum λ={rate:.5f} (sabit={-math.log(rate):.4f})"
+                else:
+                    desc = f"salınımlı mod λ={rate:.5f}"
+            else:
+                if z.imag <= 0:
+                    continue
+                freq = abs(math.atan2(z.imag, z.real)); decay = -math.log(abs(z))
+                key = (round(freq, 4), round(decay, 4))
+                if key in seen:
+                    continue
+                seen.add(key)
+                desc = f"salınım: frekans={freq:.4f}, sönüm={decay:.4f}"
+            dynamics.append(desc)
+
+        # Keşfedilen yasayla GÖRÜLMEMİŞ geleceği tahmin et + doğrula
+        forecast, perr, holds = [], 0.0, False
+        if recurrence:
+            seq = list(fit)
+            k = h if h else 4
+            for _ in range(k):
+                nxt = sum(c * seq[-(i + 1)] for i, c in enumerate(recurrence))
+                seq.append(nxt); forecast.append(nxt)
+            if h:
+                actual = x[len(x) - h:]
+                denom = max(1e-9, max(abs(a) for a in actual))
+                perr = sum(abs(f - a) for f, a in zip(forecast, actual)) / (len(actual) * denom)
+                holds = perr < 1e-3
+            else:
+                holds = sd.structured
+        return LawDiscovery(
+            name=str(name), order=r,
+            modes=[round(m.real, 6) if abs(m.imag) < 1e-9 else complex(round(m.real, 4), round(m.imag, 4))
+                   for m in modes],
+            recurrence=[round(c, 6) for c in recurrence],
+            dynamics=dynamics, forecast=forecast,
+            predict_error=float(perr), law_holds=bool(holds))
 
     def collisions(
         self,
