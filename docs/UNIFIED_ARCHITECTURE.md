@@ -624,10 +624,17 @@ GÖREV/SPEC (girdi-çıktı örneği · test · property)
 | Güven yok (production'da insan-review şart) | **Garanti** (köklü + test-geçer + sertifikalı) |
 
 ### Sınırlı plan (4 faz — bitişi belli, üçü mevcut desenler)
-- **P1 — Kod-modalitesi encoder** (`_code_to_graph_moments`): SMILES encoder deseni. Çekirdek.
-- **P2 — Code Synthesizer** (terim-uzayı certified beam): molecular_genesis/design_peptide deseni.
-- **P3 — Doğrulama**: tip-kontrol + test-geçidi + köklülük + çelişki (grounding/truth/corrigibility).
-- **P4 — Agentic sarmal**: görev→plan→sentez→doğrula→PR (Cognition/Actor/Goal).
+- **P1 — Kod-modalitesi encoder** [✅ KURULDU]: `encoder._code_to_graph_moments` (kaynak→AST→graf→
+  moment, SMILES deseni) + `_is_code_snippet` (STRICT) + `encode()` yönlendirme. KANIT: kod YAPISAL
+  topolojiyle girer — isim-değişmez (refactor denkliği, mesafe 0.0), yapı-duyarlı. Tests +4.
+- **P2 — Code Synthesizer** [✅ KURULDU]: `core/code_synthesis.synthesize` + `ai.code(examples)` —
+  operasyon-operasyon beam (molecular_genesis deseni). Canlı: [(1,3),(2,5),(3,7)]→(x*2)+1 KANITLI;
+  x²+x→(x+1)*x (yaratıcı faktör); imkânsız→dürüst başarısızlık. Tests +6.
+- **P3 — Doğrulama** [✅ KURULDU, sentezde içkin]: her aday örneklere karşı ÇALIŞTIRILIR (deterministik
+  ground-truth = Curry-Howard: spec'i sağlamak=kanıt) → halüsinasyon imkânsız. [tip-kontrol +
+  kod-tabanı köklülük + çelişki, gerçek repo bağlamında P4 ile genişler]
+- **P4 — Agentic sarmal** [planlı]: görev→plan→sentez→doğrula→PR (Cognition/Actor/Goal) + gerçek
+  repo grounding (L3 kod-tabanı manifoldu) + izole test-runner.
 
 ### Dürüst sınırlar
 - Sıfırdan sertifikalı kod-sentezi ZOR (arama-uzayı patlaması) → DAR başla: iyi-tanımlı, testli

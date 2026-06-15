@@ -60,6 +60,11 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   **Dil dışı her şey gerçek matematiksel formuyla girer, yakınlık/istatistik YALNIZ dilde.**
   Sığ metin-yolu genomları benzer gösteriyordu (μ₁ sıkışık) → gerçek form ayırır (0.047↔0.19).
   Kişiye-özel ilaç/cross bunu gerektiriyordu. `test_bio_encoding.py` (4).
+- **Kademe ASI §12 P1 — KOD MODALİTESİ [2026-06]:** `_code_to_graph_moments` (kaynak→AST→düğüm-kenar
+  graf→A[köşegen=düğüm-tipi, kenar=parent-child]→G=AᵀA→[0,1] Hausdorff). `_smiles_to_graph_moments`'in
+  BİREBİR kardeşi (kod = formal dil = graf). `_is_code_snippet` STRICT tespit (işaret+ast.parse+≥5
+  düğüm) → kelime/cümle/molekül kod sayılmaz. `encode()` bio/SMILES'ten SONRA, metin-imzasından ÖNCE
+  yönlendirir (`moment_path='code_ast_graph'`). KANIT: isim-değişmez (refactor denkliği, mesafe 0.0).
 - **Tekrar:** Dağınık `_encode_target`'lar bunu ÇAĞIRAN kısayol; moment matematiği burada tek.
 
 ### ✅ core/topology_encode.py — ANLAM kanalı (ilişkisel kodlama, YENİ)
@@ -293,6 +298,17 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **İş:** `design`: hedef→manifold araması→fragment mutasyon(RDKit,Lipinski)→sertifika→3D.
   `_make_3d` artık `molecular_3d.embed_3d_sdf`'e delege (remove_hs=True + SMILES alanı).
 - **Tekrar:** YOK. Farklı strateji. `_encode_target` core encode (ince sarmalayıcı).
+
+### ✅ core/code_synthesis.py — SERTİFİKALI KOD SENTEZİ [YENİ — ASI §12 P2, kod ajanı]
+- **İş:** `synthesize(examples) → CertifiedProgram` — ÖRNEKTEN kanıtlı program. molecular_genesis'in
+  TERİM-UZAYI kardeşi: operasyon-operasyon beam (`_NUM_PRIMITIVES`), her aday örneklere karşı
+  ÇALIŞTIRILIR (`_score`: tam-eşleşme + sayısal yakınlık), TÜM örneği sağlayan = sertifikalı.
+- **Güç:** Curry-Howard işlevsel: program DOĞRU iff spec'i sağlar → HALÜSİNASYON İMKÂNSIZ (yanlış
+  program doğrulamadan geçemez). Deterministik (random yok), yaratıcı (x²+x→(x+1)*x faktör), DIŞ
+  MODEL YOK. `CertifiedProgram.moments` = AST-graf imzası (manifold grounding). `ai.code` kullanır.
+- **DÜRÜST SINIR:** dar ama gerçek — tek-girdili sayısal/aritmetik (programming-by-example);
+  primitif/derinlik genişledikçe büyür. P3 doğrulama (örnek-çalıştırma) sentezde içkin.
+- **Tekrar:** YOK. molecular_genesis (SMILES) ile AYNI DESEN, FARKLI uzay (terim vs atom) — strateji çeşitliliği.
 
 ### ✅ core/molecular_3d.py — TEK kanonik 3D SDF util [#7 dedup ÇÖZÜLDÜ 2026-06]
 - **İş:** `embed_3d_sdf(smiles, name, out_dir, *, prefix, props, remove_hs, enforce_chirality)`.

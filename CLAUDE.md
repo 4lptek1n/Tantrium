@@ -383,6 +383,10 @@ ai.ingest_corpus([doc1, doc2, ...])            # → dict: ASI Pilar E — SINIR
 ai.read_data([1,1,2,3,5], analyze="law")       # → dict: ASI Pilar D — yapısal sayısal veri (liste/CSV/
                                                #   JSON/metin) → deterministik dinamik-yasa/forecast/anomali
                                                #   {series, analyze, result, answer} (figür-semantiği DIŞARIDA)
+ai.code([(1,3),(2,5),(3,7)])                   # → dict: SERTİFİKALI KOD SENTEZİ (ASI §12, kod ajanı)
+                                               #   örnekten KANITLI program (her örneği DOĞRULAYAN); dış model YOK
+                                               #   {program, source, verified, examples_passed, answer}
+                                               #   verified=False → dürüst başarısızlık (halüsinasyon imkânsız)
 ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}  [Geri BFS]
 ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}   [İleri BFS]
 ai.analogy("erlotinib", "egfr", "imatinib")   # → [("bcr-abl", 0.0)]  TAU ilişki tutarlılığı
