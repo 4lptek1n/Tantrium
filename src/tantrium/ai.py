@@ -2831,6 +2831,49 @@ class AI:
         return {"source": m.source, "verified": m.verified, "n_functions": m.n_functions,
                 "functions": names, "failed": m.failed, "answer": ans, "cert": m}
 
+    def build(self, intent: str, *, examples=None, max_depth: int = 6,
+              research: bool = True) -> dict:
+        """ASI §12 #4 — MUĞLAK İSTEK → ÇALIŞAN SERTİFİKALI KOD (anla→araştır→tasarla→çalıştır).
+
+        Kullanıcı örnek vermez, NİYET söyler ('kelimeleri ters çeviren bir şey'). Niyeti GROUNDED
+        operasyonlara bağlarız (operasyon-sözlüğü + araştırma #2), örnekleri GERÇEK operasyonu
+        kanonik girdide ÇALIŞTIRARAK türetiriz (uydurma değil — ground-truth), sentezler + DOĞRULARIZ
+        (#1). Hiç bağlanamazsa DÜRÜSTÇE örnek ister (clarify) — ASLA uydurmaz. examples verilirse
+        niyet-türetimini atlar, doğrudan onları kullanır.
+
+        Döner: {understood, program, source, verified, examples, clarify, answer, researched}.
+        """
+        from tantrium.core.code_intent import derive_spec
+        from tantrium.core.code_synthesis import synthesize
+        from tantrium.core.code_research import relevant_primitives
+        ex = list(examples) if examples else None
+        ds = None
+        understood: list = []
+        researched: list = []
+        program_hint = ""
+        if ex is None:
+            ds = derive_spec(intent, research=research)
+            understood, researched, program_hint = ds.understood, ds.researched, ds.program
+            if not ds.grounded:
+                return {"understood": understood, "program": program_hint, "source": "",
+                        "verified": False, "examples": [], "clarify": ds.clarify,
+                        "researched": researched,
+                        "answer": ds.clarify or "İsteği bir operasyona bağlayamadım."}
+            ex = ds.examples
+        extra, _imps = relevant_primitives(intent, ex, research=research)
+        cp = synthesize(ex, max_depth=max_depth, extra_primitives=extra)
+        if cp.verified:
+            via = (f" ({' → '.join(understood)})" if understood else "")
+            ans = (f"İsteğini anladım{via}, kanonik girdide çalıştırıp ground-truth örnek türettim, "
+                   f"sentezleyip DOĞRULADIM: def solve(x): return {cp.program} — {cp.examples_total}/"
+                   f"{cp.examples_total} örnek KANITLI. Uydurmadım; her adım sertifikalı.")
+        else:
+            ans = (f"İsteği anladım ama bu örneklerden SERTİFİKALI program çıkaramadım "
+                   f"(en iyi {cp.examples_passed}/{cp.examples_total}). Uydurmam — bir örnek daha ver.")
+        return {"understood": understood, "program": cp.program, "source": cp.source(),
+                "verified": cp.verified, "examples": ex, "clarify": None,
+                "researched": researched, "answer": ans, "cert": cp}
+
     def ground_codebase(self, files: dict) -> dict:
         """ASI §12 P4 — repo'yu KÖKLÜ manifolda çevir (kod-tabanı = topoloji).
         files: {path: source}. Döner: {symbols, imports, functions, edges, n_symbols}."""

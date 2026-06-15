@@ -176,7 +176,11 @@ def _score(expr: str, examples, argnames, extra_globals: dict | None = None) -> 
         r = _run(expr, inp, argnames, extra_globals)
         if r is _SENTINEL:
             return None
-        if r == out:
+        try:
+            equal = bool(r == out)
+        except Exception:           # garip __eq__ (ör. functools.cmp_to_key → K) → eşleşme yok
+            equal = False
+        if equal:
             exact += 1
             continue
         try:
