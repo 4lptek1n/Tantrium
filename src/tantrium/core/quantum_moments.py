@@ -170,19 +170,26 @@ class QuantumSignature:
         self,
         other: "QuantumSignature",
         classical_thr: float = 0.5,
-        quantum_thr: float = 0.2,
+        quantum_thr: float = 0.06,
     ) -> bool:
         """Kuantum dolanıklık: klasik uzak ama kuantum yakın.
 
-        Bu çiftin klasik W2 mesafesi eşiğin üstünde ama κ mesafesi
-        eşiğin altında olduğunda "gizli matematiksel bağlantı" var.
+        Bu çiftin klasik W2 mesafesi eşiğin üstünde ama κ mesafesi eşiğin altında
+        olduğunda "gizli matematiksel bağlantı" var.
+
+        κ-mesafe KANONİK `bounded_kappa_distance` (κ₂₋₄, tanh-sınırlı) — ham
+        `cumulants.distance` κ₅/κ₆ patlamasıyla domine olup gizli dolanıklığı GÖREMİYORDU
+        (protein~lipid: rapor κ=0.044 ama ham metrik eşiği geçemiyor → entangled=False
+        yanlış). Kanonik sınırlı mesafe (F20 dersi) tutarlı: klasik-uzak/κ-yakın ateşler.
         """
-        import math
-        a, b = self.moments, other.moments
+        a = [float(x) for x in self.moments]
+        b = [float(x) for x in other.moments]
         n = min(len(a), len(b))
-        classical = sum(abs(math.tanh(float(a[i])) - math.tanh(float(b[i])))
-                        for i in range(n)) / max(n, 1)
-        quantum = self.cumulants.distance(other.cumulants)
+        # KLASİK: ham moment L1 — ai.entangle'ın RAPORLADIĞI metrikle AYNI (tutarlılık).
+        # Eski tanh-moment-ortalaması farklı ölçekteydi (rapor 0.849 derken karar metriği
+        # küçük kalıyor → entangled hep False). İki metrik artık tek (protein~lipid: 0.849).
+        classical = sum(abs(a[i] - b[i]) for i in range(n))
+        quantum = bounded_kappa_distance(a, b, include_mean=False)
         return classical > classical_thr and quantum < quantum_thr
 
 

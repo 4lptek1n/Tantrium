@@ -84,6 +84,7 @@ class GrowthReport:
     # Corrigibility (yanlıştan-dön) bilançosu
     suspect_flagged: int = 0   # dejenere/çakışma şüphesiyle işaretlenen (düzeltilemeyen)
     corrected: int = 0         # dejenere encoding adaptif re-encode ile düzeltilen
+    collisions_resolved: int = 0  # çakışma derin re-encode ile ÇÖZÜLEN (injektiflik öz-keskinleştirme)
     windows_deduped: int = 0   # aile-içi exact-moment pencere-kopyası silinen
 
     def summary(self) -> str:
@@ -1155,7 +1156,9 @@ class GrowthEngine:
                 self.state["suspect"] = suspect[-500:]
         if res["checked"]:
             _log(f"doğrulama: {res['checked']} denetlendi, {res['degenerate']} dejenere "
-                 f"({res['corrected']} düzeltildi), {res['collided']} çakışma şüphesi")
+                 f"({res['corrected']} düzeltildi), {res.get('resolved_collisions', 0)} çakışma "
+                 f"ÇÖZÜLDÜ, {res['collided']} çakışma şüphesi")
         if rep is not None:
             rep.corrected += res["corrected"]
+            rep.collisions_resolved += res.get("resolved_collisions", 0)
             rep.suspect_flagged += (res["degenerate"] - res["corrected"]) + res["collided"]
