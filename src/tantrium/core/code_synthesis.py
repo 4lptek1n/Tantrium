@@ -27,7 +27,8 @@ class CertifiedProgram:
     examples_total: int
     steps: int                         # arama derinliği (kaç operasyon)
     args: list = field(default_factory=lambda: ["x"])
-    moments: list = field(default_factory=list)   # AST-graf imzası (manifold grounding)
+    moments: list = field(default_factory=list)   # AST-graf imzası (YAPISAL — refactor denkliği)
+    behavior: list = field(default_factory=list)  # DAVRANIŞSAL imza (I/O → moment; gerçek konum)
     full_source: str = ""                         # özyinelemeli/çok-satırlı için TAM kaynak
 
     def source(self) -> str:
@@ -283,13 +284,18 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
     if extra_primitives:                      # GROUNDED stdlib operasyonları (geniş kapsam)
         unary = list(dict.fromkeys(unary + list(extra_primitives)))
 
+    # DAVRANIŞSAL imza: spec'in (örneklerin) moment-uzayındaki GERÇEK konumu (yapısal AST değil).
+    # Örnek = ölçü — kodu molekül/kavramla aynı rejime koyar. Bir kez hesaplanır (tüm adaylar paylaşır).
+    from tantrium.core.code_behavior import behavior_signature
+    behav = [float(m) for m in (behavior_signature(examples) or [])]
+
     def _make(expr, steps, passed):
         from tantrium.core.encoder import _code_to_graph_moments
         src = f"def solve({', '.join(argnames)}):\n    return {expr}"
         mom = _code_to_graph_moments(src) or []
         return CertifiedProgram(program=expr, verified=(passed == n), examples_passed=passed,
                                 examples_total=n, steps=steps, args=list(argnames),
-                                moments=[float(m) for m in mom])
+                                moments=[float(m) for m in mom], behavior=list(behav))
 
     # başlangıç adayları = her argüman (identity); birini doğruluyorsa hemen dön
     seeds = list(argnames)
@@ -339,5 +345,6 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
         mom = _code_to_graph_moments(rec_src) or []
         return CertifiedProgram(program="<özyinelemeli>", verified=True, examples_passed=n,
                                 examples_total=n, steps=-1, args=list(argnames),
-                                moments=[float(m) for m in mom], full_source=rec_src)
+                                moments=[float(m) for m in mom], behavior=list(behav),
+                                full_source=rec_src)
     return _make(best_expr, max_depth, max(best_key[0], 0))
