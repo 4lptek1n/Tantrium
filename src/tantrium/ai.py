@@ -1801,7 +1801,9 @@ class AI:
     def _converse_topic(self, question: str) -> str:
         """Sorudan ana konuyu çıkar (robust + ÇOK-TUR): zamir ('o/bu/onu') önceki konuya
         çözülür; manifoldda tek kelime; yoksa içerik öbeği ('lung cancer')."""
-        words = [w.strip("?.,!:;'\"").lower() for w in str(question).split()]
+        raw = [w.strip("?.,!:;\"").lower() for w in str(question).split()]
+        # Türkçe ek-stripping: kesmeli ekleri at (erlotinib'in→erlotinib, EGFR'nin→egfr)
+        words = [w.split("'")[0] if "'" in w else w.strip("'") for w in raw]
         pron = any(w in self._PRON for w in words)
         cands = [w for w in words if len(w) >= 3 and w not in self._STOP_TR
                  and w not in self._PRON and w not in self._QWORDS]

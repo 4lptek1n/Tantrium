@@ -104,16 +104,45 @@ def _normalize_entity(term: str) -> str:
     return t
 
 
-def _clean_term(words: list[str], take_last: bool = False) -> str:
-    """Kelime listesinden dur kelimelerini ve bağlaçları temizle.
+# Cümle/öbek SINIRLARI — bunlara çarpınca isim öbeği biter (özne/nesne ayrımı için).
+_BOUNDARY = {"of", "in", "on", "at", "by", "with", "for", "to", "from", "which",
+             "that", "who", "such", "as", "and", "or", "but", "into", "through",
+             "during", "including", "where", "when", "while", "than", "into"}
 
-    take_last=True  → fiilin öncesi (özne): son 2 anlamlı kelime
-    take_last=False → fiilin sonrası (nesne): ilk 2 anlamlı kelime
+
+def _clean_term(words: list[str], take_last: bool = False) -> str:
+    """İsim öbeğinin BAŞ-İSMİNİ (head noun) çıkar — '2 kelime al' değil.
+
+    take_last=True  → fiilin öncesi (özne): fiile en yakın içerik kelimesi.
+    take_last=False → fiilin sonrası (nesne): edat/artikel atlanıp ilk içerik kelimesi.
+    Sınır kelimesine (of/in/which...) çarpınca durur → 'cells of most' yerine 'cells'.
     """
-    filtered = [w for w in words if w.lower() not in _STOPWORDS and len(w) > 1]
-    chunk = filtered[-2:] if take_last else filtered[:2]
-    raw = " ".join(chunk).strip().lower() if chunk else ""
-    return _normalize_entity(raw)
+    seq = list(reversed(words)) if take_last else words
+    span: list[str] = []
+    for w in seq:
+        wl = w.lower().strip(",;:'\"()[]")
+        if not wl or len(wl) <= 1:
+            if span:
+                break
+            continue
+        if wl in _BOUNDARY or wl in _STOPWORDS:
+            if span:
+                break          # içerik kelimesinden sonra sınır/stopword = öbek bitti
+            continue           # baştaki artikel/edat/sınır = atla
+        span.append(wl)
+        if len(span) >= 4:
+            break
+    if take_last:
+        span.reverse()          # öbek sırasını geri getir (özne fiilden geriye tarandı)
+    # İngilizce isim öbeğinin BAŞI sondadır; participle'ları (-ed/-ing) atla:
+    # "peptide hormone produced" → "hormone"; "epidermal growth factor receptor" → "receptor".
+    head = ""
+    for wl in span:
+        if not (wl.endswith("ed") or wl.endswith("ing")):
+            head = wl
+    if not head and span:
+        head = span[-1]
+    return _normalize_entity(head)
 
 
 def _extract_relations(text: str) -> list[tuple[str, str, str]]:
@@ -131,12 +160,12 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
     # TANIM (IS_A) — "X is a Y" kalıbı (ansiklopedik metnin temel bilgisi)
     for sent in sentences:
         for m in _ISA_PAT.finditer(sent):
-            subj = _re.sub(r"[,;\"'()]", " ", m.group(1)).strip().lower()
-            obj = m.group(2).strip().lower()
-            # öznenin son 1-3 kelimesi (sıfat zincirini at)
-            sw = subj.split()
-            subj = " ".join(sw[-2:]) if len(sw) > 2 else subj
-            if 2 < len(subj) < 40 and 2 < len(obj) < 30 and obj not in _STOPWORDS:
+            subj_words = _re.sub(r"[,;\"'()]", " ", m.group(1)).split()
+            subj = _clean_term(subj_words, take_last=True)   # öznenin baş-ismi
+            obj = _normalize_entity(m.group(2).strip().lower())
+            if (2 < len(subj) < 40 and 2 < len(obj) < 30
+                    and obj not in _STOPWORDS and obj not in _BOUNDARY
+                    and subj != obj):
                 relations.append((subj, "IS_A", obj))
     for sent in sentences:
         # "X verb Y and Z verb W" → ["X verb Y", "Z verb W"]
@@ -153,9 +182,11 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
                     before = _re.sub(r"[,;\"'()]", " ", sub[:m.start()]).split()
                     after  = _re.sub(r"[,;\"'()]", " ", sub[m.end():]).split()
                     # Son 2 anlamlı kelime = özne, ilk 2 anlamlı kelime = nesne
-                    subj = _clean_term(before[-4:], take_last=True)
-                    obj  = _clean_term(after[:4],  take_last=False)
-                    if 2 < len(subj) < 50 and 2 < len(obj) < 50:
+                    subj = _clean_term(before[-5:], take_last=True)
+                    obj  = _clean_term(after[:5],  take_last=False)
+                    if (2 < len(subj) < 50 and 2 < len(obj) < 50 and subj != obj
+                            and obj not in _STOPWORDS and obj not in _BOUNDARY
+                            and subj not in _BOUNDARY):
                         relations.append((subj, rel_type, obj))
     # tekilleştir (sıra korunur)
     _seen: set = set()
