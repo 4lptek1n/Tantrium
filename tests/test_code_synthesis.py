@@ -54,3 +54,26 @@ def test_ai_code_facade():
     assert r["verified"] is True and "solve" in r["source"]
     bad = ai.code([(1, 7), (2, 3), (3, 99)])
     assert bad["verified"] is False and "uydurmam" in bad["answer"].lower()
+
+
+# ── P2 derinleştirme: liste / string / çok-argüman ──
+
+def test_synthesize_list_ops():
+    """Liste dönüşümleri: sum/len/reverse/map/filter — kanıtlı."""
+    assert synthesize([([1, 2, 3], 6), ([4, 5], 9), ([10], 10)]).verified       # sum
+    assert synthesize([([1, 2, 3], 3), ([4, 5], 2)]).verified                   # len
+    assert synthesize([([1, 2], [2, 4]), ([3], [6]), ([0, 5], [0, 10])]).verified  # map*2
+    assert synthesize([([-1, 2, -3, 4], [2, 4]), ([5, -5], [5])]).verified      # filter>0
+
+
+def test_synthesize_string_ops():
+    """String dönüşümleri: upper/reverse — kanıtlı."""
+    assert synthesize([("abc", "ABC"), ("xy", "XY")]).verified                  # upper
+    assert synthesize([("abc", "cba"), ("12", "21")]).verified                  # reverse
+
+
+def test_synthesize_two_args():
+    """İki argüman: x+y, x*y — kanıtlı."""
+    add = synthesize([((1, 2), 3), ((5, 5), 10), ((10, 3), 13)])
+    assert add.verified and add.args == ["x", "y"]
+    assert synthesize([((2, 3), 6), ((4, 5), 20), ((1, 9), 9)]).verified        # x*y
