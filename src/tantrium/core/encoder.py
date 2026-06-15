@@ -522,6 +522,24 @@ class UniversalEncoder:
                 except Exception:
                     pass
 
+        # ── KOD MODALİTESİ (ASI §12 P1): kod = AST grafı = topoloji ──
+        # STRICT tespit (açık işaret + ast.parse + ≥5 düğüm) → kelime/cümle metne düşer.
+        # Bio/SMILES'ten SONRA, metin-imzasından ÖNCE: gerçek kod parçası graf-spektrumuyla girer.
+        if isinstance(input, str) and _is_code_snippet(input):
+            code_moments = _code_to_graph_moments(input, self.num_moments)
+            if code_moments is not None:
+                A = _sequence_to_hankel_matrix(code_moments)
+                G = _gram(A)
+                structure = self._extract_structure(input, A, G, code_moments)
+                structure.update({
+                    "encoder": "code_ast_graph",
+                    "matrix_size": len(A),
+                    "input_type": type(input).__name__,
+                    "num_moments": self.num_moments,
+                    "moment_path": "code_ast_graph",
+                })
+                return CodexObject(name=obj_name, moments=code_moments, structure=structure)
+
         # Metin yolu: pozisyon+codepoint imza momentleri (encoder collision KÖK çözümü).
         # SMILES gibi eigenvalue-normalize [0,1] Hausdorff; Hankel-rekonstrüksiyon ile
         # pipeline tutarlı. Tüm-farklı-karakter çakışmasını ve anagramı encode-anında ayırır.
@@ -718,6 +736,100 @@ def _smiles_to_graph_moments(smiles: str, num_moments: int = 8) -> list[Fraction
 # Backward-compat alias
 def _smiles_molecular_moments(smiles: str, num_moments: int = 8) -> list[Fraction] | None:
     return _smiles_to_graph_moments(smiles, num_moments)
+
+
+# ── KOD MODALİTESİ (ASI §12 P1) — kod = formal dil = AST grafı = topoloji ──
+# Açık kod işaretleri (tek kelime/cümle elenir → metin yoluna düşer).
+_CODE_MARKERS = ("def ", "return", "import ", "class ", "lambda ", "for ", "while ",
+                 "elif ", "yield ", "assert ", "with ", "print(", "if ", "raise ")
+
+
+def _is_code_snippet(s: str) -> bool:
+    """STRICT kod tespiti — yalnız GERÇEK kod parçası True (kelime/cümle/molekül DEĞİL).
+    Açık işaret + ast.parse + tek-isim-değil + ≥5 düğüm. SMILES/bio zaten önce yakalanır."""
+    if not isinstance(s, str) or len(s) < 8:
+        return False
+    has_marker = any(m in s for m in _CODE_MARKERS)
+    has_assign_call = ("=" in s and "(" in s and ")" in s)
+    indented = "\n" in s and any(ln[:1] in (" ", "\t") for ln in s.split("\n") if ln)
+    if not (has_marker or indented or has_assign_call):
+        return False
+    try:
+        import ast as _ast
+        tree = _ast.parse(s)
+        body = getattr(tree, "body", [])
+        if not body:
+            return False
+        # tek çıplak isim/sabit ifade = kod değil (kelime/sayı)
+        if (len(body) == 1 and isinstance(body[0], _ast.Expr)
+                and isinstance(body[0].value, (_ast.Name, _ast.Constant))):
+            return False
+        return sum(1 for _ in _ast.walk(tree)) >= 5
+    except Exception:
+        return False
+
+
+def _code_to_graph_moments(source: str, num_moments: int = 8) -> list[Fraction] | None:
+    """Kaynak kod → AST → düğüm-kenar grafı → graf spektrumu → Hausdorff momentler.
+
+    Kod bir GRAFTUR (AST). SMILES'in atom-bağ grafıyla AYNI boru:
+      A[i][i] = düğüm-tipi ağırlığı (FunctionDef/Call/BinOp/Name... = farklı 'element')
+      A[i][j] = kenar (AST parent-child) ağırlığı (= bağ)
+      G = AᵀA → daima PSD → eigenvalues = AST spektral izleri
+      Normalized eigenvalues ∈ [0,1] → geçerli Hausdorff moment dizisi
+
+    HARF benzerliği değil, PROGRAM YAPISI topolojisi:
+      - Farklı kontrol/veri akışı → farklı AST spektrumu → farklı momentler
+      - Benzer yapı → benzer spektrum → transport sertifikası (= refactor denkliği)
+    """
+    try:
+        import ast as _ast
+        import numpy as np
+
+        tree = _ast.parse(source)
+        node_types: list[str] = []
+        edges: list[tuple[int, int]] = []
+
+        def _visit(node, parent: int | None) -> None:
+            idx = len(node_types)
+            node_types.append(type(node).__name__)
+            if parent is not None:
+                edges.append((parent, idx))
+            for child in _ast.iter_child_nodes(node):
+                _visit(child, idx)
+
+        _visit(tree, None)
+        n = len(node_types)
+        if n < 2:
+            return None
+
+        def _node_weight(tname: str) -> float:
+            # Çarpımsal-hash → düğüm-tipini [1.0, 2.0) köşegen 'elektronegatifliği'ne yay
+            # (encoder _char_signature felsefesi: tipi geniş ayır, deterministik).
+            h = 0
+            for c in tname:
+                h = (h * 131 + ord(c)) & 0xFFFFFFFF
+            return 1.0 + (h % 1000) / 1000.0
+
+        A = np.zeros((n, n))
+        for i, j in edges:
+            A[i, j] = 1.0
+            A[j, i] = 1.0
+        for i in range(n):
+            A[i, i] = _node_weight(node_types[i])
+
+        G = A.T @ A
+        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
+        max_eig = eigs.max() or 1.0
+        vals = sorted(eigs / max_eig)
+
+        moments: list[Fraction] = [Fraction(1)]
+        for k in range(1, num_moments):
+            mk = sum(d ** k for d in vals) / len(vals)
+            moments.append(Fraction(mk).limit_denominator(10 ** 9))
+        return moments
+    except Exception:
+        return None
 
 
 def _smiles_full_eigenvalues(smiles: str) -> list[float] | None:
