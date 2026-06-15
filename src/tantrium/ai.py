@@ -2032,7 +2032,17 @@ class AI:
                 facts = self._tau_facts(topic)
         if facts:
             if detail:
-                answer = self._narrate_rich(topic, facts)   # insan-gibi akıcı + topraklama
+                # AKICI anlatım motoru (ek-uyumlu Türkçe + köklülük doğal cümlede)
+                from tantrium.language.fluent import narrate as _narrate
+                g = None
+                try:
+                    g = self.grounding(topic)
+                    g._n_relations = (len(self._engine.tau.edges.get(topic, []))
+                                      + sum(1 for _s, el in self._engine.tau.edges.items()
+                                            for e in el if str(getattr(e, "target", "")) == topic))
+                except Exception:
+                    g = None
+                answer = _narrate(topic, facts, grounding=g)
             else:
                 from tantrium.language.speaker import Speaker
                 answer = Speaker(self._engine).synthesize(topic, facts)
