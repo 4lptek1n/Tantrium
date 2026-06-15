@@ -81,6 +81,7 @@ class GrowthReport:
     # Anlam kanalı entegrasyonu (TopologyEncoder) bilançosu
     meaning_enriched: int = 0  # anlam imzası hesaplanan (semantik-köklü) kavram
     bridges_found: int = 0     # keşfedilen çapraz-boyutlu kuantum köprü
+    hypotheses_generated: int = 0  # büyürken üretilen sertifikalı transitif hipotez (BİLİM)
     # Corrigibility (yanlıştan-dön) bilançosu
     suspect_flagged: int = 0   # dejenere/çakışma şüphesiyle işaretlenen (düzeltilemeyen)
     corrected: int = 0         # dejenere encoding adaptif re-encode ile düzeltilen
@@ -98,6 +99,7 @@ class GrowthReport:
             f"TAU kenar: {self.edges_start:,} → {self.edges_end:,} (+{de})\n"
             f"Anlam zenginleştirme: {self.meaning_enriched} kavram | "
             f"kuantum köprü: {self.bridges_found}\n"
+            f"BİLİM: {self.hypotheses_generated} sertifikalı hipotez üretildi\n"
             f"Corrigibility: {self.corrected} düzeltildi | "
             f"{self.suspect_flagged} şüpheli | {self.windows_deduped} pencere-kopya silindi\n"
             f"Durma sebebi: {self.stopped_reason}"
@@ -943,6 +945,102 @@ class GrowthEngine:
         # Aile-pencere dedup: kanonik dizilerin (lucas/tribonacci/ramanujan...) üreteç
         # tekrar-ürettiği exact-moment kopyalarını tek temsilciye indir (kök neden önlemi).
         self._dedup_family_windows(_log, rep)
+        # BÜYÜMEYİ BİLİME ÇEVİR: büyüyen kausal-zengin graftan transitif hipotez üret +
+        # RH-Sturm sertifikala + kalıcı günlüğe yaz. Büyüme yalnız veri yutmaz — denetlenebilir
+        # bilim üretir (Mythos'un kafesli/doğrulanamaz hipotezine karşı sertifikalı).
+        self._science_consolidate(_log, rep)
+
+    # Transitif kausal kural tablosu (ai.hypothesize ile aynı — tek kaynak gerçeği)
+    _SCI_TRANS = {
+        ("INHIBITS", "ACTIVATES"): "INHIBITS", ("INHIBITS", "CAUSES"): "INHIBITS",
+        ("INHIBITS", "INHIBITS"): "ACTIVATES", ("ACTIVATES", "ACTIVATES"): "ACTIVATES",
+        ("ACTIVATES", "CAUSES"): "CAUSES", ("ACTIVATES", "INHIBITS"): "INHIBITS",
+        ("CAUSES", "CAUSES"): "CAUSES", ("CAUSES", "ACTIVATES"): "CAUSES",
+    }
+    _SCI_CAUSAL = frozenset({"INHIBITS", "ACTIVATES", "CAUSES"})
+
+    def _science_consolidate(
+        self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
+        *, max_seeds: int = 12, max_hyps: int = 10, sturm_check: int = 6,
+    ) -> None:
+        """Büyüyen kausal-zengin kavramlardan TRANSİTİF hipotez üret (A→B→C ⟹ A-C),
+        YENİ olanları (doğrudan kenar OLMAYAN) RH-Sturm ile sertifikala, kalıcı günlüğe yaz.
+        Bounded/fail-open — büyümeyi yavaşlatmaz. growth_state['hypotheses'] (son 500)."""
+        try:
+            tau = self.engine.tau
+            seeds: list = []
+            for s, el in tau.edges.items():
+                if s.startswith("⟨") or len(s) > 40:
+                    continue
+                cz = [e for e in el if getattr(e, "paradigm", "") in self._SCI_CAUSAL]
+                if len(cz) >= 2:
+                    seeds.append((s, cz))
+                if len(seeds) >= max_seeds * 4:
+                    break
+            seeds = seeds[:max_seeds]
+            hyps: list = []
+            seen: set = set()
+            for s, cz in seeds:
+                for e1 in cz:
+                    b = str(getattr(e1, "target", ""))
+                    for e2 in tau.edges.get(b, []):
+                        p2 = getattr(e2, "paradigm", "")
+                        if p2 not in self._SCI_CAUSAL:
+                            continue
+                        c = str(getattr(e2, "target", ""))
+                        derived = self._SCI_TRANS.get((e1.paradigm, p2))
+                        if not derived or c == s or c == b:
+                            continue
+                        key = (s, derived, c)
+                        if key in seen:
+                            continue
+                        # YENİ mi? (zaten doğrudan kenar değilse hipotez)
+                        if any(str(getattr(e, "target", "")) == c
+                               and getattr(e, "paradigm", "") == derived
+                               for e in tau.edges.get(s, [])):
+                            continue
+                        seen.add(key)
+                        hyps.append({"statement": f"{s} {derived} {c}", "via": b,
+                                     "chain": f"{s} -{e1.paradigm}-> {b} -{p2}-> {c}"})
+                        if len(hyps) >= max_hyps:
+                            break
+                    if len(hyps) >= max_hyps:
+                        break
+                if len(hyps) >= max_hyps:
+                    break
+            if not hyps:
+                return
+            # RH-Sturm sertifika (bounded sample) — kritik hat / gerçek-ölçü yolu
+            certified = 0
+            try:
+                from tantrium.core.production import ProductionEngine
+                pe = ProductionEngine(self.engine)
+                for h in hyps[:sturm_check]:
+                    s, _d, c = h["statement"].split()
+                    ca = self.engine.manifold.concepts.get(s)
+                    cc = self.engine.manifold.concepts.get(c)
+                    if ca is not None and cc is not None:
+                        try:
+                            ok, pmin = pe._sturm_path_pivot_min(
+                                [float(m) for m in ca.moments],
+                                [float(m) for m in cc.moments])
+                            h["sturm_ok"] = bool(pmin >= -1e-3)
+                            certified += int(h["sturm_ok"])
+                        except Exception:
+                            h["sturm_ok"] = None
+            except Exception:
+                pass
+            log_h = self.state.setdefault("hypotheses", [])
+            existing = {h.get("statement") for h in log_h}
+            added = [h for h in hyps if h["statement"] not in existing]
+            log_h.extend(added)
+            self.state["hypotheses"] = log_h[-500:]
+            _log(f"bilim: +{len(added)} köklü transitif hipotez ({certified} Sturm-sertifikalı); "
+                 f"toplam günlük {len(self.state['hypotheses'])}")
+            if rep is not None:
+                rep.hypotheses_generated += len(added)
+        except Exception:
+            pass
 
     def _meaning_consolidate(
         self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
