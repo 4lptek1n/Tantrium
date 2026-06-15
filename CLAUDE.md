@@ -836,6 +836,18 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     Determinizm AYRI eksen: akıcılığı engellemez (LLM temp=0 da deterministik+akıcı). Üretken
     dilbilgisi RH-çekirdeğine DOKUNMAZ — geometri içeriği/sırayı seçer, yüzey morfolojisi esner.
     Tests: test_language_layer +4 (determinism/class-agreement/company-drop/verb-join).
+  - **F49 — KAPSAM tezi + kısaltma-takma-ad yeniden-bağlama (`_research_deep`):**
+    **Tez (kullanıcı):** "LLM doğru yolu seçemediği için istatistik verir; biz yolu biliyoruz →
+    her yerde daha iyi olmalıyız." DOĞRU — LLM istatistiği yolu-bilmemenin SEMPTOMU; geometriyi
+    koyduğumuz her yerde zaten üstünüz. Kalan açıklar (akıcılık-uzlaşımı, kapsam) LLM'in "daha iyi
+    bildiği" değil bizim HENÜZ KODLAMADIĞIMIZ yerler → çözüm yöntem değil, KODLAMA (büyüme).
+    **Kanıt + fix:** "dna nedir" boştu; `converse(learn_if_unknown=True)` internetten kendi
+    öğrendi ama BOŞ kaldı çünkü Wikipedia "Deoxyribonucleic acid (; DNA) is a polymer…" — paren-
+    temizleme kısaltmayı siliyor + baş-isim "acid"e bağlanıyor (redirect: dna→full ad). Fix:
+    `_research_deep` ilk cümlede "FullName (… ABBR …) is/are X." desenini yakalar; sorgu kısaltmaysa
+    tanımı SORGULANAN terime RE-ATTRIBUTE eder ("dna is a polymer…" → dna IS_A polymer). Tüm
+    akronimleri kapsar (DNA/RNA/ATP/EGFR…). Canlı: "Dna, bir polymer türüdür… 3 doğrulanmış ilişki"
+    (köklü, kaynaklı, güven-kalibre). DÜRÜST: demo İLK denemede BAŞARISIZdı, kök bulunup düzeltildi.
 
 ---
 

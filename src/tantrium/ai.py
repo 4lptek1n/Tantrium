@@ -1880,6 +1880,16 @@ class AI:
         total = 0
         main = self._fetch_wikipedia(topic, full=True)
         if main:
+            # KISALTMA/TAKMA-AD yeniden-bağlama: "FullName (; ABBR) is/are X." — Wikipedia
+            # redirect'i sorguyu (dna) tam-ada (deoxyribonucleic acid) çevirir, tanım baş-isme
+            # ("acid") bağlanır, sorgu boş kalır. Tanımı SORGULANAN terime de bağla (dna IS_A polymer).
+            import re as _re2
+            m = _re2.match(r"\s*([A-Za-z][\w\- ]+?)\s*\(([^)]*)\)\s*"
+                           r"(is|are|was|were)\s+(.+?\.)", main[:400])
+            if m:
+                full, paren, verb, rest = m.groups()
+                if (topic.lower() in paren.lower() or topic.lower() in full.lower()):
+                    self.learn(f"{topic} {verb} {rest}")   # tanımı topic'e RE-ATTRIBUTE
             r = self.learn(main)
             total += int(r.get("relations", 0)) + int(r.get("new_concepts", 0))
         related, seen = [], set()
