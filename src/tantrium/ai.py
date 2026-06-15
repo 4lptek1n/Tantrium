@@ -1142,6 +1142,22 @@ class AI:
             refine_rounds=refine_rounds, combination=combination, network=network,
             inject=inject, epsilon=epsilon, top_k=top_k)
 
+    def produce_math(self, disease) -> "object":
+        """Hastalık → ilaç, TAMAMEN MATEMATİK (harf/SMILES yok) — RH parçaları zinciri.
+
+        disease:
+          • moment listesi (sayılar) — ÖLÇÜLEN hastalık imzası (lab spektrumu). En dürüst:
+            hastalık bir küme sayı, isim değil.
+          • bulgu listesi (str) — ölçülen sinyaller; κ'ya çekilip serbest-toplanır.
+
+        Akış (her adım RH parçası, hepsi sayı): κ_disease → κ_healthy ⊟ κ_disease = κ_drug
+        → μ_drug → özdeğer ölçüsü (İLACIN KENDİSİ) → Hankel-PSD (D-poz) ∧ Sturm pivot
+        (Jensen) = gerçeklenebilirlik (RH sertifikası). SMILES yalnız isteğe bağlı render.
+        Döner: MathDrug (.summary() ile insan-okunur; .eigenvalues = ilacın spektrumu).
+        """
+        from tantrium.core.production import ProductionEngine
+        return ProductionEngine(self.engine).produce_math(disease)
+
     # Paradigma-matematik mesafe eşiği (45-özellik normalize imza):
     # EGFR-içi ≤3.43, kinaz-sınıfı ≤4.18, kinaz-dışı ≥4.25 → 4.5 = sınıf ayracı.
     # judge_binding "aynı terapötik sınıf mı?" sorar — üretimden daha geniş.

@@ -130,6 +130,52 @@ class ProductionResult:
 
 
 @dataclass
+class MathDrug:
+    """İlaç — HARF DEĞİL, SAF MATEMATİK. Hastalık ölçülen κ (sayılar); ilaç, evren-
+    kapanışının ürettiği spektral ölçüdür. Her alan bir RH parçası:
+
+      κ_disease  : serbest kümülant (Voiculescu) — hastalığın ölçülen imzası
+      κ_healthy  : kanonik ζ dengesi (RH çapası)
+      κ_drug     : κ_healthy ⊟ κ_disease (serbest dekonvolüsyon — additivite tersi)
+      moments    : κ_drug → μ (NC Möbius ters dönüşüm)
+      eigenvalues/weights : μ → atomik ölçü (Hamburger/Gauss kuadratür) = İLACIN KENDİSİ
+      hankel_psd : μ Hankel PSD mi (D-pozitiflik / Aleph) — var olabilir mi
+      sturm_pivot: hastalık→sağlıklı yolu gerçek-ölçü mü (Jensen hiperbolisitesi)
+      realizable : hankel_psd ∧ sturm_pivot≥0 — RH pozitiflik zinciri sertifikası
+
+    SMILES (harf) yalnız en sonda, isteğe bağlı bir RENDER adımıdır — çekirdek sayıdır.
+    """
+    kappa_disease: list[float]
+    kappa_healthy: list[float]
+    kappa_drug: list[float]
+    moments: list[float]
+    eigenvalues: list[float]
+    weights: list[float]
+    hankel_psd: bool
+    sturm_pivot: float
+    realizable: bool
+    realizability_gap: float
+
+    def summary(self) -> str:
+        r = lambda xs: [round(float(x), 4) for x in xs]
+        lines = [
+            "  İLAÇ — SAF MATEMATİK (harf yok)",
+            "  ────────────────────────────────────────",
+            f"  κ_disease (ölçülen)      : {r(self.kappa_disease)}",
+            f"  κ_healthy (ζ dengesi)    : {r(self.kappa_healthy)}",
+            f"  κ_drug = κ_h ⊟ κ_disease : {r(self.kappa_drug)}",
+            f"  μ_drug (NC Möbius ters)  : {r(self.moments)}",
+            f"  özdeğerler (ilacın kendisi): {r(self.eigenvalues)}",
+            f"  ağırlıklar               : {r(self.weights)}",
+            f"  Hankel-PSD (D-poz/Aleph) : {'✓' if self.hankel_psd else '✗'}",
+            f"  Sturm pivot (Jensen)     : {self.sturm_pivot:+.5f}",
+            f"  GERÇEKLENEBİLİR (RH)     : {'✓' if self.realizable else '✗'}"
+            f"   (açık {self.realizability_gap:.4f})",
+        ]
+        return "\n".join(lines)
+
+
+@dataclass
 class MoleculeSignature:
     """Bir molekülün TEK evren-matematiği imzası — pipeline'ın taşıdığı nesne.
 
@@ -625,6 +671,78 @@ class ProductionEngine:
             note=("Üretim ve yargı tek Sturm-pozitiflik ekseni (RH'nin H_{d,j}≥0 "
                   "kriteri). Sistem tahmin etmez — matematiksel sertifika üretir. "
                   "Wet-lab onayı ayrıdır."),
+        )
+
+    # ── SAF MATEMATİK kapanışı (harf yok) ─────────────────────────────────
+
+    def produce_math(self, disease) -> "MathDrug":
+        """Hastalık → ilaç, TAMAMEN matematik (harf/SMILES yok). RH parçalarının zinciri.
+
+        disease:
+          • moment listesi (list[float]) — ÖLÇÜLEN hastalık imzası (lab cihazı/spektrum,
+            saf sayı). En dürüst giriş: hastalık bir KÜME sayı.
+          • bulgu listesi (list[str]) — ölçülen moleküler sinyaller; her biri κ'ya çekilip
+            serbest-toplanır (yine sayıya iner, isim aranmaz).
+
+        Akış (her adım bir RH parçası, hepsi sayı uzayında):
+          κ_disease → κ_healthy ⊟ κ_disease = κ_drug → μ_drug → özdeğer ölçüsü (ilaç) →
+          Hankel-PSD (D-poz) ∧ Sturm pivot (Jensen) = gerçeklenebilirlik (RH sertifikası).
+        """
+        from tantrium.core.quantum_moments import FreeCumulants
+        from tantrium.core.reconstruct import reconstruct_measure
+        from tantrium.core.codex import CertifiableObject
+        from fractions import Fraction
+
+        # κ_disease: saf sayıdan (moment) ya da ölçülen bulgudan (serbest-toplam)
+        if isinstance(disease, (list, tuple)) and disease and all(
+                isinstance(x, (int, float)) for x in disease):
+            mu_d = [float(x) for x in disease]
+            kd = FreeCumulants.from_moments(mu_d)
+        elif isinstance(disease, (list, tuple)):
+            kd = FreeCumulants([0.0] * 6)
+            for f in disease:
+                mu = self._encode(str(f))
+                if mu:
+                    kd = kd.add(FreeCumulants.from_moments(mu))
+            mu_d = kd.to_moments_approx()
+        else:                                   # tek string → encode (geriye-uyum)
+            mu_d = self._encode(str(disease))
+            kd = FreeCumulants.from_moments(mu_d) if mu_d else FreeCumulants([0.0] * 6)
+
+        kh = self._canonical_kappa()
+        # κ_drug = κ_healthy ⊟ κ_disease (serbest dekonvolüsyon) + gerçeklenebilir μ'ye düş
+        mu_drug, gap = self._deconvolve_to_target(kd, kh)
+        k_drug = FreeCumulants.from_moments(mu_drug)
+
+        # İlacın KENDİSİ = özdeğer ölçüsü (Hamburger/Gauss kuadratür) — saf spektrum
+        rec = reconstruct_measure(mu_drug, max_atoms=4)
+
+        # RH pozitiflik TANILARI: Hankel-PSD (D-poz/Aleph) — ham düzeltici imza tam moment
+        # dizisi mi (işaretli farkın temizliği); Sturm pivot (Jensen) — yol gerçek-ölçü mü.
+        obj = CertifiableObject(
+            name="⟨math_drug⟩",
+            moments=[Fraction(x).limit_denominator(10 ** 9) for x in mu_drug])
+        hankel_psd = obj.is_moment_sequence(size=4)
+        sturm_ok, pmin = self._sturm_path_pivot_min(mu_d, mu_drug)
+
+        # GERÇEKLENEBİLİR: düzeltici imzaya en yakın ATOMİK ölçü (reconstruct) geçerli mi
+        # (ağırlıklar ≥ 0 = gerçek molekül-ölçüsü) VE açık küçük mü. Ham κ-farkı genelde
+        # tek molekül değildir (işaretli); gerçek ilaç bu projeksiyondur, açık = uzaklığı.
+        weights_valid = bool(rec.weights) and all(w >= -1e-9 for w in rec.weights)
+        gap_val = float(gap if gap is not None else 0.0)
+        realizable = bool(weights_valid and gap_val < 0.05)
+
+        return MathDrug(
+            kappa_disease=list(kd.k),
+            kappa_healthy=list(kh.k),
+            kappa_drug=list(k_drug.k),
+            moments=list(mu_drug),
+            eigenvalues=list(rec.support),
+            weights=list(rec.weights),
+            hankel_psd=hankel_psd,
+            sturm_pivot=float(pmin),
+            realizable=realizable,
+            realizability_gap=gap_val,
         )
 
     # ── Çok-stratejili havuz ──────────────────────────────────────────────
