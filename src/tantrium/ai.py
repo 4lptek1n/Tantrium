@@ -3526,6 +3526,30 @@ class AI:
             "note": f"{r['correct']}/{r['total']} bilinen olgu doğrulandı",
         }
 
+    def verify_math(self) -> dict:
+        """HESAP-ORACLE'I: matematiksel mekanizmayı BAĞIMSIZ kesin hesaba sına (lab değil).
+
+        external_verify küratörlü KAUSAL olguyu sınar; bu, sistemin SAYISAL/cebirsel
+        çekirdeğini gerçek matematiğe karşı sınar:
+          • Sturm pivot pozitifliği ⟺ hiperbolisite (RH kriteri) → numpy companion-matris
+            köklerine (tamamen farklı algoritma) karşı. Sistemin TAÇ iddiasının doğruluğu.
+          • Hankel moment-dizisi PSD (Aleph temeli) → ölçü teorisine karşı.
+        Çekirdek `research.corrigibility.computational_verify` (VerifyPhase ile paylaşılır).
+        Döner: {score, correct, total, sturm, hankel, failures, note}.
+        """
+        from tantrium.research.corrigibility import computational_verify
+        r = computational_verify(self._engine)
+        return {
+            "score": round(r["score"], 3),
+            "correct": r["correct"],
+            "total": r["total"],
+            "sturm": r["sturm"],
+            "hankel": r["hankel"],
+            "failures": r["failures"],
+            "note": (f"{r['correct']}/{r['total']} bağımsız matematiksel kontrol geçti "
+                     f"(Sturm↔hiperbolisite + Hankel-PSD)"),
+        }
+
     def consolidate(self, threshold: float = 0.015, dry_run: bool = True) -> dict:
         """Manifolddaki çok yakın kavramları tespit et (opsiyonel: birleştir).
 

@@ -157,6 +157,123 @@ def external_verify(engine: Any, facts: "list[tuple[str, str, str]] | None" = No
     }
 
 
+# ── HESAP-ORACLE'I: sistemin matematiksel mekanizmasını BAĞIMSIZ kesin hesaba sına ──
+# external_verify küratörlü KAUSAL olguyu sınar (gerçek dünya ilişkisi). Bu, sistemin
+# SAYISAL/cebirsel ÇEKİRDEĞİNİ gerçek matematiğe karşı sınar — lab GEREKMEZ, kesin hesap:
+#   1. Sturm pivot ⟺ hiperbolisite: sistemin TAÇ mekanizması (Sturm pivot pozitifliği =
+#      Jensen hiperbolisitesi = RH kriteri). Tüm pivotlar pozitif ⟺ polinomun tüm kökleri
+#      REEL olmalı. Bağımsız companion-matris (numpy.roots, TAMAMEN farklı algoritma) ile
+#      karşılaştır. Uyuşmazlık = sistemin pozitiflik↔gerçeklik köprüsünde GERÇEK bug.
+#   2. Hankel moment-dizisi PSD (Aleph temeli): GERÇEK atomik ölçüden (Σ wᵢxᵢᵏ, wᵢ>0)
+#      üretilen moment DAİMA PSD → sistem "moment dizisi" demeli; kasıtlı geçersiz dizi
+#      reddedilmeli. Kurulu gerçeğe (ölçü teorisi) karşı sına.
+
+# (coeffs azalan derece, numpy konvansiyonu), beklenen: tüm kökler reel mi (hiperbolik mi)
+_STURM_CASES: list[tuple[list[float], bool, str]] = [
+    ([1, 0, -1], True, "x^2-1 = (x-1)(x+1)"),
+    ([1, 0, 1], False, "x^2+1 (kompleks ±i)"),
+    ([1, 0, -3, 1], True, "x^3-3x+1 (3 reel kök)"),
+    ([1, -1, 1, -1], False, "(x-1)(x^2+1)"),
+    ([1, 0, -5, 0, 4], True, "(x^2-1)(x^2-4) (4 reel)"),
+    ([1, 0, 0, 0, 1], False, "x^4+1 (tüm kompleks)"),
+    ([1, -6, 11, -6], True, "(x-1)(x-2)(x-3)"),
+    ([1, 0, 1, 0, 1], False, "x^4+x^2+1 (kompleks)"),
+    ([1, 1, 1], False, "x^2+x+1 (kompleks)"),
+    ([1, 0, -5, 0, 4, 0], True, "x(x^2-1)(x^2-4) (5 reel)"),
+    ([1, 0, -2], True, "x^2-2 (±√2 reel)"),
+    ([1, 0, 0, 1], False, "x^3+1 (1 reel 2 kompleks)"),
+]
+
+
+def computational_verify(engine: Any = None, *, tol: float = 1e-7) -> dict:
+    """Sistemin hesaplanabilir matematiksel iddiasını BAĞIMSIZ kesin hesaba sına.
+
+    İçsel sertifika ≠ doğru. Bu, Sturm pivot pozitifliği↔hiperbolisite köprüsünü
+    numpy companion-matris köklerine, Hankel-PSD'yi ölçü teorisine karşı sınar.
+    Döner: {score, correct, total, failures, sturm, hankel}.
+    """
+    import numpy as np
+    from tantrium.algebra.sturm import normalized_sturm_pivots
+
+    correct = 0
+    total = 0
+    failures: list[dict] = []
+
+    # 1) STURM pivot pozitifliği ⟺ tüm kökler reel (numpy bağımsız gerçek)
+    sturm_ok = 0
+    sturm_total = 0
+    try:
+        from sympy import symbols
+        x = symbols("x")
+        for coeffs, expect_hyperbolic, label in _STURM_CASES:
+            sturm_total += 1
+            total += 1
+            # BAĞIMSIZ gerçek: companion-matris özdeğerleri (Sturm'dan tamamen farklı)
+            roots = np.roots(coeffs)
+            all_real = bool(np.all(np.abs(roots.imag) < 1e-6))
+            # sanity: test etiketi gerçekle uyuşmalı (battery doğru kurulmuş mu)
+            if all_real != expect_hyperbolic:
+                failures.append({"case": label, "kind": "battery_mismatch",
+                                 "numpy_all_real": all_real, "expected": expect_hyperbolic})
+                continue
+            # SİSTEM: Sturm pivotları (taç mekanizma)
+            expr = sum(c * x ** (len(coeffs) - 1 - i) for i, c in enumerate(coeffs))
+            try:
+                pivots = normalized_sturm_pivots(expr, x)
+                pvals = [float(p) for p in pivots]
+                all_pos = all(p > tol for p in pvals)
+            except Exception as e:
+                failures.append({"case": label, "kind": "sturm_error", "error": str(e)})
+                continue
+            if all_pos == all_real:
+                correct += 1
+                sturm_ok += 1
+            else:
+                failures.append({"case": label, "kind": "sturm_hyperbolicity",
+                                 "pivots_all_positive": all_pos, "all_roots_real": all_real,
+                                 "pivots": [round(p, 4) for p in pvals]})
+    except Exception as e:
+        failures.append({"kind": "sturm_setup_error", "error": str(e)})
+
+    # 2) HANKEL moment-dizisi PSD: gerçek ölçü → DAİMA PSD; geçersiz → reddet
+    from fractions import Fraction
+    from tantrium.core.codex import CertifiableObject
+    hankel_ok = 0
+    hankel_total = 0
+
+    def _moments_from_measure(support, weights, n=8):
+        return [sum(w * (s ** k) for s, w in zip(support, weights)) for k in range(n)]
+
+    hankel_cases: list[tuple[list[float], bool, str]] = [
+        (_moments_from_measure([0.2, 0.5, 0.9], [0.3, 0.4, 0.3]), True, "3-atom ölçü"),
+        (_moments_from_measure([0.1, 0.8], [0.6, 0.4]), True, "2-atom ölçü"),
+        (_moments_from_measure([0.5], [1.0]), True, "tek-atom (Dirac)"),
+        ([1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0], False, "geçersiz (H₂ PSD değil)"),
+        ([1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0], False, "geçersiz (μ₂<μ₁²)"),
+    ]
+    for moments, expect_psd, label in hankel_cases:
+        hankel_total += 1
+        total += 1
+        obj = CertifiableObject(name=label,
+                                moments=[Fraction(x).limit_denominator(10 ** 9) for x in moments])
+        verdict = obj.is_moment_sequence(size=4)
+        if verdict == expect_psd:
+            correct += 1
+            hankel_ok += 1
+        else:
+            failures.append({"case": label, "kind": "hankel_psd",
+                             "system_says_psd": verdict, "truth_psd": expect_psd})
+
+    return {
+        "score": (correct / total) if total else 0.0,
+        "correct": correct,
+        "total": total,
+        "failures": failures,
+        "sturm": {"correct": sturm_ok, "total": sturm_total},
+        "hankel": {"correct": hankel_ok, "total": hankel_total},
+    }
+
+
 def encoder_health(engine: Any, *, n_samples: int = 100) -> dict:
     """Encoder'ın İÇSEL sadakatini ölç (CollisionHunter adversarial öz-test).
 

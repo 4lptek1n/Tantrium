@@ -35,6 +35,7 @@ class CognitionState:
     suspects_flagged: int = 0   # VerifyPhase: dejenere/çakışma şüphesi işaretlendi
     benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet [0,1]
     encoder_health: float = 0.0   # VerifyPhase: encoder içsel çakışma oranı (düşük=sağlıklı)
+    math_verify_score: float = 1.0  # VerifyPhase: hesap-oracle (Sturm↔hiperbolisite+Hankel) [0,1]
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
@@ -63,6 +64,7 @@ class CognitionReport:
     corrected: int = 0           # VerifyPhase: düzeltilen dejenere encoding
     suspects_flagged: int = 0    # VerifyPhase: işaretlenen şüpheli temsil
     benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet
+    math_verify_score: float = 1.0  # VerifyPhase: hesap-oracle matematiksel doğruluk
     phase_logs: list[str] = field(default_factory=list)
     campaigns_triggered: list[str] = field(default_factory=list)
     narrations: list[str] = field(default_factory=list)
@@ -726,11 +728,13 @@ class VerifyPhase:
     def __init__(self) -> None:
         self._seen: set[str] = set()  # döngüler arası artımlı "denetlendi" hafızası
         self._health_done = False     # encoder-sağlık öz-testi oturum başına bir kez
+        self._math_done = False       # hesap-oracle öz-testi oturum başına bir kez
 
     def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
         try:
             from tantrium.research.corrigibility import (
                 detect_and_correct, external_verify, encoder_health,
+                computational_verify,
             )
             # YAPISAL (içsel): dejenere encoding/çakışma — GIMEL'in kör noktası.
             res = detect_and_correct(engine, self._seen)
@@ -758,6 +762,20 @@ class VerifyPhase:
                     f"({eh['collisions']} çakışma; derinlikle {eh['resolved_by_depth']}, "
                     f"label ile {eh['resolved_by_labels']} çözülür, {eh['inherent']} içkin)"
                 )
+            # HESAP-ORACLE'I: matematiksel mekanizmayı BAĞIMSIZ kesin hesaba sına (lab değil).
+            # Sturm pivot↔hiperbolisite (numpy köklerine) + Hankel-PSD (ölçü teorisine).
+            # Deterministik → oturum başına bir kez. Sistemin taç iddiasının canlı doğruluğu.
+            if not self._math_done:
+                self._math_done = True
+                mv = computational_verify(engine)
+                state.math_verify_score = mv["score"]
+                state.log(
+                    f"verify/hesap: matematiksel doğruluk {mv['correct']}/{mv['total']} "
+                    f"(Sturm↔hiperbolisite {mv['sturm']['correct']}/{mv['sturm']['total']}, "
+                    f"Hankel-PSD {mv['hankel']['correct']}/{mv['hankel']['total']})"
+                )
+                if mv["failures"]:
+                    state.log(f"verify/hesap UYUŞMAZLIK: {mv['failures'][:2]}")
         except Exception as exc:
             state.log(f"verify: atlandı — {exc}")
         return state
@@ -900,6 +918,7 @@ class Cognition:
             corrected=state.corrected,
             suspects_flagged=state.suspects_flagged,
             benchmark_score=state.benchmark_score,
+            math_verify_score=state.math_verify_score,
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
             narrations=list(state.narration),
