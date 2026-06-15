@@ -1806,7 +1806,8 @@ class AI:
         words = [w.split("'")[0] if "'" in w else w.strip("'") for w in raw]
         pron = any(w in self._PRON for w in words)
         cands = [w for w in words if len(w) >= 3 and w not in self._STOP_TR
-                 and w not in self._PRON and w not in self._QWORDS]
+                 and w not in self._PRON and w not in self._QWORDS
+                 and w not in self._STYLE_WORDS]
         # ANAFORA: belirgin konu yoksa ve zamir varsa → önceki turun konusu
         last = getattr(self, "_conv_topic", None)
         if not cands and pron and last:
@@ -1906,6 +1907,10 @@ class AI:
                # süreç/yüklem fiilleri — konu DEĞİL (çok-kelime öbekte gürültü)
                "çalışır", "çalışıyor", "işler", "gerçekleşir", "yapılır", "kullanılır",
                "bulunur", "denir", "oluşuyor", "oluşuyor", "meydana"}
+    # Derinlik/üslup kontrol kelimeleri — konu DEĞİL (basitçe/detaylı/teknik anlat)
+    _STYLE_WORDS = {"kısaca", "kısa", "detaylı", "ayrıntılı", "basitçe", "basit", "teknik",
+                    "resmi", "sade", "kolay", "derinlemesine", "akademik", "bilimsel",
+                    "çocuğa", "uzun", "olarak", "anlat", "açıkla"}
 
     def _pe(self):
         """Lazy ProductionEngine (Sturm-yol sertifikası için paylaşılır)."""
@@ -2028,11 +2033,11 @@ class AI:
                    + f"Yasayı keşfettim {tutar}.")
             return {"intent": "discover_law", "answer": ans, "result": r}
 
-        # ── ÖZETLE (uzun metni köküne indir) ──
-        if has("özetle", "özet", "summarize", "kısaca", "tldr", "öz çıkar"):
-            # özetlenecek metin = istekteki uzun gövde (komut kelimelerini at)
-            body = re.sub(r"(?i)\b(özetle|özet|summarize|kısaca|tldr|şunu|bunu|metni)\b",
-                           " ", str(request))
+        # ── ÖZETLE (uzun metni köküne indir) — gerçek bir GÖVDE gerekir ──
+        # ("kısaca" bir derinlik-kontrolü kelimesidir, özetleme tetiği DEĞİL.)
+        if has("özetle", "özet", "summarize", "tldr", "öz çıkar"):
+            body = re.sub(r"(?i)\b(özetle|özet|summarize|tldr|şunu|bunu|metni|öz|çıkar)\b",
+                          " ", str(request))
             r = self.summarize(body if len(body.split()) >= 6 else request)
             return {"intent": "summarize", "answer": r["summary"], "result": r}
 
@@ -2124,8 +2129,21 @@ class AI:
                 ans = f"{topic} hakkında çıkarılabilir yeni bir hipotez bulamadım."
             return {"intent": "hypothesize", "answer": ans, "result": hy}
 
+        # ── YENİDEN İFADE (paraphrase) ──
+        if has("yeniden ifade", "başka türlü", "farklı anlat", "paraphrase",
+               "yeniden yaz", "başka şekilde"):
+            r = self.paraphrase(request)
+            return {"intent": "paraphrase", "answer": r["paraphrase"], "result": r}
+
         # ── BİLGİ SORUSU → bilinçli sohbet (gerekirse öğrenir) ──
-        c = self.converse(request)
+        # Derinlik/üslup kontrolü (dilin insan-yüzü): "basitçe/kısaca/detaylı/teknik anlat".
+        depth = ("kısa" if has("kısaca", "kısa", "özetle anlat", "tek cümle")
+                 else "detaylı" if has("detaylı", "ayrıntılı", "uzun uzun", "derinlemesine")
+                 else "normal")
+        register = ("basit" if has("basitçe", "basit", "çocuğa", "sade", "kolay")
+                    else "teknik" if has("teknik", "resmi", "bilimsel", "akademik")
+                    else "neutral")
+        c = self.converse(request, depth=depth, register=register)
         return {"intent": "knowledge", "answer": c["answer"], "result": c}
 
     # İnsan-gibi anlatım için doğal cümle parçaları (log değil, akıcı dil)
@@ -2222,8 +2240,18 @@ class AI:
         except Exception:
             return ""
 
+    def _provenance(self, topic: str, facts: dict) -> list:
+        """Her köklü iddianın DAYANAĞINI (kaynak kenar) döndür — şeffaflık/atıf.
+        [{claim, paradigm, target}] : LLM'lerin yapamadığı, bizim grafttan okuduğumuz iz."""
+        out = []
+        for p, ts in facts.items():
+            for t in ts:
+                out.append({"claim": f"{topic} —{p}→ {t}", "paradigm": p, "target": t})
+        return out
+
     def converse(self, question: str, learn_if_unknown: bool = True,
-                 detail: bool = True) -> dict:
+                 detail: bool = True, *, depth: str = "normal",
+                 register: str = "neutral") -> dict:
         """BİLİNÇLİ SOHBET — bilmezse internetten ÖĞRENİR, sonra köklü cevaplar.
 
         1. sorudan konuyu çıkar  2. biliyor mu (TAU'da semantik kenar)  3. bilmiyorsa
@@ -2260,7 +2288,8 @@ class AI:
                                             for e in el if str(getattr(e, "target", "")) == topic))
                 except Exception:
                     g = None
-                answer = _narrate(topic, facts, grounding=g)
+                answer = _narrate(topic, facts, grounding=g,
+                                  depth=depth, register=register)
             else:
                 from tantrium.language.speaker import Speaker
                 answer = Speaker(self._engine).synthesize(topic, facts)
@@ -2270,7 +2299,30 @@ class AI:
         if facts:
             self._conv_topic = topic   # ÇOK-TUR: sonraki "o/bu" buna çözülür
         return {"topic": topic, "answer": answer, "learned": learned,
-                "grounded": bool(facts)}
+                "grounded": bool(facts),
+                "sources": self._provenance(topic, facts) if facts else []}
+
+    def paraphrase(self, text: str) -> dict:
+        """YENİDEN İFADE — aynı KÖKLÜ içeriği farklı sözcüklerle yeniden anlat (uydurmasız).
+
+        Metnin ilişkisel iskeletini çıkarır, fluent.narrate ile FARKLI yüzey formuna döker.
+        Yalnız metinde GERÇEKTEN olan ilişkileri yeniden ifade eder — yeni bilgi eklemez.
+        Döner: {topic, paraphrase, n_relations}.
+        """
+        from tantrium.research.autonomous import _extract_relations
+        from tantrium.language.fluent import narrate as _narrate
+        rels = _extract_relations(str(text))
+        if not rels:
+            return {"topic": "", "paraphrase": "Yeniden ifade edecek yapısal içerik bulamadım.",
+                    "n_relations": 0}
+        from collections import Counter
+        topic = Counter(s for s, _r, _o in rels).most_common(1)[0][0]
+        facts: dict[str, list[str]] = {}
+        for s, r, o in rels:
+            if s == topic and o not in facts.get(r, []):
+                facts.setdefault(r, []).append(o)
+        return {"topic": topic, "paraphrase": _narrate(topic, facts),
+                "n_relations": len(rels)}
 
     def learn(self, text: str) -> dict:
         """Metin öğret → manifolda ekle + nedensel ilişkileri TAU'ya yaz.

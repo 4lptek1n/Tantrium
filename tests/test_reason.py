@@ -113,3 +113,34 @@ def test_enumerate_clean_concept_filter():
     assert ai._is_clean_concept("erlotinib") is True
     assert ai._is_clean_concept("cs1:vancouver names") is False
     assert ai._is_clean_concept("names with accept markup") is False
+
+
+def test_depth_control_and_confidence():
+    """DALGA1: derinlik kontrolü (kısa<normal) + güven kalibrasyonu (dilde)."""
+    ai = tantrium.AI()
+    ai.learn("Erlotinib is a drug. Erlotinib inhibits EGFR. Erlotinib is a kinase inhibitor.")
+    short = ai.reason("erlotinib kısaca nedir")
+    full = ai.reason("erlotinib detaylı anlat")
+    assert short["intent"] == "knowledge"           # 'kısaca' ÖZETLE değil
+    assert len(short["answer"]) < len(full["answer"])  # kısa < detaylı
+    # güven kalibrasyonu doğal cümlede
+    c = ai.converse("erlotinib nedir?")
+    assert any(w in c["answer"] for w in ("eminim", "olasılıkla", "emin değilim",
+                                          "güvenle"))
+
+
+def test_provenance_sources():
+    """DALGA1: her köklü iddianın DAYANAĞI (kaynak kenar) döner."""
+    ai = tantrium.AI()
+    ai.learn("Erlotinib is a drug. Erlotinib inhibits EGFR.")
+    c = ai.converse("erlotinib nedir?")
+    assert c["sources"]
+    assert all("paradigm" in s and "target" in s for s in c["sources"])
+
+
+def test_reason_routes_paraphrase():
+    """DALGA1: yeniden ifade — aynı köklü içeriği farklı sözcüklerle."""
+    ai = tantrium.AI()
+    r = ai.reason("Şunu yeniden ifade et: EGFR activates ras. EGFR causes tumor growth.")
+    assert r["intent"] == "paraphrase"
+    assert r["result"]["n_relations"] >= 1

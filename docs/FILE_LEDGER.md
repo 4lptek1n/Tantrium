@@ -805,6 +805,13 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
     (compare() sertifika-raporu DEĞİL — insan-gibi karşılaştırma; ikisi BİRLEŞMEZ, farklı çıktı).
   - `enumerate_kind(category, relation)` → `_reverse_relations` (TAU ters arama: c —rel→ category).
   - `_is_clean_concept` atıf-şablonu/markup gürültüsünü eler; `reason()` 3 yeni intent yönlendirir.
+- **Kademe F45 [2026-06] — DALGA 1: dilin insan-yüzü (köklü kalarak):**
+  - `converse(depth=, register=)` + `narrate(depth=, register=)`: kısa/normal/detaylı +
+    basit/neutral/teknik. `_STYLE_WORDS` derinlik kelimesini konudan ayıklar.
+  - `fluent._confidence_lead(score)`: grounding.score → "eminim/muhtemelen/emin değilim"
+    (GEOMETRİK kalibrasyon — LLM'in istatistik-taklidi değil).
+  - `converse().sources` = `_provenance` (her iddia → TAU kenar dayanağı; şeffaf atıf).
+  - `paraphrase(text)`: `_extract_relations`+`narrate` ile köklü içeriği farklı sözcükle.
 - **Tekrar kümeleri (facade seviyesi, NAMESPACE birleşmesi — motorlar korunur):** molekül 7 metot
   (discover/design/cure/produce/simulate/genesis_mol/design_drug → produce çatısı), kausal 4
   (causal_chain/what_if/hypothesize/analogy), büyüme 4 (pulse/live/grow/run — kasıtlı gradyan),

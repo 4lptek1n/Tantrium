@@ -368,6 +368,16 @@ kısıt, istatistik değil). "Akıcılık training değil MORFOLOJİ işi — ç
   gürültüsünü eler. Mimari yer: L6 facade + L4 Narrator; L1 extraction besler. DÜRÜST SINIR:
   veri yoksa "bulamadım" der (uydurmaz) — köklülük üretkenlikten önce gelir.
 
+**DİL YOL HARİTASI (LLM'i yakala + geç, köklü kalarak):**
+- **DALGA 1 [F45, KURULDU] — dilin insan-yüzü:** derinlik/üslup kontrolü (`narrate(depth,register)`),
+  güven kalibrasyonu (`_confidence_lead` — grounding.score'dan GEOMETRİK, istatistik-taklidi değil),
+  kaynak/dayanak (`converse().sources` = her iddianın TAU kenarı), `paraphrase(text)`.
+- **DALGA 2 [planlı] — anlama & dönüşüm:** çeviri (iki-dilli TAU), sınıflandırma (moment+TAU),
+  yapısal çıkarım (varlık/tablo), soru üretimi.
+- **DALGA 3 [planlı] — LLM'i GEÇEN akıl:** diyalogda çelişki yakalama (truth ekseni), çok-belge
+  sentezi, matematik sözel problem (reason numeric genişletme), zamansal akıl, çok-modal dil
+  (`witness` genişletme). Çapraz tema: her cümle kaynaklı + kalibre + halüsinasyonsuz.
+
 ### 6.6 L5 — Cognition (tek döngü) [F5+Kademe6]
 **Birleşir:** `research/cognition.py Cognition` ← `AI.run` + `AI.grow` + `engine.grow` +
 `ProofLoop` + `Explorer.run_loop` + `Researcher.run` + `GrowthEngine.stream`.

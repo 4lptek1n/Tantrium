@@ -342,8 +342,13 @@ ai.relearn("photosynthesis")                   # → {topic, removed, learned}: 
                                                #   bayat/yanlış TANIM kenarlarını sil + _research_deep + persist
 ai.reason("erlotinib ne yapar?")               # → dict: AKIL+BEYİN — doğal dil → doğru yetenek
                                                #   {intent, answer, result}; RH-Sturm sertifikalı çıkarım zinciri
-ai.converse("photosynthesis nedir?")           # → dict: bilmezse İNTERNETTEN öğrenir, sonra köklü cevaplar
-                                               #   {topic, answer, learned, grounded}; akıcı ek-uyumlu Türkçe
+ai.converse("photosynthesis nedir?",           # → dict: bilmezse İNTERNETTEN öğrenir, sonra köklü cevaplar
+            depth="kısa", register="basit")    #   {topic, answer, learned, grounded, sources}; akıcı Türkçe
+                                               #   depth: kısa|normal|detaylı · register: basit|neutral|teknik
+                                               #   güven kalibrasyonu (grounding.score→"eminim/muhtemelen")
+                                               #   sources: her iddianın TAU kenar dayanağı (atıf/şeffaflık)
+ai.paraphrase("EGFR activates ras...")         # → dict: YENİDEN İFADE — aynı köklü içerik farklı sözcükle
+                                               #   {topic, paraphrase, n_relations}; yeni bilgi EKLEMEZ
 ai.summarize("uzun metin...")                  # → dict: ÖZETLE — metnin ilişkisel öze indir (köklü, uydurmasız)
                                                #   {topic, summary, n_relations, points}
 ai.contrast("erlotinib", "imatinib")           # → dict: KARŞILAŞTIR/FARK — ortak+ayıran ilişki + W₂/κ mesafe
@@ -768,6 +773,19 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     `_is_clean_concept` atıf-şablonu/markup gürültüsünü (cs1:…, "names with markup") eler.
     `reason()` yönlendirme: özetle/karşılaştır/fark/türleri/inhibitörleri → doğru yetenek.
     Tests: test_reason.py 13 (5 yeni: summarize/contrast/enumerate/clean_concept).
+  - **F45 — DALGA 1: Dilin insan-yüzü (derinlik + güven + kaynak + paraphrase):**
+    Bir LLM'in "nasıl konuştuğu" — köklü kalarak. Yol haritasının 1. dalgası:
+    1. **Derinlik/üslup kontrolü**: `narrate(depth=, register=)` — "basitçe/kısaca/detaylı/
+       teknik anlat" → `reason()` algılar. kısa=tek cümle · detaylı=geniş; basit=sade ·
+       teknik=geometrik-sertifika notu. `_STYLE_WORDS` derinlik kelimelerini konudan ayıklar.
+    2. **Güven kalibrasyonu (dilde)**: `_confidence_lead(score)` → "Bundan eminim / Büyük
+       olasılıkla / Tam emin değilim" — LLM'ler güveni İSTATİSTİKTEN taklit eder, biz GEOMETRİK
+       grounding.score'dan ölçeriz (gerçek kalibrasyon).
+    3. **Kaynak/dayanak (provenance)**: `converse()` artık `sources` döndürür — her iddianın
+       hangi TAU kenarına dayandığı ({claim, paradigm, target}); şeffaf atıf, LLM yapamaz.
+    4. **`ai.paraphrase(text)`**: aynı köklü içeriği `_extract_relations`+`narrate` ile FARKLI
+       sözcüklerle yeniden ifade — yeni bilgi EKLEMEZ.
+    Tests: test_reason.py +4 (depth/confidence/provenance/paraphrase).
 
 ---
 

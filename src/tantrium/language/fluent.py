@@ -116,9 +116,19 @@ _PHYS = {"HAS_COMPOUND": lambda ts: f"kimyasal yapısı {gen_join(ts)}",
          "IS_GOVERNED_BY": lambda ts: f"{gen_join(ts)} yasasıyla yönetilir"}
 
 
-def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3) -> str:
-    """Konuyu AKICI, insan-gibi, ek-uyumlu Türkçe paragrafla anlat (köklü, uydurmasız)."""
+def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3,
+            *, depth: str = "normal", register: str = "neutral") -> str:
+    """Konuyu AKICI, insan-gibi, ek-uyumlu Türkçe paragrafla anlat (köklü, uydurmasız).
+
+    depth: "kısa" (tek cümle, ne olduğu) · "normal" (ne+işlev+fiziksel) · "detaylı" (geniş).
+    register: "basit" (sade, kısa) · "neutral" · "teknik" (yapısal not + tam köklülük).
+    Güven kalibrasyonu: grounding.score → "eminim / muhtemelen / emin değilim" (geometrik).
+    """
     Topic = topic[:1].upper() + topic[1:]
+    if depth == "kısa":
+        max_per = 1
+    elif depth == "detaylı":
+        max_per = max(max_per, 5)
 
     def _collect(table):
         out = []
@@ -134,18 +144,24 @@ def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3) -> str:
     # 1) Ne olduğu
     if what:
         s.append(f"{Topic}, {gen_join(what)}.")
+    # kısa mod: tek cümlelik öz (ne olduğu, yoksa işlev)
+    if depth == "kısa":
+        if not what and does:
+            s.append(f"{Topic} {gen_join(does)}.")
+        return " ".join(s) if s else f"{Topic} hakkında doğrulanmış bilgim henüz yok."
+
     # 2) Ne yaptığı (işlev)
     if does:
         opener = random.choice(["İşlevine gelince, ", "Yaptığı işe bakarsak, ",
                                 "Görevi açısından, "]) if what else f"{Topic} "
         s.append(f"{opener}{gen_join(does)}.")
-    # 3) Fiziksel temeli
-    if phys:
+    # 3) Fiziksel temeli (basit register'da atlanır)
+    if phys and register != "basit":
         s.append(f"Fiziksel temeli açısından {gen_join(phys)}.")
     if not s:
         return f"{Topic} hakkında doğrulanmış bir bilgim henüz yok."
 
-    # 4) Köklülük — doğal cümle (log değil), gerçek anlamsal komşularla
+    # 4) GÜVEN KALİBRASYONU + köklülük — doğal cümlede (log değil)
     if grounding is not None:
         near, seen = [], set()
         for ts in facts.values():
@@ -153,17 +169,35 @@ def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3) -> str:
                 if t and t.lower() != topic.lower() and t.lower() not in seen:
                     seen.add(t.lower()); near.append(t)
         verdict = getattr(grounding, "verdict", "")
+        score = getattr(grounding, "score", None)
         total = getattr(grounding, "_n_relations", None)
+        conf = _confidence_lead(score, verdict)
         if verdict == "GROUNDED":
-            c = f"Bunları güvenle söylüyorum çünkü {topic}, bilgi dünyamda"
+            c = f"{conf} çünkü {topic}, bilgi dünyamda"
             if total:
                 c += f" {total} doğrulanmış ilişkiyle"
             c += " sağlam köklü"
-            if near[:3]:
+            if near[:3] and register != "basit":
                 c += f"; {gen_join(near[:3])} gibi kavramlarla anlamsal olarak iç içe"
             c += ". Köklü olmasaydı bu konuda konuşmaz, asla uydurmazdım."
             s.append(c)
         elif verdict == "WEAKLY_GROUNDED":
             s.append(f"Dürüst olmam gerekirse {topic} bende zayıf köklü, o yüzden "
                      f"temkinli konuşuyorum.")
+    # teknik register: yapısal not (geometrik sertifika vurgusu)
+    if register == "teknik" and (what or does):
+        s.append("Bu ifadelerin her biri TAU bilgi-grafında gerçek bir kenara dayanıyor "
+                 "— istatistiksel tahmin değil, geometrik sertifika.")
     return " ".join(s)
+
+
+def _confidence_lead(score, verdict: str) -> str:
+    """Güven kalibrasyonu (dilde): grounding skoru → emin/muhtemel/temkinli açılış.
+    LLM'ler güveni istatistikten taklit eder; biz GEOMETRİK köklülükten ölçeriz."""
+    if score is None:
+        return "Bunları güvenle söylüyorum" if verdict == "GROUNDED" else "Bildiğim kadarıyla"
+    if score >= 0.66:
+        return "Bundan eminim"
+    if score >= 0.4:
+        return "Büyük olasılıkla doğru"
+    return "Tam emin değilim ama bildiğim kadarıyla"
