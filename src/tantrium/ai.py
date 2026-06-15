@@ -798,27 +798,43 @@ class AI:
             predict_error=float(perr), law_holds=bool(holds))
 
     def forecast(self, series, steps: int = 8, order: int | None = None) -> dict:
-        """EVRENSEL TAHMİN — herhangi bir zaman serisini yöneten yasayı bulup geleceği yazar.
+        """EVRENSEL TAHMİN — lineer VE nonlineer/kaotik yasaları çözer (en gelişmiş).
 
-        Gürültü-dayanıklı (en küçük kareler AR). Domain-kör: finans/IoT/biyoritim/ölçüm.
-        order None → otomatik (tekil-değer sinyal/gürültü sınırı). Sertifika: holdout hatası.
-        Döner: {forecast, recurrence, order, residual_std, holdout_error}.
+        Hem lineer (AR/Prony) hem nonlineer (Koopman/EDMD polinom-NARX) modeli holdout'ta
+        yarıştırır, KAZANANI seçer → lojistik-harita gibi kaotik sistemleri de yakalar.
+        Domain-kör; sertifika: holdout hatası + reliable. Döner: {forecast, model, order,
+        residual_std, holdout_error, reliable}.
         """
-        from tantrium.core.structure import forecast as _fc, fit_recurrence
+        from tantrium.core.structure import (forecast as _fc, nonlinear_forecast as _nl)
         x = [float(v) for v in series]
-        # SERTİFİKA: son min(steps, n/4) değeri sakla, yasayı önceki kısımdan kur, tahmin et
-        h = max(0, min(int(steps), len(x) // 4))
-        herr = None
-        if h >= 1 and len(x) - h >= 4:
-            pred, _, _ = _fc(x[:len(x) - h], steps=h, order=order)
-            actual = x[len(x) - h:]
-            if pred:
+        h = max(1, min(int(steps), len(x) // 4))
+
+        def _holdout(fn):
+            if len(x) - h < 4:
+                return None, None
+            try:
+                pred = fn(x[:len(x) - h], h)[0]
+                actual = x[len(x) - h:]
+                if not pred:
+                    return None, None
                 denom = max(1e-9, max(abs(a) for a in actual))
-                herr = sum(abs(p - a) for p, a in zip(pred, actual)) / (len(actual) * denom)
-        fut, c, sigma = _fc(x, steps=steps, order=order)
+                return sum(abs(p - a) for p, a in zip(pred, actual)) / (len(actual) * denom), pred
+            except Exception:
+                return None, None
+
+        lin_err, _ = _holdout(lambda s, k: _fc(s, steps=k, order=order))
+        nl_err, _ = _holdout(lambda s, k: _nl(s, steps=k, degree=2, embed=3))
+        # KAZANANI seç (düşük holdout hatası)
+        use_nl = (nl_err is not None and (lin_err is None or nl_err < lin_err))
+        if use_nl:
+            fut, meta, sigma = _nl(x, steps=steps, degree=2, embed=3)
+            model, herr, c = "nonlineer (Koopman/EDMD)", nl_err, meta[0]
+        else:
+            fut, c, sigma = _fc(x, steps=steps, order=order)
+            model, herr = "lineer (AR/Prony)", lin_err
         return {
             "forecast": [round(v, 6) for v in fut],
-            "recurrence": [round(v, 6) for v in c],
+            "model": model,
             "order": len(c),
             "residual_std": round(sigma, 6),
             "holdout_error": (round(herr, 6) if herr is not None else None),

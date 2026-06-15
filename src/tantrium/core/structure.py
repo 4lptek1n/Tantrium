@@ -131,3 +131,54 @@ def anomaly_scan(samples, order: int | None = None, z: float = 3.0):
                  for k, r in enumerate(resids) if abs(r) > z * s]
     return anomalies, s
 
+
+# ── NONLİNEER: Koopman/EDMD (polinom-NARX) — kaotik sistemleri de çözer ──
+def _poly_features(z, degree: int):
+    """Gecikme-vektörü z'nin TÜM monomları (derece ≤ degree), sabit dahil. Koopman
+    sözlüğü: nonlineer dinamik lifted uzayda lineerleşir (Takens gömme + polinom)."""
+    from itertools import combinations_with_replacement
+    feats = [1.0]
+    for deg in range(1, degree + 1):
+        for combo in combinations_with_replacement(range(len(z)), deg):
+            v = 1.0
+            for i in combo:
+                v *= z[i]
+            feats.append(v)
+    return feats
+
+
+def nonlinear_fit(samples, degree: int = 2, embed: int = 2):
+    """Polinom-NARX (Koopman/EDMD gözlemli): x[n] = w·φ(x[n-embed..n-1]).
+
+    Takens gecikme-gömmesi + polinom sözlüğü → nonlineer dinamik LİNEER en-küçük-kareyle
+    çözülür. Lojistik harita/Van der Pol gibi nonlineer yasaları KESİN yakalar (polinom).
+    Döner: (w, embed, degree, residual_std).
+    """
+    import numpy as np
+    x = [float(s) for s in samples]
+    N = len(x)
+    e = max(1, min(int(embed), N // 3))
+    rows = [_poly_features(x[n - e:n], degree) for n in range(e, N)]
+    b = x[e:N]
+    try:
+        w, *_ = np.linalg.lstsq(np.array(rows), np.array(b), rcond=None)
+        resid = np.array(b) - np.array(rows) @ w
+        return [float(v) for v in w], e, int(degree), float(np.std(resid))
+    except Exception:
+        return [], e, int(degree), 0.0
+
+
+def nonlinear_forecast(samples, steps: int = 8, degree: int = 2, embed: int = 2):
+    """Nonlineer yasayla geleceği tahmin (polinom-NARX iterasyon)."""
+    w, e, d, sigma = nonlinear_fit(samples, degree, embed)
+    seq = [float(s) for s in samples]
+    out: list = []
+    for _ in range(int(steps)):
+        if not w:
+            break
+        nxt = sum(wi * fi for wi, fi in zip(w, _poly_features(seq[-e:], d)))
+        seq.append(nxt)
+        out.append(nxt)
+    return out, (w, e, d), sigma
+
+
