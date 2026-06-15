@@ -633,8 +633,16 @@ GÖREV/SPEC (girdi-çıktı örneği · test · property)
 - **P3 — Doğrulama** [✅ KURULDU, sentezde içkin]: her aday örneklere karşı ÇALIŞTIRILIR (deterministik
   ground-truth = Curry-Howard: spec'i sağlamak=kanıt) → halüsinasyon imkânsız. [tip-kontrol +
   kod-tabanı köklülük + çelişki, gerçek repo bağlamında P4 ile genişler]
-- **P4 — Agentic sarmal** [planlı]: görev→plan→sentez→doğrula→PR (Cognition/Actor/Goal) + gerçek
-  repo grounding (L3 kod-tabanı manifoldu) + izole test-runner.
+- **P4 — Agentic sarmal** [✅ KURULDU]: `core/code_agent` (ground_codebase + check_grounded +
+  run_tests) + `ai.code_task`/`ai.verify_code`/`ai.ground_codebase`. KAPALI DÖNGÜ: sentezle →
+  KÖKLÜLÜK (halüsinasyon tespiti: var olmayan sembol→RED) → İZOLE TEST (subprocess pytest) →
+  üç kapı geçerse verified. Canlı: imaginary_api→reddedildi; code_task→(x*2)+1 üç-kapı geçti.
+  Tests +6. [Kalan: gerçek repo→manifold tam entegrasyonu + NL-görev→spec, artımlı.]
+
+**═══ §12 KOD AJANI ÇEKİRDEĞİ TAMAM (P1-P4): saf Tantrium, dış model SIFIR. ═══**
+Kod = matematik = topoloji (Curry-Howard: tip-kontrol/test = kanıt). Encode→sentez→köklülük→test
+zinciri; her çıktı KANITLI + KÖKLÜ + halüsinasyonsuz. Pazarın #1 acısı (güvenilmezlik) = tek
+satırlık vaadimiz. DÜRÜST: dar ama gerçek (iyi-tanımlı görev) → primitif/derinlik/repo ile büyür.
 
 ### Dürüst sınırlar
 - Sıfırdan sertifikalı kod-sentezi ZOR (arama-uzayı patlaması) → DAR başla: iyi-tanımlı, testli

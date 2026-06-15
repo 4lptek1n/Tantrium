@@ -310,6 +310,16 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   primitif/derinlik genişledikçe büyür. P3 doğrulama (örnek-çalıştırma) sentezde içkin.
 - **Tekrar:** YOK. molecular_genesis (SMILES) ile AYNI DESEN, FARKLI uzay (terim vs atom) — strateji çeşitliliği.
 
+### ✅ core/code_agent.py — KOD AJANI: grounding + halüsinasyon-tespiti + test [YENİ — ASI §12 P4]
+- **İş:** `ground_codebase(files)` (repo→semboller/fonksiyonlar/import + TAU DEFINES/CALLS = kod-tabanı
+  manifoldu) · `check_grounded(code, ground)` (kodun her Load-sembolü köklü mü; var olmayan =
+  HALÜSİNASYON → ungrounded) · `run_tests(code, test)` (İZOLE subprocess pytest, timeout/temp/ağsız).
+- **Güç:** LLM hayali API çağırır (sen yakala); biz `check_grounded` ile geometrik/yapısal yakalar +
+  `run_tests` ile GERÇEK çalıştığını kanıtlarız. `ai.code_task` (sentez→köklülük→test kapalı döngü),
+  `ai.verify_code` (HERHANGİ kodu doğrula). Saf Tantrium, dış model SIFIR.
+- **DÜRÜST SINIR:** test-runner ajanın `_UNSAFE` sandbox'ından AYRI, kasıtlı kontrollü araç (izole).
+- **Tekrar:** YOK. code_synthesis (üretim) ile tamamlayıcı (doğrulama).
+
 ### ✅ core/molecular_3d.py — TEK kanonik 3D SDF util [#7 dedup ÇÖZÜLDÜ 2026-06]
 - **İş:** `embed_3d_sdf(smiles, name, out_dir, *, prefix, props, remove_hs, enforce_chirality)`.
   SMILES → ETKDGv3 (randomSeed=42) + MMFF94 → SDF. `inverse._make_3d` (props={SMILES},

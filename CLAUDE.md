@@ -383,10 +383,16 @@ ai.ingest_corpus([doc1, doc2, ...])            # → dict: ASI Pilar E — SINIR
 ai.read_data([1,1,2,3,5], analyze="law")       # → dict: ASI Pilar D — yapısal sayısal veri (liste/CSV/
                                                #   JSON/metin) → deterministik dinamik-yasa/forecast/anomali
                                                #   {series, analyze, result, answer} (figür-semantiği DIŞARIDA)
-ai.code([(1,3),(2,5),(3,7)])                   # → dict: SERTİFİKALI KOD SENTEZİ (ASI §12, kod ajanı)
+ai.code([(1,3),(2,5),(3,7)])                   # → dict: SERTİFİKALI KOD SENTEZİ (ASI §12 P2, kod ajanı)
                                                #   örnekten KANITLI program (her örneği DOĞRULAYAN); dış model YOK
-                                               #   {program, source, verified, examples_passed, answer}
+                                               #   sayı/liste/string/çok-argüman; {program, source, verified, answer}
                                                #   verified=False → dürüst başarısızlık (halüsinasyon imkânsız)
+ai.code_task(examples=[(1,3),(2,5)],           # → dict: AGENTIC kod görevi (ASI §12 P4) — kapalı döngü
+            tests="def test(): assert solve(5)==11",#   SENTEZLE→KÖKLÜLÜK→TEST üç kapı; {verified, grounded, tests_passed}
+            codebase={"lib.py":"..."})          #   üç kapı geçerse verified — halüsinasyonsuz
+ai.verify_code(code, codebase={...},           # → dict: HERHANGİ kodu doğrula — köklülük (hayali API RED)
+               tests="...")                     #   + izole test geçidi {grounded, ungrounded, tests_passed, verified}
+ai.ground_codebase({"path":"src..."})          # → dict: repo → köklü manifold {symbols, functions, edges}
 ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}  [Geri BFS]
 ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}   [İleri BFS]
 ai.analogy("erlotinib", "egfr", "imatinib")   # → [("bcr-abl", 0.0)]  TAU ilişki tutarlılığı
