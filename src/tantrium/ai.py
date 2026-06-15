@@ -3550,6 +3550,28 @@ class AI:
                      f"(Sturm↔hiperbolisite + Hankel-PSD)"),
         }
 
+    def calibrate(self, targets: list[str] | None = None) -> dict:
+        """AMPİRİK KALİBRASYON: sertifika bilinen ilaç→hedef farmakolojisini geri kazanıyor mu.
+
+        Geriye-dönük, wet-lab GEREKMEZ — zaten ölçülmüş farmakoloji (küratörlü). Leave-one-out:
+        her ligand kendi hedefinin DİĞER ligand profiline + tüm panel hedeflerine κ-fit ile
+        sıralanır; gerçek hedef tepe-k'de mi. "İçsel sertifika gerçeği ne kadar öngörüyor"un
+        DÜRÜST sayısı. Çekirdek `research.corrigibility.empirical_verify` (VerifyPhase paylaşır).
+        Döner: {top1, top2, top1_related, mrr, tested, per_target, note}.
+        """
+        from tantrium.research.corrigibility import empirical_verify
+        r = empirical_verify(self._engine, targets=targets)
+        return {
+            "top1": round(r["top1"], 3),
+            "top2": round(r["top2"], 3),
+            "top1_related": round(r["top1_related"], 3),
+            "mrr": round(r["mrr"], 3),
+            "tested": r["tested"],
+            "n_targets": r["n_targets"],
+            "per_target": r["per_target"],
+            "note": r["note"],
+        }
+
     def consolidate(self, threshold: float = 0.015, dry_run: bool = True) -> dict:
         """Manifolddaki çok yakın kavramları tespit et (opsiyonel: birleştir).
 

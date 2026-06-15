@@ -79,3 +79,32 @@ def test_verify_math_facade():
     assert r["sturm"]["correct"] == 12
     assert r["hankel"]["correct"] == 5
     assert "bağımsız" in r["note"]
+
+
+def test_empirical_verify_recovers_distinct_classes():
+    """Ampirik oracle: yapısal-FARKLI ilaç sınıfları (NSAID/rapalog) geri kazanılmalı.
+
+    Kinaz-içi ince seçicilik AYRILMAZ (dürüst sınır) — ama coarse sınıf ayrılır:
+    NSAID (cyclooxygenase) ve rapalog (mtor) kendi hedeflerini tepe-1 bulmalı.
+    Bu, sertifikanın gerçeği KISMEN öngördüğünün ölçülmüş kanıtı.
+    """
+    import tantrium
+    from tantrium.research.corrigibility import empirical_verify
+    ai = tantrium.AI()
+    r = empirical_verify(ai.engine)
+    assert r["tested"] >= 10, "panel yeterli ligand içermeli"
+    # akraba-tepe-1 rastgeleden (1/n_targets) belirgin yüksek olmalı — sertifika boş değil
+    assert r["top1_related"] > 1.5 / r["n_targets"]
+    # yapısal-farklı sınıflar geri kazanılmalı (kaba ayrım çalışıyor)
+    assert r["per_target"].get("cyclooxygenase", {}).get("top1", 0) >= 1
+    assert r["per_target"].get("mtor", {}).get("top1", 0) >= 1
+
+
+def test_calibrate_facade():
+    """ai.calibrate() facade ampirik kalibrasyonu döner."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.calibrate()
+    assert "top1_related" in r and "mrr" in r
+    assert r["tested"] > 0
+    assert "ince seçicilik" in r["note"]

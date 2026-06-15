@@ -36,6 +36,7 @@ class CognitionState:
     benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet [0,1]
     encoder_health: float = 0.0   # VerifyPhase: encoder içsel çakışma oranı (düşük=sağlıklı)
     math_verify_score: float = 1.0  # VerifyPhase: hesap-oracle (Sturm↔hiperbolisite+Hankel) [0,1]
+    pharma_recall: float = 0.0  # VerifyPhase: ampirik farmakoloji geri-kazanım (akraba tepe-1)
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
@@ -65,6 +66,7 @@ class CognitionReport:
     suspects_flagged: int = 0    # VerifyPhase: işaretlenen şüpheli temsil
     benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet
     math_verify_score: float = 1.0  # VerifyPhase: hesap-oracle matematiksel doğruluk
+    pharma_recall: float = 0.0  # VerifyPhase: ampirik farmakoloji geri-kazanım
     phase_logs: list[str] = field(default_factory=list)
     campaigns_triggered: list[str] = field(default_factory=list)
     narrations: list[str] = field(default_factory=list)
@@ -734,7 +736,7 @@ class VerifyPhase:
         try:
             from tantrium.research.corrigibility import (
                 detect_and_correct, external_verify, encoder_health,
-                computational_verify,
+                computational_verify, empirical_verify,
             )
             # YAPISAL (içsel): dejenere encoding/çakışma — GIMEL'in kör noktası.
             res = detect_and_correct(engine, self._seen)
@@ -776,6 +778,15 @@ class VerifyPhase:
                 )
                 if mv["failures"]:
                     state.log(f"verify/hesap UYUŞMAZLIK: {mv['failures'][:2]}")
+                # AMPİRİK: sertifika bilinen farmakolojiyi geri kazanıyor mu (geriye-dönük,
+                # lab değil). Dürüst kalibrasyon — kaba sınıf yakalanır, ince seçicilik henüz değil.
+                em = empirical_verify(engine)
+                state.pharma_recall = em["top1_related"]
+                state.log(
+                    f"verify/ampirik: farmakoloji geri-kazanım tepe-1 {em['top1']:.2f}, "
+                    f"akraba {em['top1_related']:.2f} ({em['tested']} ligand/{em['n_targets']} hedef) "
+                    f"— kaba sınıf ayrılır, ince seçicilik AYRILMAZ (dürüst sınır)"
+                )
         except Exception as exc:
             state.log(f"verify: atlandı — {exc}")
         return state
@@ -919,6 +930,7 @@ class Cognition:
             suspects_flagged=state.suspects_flagged,
             benchmark_score=state.benchmark_score,
             math_verify_score=state.math_verify_score,
+            pharma_recall=state.pharma_recall,
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
             narrations=list(state.narration),

@@ -274,6 +274,110 @@ def computational_verify(engine: Any = None, *, tol: float = 1e-7) -> dict:
     }
 
 
+# ── AMPİRİK ORACLE: sertifika BİLİNEN farmakolojiyi geri kazanıyor mu (geriye-dönük) ──
+# computational_verify saf matematiği sınar; bu, sistemin moleküler ayrımının GERÇEK
+# ölçülmüş ilaç-hedef ilişkilerini takip edip etmediğini sınar — wet-lab GEREKMEZ, zaten
+# ölçülmüş farmakoloji (küratörlü). Leave-one-out: bir ligandı, kendi hedefinin DİĞER
+# ligandlarından kurulan profile + tüm rakip hedeflere κ-fit ile sırala; gerçek hedef
+# tepe-k'de mi? İçsel sertifikanın gerçeği ne kadar öngördüğünün DÜRÜST sayısı.
+_PANEL_TARGETS = ["egfr", "vegfr", "abl", "alk", "kit", "bcr-abl",
+                  "braf", "her2", "cyclooxygenase", "mtor"]
+
+
+def empirical_verify(engine: Any, *, targets: "list[str] | None" = None) -> dict:
+    """Sertifikanın moleküler κ-fit'i bilinen ilaç→hedef eşleşmesini geri kazanıyor mu.
+
+    Leave-one-out geriye-dönük: her ligand kendi hedefinin DİĞER ligandlarından kurulan
+    profile karşı + tüm panel hedeflerine κ-fit; gerçek hedef tepe-1/tepe-2'de mi.
+    Çok-hedefli ilaç (imatinib→abl+kit) tepe-2 ile dürüstçe kapsanır. Lab YOK.
+    Döner: {top1, top2, mrr, tested, per_target, note}.
+    """
+    from tantrium.core.production import ProductionEngine
+    pe = ProductionEngine(engine)
+    panel = targets or _PANEL_TARGETS
+
+    # Her panel hedefinin ligandları (isim, smiles) + κ-fit için moment encode (cache)
+    enc: dict[str, list[float]] = {}
+
+    def _mu(smi: str) -> list[float]:
+        v = enc.get(smi)
+        if v is None:
+            v = pe._encode(smi)
+            enc[smi] = v or []
+        return enc[smi]
+
+    tgt_ligs: dict[str, list[tuple[str, str]]] = {}
+    for t in panel:
+        ligs = [(n, s) for n, s in pe._reference_ligands(t) if _mu(s)]
+        if len(ligs) >= 2:
+            tgt_ligs[t] = ligs
+    panel = list(tgt_ligs.keys())
+
+    def _profile(ligs: list[tuple[str, str]]) -> list[float]:
+        mus = [_mu(s) for _, s in ligs]
+        mus = [m for m in mus if m]
+        if not mus:
+            return []
+        return [sum(m[i] for m in mus) / len(mus) for i in range(len(mus[0]))]
+
+    top1 = top2 = top1_rel = tested = 0
+    rr_sum = 0.0
+    per_target: dict[str, dict] = {}
+    # pharmakolojik akrabalık: ligand kümeleri kesişen hedefler (çok-hedefli ilaç gerçeği)
+    lig_sets = {t: {s for _, s in tgt_ligs[t]} for t in panel}
+    for true_t in panel:
+        t_correct1 = t_n = 0
+        for name, smi in tgt_ligs[true_t]:
+            lig_mu = _mu(smi)
+            if not lig_mu:
+                continue
+            # her hedefe profil: gerçek hedef LOO (test ligandını çıkar), rakipler tam
+            fits: list[tuple[str, float]] = []
+            for t in panel:
+                if t == true_t:
+                    others = [(n, s) for n, s in tgt_ligs[t] if s != smi]
+                    prof = _profile(others)
+                else:
+                    prof = _profile(tgt_ligs[t])
+                if not prof:
+                    continue
+                fits.append((t, pe._structural_kappa_distance(lig_mu, prof)))
+            if not fits:
+                continue
+            fits.sort(key=lambda kv: kv[1])
+            ranked = [t for t, _ in fits]
+            rank = ranked.index(true_t) + 1 if true_t in ranked else len(ranked) + 1
+            tested += 1
+            t_n += 1
+            rr_sum += 1.0 / rank
+            if rank == 1:
+                top1 += 1
+                t_correct1 += 1
+            if rank <= 2:
+                top2 += 1
+            # akraba-isabet: tahmin edilen #1 hedef, gerçek hedefle ligand paylaşıyorsa
+            # (imatinib abl'de test edilip kit tahmin → farmakolojik olarak DOĞRU)
+            pred = ranked[0]
+            if smi in lig_sets.get(pred, set()) or (lig_sets.get(pred, set())
+                                                    & lig_sets.get(true_t, set())):
+                top1_rel += 1
+        if t_n:
+            per_target[true_t] = {"top1": t_correct1, "n": t_n}
+
+    return {
+        "top1": (top1 / tested) if tested else 0.0,
+        "top2": (top2 / tested) if tested else 0.0,
+        "top1_related": (top1_rel / tested) if tested else 0.0,
+        "mrr": (rr_sum / tested) if tested else 0.0,
+        "tested": tested,
+        "n_targets": len(panel),
+        "per_target": per_target,
+        "note": (f"{top1}/{tested} ligand gerçek hedefini tepe-1, {top2}/{tested} tepe-2, "
+                 f"{top1_rel}/{tested} akraba-hedef buldu ({len(panel)} hedefli panel, LOO). "
+                 f"Kaba sınıf (NSAID/kinaz/rapalog) ayrılır; sınıf-içi ince seçicilik AYRILMAZ."),
+    }
+
+
 def encoder_health(engine: Any, *, n_samples: int = 100) -> dict:
     """Encoder'ın İÇSEL sadakatini ölç (CollisionHunter adversarial öz-test).
 
