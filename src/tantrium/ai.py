@@ -1994,6 +1994,7 @@ class AI:
         detect_anomalies · yapı→reverse_engineer · ilaç→produce · bağ→entangle · bilgi→converse.
         Döner: {intent, answer, result}. answer = beynin çıktısının dile dökülmüş hali.
         """
+        import re
         text = str(request).lower()
         nums = self._extract_numbers(request)
         has = lambda *ks: any(k in text for k in ks)
@@ -2026,6 +2027,38 @@ class AI:
                    + (f"Dinamik: {'; '.join(r.dynamics[:3])}. " if r.dynamics else "")
                    + f"Yasayı keşfettim {tutar}.")
             return {"intent": "discover_law", "answer": ans, "result": r}
+
+        # ── ÖZETLE (uzun metni köküne indir) ──
+        if has("özetle", "özet", "summarize", "kısaca", "tldr", "öz çıkar"):
+            # özetlenecek metin = istekteki uzun gövde (komut kelimelerini at)
+            body = re.sub(r"(?i)\b(özetle|özet|summarize|kısaca|tldr|şunu|bunu|metni)\b",
+                           " ", str(request))
+            r = self.summarize(body if len(body.split()) >= 6 else request)
+            return {"intent": "summarize", "answer": r["summary"], "result": r}
+
+        # ── KARŞILAŞTIR / FARK (iki kavram, akıcı) ──
+        if has("karşılaştır", "fark", "farkı", "kıyasla", "compare", "benzerlik",
+               "ortak yön", " vs "):
+            cw = [w.strip("?.,!:;'\"").lower() for w in str(request).split()]
+            cands = [w for w in cw if len(w) >= 3 and w not in self._STOP_TR
+                     and w not in self._QWORDS
+                     and w not in {"karşılaştır", "fark", "farkı", "farkları", "kıyasla",
+                                   "compare", "benzerlik", "benzerliği", "ortak", "yön",
+                                   "arasındaki", "arasında", "ile", "vs"}]
+            if len(cands) >= 2:
+                ct = self.contrast(cands[0], cands[1])
+                return {"intent": "contrast", "answer": ct["answer"], "result": ct}
+
+        # ── LİSTELE (X türleri / örnekleri / inhibitörleri) ──
+        if has("türleri", "örnekleri", "çeşitleri", "listele", "hangileri",
+               "neler var", "örnekler", "inhibitör", "baskılayan"):
+            topic = self._converse_topic(
+                re.sub(r"(?i)\b(türleri|örnekleri|çeşitleri|listele|hangileri|neler|var|"
+                       r"örnekler|nelerdir|nedir|inhibitörleri|inhibitörü|inhibitör|"
+                       r"baskılayanlar|baskılayan)\b", " ", str(request)))
+            rel = "INHIBITS" if has("inhibitör", "baskılayan") else "IS_A"
+            r = self.enumerate_kind(topic, relation=rel)
+            return {"intent": "enumerate", "answer": r["answer"], "result": r}
 
         # ── İLAÇ / TASARIM ──
         if has("ilaç", "drug", "tedavi", "cure", "tasarla", "üret") and not has("nedir"):
@@ -2323,6 +2356,125 @@ class AI:
         except Exception:
             pass
         return {"topic": topic, "removed": removed, "learned": learned}
+
+    @staticmethod
+    def _is_clean_concept(name: str) -> bool:
+        """Atıf-şablonu/markup gürültüsünü ele (cs1:..., 'names with markup', uzun id)."""
+        n = str(name).strip()
+        if not n or n.startswith("⟨") or ":" in n or len(n) > 30:
+            return False
+        low = n.lower()
+        if any(j in low for j in ("markup", "cs1", "names with", "citation",
+                                  "webarchive", "wikidata", "http")):
+            return False
+        return len(n.split()) <= 3
+
+    def _reverse_relations(self, target: str, paradigm: str, limit: int = 12) -> list:
+        """TAU'da TERS arama: {c : c —paradigm→ target}. "X türleri" (c IS_A X) ve
+        "X inhibitörleri" (c INHIBITS X) için. Bridge/uzun-id/markup kavramları eler."""
+        tl = str(target).lower()
+        out, seen = [], set()
+        for src, edges in self._engine.tau.edges.items():
+            if not self._is_clean_concept(src):
+                continue
+            for e in edges:
+                if (getattr(e, "paradigm", "") == paradigm
+                        and str(getattr(e, "target", "")).lower() == tl
+                        and src.lower() not in seen):
+                    seen.add(src.lower()); out.append(src)
+                    break
+            if len(out) >= limit:
+                break
+        return out
+
+    def summarize(self, text: str, max_points: int = 4) -> dict:
+        """ÖZETLE — uzun metni KÖKLÜ özüne indir (LLM'in çekirdek dil işi, halüsinasyonsuz).
+
+        Metnin ilişkisel iskeletini çıkarır (_extract_relations), en MERKEZÎ özneyi (en çok
+        bahsi geçen) bulur, onun olgularını akıcı Türkçe paragrafa örer. Yalnız metinden
+        ÇIKARILANI söyler — uydurmaz; metin yapısı yoksa dürüstçe der.
+        Döner: {topic, summary, n_relations, points}.
+        """
+        from tantrium.research.autonomous import _extract_relations
+        from tantrium.language.fluent import narrate as _narrate
+        rels = _extract_relations(str(text))
+        if not rels:
+            return {"topic": "", "summary": "Metinden yapısal bir öz çıkaramadım.",
+                    "n_relations": 0, "points": []}
+        # En merkezî özne = en çok kez özne olan (özet o kavram etrafında döner)
+        from collections import Counter
+        freq = Counter(s for s, _r, _o in rels)
+        topic = freq.most_common(1)[0][0]
+        facts: dict[str, list[str]] = {}
+        for s, r, o in rels:
+            if s == topic and o not in facts.get(r, []):
+                facts.setdefault(r, []).append(o)
+        summary = _narrate(topic, facts) if facts else (
+            f"Metnin ana konusu '{topic}'; ilişkileri: "
+            + "; ".join(f"{s} {r} {o}" for s, r, o in rels[:max_points]))
+        points = [f"{s} —{r}→ {o}" for s, r, o in rels[:max_points]]
+        return {"topic": topic, "summary": summary, "n_relations": len(rels),
+                "points": points}
+
+    def contrast(self, a: str, b: str) -> dict:
+        """KARŞILAŞTIR/FARK — iki kavramı AKICI Türkçe ile karşılaştır (köklü, sertifikalı).
+
+        Ortak komşular (benzerlik) + ayıran ilişkiler (fark) + W₂/κ mesafesi + gizli κ-bağ.
+        compare() sertifika-raporu verir; contrast() İNSAN-GİBİ fark cümlesi kurar.
+        Döner: {a, b, shared, distinct_a, distinct_b, distance, entangled, answer}.
+        """
+        from tantrium.language.fluent import gen_join
+        a = self._converse_topic(a) or str(a).lower()
+        b = self._converse_topic(b) or str(b).lower()
+        fa, fb = self._tau_facts(a, max_per=8), self._tau_facts(b, max_per=8)
+        ta = {o.lower(): o for ts in fa.values() for o in ts if self._is_clean_concept(o)}
+        tb = {o.lower(): o for ts in fb.values() for o in ts if self._is_clean_concept(o)}
+        shared = [ta[k] for k in ta if k in tb]
+        distinct_a = [ta[k] for k in ta if k not in tb][:5]
+        distinct_b = [tb[k] for k in tb if k not in ta][:5]
+        dist = ent = None
+        try:
+            e = self.entangle(a, b)
+            dist, ent = e.get("classical_dist"), e.get("entangled")
+        except Exception:
+            pass
+        Aa, Bb = a[:1].upper() + a[1:], b[:1].upper() + b[1:]
+        parts = []
+        if shared:
+            parts.append(f"{Aa} ve {Bb} ortak olarak {gen_join(shared[:4])} ile ilişkili")
+        if distinct_a:
+            parts.append(f"{Aa}'yı ayıran: {gen_join(distinct_a)}")
+        if distinct_b:
+            parts.append(f"{Bb}'yi ayıran: {gen_join(distinct_b)}")
+        if dist is not None:
+            rel = "yakın" if dist < 0.1 else ("orta uzaklıkta" if dist < 0.3 else "uzak")
+            parts.append(f"moment uzayında {rel} (W₂={dist})"
+                         + ("; ama gizli κ-bağ var (klasik-uzak/κ-yakın)" if ent else ""))
+        answer = (". ".join(parts) + "." if parts else
+                  f"{Aa} ve {Bb} için karşılaştırılacak köklü ilişki bulamadım.")
+        return {"a": a, "b": b, "shared": shared, "distinct_a": distinct_a,
+                "distinct_b": distinct_b, "distance": dist, "entangled": ent,
+                "answer": answer}
+
+    def enumerate_kind(self, category: str, relation: str = "IS_A") -> dict:
+        """LİSTELE — "X türleri / örnekleri / inhibitörleri" (TAU ters arama, köklü).
+
+        relation="IS_A" → c IS_A category (türler/örnekler); "INHIBITS"/"ACTIVATES"/"CAUSES"
+        → o ilişkiyle category'i hedefleyenler. Yalnız grafta GERÇEK olanları sayar.
+        Döner: {category, relation, items, answer}.
+        """
+        from tantrium.language.fluent import gen_join
+        cat = self._converse_topic(category) or str(category).lower()
+        items = self._reverse_relations(cat, relation)
+        Cc = cat[:1].upper() + cat[1:]
+        verb = {"IS_A": "türleri/örnekleri", "INHIBITS": "baskılayanlar",
+                "ACTIVATES": "etkinleştirenler", "CAUSES": "yol açanlar"}.get(relation, "ilişkililer")
+        if items:
+            answer = (f"{Cc} {verb}: {gen_join(items[:10])}. "
+                      f"Hepsi TAU bilgi-grafında gerçek kenarlara dayanıyor — uydurma değil.")
+        else:
+            answer = f"{Cc} için grafta köklü {verb} bulamadım."
+        return {"category": cat, "relation": relation, "items": items, "answer": answer}
 
     def transport(self, source: str, target: str, use_smiles: bool = False) -> "object":
         """Certified dyadic transport from source → target moment sequences.

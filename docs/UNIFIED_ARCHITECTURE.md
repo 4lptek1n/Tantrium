@@ -360,6 +360,14 @@ kısıt, istatistik değil). "Akıcılık training değil MORFOLOJİ işi — ç
   L4 Narrator (fluent) + L6 `ai.reason/converse/relearn` facade'ı; L1 Encoder extraction
   (`autonomous._extract_relations`) bu katmana köklü olgu besler.
 
+- **F44 — LLM dil-yelpazesinin eksik çekirdeği (özetle/karşılaştır/listele):** bir LLM'in dilde
+  yaptığı işlerin köklenmiş hali `reason()` yönlendiricisine bağlandı, HEPSİ grafta gerçek kenara
+  dayanır (halüsinasyon yok): `summarize(text)` (metin→ilişkisel öz→`fluent.narrate`),
+  `contrast(a,b)` (ortak+ayıran komşu + W₂/κ + κ-bağ → akıcı fark), `enumerate_kind(cat, rel)`
+  (TAU ters arama: "egfr inhibitörleri"→erlotinib/gefitinib/…). `_is_clean_concept` markup/atıf
+  gürültüsünü eler. Mimari yer: L6 facade + L4 Narrator; L1 extraction besler. DÜRÜST SINIR:
+  veri yoksa "bulamadım" der (uydurmaz) — köklülük üretkenlikten önce gelir.
+
 ### 6.6 L5 — Cognition (tek döngü) [F5+Kademe6]
 **Birleşir:** `research/cognition.py Cognition` ← `AI.run` + `AI.grow` + `engine.grow` +
 `ProofLoop` + `Explorer.run_loop` + `Researcher.run` + `GrowthEngine.stream`.

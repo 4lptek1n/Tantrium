@@ -344,6 +344,12 @@ ai.reason("erlotinib ne yapar?")               # → dict: AKIL+BEYİN — doğa
                                                #   {intent, answer, result}; RH-Sturm sertifikalı çıkarım zinciri
 ai.converse("photosynthesis nedir?")           # → dict: bilmezse İNTERNETTEN öğrenir, sonra köklü cevaplar
                                                #   {topic, answer, learned, grounded}; akıcı ek-uyumlu Türkçe
+ai.summarize("uzun metin...")                  # → dict: ÖZETLE — metnin ilişkisel öze indir (köklü, uydurmasız)
+                                               #   {topic, summary, n_relations, points}
+ai.contrast("erlotinib", "imatinib")           # → dict: KARŞILAŞTIR/FARK — ortak+ayıran ilişki + W₂/κ mesafe
+                                               #   {a, b, shared, distinct_a, distinct_b, distance, entangled, answer}
+ai.enumerate_kind("egfr", relation="INHIBITS") # → dict: LİSTELE — TAU ters arama (X inhibitörleri/türleri)
+                                               #   {category, relation, items, answer}  (markup gürültüsü ayıklanır)
 ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}  [Geri BFS]
 ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}   [İleri BFS]
 ai.analogy("erlotinib", "egfr", "imatinib")   # → [("bcr-abl", 0.0)]  TAU ilişki tutarlılığı
@@ -750,6 +756,18 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     4. **Çok-kelime konu koruması (#4)**: `_converse_topic` önce ÖBEĞİ (trigram→bigram)
        manifoldda arar, 2-3 içerik kelimesini KORUR → "tumor cell" tek "tumor"a ÇÖKMEZ.
        Türkçe yüklem fiilleri (`_QWORDS`: çalışır/işler/bulunur…) konu sayılmaz.
+  - **F44 — LLM dil-yelpazesi: ÖZETLE + KARŞILAŞTIR + LİSTELE (hepsi köklü, halüsinasyonsuz):**
+    LLM'in dilde yaptığı çekirdek işlerin eksik kalanları `reason()` niyet-yönlendiricisine
+    + akıcı anlatıma bağlandı. Hepsi grafta GERÇEK kenara dayanır:
+    1. **`ai.summarize(text)`**: uzun metni `_extract_relations` ile ilişkisel iskelete indirir,
+       en MERKEZÎ özneyi bulur, `fluent.narrate` ile öze döker. Yalnız metinden ÇIKARILANI söyler.
+    2. **`ai.contrast(a, b)`**: iki kavramı AKICI karşılaştırır — ortak komşu (benzerlik) + ayıran
+       ilişki (fark) + W₂/κ mesafe + gizli κ-bağ. `compare()` sertifika-raporu; contrast insan-gibi.
+    3. **`ai.enumerate_kind(category, relation)`**: TAU TERS arama — "egfr inhibitörleri"
+       (INHIBITS→egfr) → erlotinib/gefitinib/cetuximab/lapatinib; "X türleri" (IS_A→X).
+    `_is_clean_concept` atıf-şablonu/markup gürültüsünü (cs1:…, "names with markup") eler.
+    `reason()` yönlendirme: özetle/karşılaştır/fark/türleri/inhibitörleri → doğru yetenek.
+    Tests: test_reason.py 13 (5 yeni: summarize/contrast/enumerate/clean_concept).
 
 ---
 

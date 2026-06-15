@@ -799,6 +799,12 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
     OTORİTESİ sayar (eski yanlış IS_A'yı EZER) — "photosynthesis→protein" yeniden-araştırmada
     "process"le düzelir. DÜRÜST SINIR: yalnız tanım-kenarı düzeltme (içsel); dış-oracle yok.
   - 10 test (test_reason.py) + 28 test_advanced_reasoning + 32 test_language_layer yeşil.
+- **Kademe F44 [2026-06] — LLM dil-yelpazesi (özetle/karşılaştır/listele, köklü):**
+  - `summarize(text)` → `_extract_relations` ilişkisel iskelet → en merkezî özne → `fluent.narrate`.
+  - `contrast(a, b)` → ortak+ayıran TAU komşu + W₂/κ mesafe + κ-bağ → akıcı fark cümlesi
+    (compare() sertifika-raporu DEĞİL — insan-gibi karşılaştırma; ikisi BİRLEŞMEZ, farklı çıktı).
+  - `enumerate_kind(category, relation)` → `_reverse_relations` (TAU ters arama: c —rel→ category).
+  - `_is_clean_concept` atıf-şablonu/markup gürültüsünü eler; `reason()` 3 yeni intent yönlendirir.
 - **Tekrar kümeleri (facade seviyesi, NAMESPACE birleşmesi — motorlar korunur):** molekül 7 metot
   (discover/design/cure/produce/simulate/genesis_mol/design_drug → produce çatısı), kausal 4
   (causal_chain/what_if/hypothesize/analogy), büyüme 4 (pulse/live/grow/run — kasıtlı gradyan),

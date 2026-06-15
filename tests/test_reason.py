@@ -75,3 +75,41 @@ def test_reason_multiturn_pronoun():
     r = ai.reason("o ne yapar?")           # 'o' → erlotinib
     assert r["intent"] == "what_if"
     assert "Erlotinib" in r["answer"] or "erlotinib" in r["answer"]
+
+
+def test_reason_routes_summarize():
+    """ÖZETLE: uzun metni köklü öze indir (LLM çekirdek dil işi, halüsinasyonsuz)."""
+    ai = tantrium.AI()
+    txt = ("EGFR is a transmembrane protein. EGFR activates the ras pathway. "
+           "Erlotinib inhibits EGFR. EGFR is a receptor tyrosine kinase.")
+    r = ai.reason("Şunu özetle: " + txt)
+    assert r["intent"] == "summarize"
+    assert r["result"]["n_relations"] >= 1
+    assert len(r["answer"]) > 10
+
+
+def test_reason_routes_contrast():
+    """KARŞILAŞTIR: iki kavramın farkı akıcı + köklü cümleyle."""
+    ai = tantrium.AI()
+    r = ai.reason("erlotinib ile imatinib farkı nedir")
+    assert r["intent"] == "contrast"
+    assert "Erlotinib" in r["answer"] or "Imatinib" in r["answer"]
+    # gürültü (atıf-şablonu) ayıklanmış olmalı
+    assert "markup" not in r["answer"] and "cs1" not in r["answer"]
+
+
+def test_reason_routes_enumerate():
+    """LİSTELE: 'X inhibitörleri' TAU ters aramayla köklü liste döner."""
+    ai = tantrium.AI()
+    r = ai.reason("egfr inhibitörleri nelerdir")
+    assert r["intent"] == "enumerate"
+    assert r["result"]["relation"] == "INHIBITS"
+    assert r["result"]["category"] == "egfr"
+
+
+def test_enumerate_clean_concept_filter():
+    """Atıf-şablonu/markup gürültüsü kavram sayılmaz."""
+    ai = tantrium.AI()
+    assert ai._is_clean_concept("erlotinib") is True
+    assert ai._is_clean_concept("cs1:vancouver names") is False
+    assert ai._is_clean_concept("names with accept markup") is False
