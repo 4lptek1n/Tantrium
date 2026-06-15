@@ -1564,7 +1564,7 @@ class AI:
         tau = self._engine.tau
         reasoner = GraphReasoner(self._engine)
 
-        _CAUSAL = {"CAUSES", "ACHIEVES", "ACTIVATES", "INHIBITS", "USES"}
+        _CAUSAL = {"CAUSES", "ACHIEVES", "ACTIVATES", "INHIBITS"}  # USES kausal değil (gürültü)
 
         # Goal normalizasyonu: causal kenarlar lowercase + normalize kaydedilir
         try:
@@ -1691,7 +1691,7 @@ class AI:
           }
         """
         tau = self._engine.tau
-        _CAUSAL = {"CAUSES", "ACHIEVES", "ACTIVATES", "INHIBITS", "USES"}
+        _CAUSAL = {"CAUSES", "ACHIEVES", "ACTIVATES", "INHIBITS"}  # USES kausal değil (gürültü)
 
         try:
             from tantrium.research.autonomous import _normalize_entity
@@ -1811,8 +1811,21 @@ class AI:
         last = getattr(self, "_conv_topic", None)
         if not cands and pron and last:
             return last
+        concepts = self._engine.manifold.concepts
+        # ÇOK-KELİME KORUMASI: önce ÖBEĞİ (trigram→bigram) manifoldda ara — "tumor cell"
+        # tek "tumor"a ÇÖKMESİN. Uzun eşleşme önce: en spesifik köklü kavram kazanır.
+        for n in (3, 2):
+            if len(cands) >= n:
+                for i in range(len(cands) - n + 1):
+                    phrase = " ".join(cands[i:i + n])
+                    if phrase in concepts:
+                        return phrase
+        # Öbek manifoldda yok ama 2-3 içerik kelimesi var → ÖBEĞİ KORU (tek kelimeye düşme;
+        # derin araştırma "tumor cell"i bütün olarak çeker). Spesifiklik > erken topraklama.
+        if 2 <= len(cands) <= 3:
+            return " ".join(cands)
         for w in cands:
-            if w in self._engine.manifold.concepts:
+            if w in concepts:
                 return w
         if len(cands) >= 2:
             return " ".join(cands[:4])
@@ -1889,7 +1902,10 @@ class AI:
              "onların", "bunların", "ondan", "bundan"}
     # Soru/fiil kelimeleri — konu DEĞİL (anafora çözümünde elenir)
     _QWORDS = {"yapar", "olur", "eder", "etkisi", "sonucu", "yarar", "oluşur", "açar",
-               "açan", "kaynağı", "etkiler", "sonuç", "neler", "kimdir", "yapan"}
+               "açan", "kaynağı", "etkiler", "sonuç", "neler", "kimdir", "yapan",
+               # süreç/yüklem fiilleri — konu DEĞİL (çok-kelime öbekte gürültü)
+               "çalışır", "çalışıyor", "işler", "gerçekleşir", "yapılır", "kullanılır",
+               "bulunur", "denir", "oluşuyor", "oluşuyor", "meydana"}
 
     def _pe(self):
         """Lazy ProductionEngine (Sturm-yol sertifikası için paylaşılır)."""
@@ -2241,6 +2257,11 @@ class AI:
         # Metinden nedensel ilişkileri çıkar ve TAU'ya ekle
         relations = _extract_relations(text)
         causal_added = 0
+        # DEFİNİSYON OTORİTESİ (corrigibility): metnin İLK IS_A'sı tanımdır. O özne için
+        # eski/bayat IS_A kenarlarını TEMİZLE → yeniden-araştırma yanlışı düzeltir
+        # ("photosynthesis→orange carotenoid protein" yeni "process" tanımıyla ezilir).
+        # Sonraki IS_A'lar eklenir (çok-sınıf: hem protein hem enzim olabilir).
+        refreshed_isa: set = set()
         obs = AutonomousObserver(self._engine)
         for subj, rel_type, obj in relations[:10]:
             for cname in (subj, obj):
@@ -2259,6 +2280,11 @@ class AI:
                     except Exception:
                         pass
             edges = self._engine.tau.edges.setdefault(subj, [])
+            if rel_type == "IS_A" and subj not in refreshed_isa:
+                refreshed_isa.add(subj)
+                if any(e.paradigm == "IS_A" and e.target != obj for e in edges):
+                    edges[:] = [e for e in edges if e.paradigm != "IS_A"]
+                    self._engine.tau._dirty = True
             already = any(e.target == obj and e.paradigm == rel_type for e in edges)
             if not already:
                 edges.append(KnowledgeEdge(
@@ -2274,6 +2300,29 @@ class AI:
             "causal_relations": causal_added,
             "persisted": mem.get("persisted", False),
         }
+
+    def relearn(self, topic: str) -> dict:
+        """ZORLA yeniden-araştır — bayat/yanlış öğrenilmiş TANIM kenarlarını silip güncel
+        köklü bilgiyle değiştir (corrigibility: gerçek karşı çıkınca temsili düzelt).
+
+        learn() yalnız ÜST ÜSTE biriktirir (eski yanlış IS_A kalır). relearn() önce konunun
+        TANIM kenarlarını (IS_A/COMPOSED/COMPONENT_OF) temizler, sonra _research_deep ile
+        yeniden öğrenir → yeni tanım otoritesi eskisini ezer + kalıcılaşır.
+        Döner: {topic, removed, learned}.
+        """
+        topic = self._converse_topic(topic) or str(topic).strip().lower()
+        _DEFN = {"IS_A", "COMPOSED", "COMPONENT_OF"}
+        edges = self._engine.tau.edges.get(topic, [])
+        removed = sum(1 for e in edges if getattr(e, "paradigm", "") in _DEFN)
+        if removed:
+            edges[:] = [e for e in edges if getattr(e, "paradigm", "") not in _DEFN]
+            self._engine.tau._dirty = True
+        learned = self._research_deep(topic)
+        try:
+            self._engine.auto_persist()
+        except Exception:
+            pass
+        return {"topic": topic, "removed": removed, "learned": learned}
 
     def transport(self, source: str, target: str, use_smiles: bool = False) -> "object":
         """Certified dyadic transport from source → target moment sequences.

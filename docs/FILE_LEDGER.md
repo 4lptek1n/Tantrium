@@ -480,6 +480,13 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   değilse sınır), `_discover_bridges` (cross-domain→SPECTRAL_BRIDGE), `_extract_relations` (kausal
   fiil: inhibits/causes/activates), `pulse` (+local genesis), `_local_genesis` (konveks köprü).
 - **Güç:** İnsansız öğrenme döngüsünün kalbi. researcher/ingest/growth hepsi bunu çağırır.
+- **Kademe F40/F42/F43 [2026-06] — extraction kalitesi:** `_extract_relations` artık IS_A
+  (`_ISA_PAT`, 1-4 kelime öbek→baş-isim) + zengin descriptive fiil de çıkarır (consists of→
+  COMPOSED, found in→COMPONENT_OF, used for→USES). `_clean_term(words, take_last)` İngilizce
+  isim öbeğinin BAŞ-İSMİNİ verir: participle (-ed/-ing) + zarf (-ly) + düzensiz yan-cümle fiili
+  (`_POSTVERB`: found/made/known/used…) öbeği bitirir → "infectious disease usually caused"→
+  disease, "protein found in cells"→protein, "peptide hormone produced"→hormone. Parantez-
+  stripping (`(pl. …)` özneyi yüklemden ayırmasın). `_BOUNDARY` (of/in/which…) edat sınırı.
 - **Tekrar:** `_extract_relations` (kausal) ≠ `graph/relations.extract_relations` (mantıksal IS_A/USES)
   — farklı ilişki tipleri, ikisi de meşru, BİRLEŞMEZ. `_local_genesis` konveks-kombinasyon kümesinde (#8).
 
@@ -656,6 +663,18 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   Artık `synthesize("apple", facts)` DNA/yasa/geometri ilişkilerini de Türkçeye çevirebilir.
 - **Tekrar:** YOK. generator'dan farklı (run anlatımı vs yörünge).
 
+### ✅ language/fluent.py — AKICI Türkçe anlatım motoru (Kademe F38)
+- **İş:** `narrate(topic, facts, grounding)` köklü TAU olgularını ek-uyumlu (ÜNLÜ UYUMU)
+  insan-gibi Türkçe paragrafa örer. `acc/dat/abl` (belirtme/yönelme/çıkma hâl ekleri),
+  `_i4` (4'lü uyum a,ı→ı / e,i→i / o,u→u / ö,ü→ü), `_a2` (2'li uyum), `gen_join` (X, Y ve Z).
+  Paradigma→cümle: `_WHAT` (IS_A/COMPONENT_OF/COMPOSED), `_DOES` (INHIBITS/ACTIVATES/CAUSES/
+  USES/ACHIEVES/REQUIRES), `_PHYS` (HAS_COMPOUND/HAS_DNA/HAS_GEOMETRY/…). Köklülük DOĞAL
+  cümlede ("…sağlam köklü; uydurmazdım"), log DEĞİL.
+- **Güç:** "Akıcılık training değil, MORFOLOJİ işi" — çıktıyı KONTROL ediyoruz, o yüzden
+  ünlü uyumu + kompozisyonla LLM-akıcılığı kurulur. Her ifade grafta gerçek kenara dayanır.
+- **Tekrar:** YOK. speaker.py sertifika-run anlatır; fluent köklü-olgu paragrafı örer
+  (ai.converse kullanır). speaker `synthesize` daha şablonsal; fluent ek-uyumlu/çeşitli.
+
 ### ✅ language/generator.py — TAU yörünge üretimi (CertifiedGenerator)
 - **İş:** seed→encode→her adımda TAU komşuları arasından argmin moment_distance→certified cümle.
   2 geçiş (semantic→ALEPH fallback). TR/EN. "argmin, sampling DEĞİL — deterministik walk."
@@ -766,6 +785,20 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   - `manifold.quantum_bridges(concept)` → çapraz-boyutlu gizli bağlantılar
   - Döner: GroundingSignature(.bound, .kappa_moments, .quantum_connections)
   - 12 yeni test (test_language_layer.py → toplam 32/32 geçiyor)
+- **Kademe F39-F43 [2026-06] — DİL & AKIL (AKICI + KÖKLÜ + KENDİ KENDİNE ÖĞRENEN):**
+  - `reason(request)` AKIL+BEYİN orkestratörü: doğal dil → intent (forecast/discover_law/
+    anomaly/reverse/entangle/produce/what_if/causal_chain/converse) → doğru yetenek → dile dök.
+    `_narrate_chain` çıkarım yolunu [A,rel,B] akıcı cümleye; `_sturm_chain_ok` RH-LİTERAL
+    (Sturm pivot ≥ 0 = kritik hat = ilaçla AYNI sertifika); `_conv_topic`+`_PRON` çok-tur anafora.
+  - `converse(question)`: bilmezse `_research_deep` (TAM Wikipedia + 1-hop) ile İNTERNETTEN
+    öğrenir, sonra `fluent.narrate` ile köklü cevaplar. Halüsinasyon yapamaz (köklü değilse der).
+  - `_converse_topic`: çok-kelime KORUMASI — öbek (trigram→bigram) manifoldda aranır, 2-3 içerik
+    kelimesi korunur ("tumor cell" çökmez); `_QWORDS` Türkçe yüklem fiilleri konu sayılmaz.
+  - **`relearn(topic)` (corrigibility):** bayat/yanlış TANIM kenarlarını (IS_A/COMPOSED/
+    COMPONENT_OF) sil → `_research_deep` → persist. `learn()` artık metnin İLK IS_A'sını TANIM
+    OTORİTESİ sayar (eski yanlış IS_A'yı EZER) — "photosynthesis→protein" yeniden-araştırmada
+    "process"le düzelir. DÜRÜST SINIR: yalnız tanım-kenarı düzeltme (içsel); dış-oracle yok.
+  - 10 test (test_reason.py) + 28 test_advanced_reasoning + 32 test_language_layer yeşil.
 - **Tekrar kümeleri (facade seviyesi, NAMESPACE birleşmesi — motorlar korunur):** molekül 7 metot
   (discover/design/cure/produce/simulate/genesis_mol/design_drug → produce çatısı), kausal 4
   (causal_chain/what_if/hypothesize/analogy), büyüme 4 (pulse/live/grow/run — kasıtlı gradyan),

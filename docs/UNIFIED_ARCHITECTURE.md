@@ -326,6 +326,40 @@ Dil = bu yapıya etiket. Atom→DNA→elma: elmanın kokusu + sesi + molekülü 
   - Döner: `GroundingSignature(.concept, .bound, .kappa_moments, .quantum_connections)`.
   **Tests:** 32/32 `test_language_layer.py` (12 yeni F8 testi dahil). Toplam 565 geçiyor.
 
+### 6.5c — Dil & Akıl: Akıcı + Köklü + Kendi Kendine Öğrenen [Kademe F38-F43, 2026-06]
+
+**Vizyon:** Sistem LLM'lerin yaptığı her şeyi YAPSIN ama BETTER — halüsinasyonsuz (geometrik
+kısıt, istatistik değil). "Akıcılık training değil MORFOLOJİ işi — çıktıyı KONTROL ediyoruz."
+
+- **F38 — `language/fluent.py`:** `narrate(topic, facts, grounding)` ek-uyumlu (ÜNLÜ UYUMU)
+  Türkçe paragraf. `acc/dat/abl` hâl ekleri + `_i4/_a2` harmonisi + `gen_join`. Köklülük
+  DOĞAL cümlede ("…sağlam köklü; uydurmazdım").
+- **F39 — `ai.reason(request)` AKIL+BEYİN:** doğal dil → intent → doğru yetenek (forecast/
+  discover_law/anomaly/reverse/entangle/produce/what_if/causal_chain/converse) → dile dök.
+  `_narrate_chain` çıkarım yolunu akıcı cümleye.
+- **F40 — `_research_deep`:** kendi kendine yeten DERİN ARAŞTIRAN AJAN — bilmediği konuda TAM
+  Wikipedia makalesi → `learn()` + 1-hop köklenmemiş komşular. `converse` bilmezse İNTERNETTEN
+  öğrenir, sonra köklü cevaplar; yoksa dürüstçe der (halüsinasyon imkânsız).
+- **F41 — RH-LİTERAL zincir (`_sturm_chain_ok`):** çıkarım yörüngesi Sturm pivot ≥ 0
+  (hiperbolik = KRİTİK HAT üzerinde) — **ilaç-gerçeklenebilirliğiyle AYNI sertifika** (RH ispat
+  zinciri dile uygulanır). Çok-tur hafıza: `_conv_topic`+`_PRON` ("o ne yapar" → önceki konu).
+- **F42/F43 — extraction + girdi-anlama + corrigibility (dilin SON 4 ekseni):**
+  1. **Bayat/yanlış veri düzeltme (corrigibility):** `learn()` metnin İLK IS_A'sını TANIM
+     OTORİTESİ sayar → eski yanlış IS_A'yı EZER. `ai.relearn(topic)` TANIM kenarlarını silip
+     yeniden-araştırır + persist. ("photosynthesis→orange carotenoid protein" → "process".)
+     DÜRÜST SINIR: yalnız tanım-kenarı düzeltme (içsel), dış-oracle değil.
+  2. **Extraction kalitesi:** `_clean_term` İngilizce isim öbeğinin BAŞ-İSMİNİ (participle/-ly
+     zarf/`_POSTVERB` düzensiz fiil öbeği bitirir) → disease/hormone/protein doğru.
+  3. **Geri-kausal gürültü:** `_CAUSAL` setlerinden `USES` çıkarıldı (kausal değil).
+  4. **Çok-kelime konu koruması:** `_converse_topic` öbeği (trigram→bigram) korur — "tumor cell"
+     tek "tumor"a çökmez; `_QWORDS` Türkçe yüklem fiillerini eler.
+  **Tests:** 10 `test_reason.py` + 28 `test_advanced_reasoning.py` + 32 `test_language_layer.py`.
+
+  **Mimari ilke:** Dil katmanı RH ispatının DİLE uzantısıdır — aynı Sturm-pivot pozitifliği hem
+  ilaç gerçeklenebilirliğini hem çıkarım zincirinin "kritik hat üzerinde" olduğunu sertifikalar.
+  L4 Narrator (fluent) + L6 `ai.reason/converse/relearn` facade'ı; L1 Encoder extraction
+  (`autonomous._extract_relations`) bu katmana köklü olgu besler.
+
 ### 6.6 L5 — Cognition (tek döngü) [F5+Kademe6]
 **Birleşir:** `research/cognition.py Cognition` ← `AI.run` + `AI.grow` + `engine.grow` +
 `ProofLoop` + `Explorer.run_loop` + `Researcher.run` + `GrowthEngine.stream`.

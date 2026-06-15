@@ -70,10 +70,12 @@ _CAUSAL_VERB_MAP: list[tuple[str, str]] = [
 ]
 _COMPILED_VERBS = [(_re.compile(p, _re.IGNORECASE), rel) for p, rel in _CAUSAL_VERB_MAP]
 
-# Tanım kalıbı: "X is/are a/an/the Y" → (X, IS_A, Y). Ansiklopedik metnin temel cümlesi.
+# Tanım kalıbı: "X is/are a/an/the Y..." → (X, IS_A, head(Y)). Ansiklopedik temel cümle.
+# Nesne 1-4 kelimelik öbek (baş-isim _clean_term ile alınır: "infectious disease"→disease).
 _ISA_PAT = _re.compile(
     r"\b([A-Za-z][\w\-]{2,30}(?:\s+[\w\-]{2,20}){0,2})\s+(?:is|are|was|were)\s+"
-    r"(?:a|an|the|one of|a type of|a kind of)\s+([\w\-]{3,30})", _re.IGNORECASE)
+    r"(?:a|an|the|one of|a type of|a kind of)\s+([\w\-]+(?:\s+[\w\-]+){0,3})",
+    _re.IGNORECASE)
 
 
 _STOPWORDS = {
@@ -109,6 +111,11 @@ _BOUNDARY = {"of", "in", "on", "at", "by", "with", "for", "to", "from", "which",
              "that", "who", "such", "as", "and", "or", "but", "into", "through",
              "during", "including", "where", "when", "while", "than", "into"}
 
+# Düzensiz geçmiş-zaman/yan-cümle fiilleri (-ed/-ing yakalamaz): isim öbeğini bitirir.
+# "a protein found in cells" → "protein"; "a tool used to..." (-ed zaten yakalı).
+_POSTVERB = {"found", "made", "led", "known", "seen", "given", "built", "held",
+             "called", "named", "used", "based", "related", "consisting", "produced"}
+
 
 def _clean_term(words: list[str], take_last: bool = False) -> str:
     """İsim öbeğinin BAŞ-İSMİNİ (head noun) çıkar — '2 kelime al' değil.
@@ -129,6 +136,12 @@ def _clean_term(words: list[str], take_last: bool = False) -> str:
             if span:
                 break          # içerik kelimesinden sonra sınır/stopword = öbek bitti
             continue           # baştaki artikel/edat/sınır = atla
+        # -ly zarfı (usually/commonly/typically) = isim öbeğinin SONU, ardı bir yan-cümle:
+        # "infectious disease usually caused by..." → öbek "disease"te biter, "usually" girmez.
+        if (wl.endswith("ly") and len(wl) > 3) or wl in _POSTVERB:
+            if span:
+                break
+            continue
         span.append(wl)
         if len(span) >= 4:
             break
@@ -162,7 +175,7 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
         for m in _ISA_PAT.finditer(sent):
             subj_words = _re.sub(r"[,;\"'()]", " ", m.group(1)).split()
             subj = _clean_term(subj_words, take_last=True)   # öznenin baş-ismi
-            obj = _normalize_entity(m.group(2).strip().lower())
+            obj = _clean_term(m.group(2).split(), take_last=False)  # nesnenin baş-ismi
             if (2 < len(subj) < 40 and 2 < len(obj) < 30
                     and obj not in _STOPWORDS and obj not in _BOUNDARY
                     and subj != obj):

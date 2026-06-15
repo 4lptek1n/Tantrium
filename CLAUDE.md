@@ -337,6 +337,13 @@ ai.deduce(max_rounds=2)                         # → dict: TÜMDENGELİMSEL kap
                                                #   {theorem_nodes_processed, inferences_derived, gaps_closed/persistent}
 ai.close(domain="math_kernel", inject=True)    # → NecessityReport
 ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, "causal_relations": k, ...}
+                                               #   İLK IS_A = tanım otoritesi (eski yanlış IS_A'yı temizler)
+ai.relearn("photosynthesis")                   # → {topic, removed, learned}: ZORLA yeniden-araştır
+                                               #   bayat/yanlış TANIM kenarlarını sil + _research_deep + persist
+ai.reason("erlotinib ne yapar?")               # → dict: AKIL+BEYİN — doğal dil → doğru yetenek
+                                               #   {intent, answer, result}; RH-Sturm sertifikalı çıkarım zinciri
+ai.converse("photosynthesis nedir?")           # → dict: bilmezse İNTERNETTEN öğrenir, sonra köklü cevaplar
+                                               #   {topic, answer, learned, grounded}; akıcı ek-uyumlu Türkçe
 ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}  [Geri BFS]
 ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}   [İleri BFS]
 ai.analogy("erlotinib", "egfr", "imatinib")   # → [("bcr-abl", 0.0)]  TAU ilişki tutarlılığı
@@ -707,7 +714,42 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
   14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] +
   8 gap_finder[#10] + 7 moment_ops[#8] + 4 deduce[engine.grow] + 7 wonder[F4] + 5 serve[F6] +
   23 encoder[+5 collision KÖK çözüm] + 15 cognition[F5] +
-  32 language_layer[Kademe F7+F8: generate fix + 4 yeni paradigma + ground_full] + ...)
+  32 language_layer[Kademe F7+F8: generate fix + 4 yeni paradigma + ground_full] +
+  10 reason[F39-F43] + ...)
+- **Dil & Akıl Katmanı — AKICI + KÖKLÜ + KENDİ KENDİNE ÖĞRENEN (Kademe F38-F43, 2026-06):**
+  - **F38 — Akıcı Türkçe anlatım (`language/fluent.py`)**: training YOK, dil-mühendisliği VAR.
+    `narrate(topic, facts, grounding)` ek-uyumlu (ÜNLÜ UYUMU) paragraf örer: belirtme `acc()`
+    (-yı/-yi/-yu/-yü), yönelme `dat()` (-e/-a), çıkma `abl()` (-den/-dan); `_i4/_a2` harmonisi.
+    Köklülük doğal cümlede ("…sağlam köklü, uydurmazdım") — log değil.
+  - **F39 — Çok-adımlı KÖKLÜ MANTIK (`ai.reason`)**: doğal dil → doğru yetenek (forecast/
+    discover_law/anomaly/reverse/entangle/produce/what_if/causal_chain/converse). Çıkarım
+    zinciri [A,rel,B,rel,C] kurup `_narrate_chain` ile akıcı cümleye döker (şeffaf mantık).
+  - **F40 — Kendi kendine yeten DERİN ARAŞTIRAN AJAN (`_research_deep`)**: bilmediği konuda
+    TAM Wikipedia makalesi → `learn()` (çok ilişki) + 1-hop köklenmemiş komşuları çek. Soru
+    başına zengin köklü bilgi-kümesi (`converse` bilmezse İNTERNETTEN öğrenir, sonra köklü
+    cevaplar; bilmiyorsa dürüstçe der — halüsinasyon yapamaz).
+  - **F41 — RH-LİTERAL zincir (`_sturm_chain_ok`)**: çıkarım yörüngesi Sturm pivot ≥ 0
+    (hiperbolik = KRİTİK HAT üzerinde) — ilaç-gerçeklenebilirliğiyle AYNI sertifika. Çok-tur
+    hafıza: `_conv_topic` + `_PRON` ("o ne yapar" → önceki turun konusu).
+  - **F42 — Extraction kalitesi + girdi-anlama**: `_clean_term` İngilizce isim öbeğinin
+    BAŞ-İSMİNİ çıkarır (participle/-ed/-ing atla); parantez-stripping; `_ISA_PAT` 1-4 kelime
+    öbek yakalar → baş-isim ("infectious disease"→disease). Türkçe ek-stripping (erlotinib'in→
+    erlotinib).
+  - **F43 — Dilin SON 4 ekseni (corrigibility + extraction + çok-kelime, BU KADEME):**
+    1. **Bayat/yanlış öğrenilmiş veri düzeltme (#1)**: `learn()` artık metnin İLK IS_A'sını
+       TANIM OTORİTESİ sayar → o özne için eski/yanlış IS_A kenarlarını TEMİZLER
+       ("photosynthesis→orange carotenoid protein" yeniden-araştırmada "process"le EZİLİR).
+       Sonraki IS_A'lar eklenir (çok-sınıf). **`ai.relearn(topic)`**: ZORLA yeniden-araştır —
+       TANIM kenarlarını (IS_A/COMPOSED/COMPONENT_OF) silip `_research_deep` ile güncelle +
+       persist (corrigibility: gerçek karşı çıkınca temsili düzelt).
+    2. **Extraction kapsamı (#2)**: `_clean_term` -ly zarfı + düzensiz yan-cümle fiili
+       (`_POSTVERB`: found/made/known/used…) öbeği bitirir → "disease usually caused"→disease,
+       "protein found in cells"→protein. insulin→hormone, tuberculosis→disease artık doğru.
+    3. **Geri-kausal gürültü (#3)**: `_CAUSAL` setlerinden `USES` çıkarıldı (causal_chain +
+       what_if) — USES kausal değil, geri-BFS gürültüsüydü.
+    4. **Çok-kelime konu koruması (#4)**: `_converse_topic` önce ÖBEĞİ (trigram→bigram)
+       manifoldda arar, 2-3 içerik kelimesini KORUR → "tumor cell" tek "tumor"a ÇÖKMEZ.
+       Türkçe yüklem fiilleri (`_QWORDS`: çalışır/işler/bulunur…) konu sayılmaz.
 
 ---
 
