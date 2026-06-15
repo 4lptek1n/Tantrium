@@ -34,6 +34,23 @@ class DerivedSpec:
     researched: list = field(default_factory=list)      # araştırmayla eklenen modüller
 
 
+def _best_grounded_op(intent: str):
+    """nl_code sözlüğü tanımadıysa: 174 grounded stdlib operasyonundan en iyi anlam-eşleşmeyi bul
+    (anahtar örtüşmesi + ad geçişi). Döner: (op_id, template) ya da None. #1 ölçeğini #4'e bağlar."""
+    import re as _re
+    from tantrium.core.code_research import ground_stdlib_operations
+    ops = ground_stdlib_operations()
+    words = set(_re.findall(r"[a-zçğıöşü]{3,}", intent.lower()))
+    best, best_id, best_score = None, None, 0
+    for op_id, info in sorted(ops.items()):       # sorted → deterministik tie-break
+        score = len(words & info["keywords"])
+        if op_id.split(".")[-1] in words:
+            score += 3
+        if score > best_score:
+            best_score, best, best_id = score, info, op_id
+    return (best_id, best["template"]) if best_score > 0 else None
+
+
 def _run_chain(program: str, inputs: list) -> list:
     """Anlaşılan program-ifadesini kanonik girdilerde çalıştır → ground-truth örnekleri (uydurma
     değil, GERÇEK çıktı). Herhangi girdide hata → bu girdi-kümesi uygun değil (boş döner)."""
@@ -67,6 +84,19 @@ def derive_spec(intent: str, *, research: bool = True) -> DerivedSpec:
     ds.researched = researched
 
     if not ops:
+        # nl_code sözlüğü tanımadı → 174 grounded stdlib op'undan en iyi eşleşmeyi dene (#1↔#4 köprü)
+        match = _best_grounded_op(intent)
+        if match is not None:
+            op_id, template = match
+            ds.program = template.format(c="x")
+            ds.understood = [op_id]
+            for canon in _CANON_INPUTS:
+                ex = _run_chain(ds.program, canon)
+                if ex:
+                    ds.examples, ds.grounded = ex, True
+                    break
+            if ds.grounded:
+                return ds
         ds.clarify = ("Bu isteği bir operasyona bağlayamadım. Bir örnek ver (girdi → çıktı) ki "
                       "DOĞRULANMIŞ kod üreteyim — uydurmam. Örn: [3,1,2] → [1,2,3].")
         return ds

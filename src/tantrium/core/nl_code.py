@@ -24,6 +24,8 @@ _OP_VOCAB: list[tuple[tuple, str, str]] = [
      "[i for i in ({c}) if i % 2 == 0]"),
     ("sum_squares", ("karelerin toplamı", "kareleri topla", "sum of squares"),
      "sum([i * i for i in ({c})])"),
+    ("average", ("ortalaması", "ortalama", "average", "mean", "ortalamasını"),
+     "sum({c}) / len({c})"),
     ("double", ("iki kat", "iki katı", "çift kat", "double", "twice"), "({c}) * 2"),
     ("triple", ("üç kat", "üç katı", "triple"), "({c}) * 3"),
     ("increment", ("bir ekle", "bir artır", "artır", "increment", "add one", "plus one"),

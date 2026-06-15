@@ -18,6 +18,14 @@ def test_derive_spec_numeric_and_string_domains():
     assert u.grounded and ("hello", "HELLO") in u.examples
 
 
+def test_derive_spec_falls_back_to_grounded_174_ops():
+    """nl_code sözlüğü tanımazsa 174 grounded stdlib op'undan eşleşir (#1↔#4 köprü) — örnek
+    yine GERÇEK operasyon çalıştırılarak türetilir."""
+    ds = derive_spec("median middle value", research=False)
+    assert ds.grounded and ds.understood == ["statistics.median"]
+    assert ds.examples and ds.program == "statistics.median(x)"
+
+
 def test_derive_spec_honest_clarify_when_unknown():
     """Bağlanamayan niyet → DÜRÜSTÇE örnek ister, UYDURMAZ."""
     ds = derive_spec("flibber the wozzle quux", research=False)
