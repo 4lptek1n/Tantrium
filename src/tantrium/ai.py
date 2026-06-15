@@ -1839,6 +1839,41 @@ class AI:
             pass
         return ""
 
+    # İlişki → akıcı fiil (çıkarım zincirini dile dökmek için)
+    _REL_V = {"INHIBITS": ("baskılar", "acc"), "ACTIVATES": ("etkinleştirir", "acc"),
+              "CAUSES": ("yol açar", "dat"), "ACHIEVES": ("sağlar", "acc"),
+              "USES": ("kullanır", "acc"), "IS_A": ("bir türüdür", "raw")}
+
+    def _narrate_chain(self, path: list) -> str:
+        """Çıkarım yolunu [A, ilişki, B, ilişki, C] akıcı mantık cümlesine çevir."""
+        from tantrium.language.fluent import acc, dat
+        segs = []
+        for i in range(0, len(path) - 2, 2):
+            a, rel, b = path[i], path[i + 1], path[i + 2]
+            verb, case = self._REL_V.get(rel, ("etkiler", "acc"))
+            obj = acc(b) if case == "acc" else (dat(b) if case == "dat" else b)
+            segs.append(f"{a}, {obj} {verb}" if i == 0 else f"{a} da {obj} {verb}")
+        return "; ".join(segs)
+
+    def _narrate_reasoning(self, topic: str, chains: list, leaves: list,
+                           direction: str) -> str:
+        """Çok-adımlı çıkarımı ŞEFFAF mantık olarak anlat (LLM gibi akıl, ama köklü)."""
+        from tantrium.language.fluent import gen_join
+        Topic = topic[:1].upper() + topic[1:]
+        if not chains:
+            return f"{Topic} için köklü bir nedensel zincir bulamadım."
+        if direction == "forward":
+            head = (f"{Topic} şu sonuçlara yol açar: {gen_join(leaves[:5])}."
+                    if leaves else f"{Topic}'in etkilerini izledim.")
+        else:
+            head = (f"{Topic} için başlıca nedenler/müdahale noktaları: {gen_join(leaves[:5])}."
+                    if leaves else f"{Topic}'in kaynaklarını izledim.")
+        ct = [self._narrate_chain(c["path"]) for c in chains[:3] if c.get("path")]
+        body = " Bu çıkarımı şu köklü mantık zincirlerinden yaptım — " + " | ".join(ct) + "."
+        tail = (" Her adım bilgi grafımda gerçek bir ilişki; bu yüzden çıkarım uydurma "
+                "değil, adım adım kanıtlanabilir. LLM tahmin eder, ben zinciri gösteririm.")
+        return head + body + tail
+
     @staticmethod
     def _extract_numbers(text: str) -> list:
         """İstekten sayı dizisini çıkar (virgül/boşluk ayrık, ondalık/negatif dahil)."""
@@ -1909,6 +1944,35 @@ class AI:
                        + ("gizli matematiksel bağ VAR (klasik-uzak/κ-yakın)."
                           if e["entangled"] else "normal ayrışma, gizli bağ yok."))
                 return {"intent": "entangle", "answer": ans, "result": e}
+
+        # ── ÇOK-ADIMLI MANTIK (köklü çıkarım, zinciri açıklar) ──
+        if has("ne olur", "ne yapar", "etkisi", "sonucu", "olursa", "yaparsa",
+               "ne işe yarar"):
+            topic = self._converse_topic(request)
+            wf = self.what_if(topic)
+            ans = self._narrate_reasoning(topic, wf.get("chains", []),
+                                          wf.get("effects", []), "forward")
+            return {"intent": "what_if", "answer": ans, "result": wf}
+        if has("sebebi", "nedeni", "neden olur", "yol açan", "kaynağı",
+               "nasıl oluş", "niçin"):
+            topic = self._converse_topic(request)
+            cc = self.causal_chain(topic)
+            ans = self._narrate_reasoning(topic, cc.get("chains", []),
+                                          cc.get("actionable", []), "backward")
+            return {"intent": "causal_chain", "answer": ans, "result": cc}
+        if has("hipotez", "çıkar", "dolaylı", "ne olabilir", "öngörebil"):
+            topic = self._converse_topic(request)
+            hy = self.hypothesize(topic)
+            hyps = hy.get("hypotheses", [])
+            if hyps:
+                from tantrium.language.fluent import gen_join
+                tops = [f"{h['hypothesis']} (güven {h.get('confidence', 0):.2f})"
+                        for h in hyps[:4]]
+                ans = (f"{topic} hakkında köklü çıkarımlarım: {gen_join(tops)}. "
+                       f"Her biri TAU'da gerçek bir zincire dayanıyor — uydurma değil.")
+            else:
+                ans = f"{topic} hakkında çıkarılabilir yeni bir hipotez bulamadım."
+            return {"intent": "hypothesize", "answer": ans, "result": hy}
 
         # ── BİLGİ SORUSU → bilinçli sohbet (gerekirse öğrenir) ──
         c = self.converse(request)

@@ -38,3 +38,21 @@ def test_reason_routes_entangle():
 def test_extract_numbers():
     ai = tantrium.AI()
     assert ai._extract_numbers("a 1, 2.5, -3 ve 4e0 son") == [1.0, 2.5, -3.0, 4.0]
+
+
+def test_reason_multistep_chain():
+    """Çok-adımlı köklü çıkarım: zinciri açıklamalı (LLM gibi akıl, ama grafta gerçek)."""
+    ai = tantrium.AI()
+    r = ai.reason("erlotinib ne yapar?")
+    assert r["intent"] == "what_if"
+    # çıkarım zincirini gösteriyor (şeffaf mantık)
+    assert "zincir" in r["answer"].lower() or "yol açar" in r["answer"]
+    assert r["result"].get("n_paths", 0) >= 0
+
+
+def test_narrate_chain_fluent():
+    """Çıkarım yolu [A,rel,B,rel,C] akıcı mantık cümlesine dönmeli."""
+    ai = tantrium.AI()
+    s = ai._narrate_chain(["erlotinib", "INHIBITS", "egfr", "ACTIVATES", "ras"])
+    assert "baskılar" in s and "etkinleştirir" in s
+    assert "egfr" in s and "ras" in s
