@@ -5058,16 +5058,7 @@ class AI:
 
         Döner: {concept, hypotheses:[{hypothesis, via, chain, confidence}], n}
         """
-        _TRANS: dict[tuple[str, str], str] = {
-            ("INHIBITS", "ACTIVATES"): "INHIBITS",
-            ("INHIBITS", "CAUSES"):    "INHIBITS",
-            ("INHIBITS", "INHIBITS"):  "ACTIVATES",
-            ("ACTIVATES", "ACTIVATES"):"ACTIVATES",
-            ("ACTIVATES", "CAUSES"):   "CAUSES",
-            ("ACTIVATES", "INHIBITS"): "INHIBITS",
-            ("CAUSES", "CAUSES"):      "CAUSES",
-            ("CAUSES", "ACTIVATES"):   "CAUSES",
-        }
+        from tantrium.reasoning.causal_rules import TRANSITIVE_CAUSAL as _TRANS  # tek-gerçek
         fwd = self.what_if(concept, depth=depth)
         hypotheses: list[dict] = []
         seen: set[tuple] = set()

@@ -950,14 +950,9 @@ class GrowthEngine:
         # bilim üretir (Mythos'un kafesli/doğrulanamaz hipotezine karşı sertifikalı).
         self._science_consolidate(_log, rep)
 
-    # Transitif kausal kural tablosu (ai.hypothesize ile aynı — tek kaynak gerçeği)
-    _SCI_TRANS = {
-        ("INHIBITS", "ACTIVATES"): "INHIBITS", ("INHIBITS", "CAUSES"): "INHIBITS",
-        ("INHIBITS", "INHIBITS"): "ACTIVATES", ("ACTIVATES", "ACTIVATES"): "ACTIVATES",
-        ("ACTIVATES", "CAUSES"): "CAUSES", ("ACTIVATES", "INHIBITS"): "INHIBITS",
-        ("CAUSES", "CAUSES"): "CAUSES", ("CAUSES", "ACTIVATES"): "CAUSES",
-    }
-    _SCI_CAUSAL = frozenset({"INHIBITS", "ACTIVATES", "CAUSES"})
+    # Transitif kausal kural tablosu — ai.hypothesize ile TEK-GERÇEK kaynak (kopya yok)
+    from tantrium.reasoning.causal_rules import (
+        TRANSITIVE_CAUSAL as _SCI_TRANS, CAUSAL_PARADIGMS as _SCI_CAUSAL)
 
     def _science_consolidate(
         self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
