@@ -135,6 +135,20 @@ def _normalize_entity(term: str) -> str:
     return t
 
 
+# Üretici/şirket/atıf son-ekleri — bir kavramın SINIFI olamaz (IS_A nesnesi olarak reddedilir).
+# "erlotinib IS_A astellas pharma" grown-data gürültüsünü KAYNAKTA keser (fluent yalnız gösterimde).
+_NONCLASS_TAILS = ("pharma", "pharmaceuticals", "inc", "corp", "corporation", "ltd",
+                   "limited", "gmbh", "llc", "plc", "labs", "laboratories",
+                   "therapeutics", "biosciences", "company", "holdings", "incorporated")
+
+
+def _is_nonclass_obj(obj: str) -> bool:
+    """IS_A nesnesi GERÇEK sınıf mı? Üretici/şirket adı (astellas pharma) sınıf DEĞİLDİR."""
+    o = obj.strip().lower()
+    toks = o.split()
+    return o.endswith(_NONCLASS_TAILS) or (bool(toks) and toks[-1] in _NONCLASS_TAILS)
+
+
 # Cümle/öbek SINIRLARI — bunlara çarpınca isim öbeği biter (özne/nesne ayrımı için).
 _BOUNDARY = {"of", "in", "on", "at", "by", "with", "for", "to", "from", "which",
              "that", "who", "such", "as", "and", "or", "but", "into", "through",
@@ -207,7 +221,7 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
             obj = _clean_term(m.group(2).split(), take_last=False)  # nesnenin baş-ismi
             if (2 < len(subj) < 40 and 2 < len(obj) < 30
                     and obj not in _STOPWORDS and obj not in _BOUNDARY
-                    and subj != obj):
+                    and subj != obj and not _is_nonclass_obj(obj)):
                 relations.append((subj, "IS_A", obj))
     for sent in sentences:
         # "X verb Y and Z verb W" → ["X verb Y", "Z verb W"]

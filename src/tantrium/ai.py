@@ -5176,13 +5176,14 @@ class AI:
                 if key in seen or len(nodes) < 3:
                     continue
                 seen.add(key)
-                # zinciri [a, rel1, via, rel2, c] olarak çıkar (Sturm için kavram-yolu)
+                # Sturm yolu [a, REL, via, REL, c] formatında (_sturm_chain_ok stride-2 ile
+                # HER hop'u sertifikalar: a↔via VE via↔c). Eski [a,via,c] yalnız uçları okuyordu.
                 via = h.get("via")
-                chain_path = [nodes[0], "REL", via, "REL", nodes[-1]] if via else nodes
+                chain_path = ([nodes[0], "REL", via, "REL", nodes[-1]] if via
+                              else [nodes[0], "REL", nodes[-1]])
                 cands.append({"statement": h["hypothesis"], "kind": "transitive",
-                              "chain": h["chain"], "path": [nodes[0], via, nodes[-1]] if via
-                              else [nodes[0], nodes[-1]], "base_conf": h["confidence"],
-                              "subject": nodes[0]})
+                              "chain": h["chain"], "path": chain_path,
+                              "base_conf": h["confidence"], "subject": nodes[0]})
             # (2) çapraz-domain quantum bridge → yapısal analoji (OPT-IN, dürüst sınır)
             try:
                 for other, qd in (self._engine.manifold.quantum_bridges(s, top_k=8)
@@ -5200,8 +5201,8 @@ class AI:
                         "statement": f"{s} ile {other} aynı gizli yapısal sınıfta "
                                      f"(κ-yakın, klasik-uzak)",
                         "kind": "analogy", "chain": f"{s} ~κ~ {other} (κ-mesafe {qd:.3f})",
-                        "path": [s, other], "base_conf": round(max(0.0, 1.0 - float(qd)), 2),
-                        "subject": s})
+                        "path": [s, "REL", other],   # gerçek s↔other Sturm kontrolü (uç-değil)
+                        "base_conf": round(max(0.0, 1.0 - float(qd)), 2), "subject": s})
             except Exception:
                 pass
 

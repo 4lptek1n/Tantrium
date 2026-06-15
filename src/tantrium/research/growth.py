@@ -1000,7 +1000,9 @@ class GrowthEngine:
                                for e in tau.edges.get(s, [])):
                             continue
                         seen.add(key)
-                        hyps.append({"statement": f"{s} {derived} {c}", "via": b,
+                        # YAPISAL subj/obj (çok-kelime kavram "tumor cell" .split()'i KIRARDI)
+                        hyps.append({"statement": f"{s} {derived} {c}", "subj": s,
+                                     "obj": c, "via": b,
                                      "chain": f"{s} -{e1.paradigm}-> {b} -{p2}-> {c}"})
                         if len(hyps) >= max_hyps:
                             break
@@ -1016,9 +1018,8 @@ class GrowthEngine:
                 from tantrium.core.production import ProductionEngine
                 pe = ProductionEngine(self.engine)
                 for h in hyps[:sturm_check]:
-                    s, _d, c = h["statement"].split()
-                    ca = self.engine.manifold.concepts.get(s)
-                    cc = self.engine.manifold.concepts.get(c)
+                    ca = self.engine.manifold.concepts.get(h["subj"])
+                    cc = self.engine.manifold.concepts.get(h["obj"])
                     if ca is not None and cc is not None:
                         try:
                             ok, pmin = pe._sturm_path_pivot_min(
