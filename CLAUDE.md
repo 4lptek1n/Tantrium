@@ -409,6 +409,10 @@ ai.produce("egfr")                             # → ProductionCertificate: EVRE
 ai.produce("c1ccc2ncnc(N)c2c1")               # → SMILES hedef → doğrudan imza
 ai.produce("alzheimer")                        # → hastalık → ters dekonvolüsyon (κ_sağlıklı⊟κ_hastalık)
 ai.discover("EGFR", top_k=5)                   # → molekül keşfi (Morgan moment uzayı)
+ai.design_peptide("ACDEFGHIK", max_residues=8) # → ASI Pilar C: DETERMİNİSTİK BİYOPOLİMER (peptit)
+                                               #   kalıntı-kalıntı Sturm-certified (molecular_genesis
+                                               #   atom-atom deseni → amino asit); {peptide, n_residues,
+                                               #   sturm_steps_ok, fit}; 3D fold YOK (dürüst sınır, dizi+sertifika)
 ai.design("EGFR", top_k=10)                    # → DesignResult (TERS TRANSPORT: W2-minimal moleküller→3D SDF)
 ai.design("breast cancer HER2", top_k=8)       # → metin hedef → ilaç adayları
 ai.design("c1ccccc1", top_k=5)                 # → SMILES hedef → benzer yapılar

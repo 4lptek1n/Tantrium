@@ -518,7 +518,7 @@ kaynaklı + kalibre + corrigibility-öz-doğrulanan.
 |-------|-----------------|-----------------|------------|-------|
 | **A** | Bilimsel hipotez üretimi | hypothesize+quantum_bridges+_discover_frontier+wonder+sturm | L4 Reasoner/Synthesizer | ✅ F50 |
 | **B** | Uzun-ufuk özerklik + öz-denetim | Cognition.cycle+corrigibility+GrowthEngine; ÖKSÜZ Goal/Planner/Actor BAĞLANDI | L5 Cognition + L4 | ✅ F51 |
-| **C** | Protein/peptit tasarımı | molecular_genesis(atom-Sturm)+encode_protein+CertifiedTransport | L4 Producer + L1 | planlı |
+| **C** | Protein/peptit tasarımı | molecular_genesis(atom-Sturm)+encode_protein+CertifiedTransport | L4 Producer + L1 | ✅ F53 |
 | **D** | Belge/figür → veri | structure.discover_law/forecast + deterministik sayı-çıkarım | L1 + L4 | ✅ F52 |
 | **E** | Milyon-token bağlam | "bağlam=manifold" + ingest_corpus + çapraz-belge çelişki | L3 + L5 | ✅ F52 |
 
@@ -545,3 +545,14 @@ zıt kenar INHIBITS↔ACTIVATES → LLM'in uzun bağlamda kaçırdığı). reaso
 **Pilar D [F52, KURULDU]:** `ai.read_data(source)` — yapısal sayısal veri (liste/CSV/JSON/metin)
 deterministik çıkarılır → `discover_law`/`forecast`/`detect_anomalies` (sertifikalı). Bulanık
 figür-semantiği / ekran→uygulama (istatistik) AÇIKÇA kapsam-dışı — yalnız deterministik çıkarım.
+
+**Pilar C [F53, KURULDU]:** `ai.design_peptide(target)` — molecular_genesis'in atom-atom
+Sturm-certified büyümesini AMİNO ASİDE taşır: her kalıntı ekleme `CertifiedTransport(fast_sturm)`
+(Sturm sert geçit) + `encode_protein` (Kyte-Doolittle) hedef-spektrum skoru. Deterministik beam
+(random yok). **3D fold (istatistik) AÇIKÇA kapsam-dışı** — köklü DİZİ (FASTA) + spektral/Sturm
+sertifikası ("bizde istatistik deterministiktir": fold tahmini değil, dizi-seviye deterministik).
+
+**═══ ASI YOL HARİTASI TAMAM (5/5 pilar): A·B·C·D·E hepsi kuruldu, test-yeşil. ═══**
+Hepsi mevcut güçlerin bağlanması/genişlemesi (yeni paradigma yok); her çıktı köklü + RH-Sturm
+sertifikalı + deterministik + kaynaklı + öz-doğrulanan. Mythos'tan ders alındı, üstünlük korundu:
+güç değil DOĞRULANABİLİRLİK. Kapsam açığı deterministik büyümeyle kapanır (F49 deseni).

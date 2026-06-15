@@ -276,6 +276,12 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ---
 
+> **F53 [2026-06] — ASI Pilar C:** atom-atom Sturm-certified büyüme deseni AMİNO ASİDE taşındı:
+> `ai.design_peptide` (`_AA20` + `_target_moments_for_peptide` + `CertifiedTransport(fast_sturm)` +
+> `encode_protein` hedef-spektrum) — her kalıntı ekleme Sturm-certified, deterministik beam (random
+> yok). 3D fold (istatistik) kapsam-dışı (dürüst sınır: köklü dizi + spektral/Sturm sertifikası).
+> molecular_genesis GÖVDESİ değişmedi; desen ai.py'de mirror edildi (SMILES motoru korunur).
+
 ### ✅ core/molecular_genesis.py — atom-atom TÜRETİM (benzerlik değil)
 - **İş:** `generate` (hedef→spektral+kuantum rehber→beam search→sertifika); `simulate`
   (transport-sertifikalı adım adım büyüme). `_quantum_score`=0.75×W2+0.25×κ.

@@ -2131,8 +2131,16 @@ class AI:
             return {"intent": "enumerate", "answer": r["answer"], "result": r}
 
         # ── İLAÇ / TASARIM ──
+        # ── PEPTİT/PROTEİN TASARIMI (ASI Pilar C) — drug route'undan ÖNCE ──
+        if has("peptit", "peptide", "protein tasarla", "amino asit"):
+            tgt = self._converse_topic(
+                re.sub(r"(?i)\b(peptit|peptide|protein|tasarla|üret|için|hedefine)\b",
+                       " ", str(request))) or str(request)
+            r = self.design_peptide(tgt)
+            return {"intent": "design_peptide", "answer": r["answer"], "result": r}
+
         if (has("ilaç", "drug", "tedavi", "cure", "tasarla", "üret")
-                and not has("nedir", "hipotez", "soru")):
+                and not has("nedir", "hipotez", "soru", "peptit", "peptide")):
             topic = self._converse_topic(request)
             try:
                 cert = self.produce(topic)
@@ -2643,6 +2651,82 @@ class AI:
         return {"n_docs": len(docs), "new_concepts": c_after - c_before,
                 "new_relations": e_after - e_before, "contradictions": contradictions,
                 "topics": topics, "answer": ans}
+
+    _AA20 = "ACDEFGHIKLMNPQRSTVWY"   # 20 standart amino asit (tek harf)
+
+    def _target_moments_for_peptide(self, target) -> list:
+        """Hedef (peptit dizisi / liste / protein adı / SMILES) → hedef moment imzası.
+        Dizi ise encode_protein (fiziksel hidropati spektrumu); değilse genel encoder."""
+        from tantrium.perception.encode import encode_protein
+        if isinstance(target, (list, tuple)):
+            return [float(m) for m in target]
+        s = str(target).strip()
+        seq = "".join(c for c in s.upper() if c in self._AA20)
+        if len(seq) >= 4 and len(seq) >= 0.6 * len(s.replace(" ", "")):
+            return [float(m) for m in encode_protein(seq).moments]
+        return [float(m) for m in self._engine.encoder.encode(s).moments]
+
+    def design_peptide(self, target, *, max_residues: int = 8, beam_width: int = 3,
+                       seed: str = "G") -> dict:
+        """ASI Pilar C — DETERMİNİSTİK BİYOPOLİMER (peptit) TASARIMI, kalıntı-kalıntı Sturm-certified.
+
+        molecular_genesis'in atom-atom Sturm-certified büyümesini AMİNO ASİDE taşır: her AA ekleme
+        `CertifiedTransport.certify(fast_sturm=True)` ile sertifikalı (Sturm SERT geçit = gerçek-ölçü
+        yolu); skor hedef-spektruma (`encode_protein` Kyte-Doolittle moment) yakınlık. Deterministik
+        beam (random YOK) → aynı hedef birebir aynı peptit.
+
+        DÜRÜST SINIR (kullanıcı kararı): 3D fold (AlphaFold/istatistik) YOK — köklü DİZİ (FASTA) +
+        spektral/Sturm sertifikası. "Bizde istatistik deterministiktir" — fold tahmini değil, dizi-
+        seviye deterministik tasarım. FARK: her kalıntı Sturm-certified, tekrar üretilebilir.
+        Döner: {target, peptide, n_residues, sturm_steps_ok, fit, answer}.
+        """
+        from tantrium.perception.encode import encode_protein
+        from tantrium.core.transport import CertifiedTransport
+        tmu = self._target_moments_for_peptide(target)
+        ct = CertifiedTransport(self._engine)
+        _enc_cache: dict = {}
+
+        def _enc(seq):
+            o = _enc_cache.get(seq)
+            if o is None:
+                o = encode_protein(seq); _enc_cache[seq] = o
+            return o
+
+        def _dist(seq) -> float:
+            mu = [float(m) for m in _enc(seq).moments]
+            k = min(len(mu), len(tmu))
+            return sum(abs(mu[i] - tmu[i]) for i in range(k))
+
+        beam = [seed]
+        steps_ok = 0
+        for _ in range(max(0, max_residues - len(seed))):
+            cands: list = []
+            for base in beam:
+                base_obj = _enc(base)
+                for aa in self._AA20:        # deterministik sıra (random yok)
+                    ext = base + aa
+                    try:
+                        tc = ct.certify(base_obj, _enc(ext), fast_sturm=True)
+                        if not getattr(tc, "sturm_verified", False):
+                            continue          # Sturm SERT geçit: gerçek-ölçü yolu değilse ele
+                        cands.append((ext, _dist(ext)))
+                    except Exception:
+                        continue
+            if not cands:
+                break
+            cands.sort(key=lambda x: (x[1], x[0]))   # mesafe, sonra deterministik tie-break
+            beam = [c[0] for c in cands[:beam_width]]
+            steps_ok += 1
+        best = min(beam, key=lambda s: (_dist(s), s)) if beam else seed
+        fit = round(_dist(best), 5)
+        ans = (f"'{target}' hedefine deterministik peptit tasarladım: {best} "
+               f"({len(best)} kalıntı). Her kalıntı ekleme Sturm-certified (kritik hat) — "
+               f"spektral uyum {fit}. 3D fold YOK (istatistik): köklü DİZİ + sertifika, "
+               f"tekrar üretilebilir. Mythos istatistikle üretir; ben her adımı sertifikalarım."
+               if steps_ok else
+               f"'{target}' için Sturm-certified peptit yolu kuramadım (kısıt sıkı).")
+        return {"target": str(target), "peptide": best, "n_residues": len(best),
+                "sturm_steps_ok": steps_ok, "fit": fit, "answer": ans}
 
     def _parse_numeric_series(self, source) -> list:
         """Yapısal kaynaktan (liste/JSON/CSV/metin) sayı dizisini DETERMİNİSTİK çıkar."""

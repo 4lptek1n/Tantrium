@@ -284,3 +284,24 @@ def test_read_data_law_from_list_and_csv():
     assert r["result"].order >= 1 and len(r["series"]) == 8
     r2 = ai.read_data("t,v\n1,2\n2,4\n3,8\n4,16\n5,32", analyze="forecast")
     assert r2["series"] == [2.0, 4.0, 8.0, 16.0, 32.0]   # CSV son sütun
+
+
+# ───────────── ASI Pilar C (Kademe F53): Deterministik Biyopolimer Tasarımı ─────────────
+
+def test_design_peptide_certified_deterministic():
+    """Peptit tasarımı: her kalıntı Sturm-certified + deterministik (random yok)."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.design_peptide("ACDEFGHIK", max_residues=5, beam_width=2)
+    assert r["sturm_steps_ok"] >= 1 and len(r["peptide"]) >= 2
+    assert all(c in ai._AA20 for c in r["peptide"])
+    b = ai.design_peptide("ACDEFGHIK", max_residues=5, beam_width=2)
+    assert r["peptide"] == b["peptide"]      # deterministik
+
+
+def test_reason_routes_design_peptide():
+    """reason() 'peptit tasarla' → design_peptide intent (drug-route'tan önce)."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.reason("ACDEFGHIK hedefine peptit tasarla")
+    assert r["intent"] == "design_peptide"
