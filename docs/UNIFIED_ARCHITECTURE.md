@@ -556,3 +556,10 @@ sertifikası ("bizde istatistik deterministiktir": fold tahmini değil, dizi-sev
 Hepsi mevcut güçlerin bağlanması/genişlemesi (yeni paradigma yok); her çıktı köklü + RH-Sturm
 sertifikalı + deterministik + kaynaklı + öz-doğrulanan. Mythos'tan ders alındı, üstünlük korundu:
 güç değil DOĞRULANABİLİRLİK. Kapsam açığı deterministik büyümeyle kapanır (F49 deseni).
+
+**Pilarların BAĞLANMASI [F54, `ai.research`]:** Üç mekanizma — (1) ortak substrat (manifold+TAU:
+her pilar aynı köklü hafızayı okur/yazar, bir piların çıktısı diğerinin girdisi), (2) Cognition
+döngüsü omurga (pilarlar faz olur; GoalPhase bağlı), (3) sertifika zinciri (her çıktı aynı RH-Sturm
+sertifikası → zincirlenir). `ai.research(goal)` KAPALI BİLİMSEL DÖNGÜ: HEDEF(B)→köklendir(E)→
+sertifikalı HİPOTEZ(A)→hipotezi test edecek aday TASARLA(C)→ÖZ-DOĞRULA(corrigibility)→tekrar.
+Canlı: "egfr" → hipotez "egfr CAUSES tumor cell" → test peptiti GAGMTI → doğrulama 1.0. Denetlenebilir.

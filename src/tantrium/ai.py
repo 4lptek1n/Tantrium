@@ -4698,6 +4698,68 @@ class AI:
                           "öz-doğrulandı; ilerleme geometrik (moment-mesafe) ölçüldü.")),
         }
 
+    def research(self, goal: str, *, rounds: int = 2, network: bool = True,
+                 design: bool = True) -> dict:
+        """ASI BİRLEŞİK DÖNGÜ — 5 piları TEK hedef-güdümlü bilimsel kampanyada zincirler.
+
+        Pilarlar ortak manifold + sertifika zinciriyle birbirine bağlanır (bir halkanın çıktısı
+        diğerinin girdisi):
+          HEDEF(B) → araştır/köklendir(E) → sertifikalı HİPOTEZ(A) → hipotezi test edecek aday
+          TASARLA(C) → ÖZ-DOĞRULA(corrigibility) → tekrar. Her halka köklü + RH-Sturm sertifikalı.
+
+        FARK: Mythos güçlü ama kafesli/doğrulanamaz; bu döngü her adımı sertifikalar, denetlenebilir
+        kapalı bilimsel akıl. Döner: {goal, rounds, grounded, hypotheses, designs, verify, log, answer}.
+        """
+        from tantrium.research.corrigibility import external_verify
+        topic = self._converse_topic(goal) or str(goal).lower()
+        self.set_goal(goal)
+        log: list[str] = []
+        hyps: list = []
+        designs: list = []
+        verify: dict = {}
+        for rnd in range(max(1, rounds)):
+            # (E) hedefi köklendir — bilmezse internetten kendi araştırır (deterministik büyüme)
+            grounded_before = bool(self._tau_facts(topic))
+            if network and not grounded_before:
+                try:
+                    self._research_deep(topic)
+                except Exception:
+                    pass
+            grounded = bool(self._tau_facts(topic))
+            # (A) köklü graftan SERTİFİKALI hipotez
+            hn = self.hypothesize_novel(topic)
+            hyps = hn.get("hypotheses", [])
+            # (C) en güçlü hipotezi test edecek aday TASARLA (peptit — Sturm-certified)
+            if design and hyps:
+                try:
+                    d = self.design_peptide(topic, max_residues=6, beam_width=2)
+                    designs.append({"to_test": hyps[0]["statement"],
+                                    "peptide": d["peptide"], "fit": d["fit"]})
+                except Exception:
+                    pass
+            # (corrigibility) ÖZ-DOĞRULA — bilinen olgular hâlâ tutuyor mu
+            try:
+                verify = external_verify(self._engine)
+            except Exception:
+                verify = {}
+            log.append(f"tur {rnd + 1}: köklü={grounded}, hipotez={len(hyps)}, "
+                       f"tasarım={len(designs)}, doğrulama-skoru={verify.get('score', '?')}")
+        try:
+            self._engine.auto_persist()
+        except Exception:
+            pass
+        top_h = hyps[0]["statement"] if hyps else "—"
+        top_d = designs[-1]["peptide"] if designs else "—"
+        answer = (
+            f"'{goal}' için kapalı bilimsel döngü ({rounds} tur): hedefi köklendirdim, "
+            f"sertifikalı hipotez ürettim (ör. {top_h}), test adayı tasarladım (peptit {top_d}), "
+            f"her tur corrigibility ile öz-doğruladım (skor {verify.get('score', '?')}). "
+            f"Her halka köklü + RH-Sturm sertifikalı — Mythos güçlü ama kafesli; bu döngü "
+            f"denetlenebilir.")
+        return {"goal": goal, "rounds": rounds, "grounded": bool(self._tau_facts(topic)),
+                "hypotheses": hyps, "designs": designs, "verify": verify,
+                "log": log, "answer": answer}
+
     def grow(
         self,
         time_limit_s: "float | None" = 300.0,

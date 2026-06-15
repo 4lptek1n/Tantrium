@@ -323,6 +323,10 @@ ai.pursue("understand egfr signaling")         # → dict: HEDEF-GÜDÜMLÜ uzun
                                                #   Planner/Actor'ı GoalPhase ile bağlar; her tur corrigibility
                                                #   öz-doğrular; ilerleme GERÇEK köklülük (≥3 kenar, doyma+
                                                #   self-grooming bağışık); resumable (GoalManifold.save)
+ai.research("egfr signaling", rounds=2)        # → dict: ASI BİRLEŞİK DÖNGÜ — 5 piları zincirler
+                                               #   HEDEF(B)→köklendir(E)→sertifikalı HİPOTEZ(A)→test adayı
+                                               #   TASARLA(C)→ÖZ-DOĞRULA(corrigibility)→tekrar; ortak manifold +
+                                               #   sertifika zinciri. {hypotheses, designs, verify, log, answer}
 ai.pulse("CCO")                                # → dict: TEK ÇEKİRDEK NABZI (veri girer + genesis aynı anda)
                                                #   evren kapısı: rejected/frontier/core + doğan ara kavramlar
 ai.live(["CCO", "caffeine", [2,3,5,7]])        # → dict: veri AKIŞI nabızla (her veri girer + büyür, parça parça değil)

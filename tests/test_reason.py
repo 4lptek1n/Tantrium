@@ -305,3 +305,18 @@ def test_reason_routes_design_peptide():
     ai = tantrium.AI()
     r = ai.reason("ACDEFGHIK hedefine peptit tasarla")
     assert r["intent"] == "design_peptide"
+
+
+# ───────── ASI Birleşik Döngü (Kademe F54): pilarları zincirleyen kapalı bilimsel loop ─────────
+
+def test_research_chains_pillars():
+    """ai.research: E(köklendir)→A(hipotez)→C(tasarla)→corrigibility(doğrula) zinciri."""
+    import tantrium
+    ai = tantrium.AI()
+    ai.learn("EGFR activates ras. ras causes tumor growth. Erlotinib inhibits EGFR.")
+    r = ai.research("egfr", rounds=1, network=False)
+    assert "hypotheses" in r and "designs" in r and "verify" in r
+    assert len(r["log"]) == 1
+    # tasarım hipoteze bağlı (zincir): her tasarım hangi hipotezi test ettiğini taşır
+    for d in r["designs"]:
+        assert "to_test" in d and "peptide" in d
