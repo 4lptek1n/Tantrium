@@ -9,8 +9,6 @@ Köklülük korunur: her ifade grafta gerçek bir kenara dayanır — sadece Dİ
 """
 from __future__ import annotations
 
-import random
-
 _VOWELS = "aeıioöuü"
 _BACK = "aıou"
 _FRONT = "eiöü"
@@ -73,34 +71,85 @@ def gen_join(items: list) -> str:
     return ", ".join(items[:-1]) + " ve " + items[-1]
 
 
-# Paradigma → akıcı cümle üreticileri (ek uyumlu, çeşitli kalıp)
+# ── Üretken-dilbilgisi yardımcıları — DETERMİNİSTİK (random YOK: aynı girdi → aynı çıktı) ──
+def _pick(options, key):
+    """İçeriğe bağlı DETERMİNİSTİK varyant seçimi — random.choice yerine (determinizm korunur)."""
+    opts = [o for o in options if o]
+    if not opts:
+        return ""
+    return opts[sum(ord(c) for c in str(key)) % len(opts)]
+
+
+# İngilizce taksonomi çoğulları (SINIF-belirten): "bir X" almaz → "X sınıfından bir bileşik"
+_CLASS_TAILS = ("compounds", "derivatives", "acids", "esters", "inhibitors", "drugs",
+                "agents", "salts", "amines", "amides", "alcohols", "proteins",
+                "enzymes", "receptors", "kinases", "antagonists", "blockers",
+                "analogs", "analogues", "antibodies", "hormones", "antibiotics",
+                "steroids", "peptides", "lipids")
+# Üretici/şirket son-ekleri: bir kavramın SINIFI olamaz → IS_A'dan düşülür (grown-data gürültüsü)
+_COMPANY_TAILS = ("pharma", "pharmaceuticals", "inc", "corp", "ltd", "gmbh", "labs",
+                  "laboratories", "therapeutics", "biosciences")
+
+
+def _is_class_term(t: str) -> bool:
+    tl = t.lower().rstrip(".")
+    if tl.endswith(_CLASS_TAILS):
+        return True
+    # uzun İngilizce çoğul (aminopyrimidines/benzanilides) = taksonomi sınıfı
+    last = tl.split()[-1]
+    return len(last) >= 9 and last.endswith("s") and last.isascii() and last.isalpha()
+
+
+def _is_company(t: str) -> bool:
+    return t.lower().rstrip(".").endswith(_COMPANY_TAILS)
+
+
+def _join_clauses(clauses) -> str:
+    """Yüklem cümlelerini 'A, B ve C' diye birleştir — 'ile' DEĞİL (gen_join nesne içindir).
+    'baskılar ile etkinleştirir' gibi yanlış birleşmeyi önler."""
+    cs = [c for c in clauses if c]
+    if len(cs) <= 1:
+        return cs[0] if cs else ""
+    return ", ".join(cs[:-1]) + " ve " + cs[-1]
+
+
+# Paradigma → akıcı cümle üreticileri (DETERMİNİSTİK + tekil/çoğul uyum-duyarlı)
 def _is_a(ts):
-    j = gen_join(ts)
-    return random.choice([f"bir {j} türüdür", f"{j} sınıfından bir kavramdır",
-                          f"{j} olarak sınıflandırılır"])
+    ts = [t for t in ts if not _is_company(t)]      # üretici = sınıf değil (gürültü)
+    if not ts:
+        return ""
+    classes = [t for t in ts if _is_class_term(t)]
+    singles = [t for t in ts if not _is_class_term(t)]
+    parts = []
+    if singles:
+        parts.append(f"bir {singles[0]} türüdür" if len(singles) == 1
+                     else f"{gen_join(singles)} sınıfındandır")
+    if classes:
+        parts.append(f"{gen_join(classes)} sınıfından bir bileşiktir")
+    return "; ayrıca ".join(parts)
 
 
 def _inhibits(ts):
-    return random.choice([f"{acc(gen_join(ts))} baskılar",
-                          f"{acc(gen_join(ts))} inhibe ederek etkisini gösterir",
-                          f"{gen_join(ts)} üzerinde baskılayıcı etki yapar"])
+    j = gen_join(ts)
+    return _pick([f"{acc(j)} baskılar", f"{acc(j)} inhibe eder",
+                  f"{j} üzerinde baskılayıcı etkisi vardır"], j)
 
 
 def _activates(ts):
-    return random.choice([f"{acc(gen_join(ts))} etkinleştirir",
-                          f"{acc(gen_join(ts))} harekete geçirir",
-                          f"{gen_join(ts)} sinyalini açar"])
+    j = gen_join(ts)
+    return _pick([f"{acc(j)} etkinleştirir", f"{acc(j)} harekete geçirir",
+                  f"{j} sinyalini açar"], j)
 
 
 def _causes(ts):
-    return random.choice([f"{dat(gen_join(ts))} yol açar",
-                          f"{dat(gen_join(ts))} neden olur",
-                          f"{gen_join(ts)} sürecini tetikler"])
+    j = gen_join(ts)
+    return _pick([f"{dat(j)} yol açar", f"{dat(j)} neden olur",
+                  f"{j} sürecini tetikler"], j)
 
 
 def _uses(ts):
-    return random.choice([f"{abl(gen_join(ts))} yararlanır",
-                          f"{acc(gen_join(ts))} kullanır"])
+    j = gen_join(ts)
+    return _pick([f"{abl(j)} yararlanır", f"{acc(j)} kullanır"], j)
 
 
 _DOES = {"INHIBITS": _inhibits, "ACTIVATES": _activates, "CAUSES": _causes,
@@ -135,7 +184,9 @@ def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3,
         for p, fn in table.items():
             ts = [t for t in facts.get(p, [])[:max_per] if t]
             if ts:
-                out.append(fn(ts))
+                r = fn(ts)
+                if r:                    # boş üretim (örn. IS_A hepsi şirket) atlanır
+                    out.append(r)
         return out
 
     what, does, phys = _collect(_WHAT), _collect(_DOES), _collect(_PHYS)
@@ -143,21 +194,21 @@ def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3,
 
     # 1) Ne olduğu
     if what:
-        s.append(f"{Topic}, {gen_join(what)}.")
+        s.append(f"{Topic}, {_join_clauses(what)}.")
     # kısa mod: tek cümlelik öz (ne olduğu, yoksa işlev)
     if depth == "kısa":
         if not what and does:
-            s.append(f"{Topic} {gen_join(does)}.")
+            s.append(f"{Topic} {_join_clauses(does)}.")
         return " ".join(s) if s else f"{Topic} hakkında doğrulanmış bilgim henüz yok."
 
-    # 2) Ne yaptığı (işlev)
+    # 2) Ne yaptığı (işlev) — DETERMİNİSTİK açılış + yüklem birleştirme ('ile' değil)
     if does:
-        opener = random.choice(["İşlevine gelince, ", "Yaptığı işe bakarsak, ",
-                                "Görevi açısından, "]) if what else f"{Topic} "
-        s.append(f"{opener}{gen_join(does)}.")
+        opener = (_pick(["İşlevine gelince, ", "Yaptığı işe bakarsak, ",
+                         "Görevi açısından, "], topic) if what else f"{Topic} ")
+        s.append(f"{opener}{_join_clauses(does)}.")
     # 3) Fiziksel temeli (basit register'da atlanır)
     if phys and register != "basit":
-        s.append(f"Fiziksel temeli açısından {gen_join(phys)}.")
+        s.append(f"Fiziksel temeli açısından {_join_clauses(phys)}.")
     if not s:
         return f"{Topic} hakkında doğrulanmış bir bilgim henüz yok."
 

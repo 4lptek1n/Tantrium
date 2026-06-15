@@ -672,6 +672,11 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   cümlede ("…sağlam köklü; uydurmazdım"), log DEĞİL.
 - **Güç:** "Akıcılık training değil, MORFOLOJİ işi" — çıktıyı KONTROL ediyoruz, o yüzden
   ünlü uyumu + kompozisyonla LLM-akıcılığı kurulur. Her ifade grafta gerçek kenara dayanır.
+- **Kademe F48 — DETERMİNİSTİK ÜRETKEN DİLBİLGİSİ [2026-06]:** `random.choice` KALDIRILDI
+  (determinizm ihlaliydi: aynı girdi farklı çıktı). `_pick(opts,key)` içeriğe-bağlı deterministik
+  seçim. Tekil/çoğul UYUM: `_is_class_term` (taksonomi çoğulu→"X sınıfından bir bileşiktir";
+  "bir … compounds" kırığı bitti), `_is_company` (üretici IS_A'dan düşülür), `_join_clauses`
+  (yüklem "A ve B", "ile" değil). Yüzey kural-motoru oldu; RH içerik-çekirdeğine dokunmaz.
 - **Tekrar:** YOK. speaker.py sertifika-run anlatır; fluent köklü-olgu paragrafı örer
   (ai.converse kullanır). speaker `synthesize` daha şablonsal; fluent ek-uyumlu/çeşitli.
 

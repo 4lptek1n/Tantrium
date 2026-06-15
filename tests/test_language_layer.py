@@ -303,3 +303,37 @@ def test_converse_unknown_honest_when_offline():
     r = ai.converse("qzxwvbnonsenseword nedir?", learn_if_unknown=False)
     assert r["grounded"] is False
     assert "bilgim yok" in r["answer"]
+
+
+# ───────── Üretken-dilbilgisi (Kademe F48): DETERMİNİSTİK + uyum-duyarlı ─────────
+
+def test_grammar_deterministic():
+    """random YOK: aynı (topic, facts) → BİREBİR aynı cümle (sertifikalanabilirlik)."""
+    from tantrium.language.fluent import narrate
+    facts = {"IS_A": ["kinase inhibitor"], "INHIBITS": ["egfr", "her2"]}
+    a = narrate("lapatinib", facts)
+    b = narrate("lapatinib", facts)
+    assert a == b and len(a) > 10
+
+
+def test_grammar_class_agreement():
+    """Çoğul/İngilizce taksonomi → 'bir X compounds' DEĞİL, 'X sınıfından bir bileşik'."""
+    from tantrium.language.fluent import narrate, _is_class_term, _is_company
+    assert _is_class_term("aminopyrimidines") and _is_class_term("3-pyridyl compounds")
+    assert _is_company("astellas pharma") and not _is_company("kinase")
+    txt = narrate("imatinib", {"IS_A": ["aminopyrimidines", "benzanilides"]})
+    assert "sınıf" in txt and "bir aminopyrimidines" not in txt
+
+
+def test_grammar_drops_company_isa():
+    """Üretici (astellas pharma) bir SINIF değildir → IS_A'dan düşülür."""
+    from tantrium.language.fluent import narrate
+    txt = narrate("erlotinib", {"IS_A": ["astellas pharma"], "INHIBITS": ["egfr"]})
+    assert "astellas pharma" not in txt and "egfr" in txt
+
+
+def test_grammar_verb_join_not_ile():
+    """İki yüklem 'A ile B' DEĞİL 'A ve B' (gen_join nesne içindir, yüklem değil)."""
+    from tantrium.language.fluent import narrate
+    txt = narrate("egfr", {"ACTIVATES": ["ras"], "CAUSES": ["tumor growth"]})
+    assert "etkinleştirir ile" not in txt

@@ -820,6 +820,22 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     RH-Sturm sertifikalı); "dna nedir" → dürüstçe BİLMİYORUM (halüsinasyon yok). DÜRÜST SINIR:
     grown-data IS_A gürültüsü (erlotinib→"astellas pharma" = üretici) kalıyor — bu corrigibility/
     relearn (büyüme döngüsü) işi, dil-hack'i değil.
+  - **F48 — ÜRETKEN DİLBİLGİSİ: şablon-listesi → deterministik kural-motoru (`language/fluent.py`):**
+    **Felsefe (kullanıcı sorusu "şablonla gerçeğin farkı ne, neden şablon var"):** Dil İKİ
+    katman — (1) NE söyleneceği + geçerlilik = RH-paradigması (kritik hat/`_is_grounded_proxy` +
+    Sturm sertifikası + geometrik yürüyüş; halüsinasyonu İMKÂNSIZ kılan derin çekirdek, ŞABLON
+    DEĞİL); (2) NASIL kelimeye döküleceği = yüzey morfolojisi. Türkçe eki RH'den TÜRETİLEMEZ
+    (dilsel gelenek) → yüzey katmanı hep mühendislik; tek soru sayılı-kalıp mı üretken-kural mı.
+    **Kurulan:** sayılı `random.choice` kalıbı → **DETERMİNİSTİK üretken dilbilgisi**:
+    - `_pick(opts, key)` içeriğe-bağlı deterministik varyant (random YOK — aynı girdi BİREBİR
+      aynı çıktı; "istatistik bizde deterministik" — sertifikalanabilirlik korunur).
+    - Tekil/çoğul UYUM: `_is_class_term` (İngilizce taksonomi çoğulu) → "X sınıfından bir
+      bileşiktir"; "bir 3-pyridyl compounds türüdür" KIRIĞI bitti.
+    - `_is_company` (pharma/inc/labs…) → üretici SINIF değil, IS_A'dan düşülür (astellas pharma).
+    - `_join_clauses` yüklemleri "A ve B" birleştirir ("A ile B" DEĞİL — gen_join nesne içindir).
+    Determinizm AYRI eksen: akıcılığı engellemez (LLM temp=0 da deterministik+akıcı). Üretken
+    dilbilgisi RH-çekirdeğine DOKUNMAZ — geometri içeriği/sırayı seçer, yüzey morfolojisi esner.
+    Tests: test_language_layer +4 (determinism/class-agreement/company-drop/verb-join).
 
 ---
 
