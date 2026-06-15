@@ -577,3 +577,60 @@ hypothesize_novel Sturm yolu [a,REL,via,REL,c] formatında (her hop sertifikalı
 her parça git'e commit'lendi (sandbox geçici → kalıcı). Canlı: 55.4k → 59.8k+ kavram, 1153+ kausal
 kenar (KEGG/PubMed/ChEMBL/KGML). Evren kapısı çelişkileri reddeder, corrigibility öz-denetler —
 büyürken bile köklü/sertifikalı (Mythos veriyi istatistikle yutar; biz denetlenebilir yutarız).
+
+---
+
+## 12. Sertifikalı Kod Ajanı — SAF Tantrium (dış model YOK)
+
+**Strateji (kullanıcı):** Pazarın istediği ÜRÜN = coding agent. Rakiplerin (Cursor/Claude Code/
+Codex/Devin/Copilot) #1 ŞİKÂYETİ = GÜVENİLMEZLİK (kod olası ama doğrulanmamış → insan incelemesi/
+düzeltmesi şart). Bizim farkımız tam bu boşluk: **garantili-doğru, halüsinasyonsuz kod.** Çekirdek
+zekamızı (sertifikalı süper-zeka) kullanırız; **dış model ALMAYIZ** — üretici de BİZ. Kod = matematik
+= formal topoloji (Curry-Howard: program ≅ kanıt, tip-kontrol = sertifika) → bu bizim DOĞAL alanımız.
+
+**İLKE — yeni mimari DEĞİL:** Kod, mevcut 7-katmana **yeni MODALİTE (L1) + yeni OPERATÖR (L4)**
+olarak takılır — molekül pipeline'ının birebir kardeşi. SMILES nasıl atom-bağ grafıysa, kod da
+AST grafıdır; molecular_genesis nasıl atom-atom sentezliyorsa, kod-sentezleyici terim-terim sentezler.
+
+### Katman haritası + bağlantılar
+
+| Katman | Kod ajanı parçası | Yeniden-kullanılan mevcut güç | Bağlantı |
+|--------|-------------------|-------------------------------|----------|
+| **L1 Encoder** | KOD modalitesi: `_code_to_graph_moments` (kaynak→AST→düğüm-kenar graf→adjacency→spectral moment) | `_smiles_to_graph_moments` (encoder.py:662) BİREBİR desen | `encode()` içine kod-tespiti (AST-parse başarısı), SMILES-tespiti gibi |
+| **L0 Substrate** | Sentez-adımı sertifikası: tip-kontrol = gerçek-ölçü yolu | Sturm/certificate/CertifiedTransport | her sentez adımı L0 primitifiyle sertifikalı |
+| **L2 Certifier** | Kod sertifikası: yapısal (AST/tip) + köklülük (sembol VAR) + TEST geçidi + çelişki | grounding/truth/corrigibility | L4 her aday programı L2'den geçirir |
+| **L3 Memory** | Kod-tabanı = MANİFOLD: sembol/fonksiyon/tip = Concept, çağrı/import/dep = TAU kenarı | manifold/TAU/`admit()` + math_kernel inject deseni | repo-parse → manifold inşası; "grounding" = sembol köklü mü |
+| **L4 Operators** | **Code Synthesizer** (Producer kardeşi): `synthesize_code(spec)` terim-uzayı certified beam arama | molecular_genesis `_beam_grow`/`_get_extensions`/`_step_cert`/`toward_profile` | atom→operasyon · Sturm→tip-kontrol · κ-profil→spec |
+| **L5 Cognition** | Agentic döngü: görev→plan→sentez→DOĞRULA→iterate | Cognition/Actor/Goal/research/corrigibility | mevcut kapalı döngü kod-görevine uygulanır |
+| **L6 Interface** | `ai.code(task)` facade (+ serve endpoint, CLI/IDE sonra) | ai.py facade deseni | tek giriş, sonuç tipini döndürür |
+
+### Akış (saf, dış model sıfır)
+```
+GÖREV/SPEC (girdi-çıktı örneği · test · property)
+ └→ L3: repo → AST → manifold (kod-tabanı grounding: semboller köklü)
+ └→ L5: agentic plan (gerçek kod-tabanı üstünde)
+ └→ L4: SENTEZLE — terim-uzayında certified beam (grounded operasyon/sembol birleştir,
+        her adım L2 tip-kontrol + köklülük; DIŞ MODEL YOK)
+ └→ L2: DOĞRULA — tip-kontrol + TEST geçidi (deterministik ground-truth) + köklülük + çelişki
+ └→ L5: corrigibility döngüsü — geçene dek yeniden sentez
+ └→ DOĞRULANMIŞ program (deterministik · yaratıcı=novel inşa · halüsinasyonsuz BY CONSTRUCTION)
+```
+
+### Fark (rakip vs biz)
+| Rakip (LLM coding agent) | Tantrium |
+|---|---|
+| Olası kod (istatistik tahmin) → sen incele/düzelt | **Kanıtlı inşa** (Curry-Howard: tip-kontrol = kanıt) |
+| Hayali API/fonksiyon çağırır | Var olmayan sembol köklü değil → REDDEDİLİR |
+| Güven yok (production'da insan-review şart) | **Garanti** (köklü + test-geçer + sertifikalı) |
+
+### Sınırlı plan (4 faz — bitişi belli, üçü mevcut desenler)
+- **P1 — Kod-modalitesi encoder** (`_code_to_graph_moments`): SMILES encoder deseni. Çekirdek.
+- **P2 — Code Synthesizer** (terim-uzayı certified beam): molecular_genesis/design_peptide deseni.
+- **P3 — Doğrulama**: tip-kontrol + test-geçidi + köklülük + çelişki (grounding/truth/corrigibility).
+- **P4 — Agentic sarmal**: görev→plan→sentez→doğrula→PR (Cognition/Actor/Goal).
+
+### Dürüst sınırlar
+- Sıfırdan sertifikalı kod-sentezi ZOR (arama-uzayı patlaması) → DAR başla: iyi-tanımlı, testli
+  fonksiyon/dönüşüm sentezi (pazarın zaten güvendiği nokta) → orada GARANTİ → kapsam büyür.
+- Actor `_UNSAFE` test-çalıştırmayı engelliyor → kontrollü/izole test-runner gerekir (güvenlik korunur).
+- "Belirsiz koca uygulama" değil (LLM'in bulanık gücü); **iyi-tanımlı görevde garantili-doğru** = bizim sahamız.
