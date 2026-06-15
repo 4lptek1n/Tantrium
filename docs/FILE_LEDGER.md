@@ -310,6 +310,16 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   primitif/derinlik genişledikçe büyür. P3 doğrulama (örnek-çalıştırma) sentezde içkin.
 - **Tekrar:** YOK. molecular_genesis (SMILES) ile AYNI DESEN, FARKLI uzay (terim vs atom) — strateji çeşitliliği.
 
+### ✅ core/nl_code.py — DOĞAL DİL → KOD: grounded anlama [YENİ — ASI §12]
+- **İş:** `parse_operations(task)` (NL kelime → grounded operasyon, KELİME-SINIRI eşleme: "son"
+  "sonra"da eşleşmez) + `nl_to_program(task)` (operasyonları SIRAYLA zincirle). `_OP_VOCAB`
+  grounded operasyon sözlüğü (eşanlamlı NL → kod-primitifi). `ai.code_from_nl` kullanır.
+- **Güç:** "Anlamak" = operasyon-sözlüğündeki ANLAM (token-tahmini DEĞİL). Şeffaf ("anladım: reverse→first").
+  Örnek varsa sentezleyiciyle çapraz-doğrular; anlamazsa UYDURMAZ (sözlük genişler, kod gibi).
+- **DÜRÜST SINIR:** ikili NL ilişkisi (max-min "çıkar") + Türkçe morfoloji ("büyükten") henüz dar;
+  operasyon/kalıp eklendikçe büyür.
+- **Tekrar:** YOK. code_synthesis (PBE) ile tamamlayıcı: nl_code NL→spec, synthesize spec→kod.
+
 ### ✅ core/code_agent.py — KOD AJANI: grounding + halüsinasyon-tespiti + test [YENİ — ASI §12 P4]
 - **İş:** `ground_codebase(files)` (repo→semboller/fonksiyonlar/import + TAU DEFINES/CALLS = kod-tabanı
   manifoldu) · `check_grounded(code, ground)` (kodun her Load-sembolü köklü mü; var olmayan =

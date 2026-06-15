@@ -393,6 +393,10 @@ ai.code_task(examples=[(1,3),(2,5)],           # → dict: AGENTIC kod görevi (
 ai.verify_code(code, codebase={...},           # → dict: HERHANGİ kodu doğrula — köklülük (hayali API RED)
                tests="...")                     #   + izole test geçidi {grounded, ungrounded, tests_passed, verified}
 ai.ground_codebase({"path":"src..."})          # → dict: repo → köklü manifold {symbols, functions, edges}
+ai.code_from_nl("listeyi tersine çevir ve ilkini al") # → dict: DOĞAL DİL → KOD (ASI §12, tahminsiz)
+                                               #   NL kelimelerini grounded operasyona DETERMİNİSTİK eşler
+                                               #   {understood, program, source, verified}; "anladım: reverse→first"
+                                               #   örnek verilirse doğrular; anlamazsa SORAR/sentezler (uydurmaz)
 ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, n_paths}  [Geri BFS]
 ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}   [İleri BFS]
 ai.analogy("erlotinib", "egfr", "imatinib")   # → [("bcr-abl", 0.0)]  TAU ilişki tutarlılığı

@@ -2877,6 +2877,54 @@ class AI:
                 "grounded": gc["grounded"], "ungrounded": gc["ungrounded"],
                 "tests_passed": tests_passed, "verified": verified, "answer": ans}
 
+    def code_from_nl(self, task: str, *, examples=None) -> dict:
+        """ASI §12 — DOĞAL DİL → KOD (TAHMİN değil, grounded ANLAMA).
+
+        NL görevdeki kelimeleri GROUNDED operasyonlara deterministik eşler (`core/nl_code`),
+        zincirler. Örnek verilirse DOĞRULAR (sentezleyiciyle çapraz-kontrol). LLM tahmin eder;
+        biz operasyon-anlamından kuruyoruz → şeffaf ("şunu anladım"), uydurmasız.
+
+        Anlaşılan operasyon yoksa / örneklerle çelişirse: örnek varsa SENTEZLE (PBE), yoksa dürüstçe
+        "anlamadım, örnek ver" der. Döner: {task, understood, program, source, verified, answer}.
+        """
+        from tantrium.core.nl_code import nl_to_program
+        nl = nl_to_program(task)
+        prog, ops = nl["program"], nl["ops"]
+        argnames = ["x"]
+        verified = None
+        # örnek varsa: NL-türetilen programı doğrula; geçmezse sentezle (örnek otoritedir)
+        if examples:
+            from tantrium.core.code_synthesis import synthesize, _run, _detect_args
+            argnames = _detect_args(list(examples))
+            ok = ops and all(_run(prog, inp, argnames) == out for inp, out in examples)
+            if ok:
+                verified = True
+            else:
+                cp = synthesize(list(examples))
+                if cp.verified:
+                    prog = cp.program
+                    nl["understood"] = (nl["understood"] + " — ama örneklerle DOĞRULANAMADI; "
+                                        "örneklerden sentezledim") if ops else \
+                        "NL'den operasyon çıkmadı; örneklerden sentezledim"
+                    verified = True
+                    argnames = cp.args
+                else:
+                    verified = False
+        src = f"def solve({', '.join(argnames)}):\n    return {prog}"
+        if not ops and not examples:
+            ans = ("Bu görevden grounded operasyon çıkaramadım (sözlüğümde yok). UYDURMAM — "
+                   "ya örnek (girdi/çıktı) ver ya da operasyonu öğret (sözlük genişler, kod gibi).")
+        elif verified is False:
+            ans = (f"NL'den anladığım: {nl['understood']} → {prog}; ama örnekleri sağlamadı ve "
+                   f"sentezleyemedim. Uydurmam — örnekleri netleştir.")
+        else:
+            ans = (f"Anladığım: {nl['understood']}. Program: def solve(x): return {prog}"
+                   + (f" — {len(list(examples))} örnek DOĞRULANDI." if verified else
+                      " (grounded operasyon-eşlemesinden; örnek verirsen doğrularım).")
+                   + " Tahmin değil — operasyonların anlamından kurdum, halüsinasyonsuz.")
+        return {"task": task, "understood": nl["understood"], "ops": ops, "program": prog,
+                "source": src, "verified": verified, "answer": ans}
+
     def read_data(self, source, *, analyze: str = "law") -> dict:
         """BELGE/VERİ → KÖKLÜ ANALİZ (ASI Pilar D) — yapısal sayısal veriyi DETERMİNİSTİK çıkar,
         dinamik-yasa/tahmin/anomali ile sertifikalı analiz et. CSV/JSON/liste/metin → sayı dizisi →
