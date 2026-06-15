@@ -38,6 +38,8 @@ class CognitionState:
     encoder_health: float = 0.0   # VerifyPhase: encoder içsel çakışma oranı (düşük=sağlıklı)
     math_verify_score: float = 1.0  # VerifyPhase: hesap-oracle (Sturm↔hiperbolisite+Hankel) [0,1]
     pharma_recall: float = 0.0  # VerifyPhase: ampirik farmakoloji geri-kazanım (akraba tepe-1)
+    transport_corridor: float = 0.0  # FlyWheelPhase: ispat-sonrası transport epsilon (amplifikasyon)
+    bridges_discovered: int = 0  # DiscoverPhase: kalıcılaşan çapraz-domain QUANTUM_BRIDGE
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
@@ -69,6 +71,8 @@ class CognitionReport:
     benchmark_score: float = 1.0  # VerifyPhase: dış-doğrulama ampirik isabet
     math_verify_score: float = 1.0  # VerifyPhase: hesap-oracle matematiksel doğruluk
     pharma_recall: float = 0.0  # VerifyPhase: ampirik farmakoloji geri-kazanım
+    transport_corridor: float = 0.0  # FlyWheelPhase: ispat-sonrası transport koridoru
+    bridges_discovered: int = 0  # DiscoverPhase: çapraz-domain QUANTUM_BRIDGE
     phase_logs: list[str] = field(default_factory=list)
     campaigns_triggered: list[str] = field(default_factory=list)
     narrations: list[str] = field(default_factory=list)
@@ -499,8 +503,10 @@ class FlyWheelPhase:
         try:
             from tantrium.core.production import ProductionEngine
             pe = ProductionEngine(engine)
-            campaigns_needed: set[str] = set()
+            from collections import Counter
+            campaign_votes: Counter = Counter()   # gap frekansı = açılma değeri
 
+            eps_before = float(getattr(pe, "_transport_epsilon", 0.0))
             for target_name in targets:
                 if time.monotonic() - t0 >= self.time_budget_s:
                     break
@@ -510,39 +516,125 @@ class FlyWheelPhase:
                     for ax in gap_axes:
                         camp = self._AXIS_TO_CAMPAIGN.get(ax)
                         if camp:
-                            campaigns_needed.add(camp)
+                            campaign_votes[camp] += 1   # bu boşluk kaç hedefte → öncelik
                     verdict = getattr(cert, "verdict", "?")
                     state.log(f"flywheel: '{target_name}' → {verdict}, boşluklar={gap_axes}")
                 except Exception as exc:
                     state.log(f"flywheel: '{target_name}' üretim hatası — {exc}")
 
-            # Yeni kampanyaları başlat (daha önce tetiklenmediyse)
+            # ÖNCELİK: en çok hedefte beliren boşluk en çok üretim açar → önce o kampanya
             already = set(state.campaigns_triggered)
-            new_campaigns = campaigns_needed - already
-            if new_campaigns:
+            ordered = [c for c, _ in campaign_votes.most_common() if c not in already]
+            if ordered:
                 try:
                     from tantrium.research.proof_loop import ProofLoop
                     pl = ProofLoop(engine)
-                    for camp in new_campaigns:
+                    for camp in ordered:
                         if time.monotonic() - t0 >= self.time_budget_s:
                             break
                         try:
                             status = pl.launch_campaign(camp)
                             state.campaigns_triggered.append(camp)
                             state.proofs_completed += 1
-                            state.log(f"flywheel: '{camp}' kampanyası → {status}")
+                            state.log(f"flywheel: '{camp}' kampanyası (öncelik {campaign_votes[camp]}) → {status}")
                         except Exception as exc:
                             state.log(f"flywheel: '{camp}' kampanya hatası — {exc}")
                 except Exception as exc:
                     state.log(f"flywheel: ProofLoop başlatma hatası — {exc}")
-            else:
-                if campaigns_needed:
-                    state.log(f"flywheel: kampanyalar zaten çalışıyor — {campaigns_needed}")
+            elif campaign_votes:
+                state.log(f"flywheel: kampanyalar zaten çalışıyor — {set(campaign_votes)}")
+
+            # AMPLİFİKASYON ÖLÇÜMÜ: ispat sonrası transport koridorunu yeniden senkronla.
+            # Koridor genişlerse (epsilon ↑) sistem DAHA fazla molekülü gerçeklenebilir görür
+            # = kendi tasarım menzilini büyüttü. Görünür/ölçülür (eskiden pasifti).
+            try:
+                pe._sync_transport_epsilon()
+                eps_after = float(getattr(pe, "_transport_epsilon", eps_before))
+                state.transport_corridor = eps_after
+                if eps_after > eps_before:
+                    state.log(f"flywheel: transport koridoru GENİŞLEDİ {eps_before:.2e}→{eps_after:.2e} "
+                              f"(ispat→tasarım menzili büyüdü)")
+            except Exception:
+                pass
 
         except Exception as exc:
             state.log(f"flywheel: hata — {exc}")
 
         return state
+
+
+class DiscoverPhase:
+    """Çapraz-domain KEŞİF: birleşik κ-uzayında gizli dolanıklıkları bul + KALICILAŞTIR.
+
+    EVRENSEL YASA (F24) sayesinde DNA/ilaç/metabolit/hastalık/sayı hepsi AYNI gerçek
+    moment uzayında. `quantum_bridges` klasik-UZAK ama κ-YAKIN kavramları bulur — naif
+    benzerliğin göremediği gizli yapısal bağ ("elma-DNA × Fibonacci" ilkesi). Bu faz
+    onları kalıcı çift-yönlü QUANTUM_BRIDGE kenarına çevirir → yeniden-kullanılabilir
+    graf bilgisi. Bounded (≤ tarama sınırı), idempotent (mevcut kenarı geçer).
+
+    Emergent ASI davranışı: kimsenin bağlamadığı domainler-arası yasaları görür. Yalnız
+    F24 yasası (her şey gerçek formda) sayesinde ANLAMLI — eski metin yolu hepsini benzer
+    gösteriyordu, gizli bağ yapay çıkıyordu.
+    """
+    name = "discover"
+
+    def __init__(self, max_scan: int = 8, top_k: int = 4):
+        self.max_scan = max_scan
+        self.top_k = top_k
+
+    def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
+        mani = getattr(engine, "manifold", None)
+        tau = getattr(engine, "tau", None)
+        if mani is None or tau is None or not hasattr(mani, "quantum_bridges"):
+            return state
+        # Tarama kümesi: bu turun compose hedefleri + birkaç çekirdek kavram (bounded)
+        seeds = list(dict.fromkeys(
+            [t for t in state.compose_targets if not t.startswith("⟨")]
+        ))[:self.max_scan]
+        if len(seeds) < self.max_scan:
+            for nm in mani.concepts:
+                if nm.startswith("⟨"):
+                    continue
+                if nm not in seeds:
+                    seeds.append(nm)
+                if len(seeds) >= self.max_scan:
+                    break
+        found = 0
+        for name in seeds:
+            try:
+                bridges = mani.quantum_bridges(name, top_k=self.top_k)
+            except Exception:
+                continue
+            for other, qdist in bridges:
+                if other.startswith("⟨") or other == name:
+                    continue
+                if self._add_bridge(engine, name, other, float(qdist)):
+                    found += 1
+                    state.log(f"discover: {name} ⟷ {other} (κ-yakın {qdist:.3f}) → QUANTUM_BRIDGE")
+        if found:
+            state.bridges_discovered += found
+            state.log(f"discover: {found} gizli çapraz-domain bağ kalıcılaştı")
+        return state
+
+    @staticmethod
+    def _add_bridge(engine, a: str, b: str, qdist: float) -> bool:
+        """Çift-yönlü kalıcı QUANTUM_BRIDGE kenarı (growth._add_quantum_bridge_edge ile aynı
+        sözleşme — tek davranış). Yeni kenar örüldüyse True."""
+        from tantrium.graph.knowledge_graph import KnowledgeEdge
+        if a == b:
+            return False
+        created = False
+        for src, tgt in ((a, b), (b, a)):
+            edges = engine.tau.edges.setdefault(src, [])
+            if any(e.target == tgt and e.paradigm == "QUANTUM_BRIDGE" for e in edges):
+                continue
+            edges.append(KnowledgeEdge(
+                source=src, target=tgt, distance=round(qdist, 6),
+                paradigm="QUANTUM_BRIDGE", quantum_dist=round(qdist, 6)))
+            created = True
+        if created:
+            engine.tau._dirty = True
+        return created
 
 
 class NarratePhase:
@@ -807,7 +899,8 @@ _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     VerifyPhase(),      # Corrigibility: yanlışı tespit+düzelt (growth ile paylaşılan çekirdek)
     DeductivePhase(),   # engine.grow(): InferenceChain + certify_theorem_graph (öksüz bağlandı)
     ComposePhase(),     # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
-    FlyWheelPhase(),    # Kademe 6: produce() → scan_production_gaps() → ProofLoop
+    FlyWheelPhase(),    # F-ASI #2: produce()→scan_gaps→ProofLoop + koridor amplifikasyon ölçümü
+    DiscoverPhase(),    # F-ASI #3: çapraz-domain gizli κ-dolanıklık → kalıcı QUANTUM_BRIDGE
     ProvePhase(),
     NarratePhase(),     # Tel 2: döngü sesi — öğrenileni dile döker
     PersistPhase(),
@@ -938,6 +1031,8 @@ class Cognition:
             benchmark_score=state.benchmark_score,
             math_verify_score=state.math_verify_score,
             pharma_recall=state.pharma_recall,
+            transport_corridor=state.transport_corridor,
+            bridges_discovered=state.bridges_discovered,
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
             narrations=list(state.narration),

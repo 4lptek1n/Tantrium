@@ -635,6 +635,27 @@ class ProductionEngine:
             (c for c in scored if c.get("coherent")), None)
         best = best_closes or best_coherent or (scored[0] if scored else None)
 
+        # ── LGV/DPP ÇEŞİTLİLİK SERTİFİKASI (kazanan DEĞİŞMEZ) ────────────
+        # Aday havuzunun kesişmezliği = imza Gram-determinantı (DPP hacmi). Büyük = havuz
+        # gereksiz-değil (gerçek strateji çeşitliliği); küçük = adaylar birbirinin kopyası.
+        # Total pozitiflik / nonintersecting-path determinantının üretimde uygulamalı yüzü
+        # (deep-research: generatif döngüde sömürülmemiş). Raporlanan alternatifler de
+        # çeşitliliğe göre yeniden dizilir — yakın-kopya israfı biter. best KORUNUR.
+        pool_diversity = 0.0
+        try:
+            from tantrium.core.diversity import diversity_volume, diverse_select
+            judged = scored[:top_k]
+            sigs = [self._signature(c["smiles"]).mu for c in judged]
+            pool_diversity = float(diversity_volume(sigs))
+            if best is not None and len(judged) > 2:
+                rest = [c for c in judged if c is not best]
+                rvecs = [self._signature(c["smiles"]).mu for c in rest]
+                order = diverse_select(rvecs, len(rest),
+                                       prefilter=[c.get("kappa_fit", 0.0) for c in rest])
+                scored = [best] + [rest[i] for i in order] + scored[top_k:]
+        except Exception:
+            pass
+
         if best is None:
             return ProductionCertificate(
                 target=target_str, target_kind=kind, required_moments=mu_req,
@@ -717,7 +738,7 @@ class ProductionEngine:
             sturm_path_ok=ok_best, pivot_min=pmin_best, signature_fit=fit_best,
             refine_rounds_used=refine_used,
             injected_as=injected_as, sdf_path=sdf,
-            candidates=scored[:top_k], verdict=verdict,
+            candidates=scored[:top_k], pool_diversity=pool_diversity, verdict=verdict,
             note=("Üretim ve yargı tek Sturm-pozitiflik ekseni (RH'nin H_{d,j}≥0 "
                   "kriteri). Sistem tahmin etmez — matematiksel sertifika üretir. "
                   "Wet-lab onayı ayrıdır."),

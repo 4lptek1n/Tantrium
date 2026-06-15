@@ -84,6 +84,7 @@ class ProductionCertificate:
     injected_as: str = ""
     sdf_path: str = ""
     candidates: list = field(default_factory=list)  # sıralı çalışan-molekül kümesi
+    pool_diversity: float = 0.0            # LGV/DPP çeşitlilik sertifikası (aday havuzu kesişmezliği)
     verdict: str = ""                      # İŞE YARAYABİLİR|İŞE YARAMAZ|KISMÎ|ÜRETİLEMEDİ|GEÇERSİZ
     note: str = ""
 

@@ -667,6 +667,19 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     taraması/geçiş, her kavram bir kez). `state.collisions_resolved` + log. Dürüst sınır: küratörlü
     olgu enjekte ETMİYORUZ (oracle'ı kandırmak olurdu) — yalnız matematiksel injektiflik. Canlı:
     gerçek manifoldda ilk geçişte 2 çakışma çözüldü. Tests: `test_corrigibility.py` (9).
+  - **Kademe F27 — 3 ASI bileşik-büyüme döngüsü tek turda [2026-06]:** ASI gücü = tasarım-genişliği
+    × sertifika-doğruluğu; bunu bileşik büyüten kapalı döngüler. ÜÇÜ DE cognition cycle'da:
+    **(#1) Öz-keskinleştiren ALGI** (VerifyPhase çakışma çözme, F26 — diğer ikisi buna güvenir).
+    **(#2) Öz-büyüten TASARIM** (`FlyWheelPhase`): boşluk frekansına göre kampanya ÖNCELİĞİ +
+    ispat-sonrası `_sync_transport_epsilon` ile transport koridoru ÖLÇÜLÜR (`state.transport_corridor`)
+    → "ispat→tasarım menzili genişler" görünür. **(#3) Çapraz-domain KEŞİF** (`DiscoverPhase`):
+    birleşik κ-uzayında (F24 yasası sayesinde anlamlı) `quantum_bridges` tarar, gizli klasik-uzak/
+    κ-yakın dolanıklığı KALICI `QUANTUM_BRIDGE` kenarına çevirir (bounded/idempotent). Canlı: bir
+    turda 11 bağ (`AG_LGV_TRANSFER⟷molekül`, `DYADIC_TRANSPORT⟷metabolit` — teorem×kimya).
+    **(#4 bonus, deep-research) LGV/DPP çeşitlilik sertifikası** (`core/diversity.py`): aday havuzu
+    Gram-determinantı (`pool_diversity`) = kesişmezlik; raporlanan alternatifler çeşitliliğe dizilir.
+    KAZANAN DEĞİŞMEZ (egfr→gefitinib korundu). Tests: `test_diversity.py` (5). İki Explore ajanıyla
+    mimari iç dosyalara kadar haritalandı; üç döngü o haritaya göre tek turda yerleşti.
   - **3 Mantık Düzeltmesi (2026-06, commit 20283c7):**
     1. `_gaps_to_campaigns()`: `ALEPH:` önekli boşluklar artık ProofLoop kampanyasına
        GÖNDERİLMİYOR. ALEPH:X = bir kavram Aleph PSD testini geçemiyor — encoding/Hankel
