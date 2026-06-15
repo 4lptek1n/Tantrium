@@ -797,6 +797,50 @@ class AI:
             dynamics=dynamics, forecast=forecast,
             predict_error=float(perr), law_holds=bool(holds))
 
+    def forecast(self, series, steps: int = 8, order: int | None = None) -> dict:
+        """EVRENSEL TAHMİN — herhangi bir zaman serisini yöneten yasayı bulup geleceği yazar.
+
+        Gürültü-dayanıklı (en küçük kareler AR). Domain-kör: finans/IoT/biyoritim/ölçüm.
+        order None → otomatik (tekil-değer sinyal/gürültü sınırı). Sertifika: holdout hatası.
+        Döner: {forecast, recurrence, order, residual_std, holdout_error}.
+        """
+        from tantrium.core.structure import forecast as _fc, fit_recurrence
+        x = [float(v) for v in series]
+        # SERTİFİKA: son min(steps, n/4) değeri sakla, yasayı önceki kısımdan kur, tahmin et
+        h = max(0, min(int(steps), len(x) // 4))
+        herr = None
+        if h >= 1 and len(x) - h >= 4:
+            pred, _, _ = _fc(x[:len(x) - h], steps=h, order=order)
+            actual = x[len(x) - h:]
+            if pred:
+                denom = max(1e-9, max(abs(a) for a in actual))
+                herr = sum(abs(p - a) for p, a in zip(pred, actual)) / (len(actual) * denom)
+        fut, c, sigma = _fc(x, steps=steps, order=order)
+        return {
+            "forecast": [round(v, 6) for v in fut],
+            "recurrence": [round(v, 6) for v in c],
+            "order": len(c),
+            "residual_std": round(sigma, 6),
+            "holdout_error": (round(herr, 6) if herr is not None else None),
+            "reliable": (herr is not None and herr < 0.05),
+        }
+
+    def detect_anomalies(self, series, z: float = 3.0, order: int | None = None) -> dict:
+        """EVRENSEL ANOMALİ/SAHTELİK tespiti — 'normal'i bilmeden, yapıdan.
+
+        Veriyi yöneten yasayı bulur; yasaya uymayan noktaları (|kalıntı|>z·σ) işaretler:
+        arıza, manipülasyon, dolandırıcılık, olağandışı olay. Yer + şiddet (z-skor) döner.
+        Domain-kör: sensör/finans/ağ/biyosinyal. Döner: {anomalies, n, residual_std, clean}.
+        """
+        from tantrium.core.structure import anomaly_scan
+        anomalies, sigma = anomaly_scan([float(v) for v in series], order=order, z=z)
+        return {
+            "anomalies": anomalies,
+            "n": len(anomalies),
+            "residual_std": round(sigma, 6),
+            "clean": len(anomalies) == 0,
+        }
+
     def collisions(
         self,
         n_samples: int = 200,

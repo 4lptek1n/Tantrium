@@ -66,3 +66,68 @@ def structural_decomposition(samples, tol: float = 1e-6,
         n=N, rank=rank, modes=modes, singular_values=[round(v, 6) for v in svn],
         structured=structured, sv_gap=round(sv_gap, 6),
     )
+
+
+def fit_recurrence(samples, order: int | None = None, max_order: int = 12):
+    """Gürültü-DAYANIKLI lineer yineleme (AR) tahmini — en küçük kareler (denoise).
+
+    x[n] ≈ Σ c_i x[n-i] sistemini TÜM n üzerinde aşırı-belirli çözer → gürültü ortalanır
+    (exact Prony tek pencere; bu hepsini kullanır). order None → tekil-değer en-büyük-düşüş
+    (sinyal/gürültü sınırı) ile otomatik. Döner: (c, order, residual_std).
+    """
+    import numpy as np
+    x = np.asarray([float(s) for s in samples], dtype=float)
+    N = len(x)
+    if N < 4:
+        return [], 0, 0.0
+    if order is None:
+        sd = structural_decomposition(x.tolist(), tol=1e-9)
+        sv = np.asarray(sd.singular_values, dtype=float) if sd.singular_values else np.array([1.0])
+        order = 1
+        if len(sv) > 2:
+            ratios = sv[:-1] / np.maximum(sv[1:], 1e-12)
+            order = int(np.argmax(ratios[:max_order])) + 1
+    p = max(1, min(int(order), max_order, N // 2 - 1))
+    rows = [x[n - p:n][::-1] for n in range(p, N)]
+    b = x[p:N]
+    try:
+        c, *_ = np.linalg.lstsq(np.array(rows), b, rcond=None)
+        resid = b - np.array(rows) @ c
+        return [float(v) for v in c], p, float(np.std(resid))
+    except Exception:
+        return [], p, 0.0
+
+
+def forecast(samples, steps: int = 8, order: int | None = None):
+    """Keşfedilen yasayla GELECEĞİ tahmin et. Döner: (forecast, coeffs, residual_std)."""
+    c, p, sigma = fit_recurrence(samples, order)
+    seq = [float(s) for s in samples]
+    out: list = []
+    for _ in range(int(steps)):
+        if not c:
+            break
+        nxt = sum(ci * seq[-(i + 1)] for i, ci in enumerate(c))
+        seq.append(nxt)
+        out.append(nxt)
+    return out, c, sigma
+
+
+def anomaly_scan(samples, order: int | None = None, z: float = 3.0):
+    """ANOMALİ/SAHTELİK tespiti — global yasaya karşı yerel sapma. 'Normal'i bilmeden.
+
+    Veriyi yöneten yineleme bulunur; her nokta yasayla tahmin edilir; |kalıntı| > z·σ olan
+    noktalar yapısal ANOMALİ (arıza/manipülasyon/olağandışı olay). Yer + şiddet döner.
+    Döner: (anomalies[{index,residual,z}], residual_std).
+    """
+    import numpy as np
+    c, p, sigma = fit_recurrence(samples, order)
+    if not c:
+        return [], 0.0
+    x = [float(s) for s in samples]
+    resids = [x[n] - sum(ci * x[n - (i + 1)] for i, ci in enumerate(c))
+              for n in range(p, len(x))]
+    s = float(np.std(resids)) or 1.0
+    anomalies = [{"index": k + p, "residual": round(r, 5), "z": round(abs(r) / s, 2)}
+                 for k, r in enumerate(resids) if abs(r) > z * s]
+    return anomalies, s
+

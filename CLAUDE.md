@@ -381,6 +381,18 @@ ai.sturm("x^3 - 3*x + 1")                     # → Sturm zinciri
 ai.positivity("x^2 + 1")                       # → dict (Hankel PSD kontrolü)
 ai.crypto(b"\x00\xff...", mode="achilles")     # → AchillesReading (savunma)
 
+# Evrensel matematik meta-güçleri (domain-kör, ham veri → yapı; core/structure.py L0)
+ai.reverse_engineer(gözlem)                    # → UniverseReconstruction: gözlemden ÜRETEN
+                                               #   gizli yapıyı çıkar (Kronecker/Prony Hankel rank).
+                                               #   sayısal=ham math; sembolik(molekül/DNA)=encode yolu.
+ai.discover_law(seri, holdout=4)               # → LawDiscovery: ham veriden yönetici YASA (lineer
+                                               #   yineleme+modlar) + görülmemiş geleceği tahmin
+                                               #   ederek DOĞRULA. Fibonacci→altın oran (formül yok).
+ai.forecast(seri, steps=8)                     # → dict: gürültü-dayanıklı tahmin (AR/LS) +
+                                               #   holdout SERTİFİKASI (reliable=güvenilir mi).
+ai.detect_anomalies(seri, z=3.0)               # → dict: yapısal anomali/sahtelik (yasaya uymayan
+                                               #   nokta) yer+şiddetle — 'normal'i bilmeden.
+
 # Meta (tanrısal göz & sentez)
 ai.vision("prime")                             # → CosmicFrame (geçmiş/şimdi/gelecek)
 ai.bridge("theorem", "proof")                  # → BridgeResult (zorunlu köprü kavramı)
