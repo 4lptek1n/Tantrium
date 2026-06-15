@@ -212,3 +212,46 @@ def test_timeline_chronology():
     r = ai.timeline("DNA was found in 1953. Insulin was discovered in 1921.")
     yrs = [e["year"] for e in r["events"]]
     assert yrs == sorted(yrs) and 1921 in yrs and 1953 in yrs
+
+
+# ───────────── ASI Pilar A (Kademe F50): Sertifikalı Hipotez Motoru ─────────────
+
+def test_hypothesize_novel_certified():
+    """Yeni hipotez motoru: transitif kausal → RH-Sturm sertifikalı + köklü + kaynaklı."""
+    import tantrium
+    ai = tantrium.AI()
+    ai.learn("Erlotinib is a drug. Erlotinib inhibits EGFR. EGFR activates ras. "
+             "ras causes tumor growth.")
+    r = ai.hypothesize_novel("erlotinib")
+    assert "hypotheses" in r and "seeds" in r
+    for h in r["hypotheses"]:
+        assert "sturm_ok" in h and "chain" in h and h["sources"]
+        assert isinstance(h["confidence"], float)
+
+
+def test_hypothesize_novel_deterministic():
+    """Determinizm: aynı tohum → birebir aynı hipotez listesi (random yok)."""
+    import tantrium
+    ai = tantrium.AI()
+    ai.learn("Imatinib inhibits BCR-ABL. BCR-ABL causes chronic myeloid leukemia.")
+    a = ai.hypothesize_novel("imatinib")["answer"]
+    b = ai.hypothesize_novel("imatinib")["answer"]
+    assert a == b
+
+
+def test_hypothesize_novel_analogy_optin():
+    """Analoji (ham κ) varsayılan KAPALI (gürültü); opt-in ile açılır — dürüst sınır."""
+    import tantrium
+    ai = tantrium.AI()
+    ai.learn("Erlotinib inhibits EGFR.")
+    default = ai.hypothesize_novel("erlotinib")
+    assert all(h["kind"] == "transitive" for h in default["hypotheses"])
+
+
+def test_reason_routes_hypothesize_novel():
+    """reason() 'yeni hipotez üret' → hypothesize_novel intent."""
+    import tantrium
+    ai = tantrium.AI()
+    ai.learn("Erlotinib inhibits EGFR. EGFR activates ras.")
+    r = ai.reason("erlotinib için yeni hipotez üret")
+    assert r["intent"] == "hypothesize_novel"

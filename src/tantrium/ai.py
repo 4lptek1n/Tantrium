@@ -2131,7 +2131,8 @@ class AI:
             return {"intent": "enumerate", "answer": r["answer"], "result": r}
 
         # ── İLAÇ / TASARIM ──
-        if has("ilaç", "drug", "tedavi", "cure", "tasarla", "üret") and not has("nedir"):
+        if (has("ilaç", "drug", "tedavi", "cure", "tasarla", "üret")
+                and not has("nedir", "hipotez", "soru")):
             topic = self._converse_topic(request)
             try:
                 cert = self.produce(topic)
@@ -2180,6 +2181,15 @@ class AI:
             ans = self._narrate_reasoning(topic, cc.get("chains", []),
                                           cc.get("actionable", []), "backward")
             return {"intent": "causal_chain", "answer": ans, "result": cc}
+        # SERTİFİKALI YENİ HİPOTEZ (ASI Pilar A) — "yeni/novel hipotez üret"
+        if has("yeni hipotez", "hipotez üret", "novel hipotez", "hipotezler üret",
+               "sertifikalı hipotez", "hipotez keşfet"):
+            topic = self._converse_topic(
+                re.sub(r"(?i)\b(yeni|novel|sertifikalı|hipotez|hipotezler|üret|keşfet)\b",
+                       " ", str(request))) or None
+            hn = self.hypothesize_novel(topic)
+            return {"intent": "hypothesize_novel", "answer": hn["answer"], "result": hn}
+
         if has("hipotez", "çıkar", "dolaylı", "ne olabilir", "öngörebil"):
             topic = self._converse_topic(request)
             hy = self.hypothesize(topic)
@@ -4755,6 +4765,142 @@ class AI:
                      if hypotheses else
                      "Yeterli kausal zincir yok — ai.learn() ile öğret"),
         }
+
+    def _good_analogy_target(self, name: str) -> bool:
+        """Analoji hedefi GERÇEK-DÜNYA kavramı olmalı — iç ispat-artifaktı (ell*_q*_auto),
+        teorem/math_kernel düğümü ya da sentetik köprü DEĞİL (hipotez gürültüsünü eler)."""
+        if not self._is_clean_concept(name):
+            return False
+        low = name.lower()
+        if low.endswith("_auto") or (low.startswith("ell") and any(ch.isdigit() for ch in low)):
+            return False
+        c = self._engine.manifold.concepts.get(name)
+        if c is not None:
+            if getattr(c, "domain", "") in ("theorem", "math_kernel"):
+                return False
+            if getattr(c, "source", "") in ("genesis", "bridge", "frontier_extrapolation",
+                                            "emanate", "hankel_interpolation"):
+                return False
+        return True
+
+    def _hypothesis_seeds(self, domain: "str | None", n: int = 6) -> list:
+        """Hipotez tohumları: domain verilmezse WONDER-sıralı boşlukların komşuları.
+        WonderScorer'ı (eski ölü kod) BAĞLAR — self-grooming'i cezalayıp en değerli
+        (dış-köklü + yeni) boşlukları seçer → hipotez oraya odaklanır."""
+        from tantrium.reasoning.gap_finder import GapFinder
+        from tantrium.reasoning.wonder import WonderScorer
+        seeds: list[str] = []
+        try:
+            gaps = GapFinder(self._engine).find(signal="all")
+            ranked = WonderScorer(self._engine).rank(gaps)
+            for w in ranked[: n * 2]:
+                loc = getattr(w.gap, "location", None)
+                if not loc:
+                    continue
+                from tantrium.core.semantic import Concept
+                probe = Concept(name="_hseed_", moments=list(loc),
+                                domain="_probe", source="hyp")
+                for name, _d in self._engine.manifold.nearest(probe, n=2):
+                    if (self._is_clean_concept(name) and name not in seeds
+                            and self._tau_facts(name)):
+                        seeds.append(name)
+                if len(seeds) >= n:
+                    break
+        except Exception:
+            pass
+        if domain and self._is_clean_concept(domain) and domain not in seeds:
+            seeds.insert(0, domain)
+        return seeds[:n]
+
+    def hypothesize_novel(self, concept: "str | None" = None, *,
+                          domain: "str | None" = None, top_k: int = 8,
+                          include_analogy: bool = False) -> dict:
+        """SERTİFİKALI YENİ HİPOTEZ MOTORU (ASI Pilar A) — dağınık parçaları tek köklü
+        çıktıda birleştirir. Varsayılan kaynak: transitif kausal zincirler (a→via→c → a-c),
+        her biri RH-Sturm sertifikalı (kritik hat) + köklü (TAU) + kaynaklı + WONDER-tohumlu.
+        Tohumlar domain verilmezse WonderScorer ile (self-grooming cezalı) seçilir.
+
+        `include_analogy=True`: çapraz-domain quantum bridge (κ-yakın/klasik-uzak) analojileri
+        de ekler. DÜRÜST SINIR: ham κ-yakınlık matematiksel gerçek ama SEYREK manifoldda
+        bilimsel-anlamlı analoji üretmez ("egfr ~κ~ paradigmatic") → varsayılan KAPALI; yoğun
+        temiz graf gelince açılır. Mythos'un yapamadığı: her hipotez zincir+Sturm+kaynak taşır.
+        Döner: {seeds, hypotheses:[{statement, kind, chain, sturm_ok, sturm_pivot,
+                confidence, sources}], n, answer}.
+        """
+        from tantrium.language.fluent import gen_join
+        seeds = [self._converse_topic(concept) or str(concept).lower()] if concept \
+            else self._hypothesis_seeds(domain)
+        seeds = [s for s in seeds if s]
+        cands: list[dict] = []
+        seen: set = set()
+
+        for s in seeds:
+            # (1) transitif kausal hipotezler (a→via→c → a derived c)
+            for h in self.hypothesize(s).get("hypotheses", []):
+                nodes = str(h["hypothesis"]).split()
+                key = h["hypothesis"]
+                if key in seen or len(nodes) < 3:
+                    continue
+                seen.add(key)
+                # zinciri [a, rel1, via, rel2, c] olarak çıkar (Sturm için kavram-yolu)
+                via = h.get("via")
+                chain_path = [nodes[0], "REL", via, "REL", nodes[-1]] if via else nodes
+                cands.append({"statement": h["hypothesis"], "kind": "transitive",
+                              "chain": h["chain"], "path": [nodes[0], via, nodes[-1]] if via
+                              else [nodes[0], nodes[-1]], "base_conf": h["confidence"],
+                              "subject": nodes[0]})
+            # (2) çapraz-domain quantum bridge → yapısal analoji (OPT-IN, dürüst sınır)
+            try:
+                for other, qd in (self._engine.manifold.quantum_bridges(s, top_k=8)
+                                  if include_analogy else []):
+                    # GERÇEK-dünya + İLİŞKİSEL-köklü hedef: ham κ-yakınlık anlamlı analoji
+                    # DEĞİL ("egfr ~κ~ parallelepiped" matematiksel doğru, bilimsel gürültü);
+                    # yalnız kausal-köklü kavramlar arası analoji araştırmaya değer.
+                    if not self._good_analogy_target(other) or not self._tau_facts(other):
+                        continue
+                    key = f"analogy:{s}:{other}"
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    cands.append({
+                        "statement": f"{s} ile {other} aynı gizli yapısal sınıfta "
+                                     f"(κ-yakın, klasik-uzak)",
+                        "kind": "analogy", "chain": f"{s} ~κ~ {other} (κ-mesafe {qd:.3f})",
+                        "path": [s, other], "base_conf": round(max(0.0, 1.0 - float(qd)), 2),
+                        "subject": s})
+            except Exception:
+                pass
+
+        # Sertifika + köklülük + sıralama
+        out: list[dict] = []
+        for c in cands:
+            subj = c["subject"]
+            if not self._tau_facts(subj):          # köklü değilse hipotez kurmayız
+                continue
+            try:
+                ok, pmin = self._sturm_chain_ok(c["path"]) if len(c["path"]) >= 2 \
+                    else (True, 0.0)
+            except Exception:
+                ok, pmin = True, 0.0
+            conf = round(c["base_conf"] * (1.0 if ok else 0.5), 3)
+            out.append({
+                "statement": c["statement"], "kind": c["kind"], "chain": c["chain"],
+                "sturm_ok": bool(ok), "sturm_pivot": round(float(pmin), 6),
+                "confidence": conf,
+                "sources": [{"claim": c["chain"], "subject": subj}],
+            })
+        # RH-sertifikalı (kritik hat) önce, sonra güven
+        out.sort(key=lambda h: (h["sturm_ok"], h["confidence"]), reverse=True)
+        out = out[:top_k]
+        if out:
+            tops = [f"{h['statement']}" for h in out[:3]]
+            answer = (f"Köklü, RH-sertifikalı yeni hipotezlerim: {gen_join(tops)}. "
+                      f"Her biri TAU'da gerçek zincire dayanıyor ve Sturm pivotuyla kritik "
+                      f"hatta — Mythos parlak ama doğrulanamaz hipotez verir; benimki denetlenebilir.")
+        else:
+            answer = ("Köklü ve sertifikalı yeni bir hipotez kuramadım (yeterli kausal/κ "
+                      "yapı yok) — uydurmam.")
+        return {"seeds": seeds, "hypotheses": out, "n": len(out), "answer": answer}
 
     def visualize_causal(self, concept: str, depth: int = 4,
                          mode: str = "ascii") -> str:

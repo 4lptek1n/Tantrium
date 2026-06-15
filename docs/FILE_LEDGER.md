@@ -423,7 +423,11 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   aritmetiği KORUNDU — float'ta ağırlıklı-toplamdan ayrışır, PSD sınırını kaydırmamak için
   bağlanMADI (ledger "naif birleştirme gücü öldürür" uyarısı). Tests: 7.
 
-### ✅ reasoning/wonder.py — merak döngüsü (self-grooming cezası) [F4 2026-06]
+### ✅ reasoning/wonder.py — merak döngüsü (self-grooming cezası) [F4 2026-06; F50 BAĞLANDI]
+> **F50 [2026-06]:** WonderScorer eskiden ÖLÜ KOD'du (public API'de hiç çağrılmıyordu).
+> ASI Pilar A `ai.hypothesize_novel._hypothesis_seeds` artık `WonderScorer.rank` ile boşlukları
+> sıralayıp en değerli (dış-köklü + yeni, self-grooming cezalı) tohumları seçer → hipotez oraya
+> odaklanır. Ölü güç bağlandı.
 - **İş:** `WonderScorer(engine, alpha, gamma).score(gap)/rank(gaps)` → `WonderScore`.
   `score = α·v_ext·novelty − γ·degeneracy`. v_ext=sentetik-olmayan komşu oranı (dış demir),
   novelty=tanh(en yakın uzaklık), degeneracy=sentetik komşu oranı (genesis/bridge/interpolation...).

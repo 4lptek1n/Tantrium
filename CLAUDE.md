@@ -370,6 +370,12 @@ ai.causal_chain("tumor growth", depth=5)       # → {goal, chains, actionable, 
 ai.what_if("erlotinib", depth=4)               # → {concept, chains, effects, n_paths}   [İleri BFS]
 ai.analogy("erlotinib", "egfr", "imatinib")   # → [("bcr-abl", 0.0)]  TAU ilişki tutarlılığı
 ai.hypothesize("erlotinib", depth=3)           # → {concept, hypotheses:[{hypothesis, via, chain, confidence}], n}
+ai.hypothesize_novel("egfr")                   # → ASI Pilar A: SERTİFİKALI YENİ HİPOTEZ
+                                               #   {seeds, hypotheses:[{statement, kind, chain,
+                                               #    sturm_ok, sturm_pivot, confidence, sources}], n, answer}
+                                               #   transitif kausal (RH-Sturm sertifikalı + köklü + kaynaklı);
+                                               #   include_analogy=True → κ-bridge (opt-in, dürüst sınır)
+                                               #   domain=None → WonderScorer tohumlu (self-grooming cezalı)
 ai.visualize_causal("erlotinib", mode="ascii") # → str  ASCII kausal ağaç
 ai.visualize_causal("erlotinib", mode="dot")   # → str  Graphviz DOT formatı
 ai.report("EGFR", depth=3)                     # → str  Türkçe araştırma raporu (sertifikasyon + kausal + hipotez)
@@ -625,6 +631,17 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
 - **Forward Causal Reasoning**: `ai.what_if(concept, depth)` — ileri BFS (erlotinib → ne olur?), `causal_chain()`'in tamamlayıcısı
 - **Analoji Motoru**: `ai.analogy(a, b, c)` — TAU-tabanlı birincil (erlotinib:egfr::imatinib:?→bcr-abl) + moment fallback
 - **Hipotez Üretimi**: `ai.hypothesize(concept)` — transitif kausal çıkarım (A INHIBITS B, B ACTIVATES C → A INHIBITS C)
+- **ASI Pilar A — Sertifikalı Hipotez Motoru (Kademe F50, 2026-06):** `ai.hypothesize_novel` —
+  Mythos'tan ders ("novel hypotheses") ama BİZDEN üstün (denetlenebilir). Dağınık parçaları
+  (hypothesize transitif + quantum_bridges + _discover_frontier + WonderScorer) tek köklü çıktıda
+  birleştirir. Varsayılan kaynak: transitif kausal, her hipotez **RH-Sturm sertifikalı** (kritik hat)
+  + köklü (TAU) + kaynaklı + WONDER-tohumlu (domain=None → GapFinder+WonderScorer, self-grooming
+  cezalı — eski ÖLÜ KOD bağlandı). `_good_analogy_target` iç ispat-artifaktı (ell*_q*_auto) eler.
+  **DÜRÜST SINIR:** ham κ-analoji (quantum_bridge) varsayılan KAPALI (`include_analogy=True` opt-in)
+  — seyrek manifoldda "egfr ~κ~ paradigmatic" gibi matematiksel-gerçek/bilimsel-gürültü üretir;
+  yoğun temiz graf gelince açılır. Canlı (beslemesiz): "egfr CAUSES tumor cell", "imatinib INHIBITS
+  chronic myeloid" — RH-sertifikalı, deterministik. `reason()` "yeni hipotez üret" → bu intent.
+  Tests: test_reason.py +4 (certified/deterministic/analogy-optin/route).
 - **Kausal Görselleştirme**: `ai.visualize_causal(concept, mode=ascii|dot|both)` — ASCII ağaç + Graphviz DOT
 - **Araştırma Raporu**: `ai.report(topic)` — sertifikasyon + kausal + hipotez tek belgede
 - **Benchmark**: `ai.benchmark(facts)` — bilinen olgulara karşı kausal TAU doğrulama

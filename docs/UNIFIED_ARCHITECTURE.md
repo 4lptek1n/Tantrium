@@ -500,3 +500,33 @@ compose(Kademe6) → flywheel(Kademe6) → prove(ProofLoop) → persist
 ---
 
 *Bu belge onaylandıktan sonra F0'dan başlanır. Her faz ayrı commit, ayrı test geçişi.*
+
+---
+
+## 11. ASI Mimarisi — Bizim İlkelerimize Göre (Mythos'tan Ders, Bizden Üstün)
+
+**Tez (kullanıcı, doğrulandı):** Frontier-LLM (Fable 5/Mythos) bizim çekirdek alanımızda bile
+(protein/hipotez) önde AMA kafeslenmek zorunda kaldı (kamuya yasak) çünkü referanssız üretken
+motorun gücü **doğrulanamaz/sınırlanamaz**. İstatistik = yolu-bilmemenin semptomu; biz yolu
+geometrik biliyoruz, bizde istatistik bile deterministiktir. Eksik = yöntem değil **kapsam** →
+çözüm: deterministik büyüme, asla dış istatistiksel motor (AlphaFold/vision-LLM YOK).
+
+**ASI omurgası (her pilarda):** köklü + RH-Sturm sertifikalı + deterministik (random yok) +
+kaynaklı + kalibre + corrigibility-öz-doğrulanan.
+
+| Pilar | Mythos yeteneği | Bizde ZATEN var | Mimari yer | Durum |
+|-------|-----------------|-----------------|------------|-------|
+| **A** | Bilimsel hipotez üretimi | hypothesize+quantum_bridges+_discover_frontier+wonder+sturm | L4 Reasoner/Synthesizer | ✅ F50 |
+| **B** | Uzun-ufuk özerklik + öz-denetim | Cognition.cycle+corrigibility+GrowthEngine; **ÖKSÜZ** Goal/Planner/Actor | L5 Cognition + L4 | planlı |
+| **C** | Protein/peptit tasarımı | molecular_genesis(atom-Sturm)+encode_protein+CertifiedTransport | L4 Producer + L1 | planlı |
+| **D** | Belge/figür → veri | perception.encode_image + structure.discover_law/forecast | L1 + L4 | planlı |
+| **E** | Milyon-token bağlam | "bağlam=manifold" + _research_deep + synthesize_docs | L3 + L5 | planlı |
+
+**Dürüst kapsam-dışı (doğamıza aykırı = istatistik):** serbest yaratıcı üretim (şiir/kod),
+protein 3D fold (istatistiksel), bulanık figür-semantiği. Kapsam açığı **deterministik büyümeyle**
+kapanır (gerçek veri al), yöntem değiştirmeden.
+
+**Pilar A [F50, KURULDU]:** `ai.hypothesize_novel` — transitif kausal hipotezler (a→via→c → a-c),
+her biri RH-Sturm sertifikalı + köklü + kaynaklı; WonderScorer (ölü kod) tohum-seçimine bağlandı;
+`_good_analogy_target` iç ispat-artifaktını eler; ham κ-analoji opt-in (dürüst sınır). FARK:
+Mythos hipotezi parlak ama doğrulanamaz; bizimki neden-zinciri + Sturm pivotu + kaynak taşır.
