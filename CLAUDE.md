@@ -810,6 +810,16 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     eki (kapıyı→kapı); n-/yönelme/ablatif kökü BOZARDI (proteini→prote, kimya→kim) → hariç.
     `reason()` 8 yeni intent. Code-review: word_problem ≥2 operand (tek-sayılı "2 soru çıkar"
     math'a kaçmasın) + suffix kök-koruma düzeltildi. Tests: test_reason.py 24 (+11).
+  - **F47 — GERÇEK sohbet sertleştirmesi (beslemesiz canlı konuşmadan):** Demolar `learn()` ile
+    cevabı önceden besliyordu — gizli kalite sorunları gerçek (55k manifold, beslemesiz) konuşmada
+    çıktı: (1) `_is_clean_concept` artık tarih/atıf parçasını da eler ("1897 in germany", çıplak
+    yıl, "in/the/of" önekli) + `_tau_facts` TÜM dil çıktısını bu süzgeçten geçirir (converse/
+    contrast temiz). (2) `_QWORDS` konuşma fiilleriyle genişledi (işe/biliyorsun/görevi/amacı…) →
+    "egfr ne işe yarar" topic="egfr işe" değil "egfr"; "imatinib hakkında ne biliyorsun" düzeldi.
+    Canlı kanıt: egfr→ras→tumor cell + egfr→pi3k→akt→mtor→cell growth (kendi hafızasından,
+    RH-Sturm sertifikalı); "dna nedir" → dürüstçe BİLMİYORUM (halüsinasyon yok). DÜRÜST SINIR:
+    grown-data IS_A gürültüsü (erlotinib→"astellas pharma" = üretici) kalıyor — bu corrigibility/
+    relearn (büyüme döngüsü) işi, dil-hack'i değil.
 
 ---
 

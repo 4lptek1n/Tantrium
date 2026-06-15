@@ -1843,7 +1843,8 @@ class AI:
         for e in self._engine.tau.edges.get(topic, []):
             p = getattr(e, "paradigm", "")
             t = str(getattr(e, "target", ""))
-            if p in sem and t and not t.startswith("⟨"):
+            # atıf/markup/tarih-parçası gürültüsünü dil çıktısından ele (gerçek-veri kalitesi)
+            if p in sem and t and self._is_clean_concept(t):
                 facts.setdefault(p, [])
                 if t not in facts[p] and len(facts[p]) < max_per:
                     facts[p].append(t)
@@ -1905,6 +1906,9 @@ class AI:
     # Soru/fiil kelimeleri — konu DEĞİL (anafora çözümünde elenir)
     _QWORDS = {"yapar", "olur", "eder", "etkisi", "sonucu", "yarar", "oluşur", "açar",
                "açan", "kaynağı", "etkiler", "sonuç", "neler", "kimdir", "yapan",
+               "işe", "işine", "yarıyor", "görevi", "amacı",
+               "biliyorsun", "biliyor", "biliyorsunuz", "bil", "söyle", "söyler",
+               "anlatır", "var", "mı", "yok",
                # süreç/yüklem fiilleri — konu DEĞİL (çok-kelime öbekte gürültü)
                "çalışır", "çalışıyor", "işler", "gerçekleşir", "yapılır", "kullanılır",
                "bulunur", "denir", "oluşuyor", "oluşuyor", "meydana"}
@@ -2738,7 +2742,7 @@ class AI:
 
     @staticmethod
     def _is_clean_concept(name: str) -> bool:
-        """Atıf-şablonu/markup gürültüsünü ele (cs1:..., 'names with markup', uzun id)."""
+        """Atıf-şablonu/markup/tarih-parçası gürültüsünü ele (cs1:..., '1897 in germany')."""
         n = str(name).strip()
         if not n or n.startswith("⟨") or ":" in n or len(n) > 30:
             return False
@@ -2746,7 +2750,17 @@ class AI:
         if any(j in low for j in ("markup", "cs1", "names with", "citation",
                                   "webarchive", "wikidata", "http")):
             return False
-        return len(n.split()) <= 3
+        toks = n.split()
+        if len(toks) > 3:
+            return False
+        # tarih/atıf parçası: "1897 in germany", "1897 in science", çıplak yıl
+        if toks[0].isdigit():
+            return False
+        if low.startswith(("in ", "the ", "of ", "a ", "an ")):
+            return False
+        if " in " in f" {low} " and any(t.isdigit() and len(t) == 4 for t in toks):
+            return False
+        return True
 
     def _reverse_relations(self, target: str, paradigm: str, limit: int = 12) -> list:
         """TAU'da TERS arama: {c : c —paradigm→ target}. "X türleri" (c IS_A X) ve
