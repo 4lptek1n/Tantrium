@@ -441,6 +441,12 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   bölgeyi cezalar, dışsal bilgiye (teorem/ingest) yakın yeni boşlukları öne çıkarır. `ai.wonder()`.
 - **Tekrar:** YOK — yeni önceliklendirme katmanı. GapFinder çıktısını skorlar. Tests: 7.
 
+### ✅ reasoning/causal_rules.py — TEK-GERÇEK transitif kausal kural tablosu [YENİ F55]
+- **İş:** `TRANSITIVE_CAUSAL` (8 kural: (rel1,rel2)→derived) + `CAUSAL_PARADIGMS` (INHIBITS/
+  ACTIVATES/CAUSES). `ai.hypothesize` (transitif hipotez) + `growth._science_consolidate`
+  (büyürken bilim) ikisi de buradan okur — kopya yok.
+- **Tekrar:** YOK — duplikasyonu ÖNLER (mimari kalite: tek kaynak).
+
 ### ✅ reasoning/gap_finder.py — TEK boşluk dispatcher [#10 dedup ÇÖZÜLDÜ 2026-06]
 - **İş:** `GapFinder(engine).find(signal=)` — 4 boşluk-tespit sinyalini additive facade arkasına alır:
   geometric (necessity) · anchor (paradigm.blind_spots) · recorded (explorer.scan_frontier) · grid
@@ -497,6 +503,10 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   (`_POSTVERB`: found/made/known/used…) öbeği bitirir → "infectious disease usually caused"→
   disease, "protein found in cells"→protein, "peptide hormone produced"→hormone. Parantez-
   stripping (`(pl. …)` özneyi yüklemden ayırmasın). `_BOUNDARY` (of/in/which…) edat sınırı.
+- **Kademe F55 — IS_A şirket gürültüsü kaynakta [2026-06]:** `_is_nonclass_obj` — üretici/şirket
+  adı (astellas pharma/pfizer inc) bir SINIF olamaz → IS_A nesnesi olarak REDDEDİLİR. Grown-data
+  gürültüsü ("erlotinib IS_A astellas pharma") artık çıkarımda kesilir (fluent yalnız gösterimde
+  filtreliyordu — şimdi kaynakta). `_NONCLASS_TAILS` (pharma/inc/corp/ltd/labs/therapeutics…).
 - **Tekrar:** `_extract_relations` (kausal) ≠ `graph/relations.extract_relations` (mantıksal IS_A/USES)
   — farklı ilişki tipleri, ikisi de meşru, BİRLEŞMEZ. `_local_genesis` konveks-kombinasyon kümesinde (#8).
 
@@ -577,6 +587,12 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   (growth_state.json kalıcı → UNUTMAZ, #4 çürütme hafızası). `GrowthReport.corrected`/
   `suspect_flagged`. Additive/fail-open. Canlı doğrulamada gerçek hatalar yakalandı:
   `detail≈retail` (0.0005), `unity≈unify`, `ell5_q*_auto≈CELL_SUPPORT_POSITIVITY` (0.0000).
+- **Kademe F55 — BÜYÜMEYİ BİLİME ÇEVİR [2026-06]:** `_consolidate` artık `_science_consolidate`
+  çağırır: büyüyen kausal-zengin graftan (≥2 kausal kenar) transitif hipotez üretir (A→B→C ⟹
+  A-derived-C), YENİ olanları RH-Sturm (`ProductionEngine._sturm_path_pivot_min`) ile sertifikalar,
+  `state['hypotheses']`'e yazar (son 500). Bounded/fail-open (0.1s). `GrowthReport.hypotheses_generated`.
+  Kural tablosu `reasoning/causal_rules.py` (tek-gerçek). Hipotez dict YAPISAL subj/obj taşır
+  (code-review fix: `statement.split()` çok-kelime kavramda "tumor cell" ValueError veriyordu).
 - **Aile-pencere dedup [F10+]:** `_dedup_family_windows(max_per_pass=400)` — kanonik üreteç
   tekrarını (lucas/tribonacci/ramanujan: encoder-normalizasyonu altında tek geometrik nokta)
   her (aile, tam-moment) için tek temsilciye indirir, kenarları yönlendirir. `_family_reps`+
@@ -857,7 +873,13 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 
 ---
 
-## 🏁 ENVANTER TAMAM — 70 dosya / 25.629 satır, hepsi Claude tarafından satır-satır okundu
+## 🏁 ENVANTER TAMAM — çekirdek 70 dosya / 25.629 satır satır-satır okundu (orijinal denetim)
+
+> **GÜNCEL [2026-06]:** src/tantrium ~85 dosya / ~33k satır. Orijinal 70-dosya envanteri
+> ÇEKİRDEK mimariyi doğruladı; sonradan eklenen dosyalar (`language/fluent.py` F38,
+> `reasoning/causal_rules.py` F55, `core/structure.py`, `serve.py`, vb.) yukarıda kendi
+> girişleriyle belgelenmiştir. Aşağıdaki "gerçek tekrar" analizi çekirdek için geçerlidir;
+> yeni eklemeler duplikasyon getirmedi (causal_rules tek-gerçek kaynağı bunun kanıtı).
 
 ### Gerçek tekrarlar (yalnız bunlar birleşir — küçük, izole, güvenli):
 | # | Tekrar | Birleşme |

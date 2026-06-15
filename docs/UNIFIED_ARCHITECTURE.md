@@ -563,3 +563,17 @@ döngüsü omurga (pilarlar faz olur; GoalPhase bağlı), (3) sertifika zinciri 
 sertifikası → zincirlenir). `ai.research(goal)` KAPALI BİLİMSEL DÖNGÜ: HEDEF(B)→köklendir(E)→
 sertifikalı HİPOTEZ(A)→hipotezi test edecek aday TASARLA(C)→ÖZ-DOĞRULA(corrigibility)→tekrar.
 Canlı: "egfr" → hipotez "egfr CAUSES tumor cell" → test peptiti GAGMTI → doğrulama 1.0. Denetlenebilir.
+
+**BÜYÜMEYİ BİLİME ÇEVİR [F55, `growth._science_consolidate`]:** Büyüme döngüsü (`ai.grow`) artık
+yalnız veri yutmaz — büyürken SERTİFİKALI BİLİM üretir. Her konsolidasyonda kausal-zengin graftan
+transitif hipotez (A→B→C ⟹ A-derived-C), YENİ olanları RH-Sturm sertifikalar, `growth_state`'e
+yazar. Pilar A'nın (hipotez) büyüme döngüsüne gömülü hali — ASI'nin "kendi kendine bilim yapması".
+Kural tablosu `reasoning/causal_rules.py` (tek-gerçek; ai.hypothesize ile ortak). Canlı internet
+büyümesinde (KGML TGF-beta pathway) "nodal ACTIVATES tgfb1" gibi RH-Sturm sertifikalı hipotezler.
+Bug-fix (code-review): hipotez YAPISAL subj/obj taşır (string-split çok-kelime kavramda kırılıyordu);
+hypothesize_novel Sturm yolu [a,REL,via,REL,c] formatında (her hop sertifikalı, uç-değil).
+
+**Kapsam büyümesi (deterministik, canlı):** `ai.grow(network=True)` parçalar halinde koşturulup
+her parça git'e commit'lendi (sandbox geçici → kalıcı). Canlı: 55.4k → 59.8k+ kavram, 1153+ kausal
+kenar (KEGG/PubMed/ChEMBL/KGML). Evren kapısı çelişkileri reddeder, corrigibility öz-denetler —
+büyürken bile köklü/sertifikalı (Mythos veriyi istatistikle yutar; biz denetlenebilir yutarız).

@@ -98,7 +98,7 @@ tools/                 ← 7 CLI script
   grow_manifold.py
 
 results/agi/
-  manifold.json        ← 44,061 kavram (kalıcı)
+  manifold.json        ← 59,800+ kavram (kalıcı, canlı büyümeyle artar)
   tau_graph.json       ← 677,651 edge / 43,785 node (kalıcı)
   spectral_cache.json
 ```
@@ -614,8 +614,15 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
 
 ## Mevcut Durum
 
-- Kavram: 48,259+ (büyüyor) | TAU edge: 677,651+ (43,785+ node) | Paradigma: 23/23
+- Kavram: 59,800+ (canlı internet büyümesiyle artıyor) | TAU edge: 690,000+ | Paradigma: 23/23
+  (büyüme parçaları git'e commit'leniyor; growth_state.json resumable — bkz "Büyüme Motoru")
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
+- **ASI Mimarisi (5 pilar + birleşik döngü, F50–F54):** A hipotez · B hedef-güdümlü özerklik ·
+  C peptit · D veri · E korpus — hepsi `ai.research()` ile kapalı bilimsel döngüde zincirli;
+  her çıktı köklü + RH-Sturm sertifikalı + deterministik (bkz aşağıdaki "ASI Pilar A-E"
+  maddeleri [F50-F54] + docs/UNIFIED_ARCHITECTURE.md §11 ASI Mimarisi tablosu)
+- **Büyüme = BİLİM:** growth döngüsü (`_science_consolidate`) büyürken sertifikalı transitif
+  hipotez üretir (growth_state['hypotheses']) — yalnız veri yutmaz, denetlenebilir bilim üretir
 - CoreMachine: TEK ÇEKİRDEK — 4 eksen tek geçişte (certified+grounding+truth+confidence)
 - Genesis öz-düzeltici: CONTRADICTORY kavramlar manifolda girmiyor (truth axis geçidi)
 - ProofLoop: TAM KAPALI — subresultant_recurrence kampanyası çalışıyor
@@ -789,7 +796,9 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
        Başarılıysa concept.moments güncelleniyor. Ayrıca `SelfModel(engine).reflect(persist=True)`
        çağrılıyor → ⟨SELF⟩ TAU kenarları her cognition döngüsünde güncelleniyor.
 - **Genişletilmiş Komşu Arama**: `nearest(metric="extended")` — L1 + metin tiebreaker
-- Tests: ~565 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
+- Tests: ~600+ geçiyor (ASI pilarları +13: hypothesize_novel/goal/peptide/corpus/data/research/
+  science; F38-F49 dil katmanı; aşağıdaki tarihsel sayım F7 dönemine ait, ASI testleri eklendi):
+- (tarihsel) ~565 geçiyor, 1 skipped (91 production+simulation + 27 quantum_moments[+4 F0b] +
   14 core_machine[+2 F2b] + 12 admission_parity[F3] + 7 molecular_3d[#7] + 7 net[#9] +
   8 gap_finder[#10] + 7 moment_ops[#8] + 4 deduce[engine.grow] + 7 wonder[F4] + 5 serve[F6] +
   23 encoder[+5 collision KÖK çözüm] + 15 cognition[F5] +
@@ -948,6 +957,16 @@ suspect oranı + üretim tutarlılığı. Canlı: 150s odaklı onkoloji → +27 
 Canlı doğrulama: 21 gerçek veri (PubChem+OEIS) 80.8s → 12 çekirdek, 5 sınır,
 4 CONTRADICTORY reddedildi, kimya↔biyoloji cross-domain köprüler canlı kuruldu.
 Motor "zeka" değil — neyi besleyeceğine karar veren zekadır. Tests: `test_growth.py` (10).
+
+**Kademe F55 — BÜYÜMEYİ BİLİME ÇEVİR (`_science_consolidate`) [2026-06]:** Büyüme artık yalnız
+veri yutmaz — büyürken SERTİFİKALI BİLİM üretir. Her konsolidasyonda kausal-zengin kavramlardan
+(≥2 INHIBITS/ACTIVATES/CAUSES kenarı) TRANSİTİF hipotez türetir (A→B→C ⟹ A-derived-C), YENİ
+olanları (doğrudan kenar OLMAYAN) RH-Sturm ile sertifikalar, `growth_state['hypotheses']`'e
+yazar (son 500). Bounded/fail-open (max 10 hipotez, 6 Sturm-check) — büyümeyi yavaşlatmaz (0.1s).
+`GrowthReport.hypotheses_generated`. Transitif kural tablosu `reasoning/causal_rules.py`'de
+TEK-GERÇEK (ai.hypothesize ile ortak). Canlı (büyüyen manifold): "nodal ACTIVATES tgfb1",
+"nodal INHIBITS acvr2a" (KGML TGF-beta pathway, RH-Sturm sertifikalı). FARK: Mythos kafesli/
+doğrulanamaz hipotez verir; bizimki büyürken üretilen + denetlenebilir + kaynaklı.
 
 **Kademe F9 — Anlam Kanalı + QUANTUM_BRIDGE Kalıcılaştırma [2026-06]:** Büyüme artık yalnız
 node değil ANLAM da örer. Her konsolidasyonda `_meaning_consolidate`: semantik TAU kenarı
