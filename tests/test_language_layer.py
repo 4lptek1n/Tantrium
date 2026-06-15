@@ -276,3 +276,30 @@ def test_new_paradigms_in_topology_encode():
     new = {"HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY"}
     for p in new:
         assert p in _SEMANTIC_PARADIGMS, f"{p} _SEMANTIC_PARADIGMS'de eksik"
+
+
+def test_converse_topic_extraction():
+    """Sorudan ana konu çıkarılmalı (stopword'ler atılır)."""
+    import tantrium
+    ai = tantrium.AI()
+    assert ai._converse_topic("EGFR nedir?") == "egfr"
+    assert ai._converse_topic("photosynthesis nasıl çalışır") == "photosynthesis"
+
+
+def test_converse_known_topic_grounded():
+    """Bilinen konu → köklü (grounded) akıcı cevap, halüsinasyon yok."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.converse("egfr nedir?", learn_if_unknown=False)
+    assert r["topic"] == "egfr"
+    assert r["grounded"] is True
+    assert len(r["answer"]) > 10 and r["answer"][0].isupper()
+
+
+def test_converse_unknown_honest_when_offline():
+    """Bilmediği + öğrenme kapalı → dürüstçe 'bilmiyorum' (uydurmaz)."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.converse("qzxwvbnonsenseword nedir?", learn_if_unknown=False)
+    assert r["grounded"] is False
+    assert "bilgim yok" in r["answer"]

@@ -1794,6 +1794,81 @@ class AI:
 
     # ── Öğrenme ───────────────────────────────────────────────────────────────
 
+    _STOP_TR = {"nedir", "ne", "nasıl", "neden", "kim", "hangi", "mıdır", "midir",
+                "mu", "mı", "bir", "bu", "şu", "ve", "ile", "için", "the", "what",
+                "is", "are", "a", "an", "of", "how", "why", "açıkla", "anlat"}
+
+    def _converse_topic(self, question: str) -> str:
+        """Sorudan ana konuyu çıkar: manifoldda olan ilk aday, yoksa en uzun anlamlı kelime."""
+        words = [w.strip("?.,!:;'\"").lower() for w in str(question).split()]
+        cands = [w for w in words if len(w) >= 3 and w not in self._STOP_TR]
+        for w in cands:
+            if w in self._engine.manifold.concepts:
+                return w
+        return max(cands, key=len) if cands else (cands[0] if cands else "")
+
+    def _tau_facts(self, topic: str, max_per: int = 3) -> dict:
+        """Konunun semantik TAU kenarlarını {paradigma: [hedef,...]} olarak topla."""
+        from tantrium.language.speaker import Speaker
+        sem = set(Speaker._TR_VERB.keys())
+        facts: dict[str, list[str]] = {}
+        for e in self._engine.tau.edges.get(topic, []):
+            p = getattr(e, "paradigm", "")
+            t = str(getattr(e, "target", ""))
+            if p in sem and t and not t.startswith("⟨"):
+                facts.setdefault(p, [])
+                if t not in facts[p] and len(facts[p]) < max_per:
+                    facts[p].append(t)
+        return facts
+
+    def _fetch_wikipedia(self, topic: str) -> str:
+        """Wikipedia'dan konunun özetini çek (bilinçli öz-büyüme için ham metin)."""
+        from tantrium.research.net import http_get_json
+        import urllib.parse as _up
+        try:
+            q = _up.quote(topic)
+            url = ("https://en.wikipedia.org/w/api.php?action=query&format=json"
+                   "&prop=extracts&exintro=1&explaintext=1&redirects=1&titles=" + q)
+            data = http_get_json(url, errors="replace")
+            pages = data.get("query", {}).get("pages", {})
+            for _pid, page in pages.items():
+                ex = page.get("extract", "")
+                if ex and len(ex) > 40:
+                    return ex[:2000]
+        except Exception:
+            pass
+        return ""
+
+    def converse(self, question: str, learn_if_unknown: bool = True) -> dict:
+        """BİLİNÇLİ SOHBET — bilmezse internetten ÖĞRENİR, sonra köklü cevaplar.
+
+        1. sorudan konuyu çıkar  2. biliyor mu (TAU'da semantik kenar)  3. bilmiyorsa
+        Wikipedia'dan çekip learn() ile kendini BÜYÜTÜR  4. doğrulanmış TAU'dan akıcı
+        cümleyle cevaplar. Söylediği her şey köklü — halüsinasyon yapamaz; bilmiyorsa
+        ÖĞRENİR ya da dürüstçe "bilmiyorum" der.
+        Döner: {topic, answer, learned, grounded}.
+        """
+        topic = self._converse_topic(question)
+        if not topic:
+            return {"topic": "", "answer": "Soruyu anlayamadım.", "learned": False,
+                    "grounded": False}
+        facts = self._tau_facts(topic)
+        learned = False
+        if not facts and learn_if_unknown:
+            text = self._fetch_wikipedia(topic)
+            if text:
+                self.learn(text)
+                learned = True
+                facts = self._tau_facts(topic)
+        if facts:
+            from tantrium.language.speaker import Speaker
+            answer = Speaker(self._engine).synthesize(topic, facts)
+        else:
+            answer = (f"'{topic}' hakkında henüz doğrulanmış bir bilgim yok"
+                      + (" (internetten de öğrenemedim)." if learned else "."))
+        return {"topic": topic, "answer": answer, "learned": learned,
+                "grounded": bool(facts)}
+
     def learn(self, text: str) -> dict:
         """Metin öğret → manifolda ekle + nedensel ilişkileri TAU'ya yaz.
 

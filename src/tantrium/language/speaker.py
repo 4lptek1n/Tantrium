@@ -419,29 +419,33 @@ class Speaker:
         Döner: certified Türkçe paragraf (her cümle TAU'da kenar).
         """
         if not facts:
-            return f"'{concept_name}' hakkında TAU'da yeterli bilgi yok."
+            return f"'{concept_name}' hakkında elimde doğrulanmış bilgi yok."
 
-        sentences: list[str] = []
+        phrases: list[str] = []
         for paradigm, targets in facts.items():
-            tops = targets[:max_per_paradigm]
-            if not tops:
-                continue
+            tops = [t for t in targets[:max_per_paradigm] if t]
             tmpl = self._TR_VERB.get(paradigm)
-            if tmpl is None:
+            if not tops or tmpl is None:
                 continue
             if len(tops) == 1:
-                phrase = tmpl.format(t=tops[0])
+                tj = tops[0]
             elif len(tops) == 2:
-                phrase = tmpl.format(t=f"{tops[0]} ve {tops[1]}")
+                tj = f"{tops[0]} ve {tops[1]}"
             else:
-                joined = ", ".join(tops[:-1]) + " ve " + tops[-1]
-                phrase = tmpl.format(t=joined)
-            sentences.append(f"'{concept_name}' {phrase}.")
+                tj = ", ".join(tops[:-1]) + " ve " + tops[-1]
+            phrases.append(tmpl.format(t=tj))
 
-        if not sentences:
-            return f"'{concept_name}' için TAU paradigmaları tanımsız."
+        if not phrases:
+            return f"'{concept_name}' için doğrulanmış ilişki bulamadım."
 
-        return " ".join(sentences)
+        # Akıcı birleştirme: ad bir kez geçer, sonraki cümleler bağlaçla bağlanır
+        # (tekrarlı "'X' ... . 'X' ..." yerine "X, ... ; ayrıca ... ve ...").
+        out = f"{concept_name}, {phrases[0]}"
+        connectives = ["; ayrıca ", "; bunun yanı sıra ", " ve ", ". Aynı zamanda "]
+        for i, p in enumerate(phrases[1:]):
+            out += connectives[i % len(connectives)] + p
+        out = out.strip().rstrip(".") + "."
+        return out[:1].upper() + out[1:] if out else out
 
     # ─── Algı → dil köprüsü ──────────────────────────────────────────────────
 
