@@ -2800,6 +2800,83 @@ class AI:
                 "examples_passed": cp.examples_passed, "examples_total": cp.examples_total,
                 "steps": cp.steps, "answer": ans, "cert": cp}
 
+    def ground_codebase(self, files: dict) -> dict:
+        """ASI §12 P4 — repo'yu KÖKLÜ manifolda çevir (kod-tabanı = topoloji).
+        files: {path: source}. Döner: {symbols, imports, functions, edges, n_symbols}."""
+        from tantrium.core.code_agent import ground_codebase as _gc
+        g = _gc(files)
+        return {**g, "n_symbols": len(g["symbols"]), "n_edges": len(g["edges"])}
+
+    def verify_code(self, code: str, *, codebase: dict | None = None,
+                    tests: str | None = None) -> dict:
+        """ASI §12 P4 — HERHANGİ kodu DOĞRULA: köklülük (halüsinasyon tespiti) + test geçidi.
+
+        check_grounded: kodun her sembolü kod-tabanında/builtin/yerel mi (var olmayan = halüsinasyon).
+        run_tests: izole subprocess'te pytest (gerçek doğrulama). LLM'in üretip de doğrulamadığı
+        kodu BİZ sertifikalarız — hayali API reddedilir, çalışmayan test geçemez.
+        Döner: {grounded, ungrounded, syntax_ok, tests_passed, verified, answer}.
+        """
+        from tantrium.core.code_agent import ground_codebase as _gc, check_grounded, run_tests
+        ground = _gc(codebase or {})
+        gc = check_grounded(code, ground)
+        tests_passed = None
+        test_out = ""
+        if tests and gc["syntax_ok"]:
+            tr = run_tests(code, tests)
+            tests_passed, test_out = tr["passed"], tr["output"]
+        verified = bool(gc["grounded"] and gc["syntax_ok"]
+                        and (tests_passed if tests else True))
+        if not gc["syntax_ok"]:
+            ans = "Kod sözdizimsel geçersiz (parse edilemedi) — reddedildi."
+        elif not gc["grounded"]:
+            ans = (f"HALÜSİNASYON: kod var olmayan sembol(ler) çağırıyor: "
+                   f"{', '.join(gc['ungrounded'][:6])} — köklü değil, REDDEDİLDİ. "
+                   f"LLM bunu yakalayamaz; ben geometrik olarak yakalarım.")
+        elif tests and not tests_passed:
+            ans = "Kod köklü ama TEST GEÇMEDİ — doğrulanmadı (çalışmıyor)."
+        else:
+            ans = ("Kod DOĞRULANDI: tüm semboller köklü"
+                   + (" + testler geçti" if tests else "") + " — sertifikalı, halüsinasyonsuz.")
+        return {"grounded": gc["grounded"], "ungrounded": gc["ungrounded"],
+                "syntax_ok": gc["syntax_ok"], "tests_passed": tests_passed,
+                "test_output": test_out, "verified": verified, "answer": ans}
+
+    def code_task(self, *, examples=None, tests: str | None = None,
+                  codebase: dict | None = None, max_depth: int = 6) -> dict:
+        """ASI §12 P4 — AGENTIC kod görevi: SENTEZLE → KÖKLÜLÜK + TEST doğrula (kapalı döngü).
+
+        examples'tan kanıtlı program sentezler (P2), sonra codebase'e karşı köklülük (halüsinasyon
+        tespiti) + tests ile gerçek doğrulama (P4). Üç kapı da geçerse 'verified'. Saf Tantrium,
+        dış model YOK. Döner: {program, source, examples_verified, grounded, tests_passed, verified, answer}.
+        """
+        from tantrium.core.code_synthesis import synthesize
+        from tantrium.core.code_agent import ground_codebase as _gc, check_grounded, run_tests
+        ground = _gc(codebase or {})
+        out: dict = {"verified": False}
+        if not examples:
+            return {**out, "answer": "Örnek (girdi/çıktı) gerekli — sentez kaynağı."}
+        cp = synthesize(list(examples), max_depth=max_depth)
+        src = cp.source()
+        gc = check_grounded(src, ground)
+        tests_passed = None
+        if tests:
+            tr = run_tests(src, tests)
+            tests_passed = tr["passed"]
+        verified = bool(cp.verified and gc["grounded"] and (tests_passed if tests else True))
+        kap = []
+        kap.append(f"örnek {'✓' if cp.verified else '✗'}")
+        kap.append(f"köklülük {'✓' if gc['grounded'] else '✗'}")
+        if tests:
+            kap.append(f"test {'✓' if tests_passed else '✗'}")
+        ans = (f"def solve({', '.join(cp.args)}): return {cp.program} — "
+               + " · ".join(kap)
+               + (". DOĞRULANDI (kanıtlı + köklü"
+                  + (" + test-geçer" if tests else "") + ") — halüsinasyonsuz."
+                  if verified else ". Tüm kapılar geçmedi — uydurmam."))
+        return {"program": cp.program, "source": src, "examples_verified": cp.verified,
+                "grounded": gc["grounded"], "ungrounded": gc["ungrounded"],
+                "tests_passed": tests_passed, "verified": verified, "answer": ans}
+
     def read_data(self, source, *, analyze: str = "law") -> dict:
         """BELGE/VERİ → KÖKLÜ ANALİZ (ASI Pilar D) — yapısal sayısal veriyi DETERMİNİSTİK çıkar,
         dinamik-yasa/tahmin/anomali ile sertifikalı analiz et. CSV/JSON/liste/metin → sayı dizisi →
