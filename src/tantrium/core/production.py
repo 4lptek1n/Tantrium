@@ -155,6 +155,10 @@ class MathDrug:
     sturm_pivot: float
     realizable: bool
     realizability_gap: float
+    # SON ADIM (isteğe bağlı): spektrum → gerçek YAPI (molekül). Harf yalnız burada.
+    designed_smiles: str = ""
+    n_atoms: int = 0
+    structure_coherent: bool = False
 
     def summary(self) -> str:
         r = lambda xs: [round(float(x), 4) for x in xs]
@@ -172,6 +176,12 @@ class MathDrug:
             f"  GERÇEKLENEBİLİR (RH)     : {'✓' if self.realizable else '✗'}"
             f"   (açık {self.realizability_gap:.4f})",
         ]
+        if self.designed_smiles:
+            lines += [
+                "  ────────────────────────────────────────",
+                f"  SON ADIM → YAPI: {self.designed_smiles}  [{self.n_atoms} atom]"
+                f"  {'✓ tutarlı' if self.structure_coherent else '~ en yakın'}",
+            ]
         return "\n".join(lines)
 
 
@@ -675,7 +685,7 @@ class ProductionEngine:
 
     # ── SAF MATEMATİK kapanışı (harf yok) ─────────────────────────────────
 
-    def produce_math(self, disease) -> "MathDrug":
+    def produce_math(self, disease, build: bool = False) -> "MathDrug":
         """Hastalık → ilaç, TAMAMEN matematik (harf/SMILES yok). RH parçalarının zinciri.
 
         disease:
@@ -687,6 +697,10 @@ class ProductionEngine:
         Akış (her adım bir RH parçası, hepsi sayı uzayında):
           κ_disease → κ_healthy ⊟ κ_disease = κ_drug → μ_drug → özdeğer ölçüsü (ilaç) →
           Hankel-PSD (D-poz) ∧ Sturm pivot (Jensen) = gerçeklenebilirlik (RH sertifikası).
+
+        build=True: SON ADIM — düzeltici spektruma (μ_drug) en yakın gerçeklenebilir YAPIYI
+          (molekül) kur (genesis/havuz + Sturm yargısı). Harf yalnız burada çıkar. Böylece
+          ölçülen hastalık (sayı) → gerçek ilaç (yapı) baştan sona TEK akış.
         """
         from tantrium.core.quantum_moments import FreeCumulants
         from tantrium.core.reconstruct import reconstruct_measure
@@ -732,7 +746,7 @@ class ProductionEngine:
         gap_val = float(gap if gap is not None else 0.0)
         realizable = bool(weights_valid and gap_val < 0.05)
 
-        return MathDrug(
+        out = MathDrug(
             kappa_disease=list(kd.k),
             kappa_healthy=list(kh.k),
             kappa_drug=list(k_drug.k),
@@ -744,6 +758,20 @@ class ProductionEngine:
             realizable=realizable,
             realizability_gap=gap_val,
         )
+
+        # SON ADIM: düzeltici spektruma (μ_drug) en yakın gerçeklenebilir YAPIYI kur.
+        # produce(μ_drug) = moment-hedef yolu → havuz (genesis/inverse/morph) + Sturm yargısı.
+        # Harf (SMILES) yalnız burada; çekirdek baştan sona sayıydı.
+        if build:
+            try:
+                cert = self.produce(list(mu_drug), inject=False)
+                out.designed_smiles = getattr(cert, "designed_smiles", "") or ""
+                out.n_atoms = int(getattr(cert, "n_atoms", 0) or 0)
+                out.structure_coherent = bool(getattr(cert, "coherent", False))
+            except Exception:
+                pass
+
+        return out
 
     # ── Çok-stratejili havuz ──────────────────────────────────────────────
 

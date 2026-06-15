@@ -1142,7 +1142,7 @@ class AI:
             refine_rounds=refine_rounds, combination=combination, network=network,
             inject=inject, epsilon=epsilon, top_k=top_k)
 
-    def produce_math(self, disease) -> "object":
+    def produce_math(self, disease, build: bool = False) -> "object":
         """Hastalık → ilaç, TAMAMEN MATEMATİK (harf/SMILES yok) — RH parçaları zinciri.
 
         disease:
@@ -1152,11 +1152,15 @@ class AI:
 
         Akış (her adım RH parçası, hepsi sayı): κ_disease → κ_healthy ⊟ κ_disease = κ_drug
         → μ_drug → özdeğer ölçüsü (İLACIN KENDİSİ) → Hankel-PSD (D-poz) ∧ Sturm pivot
-        (Jensen) = gerçeklenebilirlik (RH sertifikası). SMILES yalnız isteğe bağlı render.
-        Döner: MathDrug (.summary() ile insan-okunur; .eigenvalues = ilacın spektrumu).
+        (Jensen) = gerçeklenebilirlik (RH sertifikası).
+
+        build=True: SON ADIM — düzeltici spektruma en yakın gerçeklenebilir YAPIYI (molekül)
+          kurar. Ölçülen hastalık (sayı) → gerçek ilaç (yapı) baştan sona TEK akış; harf
+          yalnız en sonda. .designed_smiles / .n_atoms doldurulur.
+        Döner: MathDrug (.summary() insan-okunur; .eigenvalues = ilacın spektrumu).
         """
         from tantrium.core.production import ProductionEngine
-        return ProductionEngine(self.engine).produce_math(disease)
+        return ProductionEngine(self.engine).produce_math(disease, build=build)
 
     # Paradigma-matematik mesafe eşiği (45-özellik normalize imza):
     # EGFR-içi ≤3.43, kinaz-sınıfı ≤4.18, kinaz-dışı ≥4.25 → 4.5 = sınıf ayracı.

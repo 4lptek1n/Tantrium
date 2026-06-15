@@ -59,3 +59,16 @@ def test_facade():
     ai = tantrium.AI()
     d = ai.produce_math([1.0, 0.6, 0.4, 0.28, 0.2, 0.15, 0.11, 0.08])
     assert hasattr(d, "eigenvalues") and hasattr(d, "kappa_drug")
+
+
+def test_end_to_end_numbers_to_structure():
+    """build=True: ölçülen hastalık (sayı) → gerçek YAPI (molekül) baştan sona tek akış.
+
+    Harf yalnız en son adımda çıkar; çekirdek baştan sona sayıdır.
+    """
+    pe = _pe()
+    d = pe.produce_math([1.0, 0.62, 0.43, 0.31, 0.24, 0.19, 0.15, 0.12], build=True)
+    assert d.designed_smiles, "son adım gerçeklenebilir yapıyı kurmalı"
+    assert d.n_atoms > 0
+    # kapanış: yapının kendisi (harf) yalnız son adımda; matematik çekirdeği korundu
+    assert d.eigenvalues and d.kappa_drug
