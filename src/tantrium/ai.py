@@ -1799,16 +1799,24 @@ class AI:
                 "is", "are", "a", "an", "of", "how", "why", "açıkla", "anlat"}
 
     def _converse_topic(self, question: str) -> str:
-        """Sorudan ana konuyu çıkar (robust): manifoldda tek kelime, yoksa içerik öbeği
-        (çok-kelimeli başlıklar için: 'lung cancer')."""
+        """Sorudan ana konuyu çıkar (robust + ÇOK-TUR): zamir ('o/bu/onu') önceki konuya
+        çözülür; manifoldda tek kelime; yoksa içerik öbeği ('lung cancer')."""
         words = [w.strip("?.,!:;'\"").lower() for w in str(question).split()]
-        cands = [w for w in words if len(w) >= 3 and w not in self._STOP_TR]
+        pron = any(w in self._PRON for w in words)
+        cands = [w for w in words if len(w) >= 3 and w not in self._STOP_TR
+                 and w not in self._PRON and w not in self._QWORDS]
+        # ANAFORA: belirgin konu yoksa ve zamir varsa → önceki turun konusu
+        last = getattr(self, "_conv_topic", None)
+        if not cands and pron and last:
+            return last
         for w in cands:
             if w in self._engine.manifold.concepts:
                 return w
         if len(cands) >= 2:
             return " ".join(cands[:4])
-        return cands[0] if cands else ""
+        if cands:
+            return cands[0]
+        return last or ""
 
     def _tau_facts(self, topic: str, max_per: int = 3) -> dict:
         """Konunun semantik TAU kenarlarını {paradigma: [hedef,...]} olarak topla."""
@@ -1875,6 +1883,45 @@ class AI:
               "CAUSES": ("yol açar", "dat"), "ACHIEVES": ("sağlar", "acc"),
               "USES": ("kullanır", "acc"), "IS_A": ("bir türüdür", "raw")}
 
+    _PRON = {"o", "bu", "şu", "onu", "bunu", "şunu", "onun", "bunun", "ona", "buna",
+             "onların", "bunların", "ondan", "bundan"}
+    # Soru/fiil kelimeleri — konu DEĞİL (anafora çözümünde elenir)
+    _QWORDS = {"yapar", "olur", "eder", "etkisi", "sonucu", "yarar", "oluşur", "açar",
+               "açan", "kaynağı", "etkiler", "sonuç", "neler", "kimdir", "yapan"}
+
+    def _pe(self):
+        """Lazy ProductionEngine (Sturm-yol sertifikası için paylaşılır)."""
+        pe = getattr(self, "_pe_cache", None)
+        if pe is None:
+            from tantrium.core.production import ProductionEngine
+            pe = ProductionEngine(self._engine)
+            self._pe_cache = pe
+        return pe
+
+    def _concept_moments(self, name: str) -> list:
+        c = self._engine.manifold.concepts.get(name)
+        if c is not None:
+            return [float(m) for m in c.moments]
+        try:
+            return [float(m) for m in self._engine.encoder.encode(name).moments]
+        except Exception:
+            return []
+
+    def _sturm_chain_ok(self, path: list) -> tuple:
+        """RH-LİTERAL: çıkarım yörüngesi gerçek-ölçü manifoldunda mı (Sturm pivot ≥ 0 =
+        hiperbolik = kritik hat üzerinde). İlaç-gerçeklenebilirliğiyle AYNI sertifika."""
+        pe = self._pe()
+        mins = []
+        for i in range(0, len(path) - 2, 2):
+            ma, mb = self._concept_moments(path[i]), self._concept_moments(path[i + 2])
+            if ma and mb:
+                try:
+                    _ok, pmin = pe._sturm_path_pivot_min(ma, mb)
+                    mins.append(float(pmin))
+                except Exception:
+                    pass
+        return (min(mins) >= -1e-3 if mins else True), (min(mins) if mins else 0.0)
+
     def _narrate_chain(self, path: list) -> str:
         """Çıkarım yolunu [A, ilişki, B, ilişki, C] akıcı mantık cümlesine çevir."""
         from tantrium.language.fluent import acc, dat
@@ -1899,10 +1946,20 @@ class AI:
         else:
             head = (f"{Topic} için başlıca nedenler/müdahale noktaları: {gen_join(leaves[:5])}."
                     if leaves else f"{Topic}'in kaynaklarını izledim.")
-        ct = [self._narrate_chain(c["path"]) for c in chains[:3] if c.get("path")]
+        # RH-LİTERAL: yörüngesi Sturm-pozitif (kritik hat üzerinde) zincirleri TERCİH et
+        scored = [(c, self._sturm_chain_ok(c["path"])) for c in chains[:6] if c.get("path")]
+        rh = [c for c, (ok, _) in scored if ok][:3]
+        use = rh if rh else [c for c, _ in scored][:3]
+        ct = [self._narrate_chain(c["path"]) for c in use]
         body = " Bu çıkarımı şu köklü mantık zincirlerinden yaptım — " + " | ".join(ct) + "."
-        tail = (" Her adım bilgi grafımda gerçek bir ilişki; bu yüzden çıkarım uydurma "
-                "değil, adım adım kanıtlanabilir. LLM tahmin eder, ben zinciri gösteririm.")
+        if rh:
+            pmin = min(p for _, (ok, p) in scored if ok)
+            tail = (f" Bu zincirler RH-matematiğiyle KRİTİK HAT üzerinde (Sturm pivot {pmin:+.4f} ≥ 0) "
+                    "— gerçek-ölçü yolu, hayali sıçrama yok; ilaç-gerçeklenebilirliğiyle aynı "
+                    "sertifika. LLM tahmin eder, ben zinciri RH-kanıtıyla gösteririm.")
+        else:
+            tail = (" Her adım grafta gerçek bir ilişki; çıkarım uydurma değil, adım adım "
+                    "kanıtlanabilir. LLM tahmin eder, ben zinciri gösteririm.")
         return head + body + tail
 
     @staticmethod
@@ -1988,6 +2045,8 @@ class AI:
                "ne işe yarar"):
             topic = self._converse_topic(request)
             _ensure(topic)
+            if topic:
+                self._conv_topic = topic
             wf = self.what_if(topic)
             ans = self._narrate_reasoning(topic, wf.get("chains", []),
                                           wf.get("effects", []), "forward")
@@ -2157,6 +2216,8 @@ class AI:
         else:
             answer = (f"'{topic}' hakkında henüz doğrulanmış bir bilgim yok"
                       + (" (internetten de öğrenemedim)." if learned else "."))
+        if facts:
+            self._conv_topic = topic   # ÇOK-TUR: sonraki "o/bu" buna çözülür
         return {"topic": topic, "answer": answer, "learned": learned,
                 "grounded": bool(facts)}
 

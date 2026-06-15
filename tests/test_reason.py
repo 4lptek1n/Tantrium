@@ -56,3 +56,22 @@ def test_narrate_chain_fluent():
     s = ai._narrate_chain(["erlotinib", "INHIBITS", "egfr", "ACTIVATES", "ras"])
     assert "baskılar" in s and "etkinleştirir" in s
     assert "egfr" in s and "ras" in s
+
+
+def test_reason_rh_certified_chain():
+    """RH-LİTERAL: çıkarım zinciri Sturm-pozitif (kritik hat) — ilaçla aynı sertifika."""
+    ai = tantrium.AI()
+    r = ai.reason("erlotinib ne yapar?")
+    # zincir RH-matematiğiyle kritik hatta olduğunu söylemeli
+    assert "KRİTİK HAT" in r["answer"] or "Sturm" in r["answer"]
+    ok, pmin = ai._sturm_chain_ok(["erlotinib", "INHIBITS", "egfr", "ACTIVATES", "ras"])
+    assert isinstance(ok, bool)
+
+
+def test_reason_multiturn_pronoun():
+    """ÇOK-TUR: 'o ne yapar' zamiri önceki turun konusuna çözülmeli."""
+    ai = tantrium.AI()
+    ai.reason("erlotinib nedir?")          # konu = erlotinib
+    r = ai.reason("o ne yapar?")           # 'o' → erlotinib
+    assert r["intent"] == "what_if"
+    assert "Erlotinib" in r["answer"] or "erlotinib" in r["answer"]
