@@ -1796,7 +1796,8 @@ class AI:
 
     _STOP_TR = {"nedir", "ne", "nasıl", "neden", "kim", "hangi", "mıdır", "midir",
                 "mu", "mı", "bir", "bu", "şu", "ve", "ile", "için", "the", "what",
-                "is", "are", "a", "an", "of", "how", "why", "açıkla", "anlat"}
+                "is", "are", "a", "an", "of", "how", "why", "açıkla", "anlat",
+                "hakkında", "dair", "ilgili", "üzerine", "konusunda"}
 
     def _converse_topic(self, question: str) -> str:
         """Sorudan ana konuyu çıkar (robust + ÇOK-TUR): zamir ('o/bu/onu') önceki konuya
@@ -2032,6 +2033,56 @@ class AI:
                    + (f"Dinamik: {'; '.join(r.dynamics[:3])}. " if r.dynamics else "")
                    + f"Yasayı keşfettim {tutar}.")
             return {"intent": "discover_law", "answer": ans, "result": r}
+
+        # ── MATEMATİK SÖZEL PROBLEM (≥2 operand + işlem kelimesi) ──
+        # ≥2 sayı şartı: "2 soru çıkar"/"3 hipotez çıkar" (tek sayı) MATH'a kaçmasın.
+        if (2 <= len(nums) <= 4 and has("topla", "toplam", "çarp", "kere", "katı",
+                "çıkar", "fark", "böl", "bölüm", "ortalama", "kaç eder", "kaçtır",
+                "hesapla", "sum", "product", "çarpımı", "toplamı")):
+            r = self.solve_word_problem(request)
+            return {"intent": "word_problem", "answer": r["answer"], "result": r}
+
+        # ── ÇELİŞKİ YAKALA (iddiayı manifoldla sına) ──
+        if has("doğru mu", "yanlış mı", "kontrol et", "sına", "iddia", "öyle mi",
+               "gerçek mi", "doğrula"):
+            r = self.check_claim(request)
+            return {"intent": "check_claim", "answer": r["answer"], "result": r}
+
+        # ── ÇEVİR (anlam çevirisi) ──
+        if has("çevir", "translate", "tercüme", "ingilizceye", "türkçeye", "english'e"):
+            to = "en" if has("ingilizce", "english", "to english") else "tr"
+            body = re.sub(r"(?i)\b(çevir|translate|tercüme et|tercüme|ingilizceye|"
+                          r"türkçeye|english'e|şunu|bunu|metni)\b", " ", str(request))
+            r = self.translate(body if len(body.split()) >= 3 else request, to=to)
+            return {"intent": "translate", "answer": r["translation"], "result": r}
+
+        # ── ZAMAN ÇİZELGESİ (kronolojik sıra) ──
+        if has("zaman çizelgesi", "kronoloji", "timeline", "tarihsel sıra",
+               "kronolojik"):
+            r = self.timeline(request)
+            return {"intent": "timeline", "answer": r["answer"], "result": r}
+
+        # ── SORU ÜRET ──
+        if has("soru üret", "sorular üret", "soru çıkar", "soru hazırla",
+               "sorular hazırla", "soru sor"):
+            topic = self._converse_topic(
+                re.sub(r"(?i)\b(soru|sorular|üret|çıkar|hazırla|sor)\b", " ", str(request)))
+            r = self.generate_questions(topic)
+            qs = r["questions"]
+            ans = ("Şu köklü soruları üretebilirim: " + " ".join(qs)) if qs else \
+                  f"'{topic}' hakkında soru üretecek köklü ilişki bulamadım."
+            return {"intent": "generate_questions", "answer": ans, "result": r}
+
+        # ── YAPISAL ÇIKARIM (varlık + ilişki) ──
+        if has("ilişkileri çıkar", "varlıkları", "yapısal çıkar", "extract",
+               "üçlü çıkar", "ilişkileri bul"):
+            r = self.extract(request)
+            from tantrium.language.fluent import gen_join
+            ans = (f"{r['n']} ilişki çıkardım: "
+                   + "; ".join(f"{t[0]} {t[1]} {t[2]}" for t in r["triples"][:6])
+                   + f". Varlıklar: {gen_join(r['entities'][:8])}.") if r["n"] else \
+                  "Metinden yapısal ilişki çıkaramadım."
+            return {"intent": "extract", "answer": ans, "result": r}
 
         # ── ÖZETLE (uzun metni köküne indir) — gerçek bir GÖVDE gerekir ──
         # ("kısaca" bir derinlik-kontrolü kelimesidir, özetleme tetiği DEĞİL.)
@@ -2323,6 +2374,282 @@ class AI:
                 facts.setdefault(r, []).append(o)
         return {"topic": topic, "paraphrase": _narrate(topic, facts),
                 "n_relations": len(rels)}
+
+    # ════════════════════════ DALGA 2 — Anlama & Dönüşüm ════════════════════════
+
+    # İlişki → İngilizce yüklem (çeviri + İngilizce çıktı için)
+    _EN_REL = {"IS_A": "is a", "INHIBITS": "inhibits", "ACTIVATES": "activates",
+               "CAUSES": "causes", "COMPONENT_OF": "is part of", "USES": "uses",
+               "COMPOSED": "is composed of", "ACHIEVES": "achieves",
+               "REQUIRES": "requires", "HAS_COMPOUND": "has compound"}
+
+    def extract(self, text: str) -> dict:
+        """YAPISAL ÇIKARIM — metni varlık + ilişki üçlülerine indir (köklü, NLP'siz).
+
+        Döner: {entities, relations:[{subject,relation,object}], triples, n}.
+        """
+        from tantrium.research.autonomous import _extract_relations
+        rels = _extract_relations(str(text))
+        entities = sorted({s for s, _r, _o in rels} | {o for _s, _r, o in rels})
+        return {"entities": entities,
+                "relations": [{"subject": s, "relation": r, "object": o}
+                              for s, r, o in rels],
+                "triples": rels, "n": len(rels)}
+
+    def classify(self, text: str, into: list) -> dict:
+        """SINIFLANDIR — metni verilen etiketlerden birine ata (TAU-köklü + moment-uzayı).
+
+        ÖNCE köklü kanıt: konunun IS_A/komşu ilişkilerinde etiket geçiyorsa o etiket
+        (erlotinib IS_A drug → "drug"). Köklü kanıt yoksa moment-L1 ile en yakın etikete düşer.
+        Döner: {label, scores, grounded, text}.
+        """
+        if not into:
+            return {"label": None, "scores": {}, "grounded": False, "text": str(text)[:60]}
+        labels = {str(l).lower(): l for l in into}
+        # 1) KÖKLÜ: konunun TAU ilişkilerinde (özellikle IS_A) bir etiket var mı?
+        topic = self._converse_topic(text)
+        if topic:
+            facts = self._tau_facts(topic, max_per=8)
+            for p in ("IS_A", "COMPONENT_OF"):     # önce tanım kenarları
+                for t in facts.get(p, []):
+                    if t.lower() in labels:
+                        return {"label": labels[t.lower()], "scores": {labels[t.lower()]: 0.0},
+                                "grounded": True, "text": str(text)[:60]}
+            allt = {t.lower() for ts in facts.values() for t in ts}
+            for lk, lv in labels.items():
+                if lk in allt:
+                    return {"label": lv, "scores": {lv: 0.0}, "grounded": True,
+                            "text": str(text)[:60]}
+        # 2) GEOMETRİK: moment-L1 ile en yakın etiket (köklü kanıt yoksa)
+        try:
+            mt = [float(m) for m in self._engine.encoder.encode(str(text)).moments]
+        except Exception:
+            return {"label": None, "scores": {}, "grounded": False, "text": str(text)[:60]}
+        scores, best, bestd = {}, None, float("inf")
+        for lk, lv in labels.items():
+            lm = self._concept_moments(lk)
+            if not lm:
+                continue
+            n = min(len(mt), len(lm))
+            d = sum(abs(mt[i] - lm[i]) for i in range(n))
+            scores[lv] = round(d, 4)
+            if d < bestd:
+                bestd, best = d, lv
+        return {"label": best, "scores": scores, "grounded": False, "text": str(text)[:60]}
+
+    def generate_questions(self, topic: str, max_q: int = 6) -> dict:
+        """SORU ÜRET — köklü kavramdan doğru sorular türet (QA'nın tersi, uydurmasız).
+
+        Yalnız TAU'da GERÇEKTEN var olan ilişkiler için soru kurar. Döner: {topic, questions}.
+        """
+        topic = self._converse_topic(topic) or str(topic).lower()
+        facts = self._tau_facts(topic, max_per=2)
+        qmap = {
+            "IS_A": f"{topic} nedir?",
+            "INHIBITS": f"{topic} neyi baskılar?",
+            "ACTIVATES": f"{topic} neyi etkinleştirir?",
+            "CAUSES": f"{topic} neye yol açar?",
+            "COMPONENT_OF": f"{topic} neyin parçasıdır?",
+            "COMPOSED": f"{topic} neden oluşur?",
+            "USES": f"{topic} neyi kullanır?",
+            "HAS_COMPOUND": f"{topic} hangi kimyasal yapıya sahiptir?",
+            "ACHIEVES": f"{topic} neyi sağlar?",
+        }
+        qs = [qmap[p] for p in facts if p in qmap][:max_q]
+        return {"topic": topic, "questions": qs}
+
+    def translate(self, text: str, to: str = "tr") -> dict:
+        """ÇEVİR — köklü içeriği hedef dile aktar (ANLAM çevirisi, halüsinasyonsuz).
+
+        Metnin ilişkisel iskeletini çıkarır; to="tr" → fluent Türkçe anlatım, to="en" →
+        İngilizce yüklem şablonları. Yalnız çıkarılan GERÇEK ilişkileri çevirir.
+        Döner: {to, translation, n_relations}.
+        """
+        from tantrium.research.autonomous import _extract_relations
+        from tantrium.language.fluent import narrate as _narrate
+        rels = _extract_relations(str(text))
+        if not rels:
+            return {"to": to, "translation": "Çevrilecek yapısal içerik bulamadım.",
+                    "n_relations": 0}
+        if to == "en":
+            sents = []
+            for s, r, o in rels[:8]:
+                v = self._EN_REL.get(r, r.lower())
+                sents.append(f"{s[:1].upper() + s[1:]} {v} {o}.")
+            tr = " ".join(sents)
+        else:
+            from collections import Counter
+            topic = Counter(s for s, _r, _o in rels).most_common(1)[0][0]
+            facts: dict[str, list[str]] = {}
+            for s, r, o in rels:
+                if s == topic and o not in facts.get(r, []):
+                    facts.setdefault(r, []).append(o)
+            tr = _narrate(topic, facts)
+        return {"to": to, "translation": tr, "n_relations": len(rels)}
+
+    # ════════════════════ DALGA 3 — LLM'i GEÇEN Akıl ════════════════════
+
+    # Zıt ilişkiler — diyalogda çelişki yakalama (truth ekseni dilde)
+    _OPPOSITE_REL = {"INHIBITS": {"ACTIVATES"}, "ACTIVATES": {"INHIBITS"},
+                     "CAUSES": {"PREVENTS"}, "PREVENTS": {"CAUSES"}}
+
+    def check_claim(self, statement: str) -> dict:
+        """ÇELİŞKİ YAKALA — kullanıcının iddiasını manifoldla SINA (LLM'in yapamadığı fark).
+
+        İddiadaki üçlüleri çıkarır; her birini TAU'ya karşı doğrular: aynı kenar → CONFIRMED,
+        zıt kenar (INHIBITS↔ACTIVATES) → CONTRADICTED, yoksa UNKNOWN. Halüsinasyonu yakalar.
+        Döner: {statement, verdict, checks:[{triple, verdict, evidence}]}.
+        """
+        from tantrium.research.autonomous import _extract_relations, _normalize_entity
+        rels = _extract_relations(str(statement))
+        checks, any_contra, any_conf = [], False, False
+        for s, r, o in rels:
+            s_n, o_n = _normalize_entity(s), _normalize_entity(o)
+            edges = list(self._engine.tau.edges.get(s, []))
+            if s_n != s:
+                edges += self._engine.tau.edges.get(s_n, [])
+            verdict, evidence = "UNKNOWN", ""
+            for e in edges:
+                et = _normalize_entity(str(getattr(e, "target", "")))
+                ep = getattr(e, "paradigm", "")
+                if et == o_n and ep == r:
+                    verdict = "CONFIRMED"; evidence = f"{s} —{r}→ {o}"; break
+                if et == o_n and ep in self._OPPOSITE_REL.get(r, set()):
+                    verdict = "CONTRADICTED"; evidence = f"bildiğim: {s} —{ep}→ {o}"; break
+            any_contra = any_contra or verdict == "CONTRADICTED"
+            any_conf = any_conf or verdict == "CONFIRMED"
+            checks.append({"triple": (s, r, o), "verdict": verdict, "evidence": evidence})
+        overall = ("CONTRADICTED" if any_contra else
+                   "CONFIRMED" if any_conf else "UNKNOWN")
+        if overall == "CONTRADICTED":
+            ev = next(c["evidence"] for c in checks if c["verdict"] == "CONTRADICTED")
+            answer = (f"Bu iddia bildiğimle ÇELİŞİYOR ({ev}). Düzeltmek isterim — "
+                      f"köklü bilgimle uyuşmuyor.")
+        elif overall == "CONFIRMED":
+            answer = "Bu iddia köklü bilgimle UYUMLU — doğruluyorum."
+        else:
+            answer = "Bu iddiayı doğrulayacak ya da çürütecek köklü bilgim yok (bilmiyorum)."
+        return {"statement": str(statement), "verdict": overall, "checks": checks,
+                "answer": answer}
+
+    def synthesize_docs(self, docs: list, topic: str | None = None) -> dict:
+        """ÇOK-BELGE SENTEZİ — birden çok kaynağı tek KÖKLÜ cevaba ör (uydurmasız).
+
+        Her belgeyi öğrenir (ilişki çıkarır), ortak konuyu bulur, birleşik TAU'dan akıcı
+        anlatım üretir. Döner: {topic, synthesis, n_docs, n_relations}.
+        """
+        from collections import Counter
+        from tantrium.research.autonomous import _extract_relations
+        from tantrium.language.fluent import narrate as _narrate
+        all_rels, freq = [], Counter()
+        for d in docs:
+            r = _extract_relations(str(d))
+            all_rels += r
+            for s, _rel, _o in r:
+                freq[s] += 1
+            try:
+                self.learn(str(d))
+            except Exception:
+                pass
+        if not all_rels:
+            return {"topic": "", "synthesis": "Belgelerden ortak bir öz çıkaramadım.",
+                    "n_docs": len(docs), "n_relations": 0}
+        topic = topic or freq.most_common(1)[0][0]
+        facts: dict[str, list[str]] = {}
+        for s, r, o in all_rels:
+            if s == topic and o not in facts.get(r, []):
+                facts.setdefault(r, []).append(o)
+        syn = _narrate(topic, facts) if facts else (
+            f"Belgelerin ortak konusu '{topic}'.")
+        return {"topic": topic, "synthesis": syn, "n_docs": len(docs),
+                "n_relations": len(all_rels)}
+
+    def solve_word_problem(self, text: str) -> dict:
+        """MATEMATİK SÖZEL PROBLEM — doğal dil → sayı + işlem → kesin sonuç (deterministik).
+
+        Sayıları + işlem anahtarını (topla/çıkar/çarp/böl) çıkarır, hesaplar. Sıralı seri
+        ("sonraki/devam") → forecast'e bırakır. Döner: {numbers, operation, result}.
+        """
+        nums = self._extract_numbers(text)
+        t = str(text).lower()
+        if not nums:
+            return {"numbers": [], "operation": None, "result": None,
+                    "answer": "Problemde sayı bulamadım."}
+        if any(k in t for k in ("topla", "toplam", "sum", "ekle", "artı")):
+            op, res = "toplama", sum(nums)
+        elif any(k in t for k in ("çarp", "product", "kere", "katı")):
+            res = 1.0
+            for n in nums:
+                res *= n
+            op = "çarpma"
+        elif any(k in t for k in ("çıkar", "fark", "eksi", "difference")):
+            res = nums[0] - sum(nums[1:]); op = "çıkarma"
+        elif any(k in t for k in ("böl", "bölüm", "divide", "oran")):
+            res = nums[0]
+            for n in nums[1:]:
+                if n:
+                    res /= n
+            op = "bölme"
+        elif any(k in t for k in ("ortalama", "average", "mean")):
+            res = sum(nums) / len(nums); op = "ortalama"
+        else:
+            op, res = "toplama", sum(nums)   # varsayılan
+        res = round(res, 6)
+        return {"numbers": nums, "operation": op, "result": res,
+                "answer": f"{op.capitalize()} sonucu: {res} (sayılar: {nums})."}
+
+    def timeline(self, text: str) -> dict:
+        """ZAMANSAL AKIL — metindeki yıl-olay çiftlerini çıkar + KRONOLOJİK sırala.
+
+        Döner: {events:[{year, event}], ordered:bool}.
+        """
+        import re as _r
+        events = []
+        for sent in _r.split(r"[.!?;\n]", str(text)):
+            m = _r.search(r"\b(1\d{3}|20\d{2})\b", sent)
+            if m:
+                ev = _r.sub(r"\b(1\d{3}|20\d{2})\b", "", sent).strip(" ,-—")
+                if len(ev) > 3:
+                    events.append({"year": int(m.group(1)), "event": ev[:120]})
+        events.sort(key=lambda e: e["year"])
+        if events:
+            line = "; ".join(f"{e['year']}: {e['event']}" for e in events[:8])
+            answer = f"Zaman çizelgesi (kronolojik): {line}."
+        else:
+            answer = "Metinde tarihli olay bulamadım."
+        return {"events": events, "ordered": True, "answer": answer}
+
+    def what_is_this(self, signal, modality: str = "signal") -> dict:
+        """ÇOK-MODAL DİL — ham algıyı (ses/görüntü) DİLE bağla: 'bu, X'e benziyor'.
+
+        Sinyali AYNI moment uzayına çeker, en yakın köklü kavramı bulur, akıcı söyler.
+        Döner: {nearest, distance, answer}.
+        """
+        try:
+            run = self.perceive(signal, modality=modality, name="_probe_percept")
+            mt = [float(m) for m in run.moments] if hasattr(run, "moments") else \
+                 [float(m) for m in run.codex.moments]
+        except Exception:
+            try:
+                mt = [float(m) for m in self._engine.encoder.encode(signal).moments]
+            except Exception:
+                return {"nearest": None, "distance": None,
+                        "answer": "Bu algıyı kodlayamadım."}
+        best, bestd = None, float("inf")
+        for name, c in self._engine.manifold.concepts.items():
+            if name.startswith("⟨") or name.startswith("_probe") or not self._is_clean_concept(name):
+                continue
+            cm = [float(m) for m in c.moments]
+            n = min(len(mt), len(cm))
+            d = sum(abs(mt[i] - cm[i]) for i in range(n))
+            if d < bestd:
+                bestd, best = d, name
+        if best is None:
+            return {"nearest": None, "distance": None,
+                    "answer": "Bu algıya yakın köklü bir kavram bulamadım."}
+        return {"nearest": best, "distance": round(bestd, 4),
+                "answer": f"Bu algı moment uzayında en çok '{best}'e benziyor "
+                          f"(mesafe {bestd:.3f}) — duyduğumu/gördüğümü bildiğime bağlıyorum."}
 
     def learn(self, text: str) -> dict:
         """Metin öğret → manifolda ekle + nedensel ilişkileri TAU'ya yaz.

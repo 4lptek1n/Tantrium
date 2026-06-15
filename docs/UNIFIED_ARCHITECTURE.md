@@ -372,11 +372,15 @@ kısıt, istatistik değil). "Akıcılık training değil MORFOLOJİ işi — ç
 - **DALGA 1 [F45, KURULDU] — dilin insan-yüzü:** derinlik/üslup kontrolü (`narrate(depth,register)`),
   güven kalibrasyonu (`_confidence_lead` — grounding.score'dan GEOMETRİK, istatistik-taklidi değil),
   kaynak/dayanak (`converse().sources` = her iddianın TAU kenarı), `paraphrase(text)`.
-- **DALGA 2 [planlı] — anlama & dönüşüm:** çeviri (iki-dilli TAU), sınıflandırma (moment+TAU),
-  yapısal çıkarım (varlık/tablo), soru üretimi.
-- **DALGA 3 [planlı] — LLM'i GEÇEN akıl:** diyalogda çelişki yakalama (truth ekseni), çok-belge
-  sentezi, matematik sözel problem (reason numeric genişletme), zamansal akıl, çok-modal dil
-  (`witness` genişletme). Çapraz tema: her cümle kaynaklı + kalibre + halüsinasyonsuz.
+- **DALGA 2 [F46, KURULDU] — anlama & dönüşüm:** `translate` (anlam çevirisi), `classify`
+  (TAU-köklü→moment-L1), `extract` (varlık/üçlü), `generate_questions` (var olan ilişkiden).
+- **DALGA 3 [F46, KURULDU] — LLM'i GEÇEN akıl:** `check_claim` (diyalogda çelişki yakalama —
+  iddia TAU ile zıtsa CONTRADICTED + düzeltme önerir; LLM'in istatistikle yapamadığı), `synthesize_docs`
+  (çok-belge sentezi), `solve_word_problem` (NL→sayı+işlem), `timeline` (zamansal kronoloji),
+  `what_is_this` (çok-modal algı→kavram). Çapraz tema: her cümle kaynaklı + kalibre + halüsinasyonsuz.
+- **TÜRKÇE OMURGA [F46]:** `autonomous._TR_COMPILED` SOV ilişki çıkarımı — İngilizce pattern
+  Türkçeyi görmezdi; bu fix tüm Türkçe dil-yüzeyini (check_claim/translate/extract) açtı.
+  `_strip_tr_suffix` yalnız epentetik-y belirtme eki (kök-koruma, accusative; yönelme/n-formu hariç).
 
 ### 6.6 L5 — Cognition (tek döngü) [F5+Kademe6]
 **Birleşir:** `research/cognition.py Cognition` ← `AI.run` + `AI.grow` + `engine.grow` +

@@ -812,6 +812,14 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
     (GEOMETRİK kalibrasyon — LLM'in istatistik-taklidi değil).
   - `converse().sources` = `_provenance` (her iddia → TAU kenar dayanağı; şeffaf atıf).
   - `paraphrase(text)`: `_extract_relations`+`narrate` ile köklü içeriği farklı sözcükle.
+- **Kademe F46 [2026-06] — DALGA 2+3: anlama-dönüşüm + LLM'i GEÇEN akıl:**
+  - DALGA2: `extract` · `classify` (TAU-köklü→moment) · `generate_questions` · `translate` (EN yüklem).
+  - DALGA3: `check_claim` (iddiayı TAU'yla sına: zıt kenar→CONTRADICTED; halüsinasyon yakalama) ·
+    `synthesize_docs` · `solve_word_problem` · `timeline` · `what_is_this` (çok-modal algı→kavram).
+  - `_OPPOSITE_REL` (INHIBITS↔ACTIVATES) çelişki çekirdeği; `reason()` 8 yeni intent.
+  - **Türkçe omurga (`research/autonomous._TR_COMPILED`)**: SOV ilişki çıkarımı — tüm Türkçe
+    dil-yüzeyini açan yüksek-kaldıraç fix. `_strip_tr_suffix` epentetik-y belirtme eki YALNIZ
+    (kök-koruma: proteini/kimya bozulmaz). Code-review: word_problem ≥2 operand misroute fix.
 - **Tekrar kümeleri (facade seviyesi, NAMESPACE birleşmesi — motorlar korunur):** molekül 7 metot
   (discover/design/cure/produce/simulate/genesis_mol/design_drug → produce çatısı), kausal 4
   (causal_chain/what_if/hypothesize/analogy), büyüme 4 (pulse/live/grow/run — kasıtlı gradyan),

@@ -349,6 +349,17 @@ ai.converse("photosynthesis nedir?",           # → dict: bilmezse İNTERNETTEN
                                                #   sources: her iddianın TAU kenar dayanağı (atıf/şeffaflık)
 ai.paraphrase("EGFR activates ras...")         # → dict: YENİDEN İFADE — aynı köklü içerik farklı sözcükle
                                                #   {topic, paraphrase, n_relations}; yeni bilgi EKLEMEZ
+ai.extract("Aspirin inhibits COX...")          # → dict: YAPISAL ÇIKARIM {entities, relations, triples, n}
+ai.classify("erlotinib", into=["drug","gene"]) # → dict: SINIFLANDIR (TAU-köklü öncelik → moment-L1)
+                                               #   {label, scores, grounded}; IS_A varsa o etiket
+ai.generate_questions("erlotinib")             # → dict: SORU ÜRET (yalnız var olan ilişkilerden) {topic, questions}
+ai.translate("Aspirin COX'u baskılar", to="en")# → dict: ÇEVİR (anlam çevirisi) {to, translation, n_relations}
+ai.check_claim("erlotinib activates egfr")     # → dict: ÇELİŞKİ YAKALA — iddiayı TAU'yla sına (LLM yapamaz)
+                                               #   {verdict: CONFIRMED|CONTRADICTED|UNKNOWN, checks, answer}
+ai.synthesize_docs([doc1, doc2, ...])          # → dict: ÇOK-BELGE SENTEZİ {topic, synthesis, n_docs, n_relations}
+ai.solve_word_problem("3 ile 5'i topla")       # → dict: MATEMATİK SÖZEL PROBLEM {numbers, operation, result}
+ai.timeline("1921 insülin... 1953 DNA...")     # → dict: ZAMANSAL AKIL (kronolojik) {events, ordered, answer}
+ai.what_is_this(tone(440), modality="signal")  # → dict: ÇOK-MODAL DİL — algı→en yakın kavram {nearest, distance}
 ai.summarize("uzun metin...")                  # → dict: ÖZETLE — metnin ilişkisel öze indir (köklü, uydurmasız)
                                                #   {topic, summary, n_relations, points}
 ai.contrast("erlotinib", "imatinib")           # → dict: KARŞILAŞTIR/FARK — ortak+ayıran ilişki + W₂/κ mesafe
@@ -786,6 +797,19 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     4. **`ai.paraphrase(text)`**: aynı köklü içeriği `_extract_relations`+`narrate` ile FARKLI
        sözcüklerle yeniden ifade — yeni bilgi EKLEMEZ.
     Tests: test_reason.py +4 (depth/confidence/provenance/paraphrase).
+  - **F46 — DALGA 2 + DALGA 3: anlama-dönüşüm + LLM'i GEÇEN akıl (hepsi köklü):**
+    **DALGA 2:** `extract` (metin→varlık/üçlü) · `classify` (TAU-köklü→moment-L1) · `generate_questions`
+    (yalnız var olan ilişkiden) · `translate` (anlam çevirisi, EN yüklem şablonu).
+    **DALGA 3:** `check_claim` (iddiayı TAU'yla SINA → CONFIRMED/CONTRADICTED/UNKNOWN — "erlotinib
+    egfr'yi aktive eder" → ÇELİŞKİ, çünkü TAU INHIBITS biliyor; LLM'in yapamadığı fark) ·
+    `synthesize_docs` (çok-belge→tek köklü öz) · `solve_word_problem` (NL→sayı+işlem→kesin) ·
+    `timeline` (yıl-olay→kronolojik) · `what_is_this` (algı→en yakın kavram, çok-modal).
+    **TÜRKÇE OMURGA (`autonomous.py`):** `_TR_COMPILED` SOV ilişki çıkarımı (baskılar/etkinleştirir/
+    yol açar…) — İngilizce pattern Türkçeyi görmezdi; bu, tüm Türkçe dil-yüzeyini (check_claim/
+    translate/extract) açan yüksek-kaldıraç fix. `_strip_tr_suffix` YALNIZ epentetik-y belirtme
+    eki (kapıyı→kapı); n-/yönelme/ablatif kökü BOZARDI (proteini→prote, kimya→kim) → hariç.
+    `reason()` 8 yeni intent. Code-review: word_problem ≥2 operand (tek-sayılı "2 soru çıkar"
+    math'a kaçmasın) + suffix kök-koruma düzeltildi. Tests: test_reason.py 24 (+11).
 
 ---
 

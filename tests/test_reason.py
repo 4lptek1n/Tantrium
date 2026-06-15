@@ -144,3 +144,71 @@ def test_reason_routes_paraphrase():
     r = ai.reason("Şunu yeniden ifade et: EGFR activates ras. EGFR causes tumor growth.")
     assert r["intent"] == "paraphrase"
     assert r["result"]["n_relations"] >= 1
+
+
+# ───────────────────────── DALGA 2 — Anlama & Dönüşüm ─────────────────────────
+
+def test_turkish_relation_extraction():
+    """Türkçe SOV ilişki çıkarımı — Dalga 2/3 omurgası."""
+    from tantrium.research.autonomous import _extract_relations
+    rels = _extract_relations("Erlotinib EGFR'yi baskılar. EGFR ras'ı etkinleştirir.")
+    assert ("erlotinib", "INHIBITS", "egfr") in rels
+    assert ("egfr", "ACTIVATES", "ras") in rels
+
+
+def test_reason_routes_extract():
+    """YAPISAL ÇIKARIM: metin → varlık + ilişki üçlüleri."""
+    ai = tantrium.AI()
+    r = ai.reason("şu metindeki ilişkileri çıkar: Aspirin inhibits COX.")
+    assert r["intent"] == "extract"
+    assert ("aspirin", "INHIBITS", "cox") in r["result"]["triples"]
+
+
+def test_classify_grounded():
+    """SINIFLANDIR: köklü kanıt (IS_A) varsa o etikete koyar."""
+    ai = tantrium.AI()
+    ai.learn("Erlotinib is a drug. Erlotinib inhibits EGFR.")
+    r = ai.classify("erlotinib", into=["drug", "disease", "protein"])
+    assert r["label"] == "drug" and r["grounded"] is True
+
+
+def test_generate_questions():
+    """SORU ÜRET: yalnız var olan ilişkilerden soru kurar."""
+    ai = tantrium.AI()
+    ai.learn("Erlotinib is a drug. Erlotinib inhibits EGFR.")
+    r = ai.generate_questions("erlotinib")
+    assert any("nedir" in q for q in r["questions"])
+
+
+def test_translate_meaning():
+    """ÇEVİR: Türkçe→İngilizce anlam çevirisi (köklü iskelet üstünden)."""
+    ai = tantrium.AI()
+    r = ai.translate("Aspirin COX'u baskılar", to="en")
+    assert "inhibits" in r["translation"].lower()
+
+
+# ─────────────────────── DALGA 3 — LLM'i GEÇEN Akıl ───────────────────────
+
+def test_check_claim_contradiction():
+    """ÇELİŞKİ YAKALA: iddia TAU ile çelişiyorsa CONTRADICTED (LLM yapamaz)."""
+    ai = tantrium.AI()
+    ai.learn("Erlotinib is a drug. Erlotinib inhibits EGFR.")
+    contra = ai.check_claim("erlotinib activates egfr")
+    assert contra["verdict"] == "CONTRADICTED"
+    conf = ai.check_claim("erlotinib inhibits egfr")
+    assert conf["verdict"] == "CONFIRMED"
+
+
+def test_solve_word_problem():
+    """MATEMATİK SÖZEL PROBLEM: deterministik hesap."""
+    ai = tantrium.AI()
+    r = ai.reason("3 ile 5 i topla kaç eder")
+    assert r["intent"] == "word_problem" and r["result"]["result"] == 8.0
+
+
+def test_timeline_chronology():
+    """ZAMANSAL AKIL: yıl-olay çiftleri kronolojik sıralanır."""
+    ai = tantrium.AI()
+    r = ai.timeline("DNA was found in 1953. Insulin was discovered in 1921.")
+    yrs = [e["year"] for e in r["events"]]
+    assert yrs == sorted(yrs) and 1921 in yrs and 1953 in yrs

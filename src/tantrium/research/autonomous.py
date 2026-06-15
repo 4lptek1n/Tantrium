@@ -70,6 +70,35 @@ _CAUSAL_VERB_MAP: list[tuple[str, str]] = [
 ]
 _COMPILED_VERBS = [(_re.compile(p, _re.IGNORECASE), rel) for p, rel in _CAUSAL_VERB_MAP]
 
+# ── TÜRKÇE ilişki çıkarımı (SOV: özne nesne+ek YÜKLEM) — Dalga 2/3 omurgası ──
+# Türkçe dil-yüzeyi (check_claim/translate/extract) için: İngilizce pattern Türkçeyi görmez.
+# "Erlotinib EGFR'yi baskılar" → (erlotinib, INHIBITS, egfr). Apostrof-eki regexte yutulur.
+_TR_VERB_MAP: list[tuple[str, str]] = [
+    (r"baskılar|inhibe\s+eder|engeller|bloke\s+eder", "INHIBITS"),
+    (r"etkinleştirir|aktive\s+eder|harekete\s+geçirir|uyarır|tetikler", "ACTIVATES"),
+    (r"neden\s+olur|yol\s+açar|sebep\s+olur", "CAUSES"),
+    (r"kullanır|yararlanır", "USES"),
+    (r"sağlar|üretir", "ACHIEVES"),
+]
+_TR_COMPILED = [(_re.compile(
+    r"([\w\-]+)\s+([\w\-]+?)(?:['’][\wçğıöşü]*)?\s+(?:" + v + r")\b",
+    _re.IGNORECASE | _re.UNICODE), rel) for v, rel in _TR_VERB_MAP]
+
+# Türkçe nesne ekleri — YALNIZ epentetik-y BELİRTME (accusative) hâli: "kapıyı"→"kapı".
+# Kausal yüklemler (INHIBITS/ACTIVATES/CAUSES) belirtme nesnesi alır; yönelme (-ya/-ye) DEĞİL —
+# o yüzden hariç ("kimya"→"kim" bozulmasını önler). n-formları/ablatif de kökü bozar → yok.
+# (Apostroflu bio terimler — EGFR'yi — zaten regexte yutulur, buraya hiç düşmez.)
+_TR_SUFFIXES = ("yi", "yı", "yu", "yü")
+
+
+def _strip_tr_suffix(word: str) -> str:
+    """Türkçe nesne ekini GÜVENLE at (yalnız epentetik-y, uzun kelimede — kök bozulmaz)."""
+    w = word.strip().lower()
+    for sfx in _TR_SUFFIXES:
+        if w.endswith(sfx) and len(w) - len(sfx) >= 3:
+            return w[: -len(sfx)]
+    return w
+
 # Tanım kalıbı: "X is/are a/an/the Y..." → (X, IS_A, head(Y)). Ansiklopedik temel cümle.
 # Nesne 1-4 kelimelik öbek (baş-isim _clean_term ile alınır: "infectious disease"→disease).
 _ISA_PAT = _re.compile(
@@ -201,6 +230,15 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
                             and obj not in _STOPWORDS and obj not in _BOUNDARY
                             and subj not in _BOUNDARY):
                         relations.append((subj, rel_type, obj))
+    # TÜRKÇE pass (SOV): "özne nesne+ek yüklem" — apostrof-eki regexte yutulur
+    for sent in sentences:
+        for pat, rel_type in _TR_COMPILED:
+            for m in pat.finditer(sent):
+                subj = _normalize_entity(_strip_tr_suffix(m.group(1)))
+                obj = _normalize_entity(_strip_tr_suffix(m.group(2)))
+                if (2 < len(subj) < 40 and 2 < len(obj) < 40 and subj != obj
+                        and subj not in _STOPWORDS and obj not in _STOPWORDS):
+                    relations.append((subj, rel_type, obj))
     # tekilleştir (sıra korunur)
     _seen: set = set()
     _uniq: list[tuple[str, str, str]] = []
