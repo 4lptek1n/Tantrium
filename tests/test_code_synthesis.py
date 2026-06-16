@@ -125,6 +125,18 @@ def test_conditional_rejects_memorization():
     assert not junk.verified                              # uydurma branch-per-point YOK
 
 
+def test_synthesis_memory_reuse():
+    """Sentez hafızası: aynı spec yeniden ARANMAZ (memoize) + transfer-kullanım (find_reusable)."""
+    from tantrium.core.code_synthesis import find_reusable, solved_library
+    cp = synthesize([(1, 2), (2, 3), (3, 4)])              # x+1 çöz → kütüphaneye
+    assert cp.verified
+    again = synthesize([(1, 2), (2, 3), (3, 4)])
+    assert again is cp                                     # AYNI obje (hafızadan, yeniden arama yok)
+    reuse = find_reusable([(5, 6), (10, 11)])              # farklı örnek, aynı davranış → transfer
+    assert reuse is not None and "+ 1" in reuse.program
+    assert len(solved_library()) >= 1
+
+
 def test_fold_synthesis_stateful_loop():
     """Biriken-durum (fold) döngüsü: tek-ifadeyle OLMAYAN reduce deseni (çarpım = havuzda tek-ifade yok)."""
     prod = synthesize([([1, 2, 3, 4], 24), ([2, 3], 6), ([5], 5), ([2, 2, 2], 8)])

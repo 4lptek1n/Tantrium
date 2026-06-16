@@ -466,10 +466,66 @@ def _synthesize_fold(examples, argnames) -> str | None:
     return None
 
 
+# SENTEZ HAFIZASI (Tier 3.6) — çözülmüş fonksiyonların manifoldu. Aynı spec'i yeniden ARAMA
+# (memoizasyon, davranışsal-kimlik anahtarı) + sorgulanabilir kütüphane (find_reusable: bir cached
+# program yeni örnekleri sağlıyorsa transfer-kullan). Sistem geçmiş sentezden öğrenir, hızlanır.
+_SOLVED: dict = {}            # fingerprint → CertifiedProgram (yalnız verified)
+_SOLVED_MAX = 1000
+
+
+def solved_library() -> list:
+    """Şimdiye dek çözülmüş (sertifikalı) fonksiyonların kütüphanesi (manifold)."""
+    return list(_SOLVED.values())
+
+
+def find_reusable(examples, argnames=None):
+    """Kütüphanede yeni örnekleri SAĞLAYAN bir çözülmüş program var mı (transfer-kullanım) — yeniden
+    aramadan KANITLI yeniden kullan. Re-doğrular (yalnız gerçekten sağlayan döner, uydurma yok)."""
+    examples = list(examples)
+    argn = argnames or _detect_args(examples)
+    for cp in _SOLVED.values():
+        if len(cp.args) != len(argn):
+            continue
+        if _verify_source(cp.source(), examples, argn):
+            return cp
+    return None
+
+
+def _cache_solution(key, cp) -> None:
+    if key is None or not cp.verified:
+        return
+    if len(_SOLVED) >= _SOLVED_MAX:
+        _SOLVED.pop(next(iter(_SOLVED)))      # FIFO sınır
+    _SOLVED[key] = cp
+
+
 def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
                primitives=None, extra_primitives=None,
                extra_globals: dict | None = None,
                conditional: bool = True) -> CertifiedProgram:
+    """examples → CertifiedProgram. Sentez HAFIZASI: aynı spec daha önce çözülmüşse YENİDEN ARAMAZ
+    (memoizasyon, davranışsal-kimlik anahtarı). Aksi halde _synthesize_impl ile arar + çözümü hatırlar."""
+    examples = list(examples)
+    key = None
+    if extra_globals is None:                 # bağlama-bağımlı (uses=) çözümler cache'lenmez
+        try:
+            from tantrium.core.code_behavior import fingerprint_from_examples
+            key = fingerprint_from_examples(examples)
+        except Exception:
+            key = None
+    if key is not None and key in _SOLVED:
+        return _SOLVED[key]                   # HATIRLA — yeniden arama yok
+    cp = _synthesize_impl(examples, max_depth=max_depth, beam_width=beam_width,
+                          primitives=primitives, extra_primitives=extra_primitives,
+                          extra_globals=extra_globals, conditional=conditional)
+    _cache_solution(key, cp)
+    return cp
+
+
+def _synthesize_impl(examples, *, max_depth: int = 6, beam_width: int = 18,
+                     primitives=None, extra_primitives=None,
+                     extra_globals: dict | None = None,
+                     conditional: bool = True) -> CertifiedProgram:
     """examples: [(girdi, çıktı), ...] → CertifiedProgram (kanıtlı veya verified=False).
 
     Beam arama: argümanlardan başla, operasyon-operasyon genişlet, her aday örneklere karşı
