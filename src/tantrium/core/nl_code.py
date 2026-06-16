@@ -49,6 +49,43 @@ _OP_VOCAB: list[tuple[tuple, str, str]] = [
 ]
 
 
+# İKİ-ARGÜMAN operasyon sözlüğü (a,b) — hesap makinesi / ikili aritmetik (niyetten ulaşılır).
+_BINARY_VOCAB: list[tuple[str, tuple, str]] = [
+    ("add", ("topla", "toplama", "toplamı", "ekle", "add", "addition", "plus", "sum"),
+     "({a}) + ({b})"),
+    ("subtract", ("çıkar", "çıkarma", "çıkart", "fark", "subtract", "subtraction", "minus"),
+     "({a}) - ({b})"),
+    ("multiply", ("çarp", "çarpma", "çarpım", "multiply", "multiplication", "times", "product"),
+     "({a}) * ({b})"),
+    ("divide", ("böl", "bölme", "bölüm", "divide", "division"), "({a}) / ({b})"),
+    ("power", ("üs", "üssü", "kuvvet", "power", "exponent"), "({a}) ** ({b})"),
+    ("modulo", ("mod", "kalan", "modulo", "remainder"), "({a}) % ({b})"),
+    ("maxof", ("büyüğü", "büyük", "maksimum", "maximum"), "max(({a}), ({b}))"),
+    ("minof", ("küçüğü", "küçük", "minimum"), "min(({a}), ({b}))"),
+]
+
+
+def parse_binary(task: str) -> list:
+    """NL'den İKİLİ (a,b) operasyonları SIRAYLA çıkar (kelime-sınırı). Hesap makinesi gibi çok-işlemli
+    niyetler için. Döner: [(op_adı, şablon, konum)]."""
+    import re as _re
+    t = " " + _re.sub(r"[^0-9a-zçğıöşü ]+", " ", str(task).lower()) + " "
+    found: list = []
+    used: list = []
+    for name, keys, tmpl in _BINARY_VOCAB:
+        for kw in keys:
+            pos = t.find(" " + kw + " ")
+            if pos >= 0:
+                span = (pos + 1, pos + 1 + len(kw))     # bitişik kelimelerin PAYLAŞTIĞI boşluğu sayma
+                if any(not (span[1] <= s or span[0] >= e) for s, e in used):
+                    continue
+                used.append(span)
+                found.append((name, tmpl, pos))
+                break
+    found.sort(key=lambda x: x[2])
+    return found
+
+
 def parse_operations(task: str) -> list:
     """NL görevden grounded operasyonları SIRAYLA çıkar (deterministik eşleme, tahmin yok).
 
@@ -64,7 +101,7 @@ def parse_operations(task: str) -> list:
         for kw in keys:
             pos = t.find(" " + kw + " ")          # YALNIZ kelime-sınırlı (substring fallback YOK)
             if pos >= 0:
-                span = (pos, pos + len(kw) + 2)
+                span = (pos + 1, pos + 1 + len(kw))     # bitişik kelimelerin PAYLAŞTIĞI boşluğu sayma
                 if any(not (span[1] <= s or span[0] >= e) for s, e in used_spans):
                     continue
                 used_spans.append(span)

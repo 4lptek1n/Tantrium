@@ -65,10 +65,23 @@ def test_decompose_goal_splits_into_functions():
 
 
 def test_decompose_avoids_builtin_shadow():
-    """Üretilen ad builtin'i GÖLGELEMEZ ('sum' → 'op_sum'), yoksa def sum: return sum sonsuz özyineleme."""
-    from tantrium.core.code_intent import decompose_goal
-    specs = decompose_goal("topla", research=False)
-    assert specs and specs[0]["name"] == "op_sum"
+    """Üretilen ad builtin/keyword'ü GÖLGELEMEZ ('sum'→'op_sum'), yoksa def sum: return sum sonsuz özyineleme."""
+    from tantrium.core.code_intent import _safe_name
+    assert _safe_name("sum", 0, set()) == "op_sum"
+    assert _safe_name("max", 0, set()) == "op_max"
+    assert _safe_name("reverse", 0, set()) == "reverse"      # builtin değil → korunur
+
+
+def test_build_app_calculator():
+    """Bağlaçsız çoklu-operasyon ('hesap makinesi topla çıkar çarp böl') → ikili fonksiyonlar."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.build_app("hesap makinesi topla çıkar çarp böl", research=False)
+    assert r["verified"] and not r["failed"]
+    ns: dict = {}
+    exec(r["source"], ns)
+    assert ns["add"](6, 3) == 9 and ns["subtract"](6, 3) == 3
+    assert ns["multiply"](6, 3) == 18 and ns["divide"](6, 3) == 2.0
 
 
 def test_ai_build_app_end_to_end():

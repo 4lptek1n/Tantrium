@@ -15,6 +15,9 @@ from dataclasses import dataclass, field
 
 # Kanonik girdi kümeleri (deterministik) — operasyonu çalıştırıp ground-truth örnek türetmek için.
 # Sıra önemli: program hangi kümede HATASIZ çalışırsa o tipte demektir (liste/sayı/metin).
+# İki-argüman kanonik girdi tabanı (ikili op ground-truth'u için).
+_CANON_BINARY: list = [(6, 3), (2, 4), (10, 5), (7, 2), (3, 3)]
+
 _CANON_INPUTS: list = [
     [[1, 2, 3], [4, 5, 6], [2, 8, 4, 1]],     # liste işlemleri
     [2, 3, 5, 10],                             # sayı işlemleri
@@ -70,8 +73,24 @@ def derive_spec(intent: str, *, research: bool = True) -> DerivedSpec:
     nl_code ile operasyonları anla; bilinmiyorsa araştır (#2); kanonik girdide çalıştırıp
     ground-truth örnek türet. Bağlanamazsa DÜRÜSTÇE örnek ister. Döner: DerivedSpec.
     """
-    from tantrium.core.nl_code import nl_to_program, parse_operations
+    from tantrium.core.nl_code import nl_to_program, parse_operations, parse_binary
     ds = DerivedSpec(intent=str(intent))
+
+    # İKİLİ (a,b) operasyon mu? (topla/çıkar/çarp/böl...) — 2-arg ground-truth türet (çalıştırarak)
+    binops = parse_binary(intent)
+    if binops and not parse_operations(intent):
+        name, tmpl, _ = binops[0]
+        prog = tmpl.format(a="x", b="y")
+        ex: list = []
+        for a, b in _CANON_BINARY:
+            try:
+                ex.append(((a, b), eval(prog, {"max": max, "min": min}, {"x": a, "y": b})))  # noqa: S307
+            except Exception:
+                ex = []
+                break
+        if ex:
+            ds.program, ds.understood, ds.examples, ds.grounded = prog, [name], ex, True
+            return ds
 
     ops = parse_operations(intent)
     researched: list = []
@@ -145,26 +164,93 @@ def _safe_name(base: str, idx: int, used: set) -> str:
     return cand
 
 
-def decompose_goal(goal: str, *, research: bool = True) -> list:
-    """Çok-parçalı niyeti ('listeyi tersine çevir VE topla VE en büyüğü bul') ALT-FONKSİYONLARA böl.
+def _build_op_examples(tmpl: str, is_binary: bool):
+    """Operasyon şablonunu kanonik girdide ÇALIŞTIR → ground-truth örnek (uydurma değil)."""
+    if is_binary:
+        prog = tmpl.format(a="x", b="y")
+        ex: list = []
+        for a, b in _CANON_BINARY:
+            try:
+                ex.append(((a, b), eval(prog, {"max": max, "min": min}, {"x": a, "y": b})))  # noqa: S307
+            except Exception:
+                return None, None
+        return prog, ex
+    prog = tmpl.format(c="x")
+    for canon in _CANON_INPUTS:
+        ex = _run_chain(prog, canon)
+        if ex:
+            return prog, ex
+    return None, None
 
-    Bağlaçlarla (ve/and/sonra/...) parçalara ayır; her parçayı derive_spec ile grounded operasyona
-    bağla + ground-truth örnek türet. Bütünü gören niyet → sertifikalanabilir parçalar (gözün
-    dekompozisyonu). Döner: [{name, examples, understood}] — code_app/compose'a hazır.
+
+def _concept_operations(goal: str, *, research: bool) -> list:
+    """Çıplak kavramı ('hesap makinesi') GROUNDED parçalarına çöz: kavramı/açıklamasını araştır,
+    içinde geçen operasyon-anahtarlarını çıkar. Bilgi-güdümlü dekompozisyon (template haritası DEĞİL —
+    kavramın gerçek tanımından). Döner: operasyon-anahtarı içeren genişletilmiş metin."""
+    from tantrium.core.nl_code import _BINARY_VOCAB, _OP_VOCAB
+    text = goal.lower()
+    # kavram zaten op-anahtarı içeriyorsa araştırmaya gerek yok
+    known = {kw for _, keys, _ in (_BINARY_VOCAB + _OP_VOCAB) for kw in keys}
+    if any(" " + kw + " " in " " + text + " " for kw in known):
+        return [goal]
+    if not research:
+        return [goal]
+    # kavramı araştır (Wikipedia) → tanımdan operasyon kelimeleri (in-nature: gerçek bilgi)
+    try:
+        from tantrium.research.net import http_get_json
+        import urllib.parse as _up
+        q = _up.quote(goal.strip())
+        url = ("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts"
+               "&explaintext=1&redirects=1&exintro=1&titles=" + q)
+        data = http_get_json(url, errors="replace", timeout=10.0)
+        desc = ""
+        for _pid, page in data.get("query", {}).get("pages", {}).items():
+            desc += " " + (page.get("extract", "") or "")
+    except Exception:
+        return [goal]
+    return [goal + " " + desc] if desc else [goal]
+
+
+def decompose_goal(goal: str, *, research: bool = True) -> list:
+    """Niyeti ALT-FONKSİYONLARA böl — ÜÇ yol: (1) bağlaç ('ve/and'), (2) bağlaçsız çoklu-operasyon
+    ('hesap makinesi topla çıkar çarp böl'), (3) çıplak kavram → araştır+parça ('hesap makinesi').
+
+    Her parça derive_spec/şablonla grounded op'a bağlanır + ground-truth örnek (çalıştırarak) alır.
+    Bütünü gören göz → sertifikalanabilir parçalar. Döner: [{name, examples, understood, part}].
     """
+    from tantrium.core.nl_code import parse_binary, parse_operations
     g = " " + str(goal).strip() + " "
     pattern = "|".join(_re_mod.escape(c) for c in _CONNECTORS)
-    raw = _re_mod.split(pattern, g) if _re_mod.search(pattern, g, _re_mod.IGNORECASE) \
-        else _re_mod.split(r"[,;]", g)
-    parts = [p.strip() for p in raw if p.strip()]
-    if len(parts) < 2:
-        parts = [g.strip()]
-    specs: list = []
-    used: set = set()
-    for idx, part in enumerate(parts):
-        ds = derive_spec(part, research=research)
-        if ds.grounded and ds.examples:
-            base = ds.understood[0].split(".")[-1] if ds.understood else f"f{idx + 1}"
-            specs.append({"name": _safe_name(base, idx, used), "examples": ds.examples,
-                          "understood": ds.understood, "part": part})
+    if _re_mod.search(pattern, g, _re_mod.IGNORECASE):       # (1) açık bağlaç
+        parts = [p.strip() for p in _re_mod.split(pattern, g) if p.strip()]
+        specs: list = []
+        used: set = set()
+        for idx, part in enumerate(parts):
+            ds = derive_spec(part, research=research)
+            if ds.grounded and ds.examples:
+                base = ds.understood[0].split(".")[-1] if ds.understood else f"f{idx + 1}"
+                specs.append({"name": _safe_name(base, idx, used), "examples": ds.examples,
+                              "understood": ds.understood, "part": part})
+        return specs
+
+    # (2)/(3): tek parça → içindeki TÜM operasyonları topla (çıplaksa önce araştır)
+    text = _concept_operations(goal, research=research)[0]
+    ops: list = []                                            # (name, tmpl, is_binary, pos)
+    for name, tmpl, pos in parse_binary(text):
+        ops.append((name, tmpl, True, pos))
+    for name, tmpl, pos in parse_operations(text):
+        ops.append((name, tmpl, False, pos))
+    # konuma göre sırala, isim çakışmasını ele (aynı op iki yoldan gelmesin)
+    ops.sort(key=lambda t: t[3])
+    specs = []
+    used = set()
+    seen_names: set = set()
+    for idx, (name, tmpl, is_bin, _pos) in enumerate(ops):
+        if name in seen_names:
+            continue
+        seen_names.add(name)
+        prog, ex = _build_op_examples(tmpl, is_bin)
+        if ex:
+            specs.append({"name": _safe_name(name, idx, used), "examples": ex,
+                          "understood": [name], "part": name})
     return specs
