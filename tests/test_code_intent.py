@@ -55,6 +55,34 @@ def test_ai_build_honest_when_unknown():
     assert not r["verified"] and r["clarify"]
 
 
+def test_decompose_goal_splits_into_functions():
+    """Çok-parçalı niyet → ALT-FONKSİYONLARA bölünür (her biri grounded + ground-truth örnek)."""
+    from tantrium.core.code_intent import decompose_goal
+    specs = decompose_goal("listeyi tersine çevir ve topla ve sırala", research=False)
+    names = [s["name"] for s in specs]
+    assert len(specs) >= 3 and "reverse" in names and "sort" in names
+    assert all(s["examples"] for s in specs)              # her parça ground-truth taşır
+
+
+def test_decompose_avoids_builtin_shadow():
+    """Üretilen ad builtin'i GÖLGELEMEZ ('sum' → 'op_sum'), yoksa def sum: return sum sonsuz özyineleme."""
+    from tantrium.core.code_intent import decompose_goal
+    specs = decompose_goal("topla", research=False)
+    assert specs and specs[0]["name"] == "op_sum"
+
+
+def test_ai_build_app_end_to_end():
+    """TEK İSTEK → ÇOK-FONKSİYON ÇALIŞAN MODÜL; assembled modülde her fonksiyon DOĞRU çalışır."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.build_app("listeyi tersine çevir ve topla ve en büyüğü bul", research=False)
+    assert r["verified"] and r["n_functions"] >= 3 and not r["failed"]
+    ns: dict = {}
+    exec(r["source"], ns)
+    assert ns["reverse"]([3, 1, 2]) == [2, 1, 3]
+    assert ns["op_sum"]([3, 1, 2]) == 6                   # gölgeleme yok, sonsuz özyineleme yok
+
+
 def test_ai_build_with_explicit_examples_skips_derivation():
     """examples verilirse niyet-türetimi atlanır, doğrudan sentezlenir + doğrulanır."""
     import tantrium

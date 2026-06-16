@@ -118,6 +118,34 @@ def compose(specs, *, max_depth: int = 5, research: bool = False) -> ComposedMod
 
     header = "".join(sorted(i + "\n" for i in imports))
     source = (header + ("\n" if header else "") + "\n\n".join(pieces)).strip() + "\n"
+
+    # SON GÜVENLİK AĞI: BİRLEŞİK modülde her fonksiyonu örneklerine karşı yeniden doğrula. Parça-başına
+    # doğrulama, montaj sonrası gölgeleme/ad-çakışmasını (def sum: return sum → sonsuz özyineleme)
+    # KAÇIRABİLİR. Modül bağlamında çöken fonksiyon dürüstçe failed'e düşer (sertifika montajda da geçerli).
+    mod_ns: dict = {}
+    try:
+        exec(source, mod_ns)  # noqa: S102 (kapalı üretim)
+    except Exception:
+        mod_ns = {}
+    for name, cp in funcs:
+        if not cp.examples_total:                 # calls-zinciri (örneksiz) — atla
+            continue
+        fn = mod_ns.get(name)
+        ok = fn is not None
+        if ok:
+            for inp, out in [(i, o) for s in specs if s.get("name") == name
+                             for i, o in (s.get("examples") or [])]:
+                args = inp if isinstance(inp, tuple) else (inp,)
+                try:
+                    if fn(*args) != out:
+                        ok = False
+                        break
+                except Exception:
+                    ok = False
+                    break
+        if not ok and name not in failed:
+            failed.append(name)
+
     moments: list = []
     try:
         from tantrium.core.encoder import _code_to_graph_moments

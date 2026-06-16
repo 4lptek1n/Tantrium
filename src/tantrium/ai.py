@@ -2874,6 +2874,40 @@ class AI:
                 "verified": cp.verified, "examples": ex, "clarify": None,
                 "researched": researched, "answer": ans, "cert": cp}
 
+    def build_app(self, goal: str, *, research: bool = True, max_depth: int = 6) -> dict:
+        """ASI §12 — TEK İSTEK → ÇOK-FONKSİYON ÇALIŞAN MODÜL (niyet dekompozisyonu, uçtan uca).
+
+        Bütünü gören niyeti ('listeyi tersine çevir, topla, en büyüğü bul') ALT-FONKSİYONLARA böler
+        (decompose_goal), her parçayı grounded operasyona bağlar + ground-truth örnek türetir, her
+        fonksiyonu KANITLAR, tek modülde birleştirir (code_app). Evrensel-göz dekompozisyonu + kayıpsız
+        sertifika + kompozisyon — şablon değil, üretilmiş+doğrulanmış çok-fonksiyon kod. Bağlanamayan
+        parçayı DÜRÜSTÇE bırakır (uydurmaz).
+
+        Döner: {source, verified, n_functions, functions, parts, failed, clarify, answer}.
+        """
+        from tantrium.core.code_intent import decompose_goal
+        from tantrium.core.code_compose import compose
+        specs = decompose_goal(goal, research=research)
+        if not specs:
+            msg = ("Bu isteği grounded operasyonlara bölemedim. Parçaları biraz daha açık söyle "
+                   "ya da bir örnek ver — uydurmam, yalnız DOĞRULANMIŞ kod veririm.")
+            return {"source": "", "verified": False, "n_functions": 0, "functions": [],
+                    "parts": [], "failed": [], "clarify": msg, "answer": msg}
+        m = compose([{"name": s["name"], "examples": s["examples"]} for s in specs],
+                    max_depth=max_depth)
+        names = [n for n, _ in m.functions]
+        parts = [{"name": s["name"], "part": s["part"], "understood": s["understood"]} for s in specs]
+        if m.verified:
+            ans = (f"Tek isteği {m.n_functions} sertifikalı fonksiyona böldüm "
+                   f"({', '.join(names)}) — her biri ground-truth örnekle KANITLI, tek modülde "
+                   f"birleşti. Niyeti anladım → parçaladım → her parçayı doğruladım. Halüsinasyon yok.")
+        else:
+            ans = (f"Modülün bir kısmını kuramadım (doğrulanamayan: {', '.join(m.failed)}). "
+                   f"Kalan parçalar sertifikalı; eksiği örnekle netleştir — uydurmam.")
+        return {"source": m.source, "verified": m.verified, "n_functions": m.n_functions,
+                "functions": names, "parts": parts, "failed": m.failed, "clarify": None,
+                "answer": ans, "cert": m}
+
     def ground_codebase(self, files: dict) -> dict:
         """ASI §12 P4 — repo'yu KÖKLÜ manifolda çevir (kod-tabanı = topoloji).
         files: {path: source}. Döner: {symbols, imports, functions, edges, n_symbols}."""

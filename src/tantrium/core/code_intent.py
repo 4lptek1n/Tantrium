@@ -116,3 +116,55 @@ def derive_spec(intent: str, *, research: bool = True) -> DerivedSpec:
         ds.clarify = ("İsteği anladım ama uygun girdi tipini çıkaramadım. Bir örnek ver "
                       "(girdi → çıktı), DOĞRULANMIŞ kod üreteyim.")
     return ds
+
+
+# Bir niyeti BİRDEN ÇOK fonksiyona bölen bağlaçlar (çok-fonksiyon dekompozisyon).
+import re as _re_mod
+
+_CONNECTORS = (" ve ", " and ", " sonra ", " then ", " ardından ", " ayrıca ", " bir de ")
+
+
+def _safe_name(base: str, idx: int, used: set) -> str:
+    """Operasyon adından geçerli, çakışmasız Python fonksiyon adı türet.
+
+    KRİTİK: builtin/keyword ile ÇAKIŞMAMALI — 'def sum(x): return sum(x)' kendini çağırır
+    (sonsuz özyineleme). Çakışan adlar 'op_' önekiyle korunur."""
+    import builtins
+    import keyword
+    name = _re_mod.sub(r"[^0-9a-zA-Z_]", "_", base) or f"f{idx + 1}"
+    if name[0].isdigit():
+        name = "f_" + name
+    if name in dir(builtins) or keyword.iskeyword(name):   # builtin gölgeleme YASAK
+        name = "op_" + name
+    cand = name
+    k = 2
+    while cand in used:
+        cand = f"{name}_{k}"
+        k += 1
+    used.add(cand)
+    return cand
+
+
+def decompose_goal(goal: str, *, research: bool = True) -> list:
+    """Çok-parçalı niyeti ('listeyi tersine çevir VE topla VE en büyüğü bul') ALT-FONKSİYONLARA böl.
+
+    Bağlaçlarla (ve/and/sonra/...) parçalara ayır; her parçayı derive_spec ile grounded operasyona
+    bağla + ground-truth örnek türet. Bütünü gören niyet → sertifikalanabilir parçalar (gözün
+    dekompozisyonu). Döner: [{name, examples, understood}] — code_app/compose'a hazır.
+    """
+    g = " " + str(goal).strip() + " "
+    pattern = "|".join(_re_mod.escape(c) for c in _CONNECTORS)
+    raw = _re_mod.split(pattern, g) if _re_mod.search(pattern, g, _re_mod.IGNORECASE) \
+        else _re_mod.split(r"[,;]", g)
+    parts = [p.strip() for p in raw if p.strip()]
+    if len(parts) < 2:
+        parts = [g.strip()]
+    specs: list = []
+    used: set = set()
+    for idx, part in enumerate(parts):
+        ds = derive_spec(part, research=research)
+        if ds.grounded and ds.examples:
+            base = ds.understood[0].split(".")[-1] if ds.understood else f"f{idx + 1}"
+            specs.append({"name": _safe_name(base, idx, used), "examples": ds.examples,
+                          "understood": ds.understood, "part": part})
+    return specs
