@@ -49,6 +49,8 @@ class CognitionState:
     code_grown: int = 0            # CodeGrowthPhase: otonom büyüyen kod-op/fonksiyon
     focus: str = ""                # SchedulePhase: bu döngünün zayıf-eksen odağı (meta-kontrol)
     prod_budget: int = 4           # FlyWheelPhase: koridor-geri-beslemeli üretim beam genişliği
+    frontier_concepts: list = field(default_factory=list)  # ReflectPhase: WEAKLY_GROUNDED gerçek
+    #                                kavramlar (auto-goal #1 + curiosity #3 hedefleri — kör noktalar)
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
@@ -121,6 +123,49 @@ class CognitionStrategy(Protocol):
 
 
 # ── Yerleşik Fazlar ──────────────────────────────────────────────────────────
+
+def _weakly_grounded_frontier(engine, *, limit: int = 8) -> list[str]:
+    """WEAKLY_GROUNDED frontier kavramları = sistemin 'öğrenmesi gereken kör noktaları'
+    (CLAUDE.md): temiz adlı, manifoldda VAR, ama AZ köklü — özellikle BAHSEDİLMİŞ (in-kenar
+    var) ama KEŞFEDİLMEMİŞ (az out-kenar). auto-goal (#1) + curiosity (#3) bunları hedefler,
+    geometrik boşluk-adı (GEOM/MOMENT_VOID) DEĞİL. Öncelik: en az keşfedilmiş + en çok
+    bahsedilmiş önce. Tek O(E) in-derece geçişi. Bounded/fail-open."""
+    tau = getattr(engine, "tau", None)
+    if tau is None:
+        return []
+    try:
+        from tantrium.reasoning.causal_rules import GENERIC_TERMS
+        # Wikipedia kategori-gürültüsü (meslek/rol/biçim) — anlamlı bilim kavramı değil,
+        # öz-hedef/merak için değersiz. Bio/bilim kör-noktaları (vegfr/kit/...) öne çıksın.
+        _ROLE_NOISE = frozenset({
+            "activist", "journalist", "professor", "surname", "sitcom", "singer-songwriter",
+            "actor", "actress", "writer", "politician", "musician", "footballer", "novelist",
+            "album", "film", "song", "band", "magazine", "newspaper", "village", "town",
+            "city", "county", "district", "season", "episode", "character", "player",
+        })
+        indeg: dict[str, int] = {}
+        for el in tau.edges.values():
+            for e in el:
+                t = str(getattr(e, "target", ""))
+                if t:
+                    indeg[t] = indeg.get(t, 0) + 1
+        cand: list[tuple[tuple[int, int], str]] = []
+        for name in engine.manifold.concepts:
+            if not GoalPhase._clean_goal_concept(name):
+                continue
+            low = name.lower()
+            if low in GENERIC_TERMS or low in _ROLE_NOISE:
+                continue
+            oe = len(tau.edges.get(name, []))
+            ie = indeg.get(name, 0)
+            total = oe + ie
+            if 1 <= total <= 3:                  # zayıf köklü = öğrenmeye değer frontier
+                cand.append(((oe, -ie), name))   # az out (keşfedilmemiş) + çok in (bahsedilmiş) önce
+        cand.sort(key=lambda t: t[0])
+        return [n for _s, n in cand[:limit]]
+    except Exception:
+        return []
+
 
 class SchedulePhase:
     """Meta-kontrol (Tier 3 #8): döngünün dikkat/kaynak ODAĞINI duruma göre seç.
@@ -205,6 +250,16 @@ class ReflectPhase:
                 state.log(f"reflect/wonder: atlandı — {wexc}")
             gap_names = [getattr(g, "name", str(g)) for g in gaps]
             state.open_gap_names = gap_names
+            # WEAKLY_GROUNDED frontier KAVRAMLARI (auto-goal #1 + curiosity #3 hedefleri):
+            # boşluk-adları çoğu kez geometrik (GEOM/MOMENT_VOID, temiz kavram değil) → o iki
+            # halka ateşlemiyordu. Burada gerçek köklülük-açıklı kavramları topla (kör noktalar).
+            try:
+                state.frontier_concepts = _weakly_grounded_frontier(engine, limit=8)
+                if state.frontier_concepts:
+                    state.log(f"reflect/frontier: {len(state.frontier_concepts)} kör-nokta kavram "
+                              f"→ {state.frontier_concepts[:3]}")
+            except Exception:
+                pass
             state.log(f"reflect: {len(gaps)} boşluk → {gap_names[:3]}")
         except Exception as exc:
             state.log(f"reflect: atlandı — {exc}")
@@ -1072,7 +1127,10 @@ class GoalPhase:
         Köklülük-açığından doğar (rastgele değil), corrigibility/gate içinde kalır."""
         try:
             from tantrium.research.goal import encode_goal, GoalManifold
-            cand = next((g for g in state.open_gap_names if self._clean_goal_concept(g)), None)
+            # WEAKLY_GROUNDED frontier kavramları önce (gerçek kör noktalar); yoksa boşluk-adı.
+            pool = list(state.frontier_concepts) + [
+                g for g in state.open_gap_names if self._clean_goal_concept(g)]
+            cand = next((c for c in pool if self._clean_goal_concept(c)), None)
             if cand is None:
                 return None, None
             goal = encode_goal(engine, f"{cand} anla")   # Aleph-sertifikalı
@@ -1181,8 +1239,10 @@ class CuriosityPhase:
         if ai is None:
             return state
         try:
-            cand = next((g for g in state.open_gap_names
-                         if GoalPhase._clean_goal_concept(g)), None)
+            # WEAKLY_GROUNDED frontier kavramları önce (gerçek kör noktalar); yoksa boşluk-adı.
+            pool = list(state.frontier_concepts) + [
+                g for g in state.open_gap_names if GoalPhase._clean_goal_concept(g)]
+            cand = next((c for c in pool if GoalPhase._clean_goal_concept(c)), None)
             if cand is None:
                 return state
             qs = ai.generate_questions(cand).get("questions", [])
