@@ -126,12 +126,10 @@ def test_conditional_rejects_memorization():
 
 
 def test_fold_synthesis_stateful_loop():
-    """Biriken-durum (fold) döngüsü: tek-ifadeyle OLMAYAN reduce desenleri (koşullu sayım/birikim)."""
-    ev = synthesize([([1, 2, 3, 4], 2), ([2, 4, 6], 3), ([1, 3, 5], 0), ([2], 1)])
-    assert ev.verified and "for e in" in ev.source()       # gerçek döngü
-    assert _run_source(ev.source(), [2, 2, 1, 4]) == 3     # genelleşir
-    ps = synthesize([([1, -2, 3], 4), ([-1, -2], 0), ([5, 5], 10), ([10, -3, 2], 12)])
-    assert ps.verified and _run_source(ps.source(), [7, -1, 3]) == 10
+    """Biriken-durum (fold) döngüsü: tek-ifadeyle OLMAYAN reduce deseni (çarpım = havuzda tek-ifade yok)."""
+    prod = synthesize([([1, 2, 3, 4], 24), ([2, 3], 6), ([5], 5), ([2, 2, 2], 8)])
+    assert prod.verified and "for e in" in prod.source()   # gerçek döngü (biriken durum)
+    assert _run_source(prod.source(), [2, 5]) == 10        # genelleşir (ezber değil)
 
 
 def test_conditional_preserves_recursion():

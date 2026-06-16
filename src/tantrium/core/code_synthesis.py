@@ -188,8 +188,22 @@ def _score(expr: str, examples, argnames, extra_globals: dict | None = None) -> 
         try:
             err += abs(float(r) - float(out))
         except (TypeError, ValueError, OverflowError):
-            err += 1.0e9
+            # sayısal değilse DÜZ 1e9 yerine DAVRANIŞSAL özellik-mesafesi → beam'e gradyan (κ-güdüm:
+            # aramayı hedef davranışa GEOMETRİK yönlendir, kör değil). molecular_genesis toward_profile deseni.
+            err += 1.0 + _feature_dist(r, out)
     return (exact, -err)
+
+
+def _feature_dist(a, b) -> float:
+    """İki çıktının davranışsal özellik-mesafesi (sayısal-olmayan için gradyan; tanh-sınırlı [0,1])."""
+    from tantrium.core.code_behavior import _to_features
+    import math
+    fa, fb = _to_features(a), _to_features(b)
+    w = max(len(fa), len(fb), 1)
+    fa += [0.0] * (w - len(fa))
+    fb += [0.0] * (w - len(fb))
+    d = sum(abs(x - y) for x, y in zip(fa, fb))
+    return math.tanh(d / (w * 10.0))
 
 
 def _primitive_pool(examples, argnames) -> list:
