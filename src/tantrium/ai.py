@@ -2908,6 +2908,39 @@ class AI:
                 "functions": names, "parts": parts, "failed": m.failed, "clarify": None,
                 "answer": ans, "cert": m}
 
+    def meta_synthesize(self, examples) -> dict:
+        """ASI §12 frontier — META-SENTEZ: taban strateji merdiveni yetmezse YENİ strateji İCAT et.
+
+        Taban `synthesize` (beam/özyineleme/fold/koşullu) bir spec'i çözemezse, sistem MEVCUT
+        şemaları BİLEŞTİREREK (ilk aile: map-fold = transform ∘ fold-indirgeyici) yeni bir strateji
+        kurar, leave-one-out GENELLEŞTİĞİNİ kanıtlar ve şemayı merdivene KAYDEDER → sonraki
+        `synthesize` çağrıları onu otomatik kullanır (S7). Genelleşmezse DÜRÜSTÇE başarısız döner.
+
+        Döner: {verified, program, source, schema, schemas, invented, answer}.
+        """
+        from tantrium.core.code_meta import meta_synthesize
+        from tantrium.core.code_synthesis import discovered_schemas, synthesize
+
+        ex = list(examples)
+        before = set(discovered_schemas())
+        base = synthesize(ex)
+        cp = meta_synthesize(ex)
+        after = discovered_schemas()
+        invented = [s for s in after if s not in before]
+        if cp.verified and not base.verified:
+            ans = (f"Taban strateji merdiveni bu spec'i çözemedi; MEVCUT şemaları bileştirip yeni "
+                   f"strateji icat ettim ({cp.program}), leave-one-out genelleştiğini kanıtladım ve "
+                   f"merdivene kaydettim. Artık sonraki sentezler onu otomatik kullanır."
+                   + (f" (yeni şema: {', '.join(invented)})" if invented else ""))
+        elif cp.verified:
+            ans = (f"Taban merdiven zaten çözdü ({cp.program}) — meta-sentez gerekmedi.")
+        else:
+            ans = (f"Bileşik şemalar da bu spec'i genelleştiremedi "
+                   f"(en iyi {cp.examples_passed}/{cp.examples_total}). Uydurmam.")
+        return {"verified": cp.verified, "program": cp.program, "source": cp.source(),
+                "schema": cp.program if cp.full_source else None, "schemas": after,
+                "invented": invented, "answer": ans, "cert": cp}
+
     def grow_code(self, tasks=None, *, rounds: int = 2, research: bool = True) -> dict:
         """ASI §12 — OTONOM KOD-KAPSAMI BÜYÜTME (sistem KENDİ büyütür, elle DEĞİL).
 
@@ -2924,11 +2957,13 @@ class AI:
         """
         import itertools
         from tantrium.core.code_research import ground_stdlib_operations
-        from tantrium.core.code_synthesis import solved_library, synthesize
+        from tantrium.core.code_synthesis import discovered_schemas, solved_library, synthesize
+        from tantrium.core.code_meta import meta_synthesize
         from tantrium.core.code_behavior import _exact
 
         ops_before = len(ground_stdlib_operations())
         lib_before = len(solved_library())
+        schemas_before = set(discovered_schemas())
         learned: list = []
         failed: list = []
         composed: list = []
@@ -2940,6 +2975,8 @@ class AI:
                     (learned if r["verified"] else failed).append(t)
                 else:
                     cp = synthesize(list(t))
+                    if not cp.verified:                       # taban yetmedi → META-SENTEZ dene
+                        cp = meta_synthesize(list(t))          # yeni strateji icat + kaydet
                     (learned if cp.verified else failed).append("spec")
             except Exception:
                 failed.append(str(t)[:40])
@@ -2980,13 +3017,17 @@ class AI:
 
         ops_after = len(ground_stdlib_operations())
         lib_after = len(solved_library())
+        invented = [s for s in discovered_schemas() if s not in schemas_before]
+        meta_note = (f" {len(invented)} YENİ STRATEJİ meta-sentezle icat edildi "
+                     f"({', '.join(invented)}) — merdiven kendi büyüdü."
+                     if invented else
+                     " (Yeni strateji gerekmedi; gerekirse meta-sentez devrede.)")
         ans = (f"Otonom büyüme: {ops_after - ops_before} yeni operasyon topraklandı (araştırma), "
                f"kütüphane {lib_before}→{lib_after} fonksiyon (hafıza), {len(composed)} yeni fonksiyon "
-               f"öz-kompozisyonla türedi. Hepsi KANITLI — elle müdahale yok. (Yeni strateji icadı "
-               f"meta-sentez frontier'ı, bu döngüde değil.)")
+               f"öz-kompozisyonla türedi. Hepsi KANITLI — elle müdahale yok." + meta_note)
         return {"ops_grounded": ops_after - ops_before, "functions_learned": len(learned),
                 "library_size": lib_after, "composed": [c[1] for c in composed],
-                "failed": failed, "answer": ans}
+                "schemas_invented": invented, "failed": failed, "answer": ans}
 
     def ground_codebase(self, files: dict) -> dict:
         """ASI §12 P4 — repo'yu KÖKLÜ manifolda çevir (kod-tabanı = topoloji).

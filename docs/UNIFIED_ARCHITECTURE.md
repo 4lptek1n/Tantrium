@@ -705,8 +705,25 @@ grafları özdeş, davranışları zıt → aynı moment. Molekülde yapı=işle
 Kavram-manifoldunu büyüten `ai.grow`ın KOD eşleniği. 3 OTONOM mekanizma tek döngüde: (1) ARAŞTIRMA
 (`research_operation` op kapsamı), (2) HAFIZA (`solved_library` fonksiyon kütüphanesi), (3) ÖZ-KOMPOZİSYON
 (fonksiyon zincirle→yeni fonksiyon). Canlı: +17 op, kütüphane 0→36, 8 öz-kompozisyon, ELLE MÜDAHALE YOK.
-**FRONTIER (dürüst):** OPERASYON+FONKSİYON otonom büyür; yeni STRATEJİ/ŞEMA (koşullu/fold gibi) icadı =
-meta-sentez, BU DÖNGÜDE YOK — gerçek bir sonraki ASİ-adımı (stratejinin kendisini sentezleyen katman).
+
+### META-SENTEZ — `core/code_meta.py` + `ai.meta_synthesize` [✅ KURULDU 2026-06, frontier BİR çentik kapandı]
+Eski FRONTIER: operasyon+fonksiyon otonom büyür ama yeni STRATEJİ/ŞEMA icadı (stratejinin kendisini
+sentezleyen katman) yoktu. Bu katman onu açar. **İlke (NecessityEngine boşluk-deseninin kod eşleniği):**
+bir spec TÜM taban stratejilerini (beam S1-S2 · özyineleme S4 · fold S6 · koşullu S5) başarısız
+bıraktığında gerçek bir BOŞLUK vardır → `meta_synthesize` MEVCUT şemaları BİLEŞTİREREK yeni strateji
+kurar, **leave-one-out GENELLEŞTİĞİNİ kanıtlar** (koşullu sentezdeki ezber-karşıtı geçidin aynısı),
+şemayı `_DISCOVERED_SCHEMAS`'e KAYDEDER → taban `synthesize` onu **S7** olarak otomatik dener. Strateji
+merdiveni elle müdahale OLMADAN kendi büyür.
+- **İlk bileşik şema — MAP-FOLD** = `compose(transform-şeması, fold-indirgeyici)`:
+  `acc=INIT; for e in x: acc = REDUCE(acc, TRANSFORM(e))`. Ne saf fold (sabit `_FOLD_COMBINES`) ne saf
+  beam (tek ifade) kapsar — TRANSFORM(e) serbest, REDUCE ile bileşir. KANIT (ölçüldü): `sum(3*e+1)`,
+  `prod(e+1)` taban merdiven BAŞARAMAZ (doğrulanmamış çöp); map-fold KANITLI çözer + LOO genelleşir +
+  görülmemiş girdide doğru hesaplar. Kayıttan sonra taban `synthesize` yeni map-fold spec'ini S7 ile çözer.
+- `grow_code` artık çözülemeyen örnek-spec'lerde meta-sentezi otomatik dener; icat edilen şemaları
+  `schemas_invented` ile raporlar. Tests: `test_code_meta.py` (9).
+**FRONTIER (dürüst, DARALDI):** strateji-icadı artık VAR ama KAYITLI şema-ailelerinin bileşimiyle
+sınırlı (rastgele yeni kontrol akışı değil). Sıradaki: daha çok bileşik aile (scan/koşullu-fold/
+özyinelemeli-bileşim) + şema kalıcılığı (oturum-arası `_DISCOVERED_SCHEMAS` persist).
 
 Tests: code_synthesis 18 + code_research 8 + code_compose 7 + code_intent 13 + code_behavior 9 +
 code_agent 8 + nl_code 6 = 67.
@@ -714,7 +731,8 @@ code_agent 8 + nl_code 6 = 67.
 ### Dürüst sınırlar
 - Sentez deterministik beam: iyi-tanımlı/örnekli fonksiyon-dönüşüm → GARANTİ. UI render dahil saf
   fonksiyonlar (props→markup) sertifikalanır; "UI yapamaz" sınırı YANLIŞTI (ölçüldü).
-- Kapsam (op/fonksiyon) OTONOM büyür (`grow_code`); yeni STRATEJİ icadı = meta-sentez frontier (yok).
+- Kapsam (op/fonksiyon) OTONOM büyür (`grow_code`); yeni STRATEJİ icadı = meta-sentez (`code_meta`,
+  map-fold ilk aile) — KURULDU ve genelleşme-geçitli; hâlâ KAYITLI şema-ailelerinin bileşimiyle sınırlı.
 - Tek gerçek tortu: çalışma-anında dış-etki (socket/fs/clock) — mantık sertifikalanır, dış çağrı
   TOPRAKLANIR (`ground_api`, gerçek API), dış girdi spec'in parçası olur (mock). Bu mantığın kendisi.
 - `_SAFE_RESEARCH_ALLOWLIST` saf/I-O-kenarda modüllerle sınırlı (güvenlik).

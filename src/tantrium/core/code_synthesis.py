@@ -499,6 +499,27 @@ def _cache_solution(key, cp) -> None:
     _SOLVED[key] = cp
 
 
+# META-SENTEZ (§12 frontier) — KEŞFEDİLMİŞ bileşik şemalar. Taban merdiven (S1–S6) bir spec'i
+# çözemediğinde `code_meta.meta_synthesize` mevcut şemaları BİLEŞTİREREK yeni bir strateji icat
+# eder, genelleştiğini kanıtlar ve buraya KAYDEDER. `_synthesize_impl` bunları S7 olarak dener →
+# strateji merdiveni elle müdahale OLMADAN kendi büyür. Her şema bir kurucu: (examples, argnames)
+# → src|None; çağrı anında HER ZAMAN yeniden doğrulanır (halüsinasyon imkânsız).
+_DISCOVERED_SCHEMAS: list = []
+
+
+def discovered_schemas() -> list:
+    """Meta-sentezle keşfedilmiş + kaydedilmiş bileşik şemaların adları."""
+    return [getattr(b, "_schema_name", "şema") for b in _DISCOVERED_SCHEMAS]
+
+
+def register_schema(builder, *, name: str) -> None:
+    """Genelleştiği kanıtlanmış bir bileşik şema-kurucusunu merdivene ekle (aynı isim bir kez)."""
+    builder._schema_name = name
+    if any(getattr(b, "_schema_name", None) == name for b in _DISCOVERED_SCHEMAS):
+        return
+    _DISCOVERED_SCHEMAS.append(builder)
+
+
 def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
                primitives=None, extra_primitives=None,
                extra_globals: dict | None = None,
@@ -637,5 +658,15 @@ def _synthesize_impl(examples, *, max_depth: int = 6, beam_width: int = 18,
                                            extra_globals=extra_globals)
         if cond_src is not None and _verify_source(cond_src, examples, argnames):
             return _from_source(cond_src, "<koşullu>")
+
+    # S7: META-SENTEZ ile keşfedilmiş BİLEŞİK şemalar (taban merdiven kapandıysa; KENDİ büyüyen
+    # ladder). Her keşfedilmiş şema burada yeniden DOĞRULANIR → kayıttan gelse bile kanıtlı kalır.
+    for _schema in _DISCOVERED_SCHEMAS:
+        try:
+            s_src = _schema(examples, argnames)
+        except Exception:
+            s_src = None
+        if s_src is not None and _verify_source(s_src, examples, argnames):
+            return _from_source(s_src, f"<{getattr(_schema, '_schema_name', 'şema')}>")
 
     return _make(best_expr, max_depth, max(best_key[0], 0))

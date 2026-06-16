@@ -147,6 +147,8 @@ ai.causal_chain("tumor cell", depth=4)      # intervention points via the TAU gr
 | `src/tantrium/core/pipeline.py` | L0-L7 computation order |
 | `src/tantrium/core/codex.py` | 23 paradigm definitions |
 | `src/tantrium/core/transport.py` | Certified transport engine |
+| `src/tantrium/core/code_synthesis.py` | Certified code synthesis (beam + recursion/fold/conditional) |
+| `src/tantrium/core/code_meta.py` | Meta-synthesis — invents new strategies by composing schemas |
 | `src/tantrium/proof/dyadic_flow.py` | Exact dyadic solver |
 | `tools/tantrium_research_os.py` | Research OS CLI |
 | `tantrium/theorem_graph/theorem_graph.yaml` | Theorem dependency graph |

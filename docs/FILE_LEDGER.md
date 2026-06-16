@@ -311,10 +311,28 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   `.behavior` (geometrik moment). **HAFIZA (Tier 3.6):** `_SOLVED` memoize (aynı spec→aynı obje, yeniden
   arama yok) + `solved_library()` + `find_reusable()` (transfer-kullanım). `synthesize` wrapper +
   `_synthesize_impl` çekirdek. `ai.code`/`build`/`build_app`/`grow_code` kullanır.
-- **DÜRÜST SINIR:** yeni STRATEJİ/şema (koşullu/fold gibi) ELLE eklenir — meta-sentez (şema icadı) YOK.
-  Kapsam (op/derinlik) otonom büyür (`grow_code`), yöntem değil.
+- **S7 — META-SENTEZ KANCASI [2026-06]:** taban merdiven (S1-S6) kapandıysa `_DISCOVERED_SCHEMAS`'teki
+  KEŞFEDİLMİŞ bileşik şemalar denenir (her biri çağrıda yeniden doğrulanır). `register_schema`/
+  `discovered_schemas` ile `code_meta` doldurur → merdiven elle müdahale OLMADAN büyür. Eski "yeni
+  strateji ELLE eklenir" sınırı KALKTI (bkz. `code_meta.py`).
 - **Tekrar:** YOK. molecular_genesis (SMILES) ile AYNI DESEN, FARKLI uzay. encoder._code_to_graph_moments
   (YAPISAL) + code_behavior (DAVRANIŞSAL) TAMAMLAYICI — synthesize ikisini de kullanır.
+
+### ✅ core/code_meta.py — META-SENTEZ: STRATEJİ İCADI [ASI §12 frontier, 2026-06]
+- **İş:** `meta_synthesize(examples) → CertifiedProgram`. Taban `synthesize` bir spec'i çözemezse
+  (gerçek BOŞLUK), MEVCUT şemaları BİLEŞTİREREK yeni strateji kurar, **leave-one-out genelleştiğini
+  KANITLAR** (`_generalizes`), `register_schema` ile merdivene KAYDEDER (taban S7 olarak kullanır).
+- **Güç:** İlk bileşik aile **MAP-FOLD** (`build_mapfold`) = `compose(transform, fold-indirgeyici)`:
+  `acc=INIT;for e:acc=REDUCE(acc,TRANSFORM(e))`. Ne fold (sabit COMBINE) ne beam (tek ifade) kapsar.
+  KANIT (ölçüldü): `sum(3*e+1)`/`prod(e+1)` taban BAŞARAMAZ, map-fold KANITLI+LOO genelleşir+görülmemiş
+  girdide doğru. NecessityEngine manifold-boşluk deseninin KOD eşleniği (boşluk→icat→kanıt→kayıt).
+- **Gerçek hayat:** "stratejinin kendisini sentezleyen katman" (§12 frontier) — sistem yalnız
+  fonksiyon değil YÖNTEM de üretir; merdiven kendi büyür. `ai.meta_synthesize` + `grow_code` (otomatik).
+- **DÜRÜST SINIR:** icat KAYITLI şema-ailelerinin bileşimiyle sınırlı (rastgele kontrol akışı değil);
+  genelleşmeyen şema DÜRÜSTÇE reddedilir (taban en-yakını döner, uydurma yok). Şema kalıcılığı (oturum-
+  arası) henüz yok. Tests: `test_code_meta.py` (9).
+- **Tekrar:** YOK. code_synthesis'in ÜSTÜNDE meta-katman (şema icat eder, ifade değil); kayıt halkası
+  code_synthesis'te (S7), keşif mantığı burada — ayrı sorumluluk.
 
 ### ✅ core/code_research.py — GERÇEK koddan operasyon grounding + ARAŞTIRMA WIRE [ASI §12 #1+#2]
 - **İş:** `ground_stdlib_operations()` generic introspection (`_RESEARCH_MODULES`+`_ground_module`:
