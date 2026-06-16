@@ -143,6 +143,7 @@ def _weakly_grounded_frontier(engine, *, limit: int = 8) -> list[str]:
             "album", "film", "song", "band", "magazine", "newspaper", "village", "town",
             "city", "county", "district", "season", "episode", "character", "player",
         })
+        done = getattr(engine, "_curiosity_done", set())   # anti-stagnasyon: işlenenleri atla
         indeg: dict[str, int] = {}
         for el in tau.edges.values():
             for e in el:
@@ -151,7 +152,7 @@ def _weakly_grounded_frontier(engine, *, limit: int = 8) -> list[str]:
                     indeg[t] = indeg.get(t, 0) + 1
         cand: list[tuple[tuple[int, int], str]] = []
         for name in engine.manifold.concepts:
-            if not GoalPhase._clean_goal_concept(name):
+            if name in done or not GoalPhase._clean_goal_concept(name):
                 continue
             low = name.lower()
             if low in GENERIC_TERMS or low in _ROLE_NOISE:
@@ -1140,6 +1141,9 @@ class GoalPhase:
             gm.add(goal)
             engine._active_goal = goal
             engine._goal_manifold = gm
+            engine._auto_goal_active = True       # auto-hedef → ulaşınca DURMA, ROTASYON yap
+            engine._goal_stall = 0
+            engine._goal_last_prog = -1.0
             state.log(f"goal/auto: insan hedefi yok → öz-hedef kuruldu '{goal.name}' "
                       f"(en değerli boşluktan, Aleph-sertifikalı)")
             return goal, gm
@@ -1164,11 +1168,41 @@ class GoalPhase:
             # TAU'da KÖKLÜ mü (semantik kenarı var mı)? Köklülük doymadan ölçülür.
             prog = _goal_grounding_progress(goal, engine)
             state.goals_created = max(getattr(state, "goals_created", 0), 1)
+            # ANTİ-STALL: ilerleme takibi (turlar-arası, engine-seviye)
+            last = getattr(engine, "_goal_last_prog", -1.0)
+            if prog > last + 1e-3:
+                engine._goal_last_prog = prog
+                engine._goal_stall = 0
+            else:
+                engine._goal_stall = getattr(engine, "_goal_stall", 0) + 1
+            stall = getattr(engine, "_goal_stall", 0)
             state.logs.append(
-                f"[goal] '{goal.name[:34]}' ilerleme {prog:.0%} (+{learned} kavram bu tur)")
-            if prog >= 0.999:
-                state.should_stop = True
-                state.logs.append(f"[goal] '{goal.name[:34]}' ULAŞILDI — döngü durdu")
+                f"[goal] '{goal.name[:34]}' ilerleme {prog:.0%} (+{learned} kavram, stall {stall})")
+            reached, stalled = prog >= 0.999, stall >= 3
+            auto = getattr(engine, "_auto_goal_active", False)
+            if reached or stalled:
+                if auto:
+                    # ROTASYON: hedefi emekliye ayır + kavramı işlendi-işaretle (frontier ilerlesin)
+                    try:
+                        goal.active = False
+                    except Exception:
+                        pass
+                    cname = goal.name.split()[0] if goal.name else ""
+                    d = getattr(engine, "_curiosity_done", None)
+                    if d is None:
+                        d = set(); engine._curiosity_done = d
+                    if cname:
+                        d.add(cname)
+                    engine._active_goal = None
+                    engine._goal_stall = 0
+                    engine._goal_last_prog = -1.0
+                    state.logs.append(
+                        f"[goal] '{goal.name[:34]}' {'ULAŞILDI' if reached else 'durakladı'} "
+                        f"→ emekli, SIRADAKİ kör-noktaya geçiliyor (rotasyon)")
+                else:
+                    # İnsan hedefi (ai.pursue): ulaşınca dur (eski davranış korunur)
+                    state.should_stop = True
+                    state.logs.append(f"[goal] '{goal.name[:34]}' ULAŞILDI — döngü durdu")
         except Exception as e:  # fail-open: hedef hatası döngüyü kırmaz
             state.logs.append(f"[goal] hata: {e}")
         return state
@@ -1239,18 +1273,26 @@ class CuriosityPhase:
         if ai is None:
             return state
         try:
-            # WEAKLY_GROUNDED frontier kavramları önce (gerçek kör noktalar); yoksa boşluk-adı.
+            # ANTİ-STAGNASYON: "işlendi" hafızası (engine-seviye, turlar-arası kalıcı) → her tur
+            # FARKLI kör-noktaya geç (aynı kavramı tekrar araştırma). Rotasyon: vegfr→ubiq→kit→...
+            done = getattr(engine, "_curiosity_done", None)
+            if done is None:
+                done = set()
+                engine._curiosity_done = done
             pool = list(state.frontier_concepts) + [
                 g for g in state.open_gap_names if GoalPhase._clean_goal_concept(g)]
-            cand = next((c for c in pool if GoalPhase._clean_goal_concept(c)), None)
+            cand = next((c for c in pool
+                         if GoalPhase._clean_goal_concept(c) and c not in done), None)
             if cand is None:
+                state.log("curiosity: tüm frontier kör-noktaları işlendi (rotasyon tamamlandı)")
                 return state
             qs = ai.generate_questions(cand).get("questions", [])
             learned = ai._research_deep(cand)   # TAM Wikipedia + 1-hop → learn (köklü)
+            done.add(cand)                       # işaretle → bir daha seçilmez (rotasyon ilerler)
             state.curiosity_researched += 1
             state.concepts_added += max(0, int(learned))
             state.log(f"curiosity: '{cand}' merak edildi → {len(qs)} soru üretildi, "
-                      f"internetten +{learned} köklü ilişki öğrenildi")
+                      f"internetten +{learned} köklü ilişki öğrenildi (işlendi: {len(done)})")
         except Exception as exc:
             state.log(f"curiosity: atlandı — {exc}")
         return state
