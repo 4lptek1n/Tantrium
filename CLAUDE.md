@@ -404,6 +404,14 @@ ai.build_app("hesap makinesi topla çıkar çarp böl") # → dict: TEK İSTEK �
                                                #   NOT: synthesize artık koşullu (if/elif) + fold (döngü) +
                                                #   κ-güdüm (davranışsal mesafe) + HAFIZA (memoize/find_reusable)
                                                #   code_agent.ground_api/verify_api_symbol: dış API halüsinasyon-guard
+ai.grow_code(tasks=["karesini al","bir ekle"], rounds=2) # → dict: OTONOM KOD-KAPSAMI BÜYÜME (kendi büyütür)
+                                               #   ai.grow'ın KOD eşleniği — 3 otonom mekanizma tek döngüde:
+                                               #   (1) ARAŞTIRMA: bilinmeyen op'u internetten/seed'den kendi toprakla
+                                               #   (2) HAFIZA: çözdüğü fonksiyonu solved_library'ye biriktir
+                                               #   (3) ÖZ-KOMPOZİSYON: fonksiyonları zincirle → yeni fonksiyon türet
+                                               #   {ops_grounded, functions_learned, library_size, composed, failed}
+                                               #   DÜRÜST SINIR: op+fonksiyon otonom; yeni STRATEJİ icadı (şema)
+                                               #   = meta-sentez frontier'ı, bu döngüde YOK
 ai.code_task(examples=[(1,3),(2,5)],           # → dict: AGENTIC kod görevi (ASI §12 P4) — kapalı döngü
             tests="def test(): assert solve(5)==11",#   SENTEZLE→KÖKLÜLÜK→TEST üç kapı; {verified, grounded, tests_passed}
             codebase={"lib.py":"..."})          #   üç kapı geçerse verified — halüsinasyonsuz
@@ -640,6 +648,25 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
     Wikipedia "Kras" (Slovenya Karst bölgesi!) yanlış sayfaya gidiyordu. Gen/akronim konvansiyonu
     BÜYÜK harf → ≤6 harf + boşluksuz + all-alpha topic için önce `topic.upper()` çekilir
     (kras→KRAS gen, egfr→EGFR). Re-attribute hâlâ küçük-harf topic'e bağlar (kras IS_A gene).
+18. **§12 KOD: AST-moment DAVRANIŞ DEĞİL [KÖK]**: `_code_to_graph_moments` (encoder) `a+b` ile `a-b`'yi
+    çakıştırır (graf özdeş, davranış zıt). Kodu DAVRANIŞSAL ayırmak için `code_behavior.behavior_signature`
+    (I/O→moment) + kesin ayrım için `behavior_fingerprint_of` (KAYIPSIZ truth-table) KULLAN. AST-moment
+    yalnız YAPISAL/refactor-denkliği içindir; davranış için ASLA tek başına güvenme.
+19. **§12 KOD: koşullu sentez EZBER riski**: `_synthesize_conditional` her örneğe bir dal koyup
+    lookup-table ezberleyebilir (=mock data). KORUMA: kural ≤ örnek/2 (sıkışma) + sabit-bölge tercihi.
+    Bu korumayı GEVŞETME — patternsiz spec DÜRÜSTÇE verified=False olmalı, uydurma tablo değil.
+20. **§12 KOD: builtin gölgeleme [bug, düzeltildi]**: üretilen fonksiyon adı builtin'i gölgelerse
+    (`def sum(x): return sum(x)`) sonsuz özyineleme. `_safe_name` builtin/keyword'ü `op_` önekler.
+    Ayrıca `compose` SON GÜVENLİK AĞI: birleşik-modülde her fonksiyon re-doğrulanır (montaj-gölge yakalar).
+21. **§12 KOD: NL parse span off-by-one [bug, düzeltildi]**: bitişik kelimeler boşluk PAYLAŞIR;
+    `span=(pos, pos+len+2)` komşunun boşluğuyla çakışıp 'çıkar'/'böl' düşürüyordu. Doğrusu
+    `span=(pos+1, pos+1+len)` (parse_binary + parse_operations ikisinde).
+22. **§12 KOD: devasa int overflow [bug, düzeltildi]**: öz-kompozisyon/üs zincirleri (x^4...) devasa
+    int üretir; `float(huge_int)` → OverflowError. `code_behavior._safe_float` overflow-guard; `_score`
+    sayısal except'i de OverflowError yakalar. Yeni sayısal sentez eklerken bunu unutma.
+23. **§12 KOD: `synthesize` memoize edilir [davranış notu]**: aynı spec ikinci kez `_SOLVED`'den AYNI
+    OBJE döner (yeniden arama yok). Test/determinism: aynı örnekler → birebir aynı sonuç. `extra_globals`'lı
+    (uses=) çözümler cache'lenmez (bağlama-bağımlı). Cache process-ömürlü, FIFO `_SOLVED_MAX=1000`.
 
 ---
 
@@ -648,6 +675,55 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
 - Kavram: 59,800+ (canlı internet büyümesiyle artıyor) | TAU edge: 690,000+ | Paradigma: 23/23
   (büyüme parçaları git'e commit'leniyor; growth_state.json resumable — bkz "Büyüme Motoru")
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
+
+### §12 SERTİFİKALI KOD AJANI — TAM DURUM (2026-06, devir-teslim notu)
+**Tez (kullanıcı, doğrulandı):** Kod = matematik = topoloji (Curry-Howard: spec'i sağlamak = kanıt
+→ halüsinasyon İMKÂNSIZ). Dış model YOK, saf Tantrium. Pazarın #1 acısı (güvenilmezlik) = vaadimiz.
+**Kritik felsefi düzeltme (kullanıcı itirazı "şablon dolduruyorsun, mock data"):** kod AST yapısıyla
+DEĞİL **DAVRANIŞLA** encode edilir (kodda davranış=işlev). Bkz `core/code_behavior.py`. Örnek = ÖLÇÜ
+(molekül spektrumu gibi kodu moment uzayına koyar), şablon DEĞİL.
+
+**Çekirdek dosyalar + ne yapar (hepsi src/tantrium/core/ + ai.py facade):**
+- `code_synthesis.py` — `synthesize(examples)` beam araması. Stratejiler (sırayla): tek-ifade beam →
+  özyineleme (`_synthesize_recursive`, faktöriyel/fib) → fold/döngü (`_synthesize_fold`, biriken
+  durum: acc=INIT;for e:acc=COMBINE) → koşullu (`_synthesize_conditional`, if/elif girdi-uzayı bölme,
+  ANTI-MEMORİZASYON: kural≤örnek/2 + sabit-bölge → genelleşir, patternsiz=dürüst fail). κ-GÜDÜM:
+  `_feature_dist` sayısal-olmayan çıktıda beam'e gradyan (kör değil). HAFIZA: `_SOLVED` memoize +
+  `solved_library()` + `find_reusable()` (transfer-kullanım). `CertifiedProgram.behavior` (geometrik
+  moment) + `.behavior_exact` (KAYIPSIZ truth-table kimlik — program DENKLİK testi).
+- `code_behavior.py` — `behavior_signature` (I/O→moment, davranışsal modalite) + `behavior_fingerprint_of`/
+  `fingerprint_from_examples` (KAYIPSIZ extensional kimlik, add/sub çakışmaz) + `_safe_float` (overflow-guard).
+- `code_research.py` — `ground_stdlib_operations()` (174 op generic introspection) + `research_operation`
+  (#2 internet wire: bilinmeyen op → güvenli modül keşfet+toprakla, allowlist, hallucination-proof) +
+  `relevant_primitives(research=)`. `_RESEARCH_MODULES` + `_SAFE_RESEARCH_ALLOWLIST`.
+- `nl_code.py` — `parse_operations`/`_OP_VOCAB` (tekil NL→op) + `parse_binary`/`_BINARY_VOCAB`
+  (ikili: topla/çıkar/çarp/böl/üs/mod/max/min). KELİME-SINIRI span=(pos+1, pos+1+len).
+- `code_intent.py` — `derive_spec` (niyet→grounded op→ground-truth örnek ÇALIŞTIRARAK; ikili 2-arg
+  destekli) + `decompose_goal` (3 yol: bağlaç / bağlaçsız-çoklu-op / çıplak-kavram→`_concept_operations`
+  araştır) + `_safe_name` (builtin-gölge koruması).
+- `code_compose.py` — `compose(specs)` çok-fonksiyon modül (uses=/calls=; önceki fonksiyon=primitif via
+  `extra_globals`); SON GÜVENLİK AĞI: birleşik-modülde her fonksiyon RE-doğrulanır (montaj-gölgeleme yakalar).
+- `code_agent.py` — `ground_codebase`/`check_grounded` (halüsinasyon=var olmayan sembol) + `run_tests`
+  (izole pytest) + `verify_api_symbol`/`ground_api` (dış API GERÇEK mi, introspection guard).
+- `encoder.py` — `_code_to_graph_moments` (AST graf, YAPISAL/refactor-denkliği — DAVRANIŞSAL DEĞİL,
+  `code_behavior` tamamlar) + `_is_code_snippet`.
+
+**Facade'lar (ai.py):** `code` · `build` (muğlak niyet→kod) · `build_app` (tek istek→çok-fonksiyon
+modül) · `code_app` (spec listesi→modül) · `code_task` (agentic 3-kapı) · `verify_code` · `code_from_nl`
+· `ground_codebase` · `grow_code` (OTONOM kapsam büyüme).
+
+**OTONOM BÜYÜME (kullanıcı "kendi büyütmeli, ASİ değil mi"):** `ai.grow_code` 3 mekanizmayı bağlar —
+araştırma (op kapsamı), hafıza (fonksiyon kütüphanesi), öz-kompozisyon (fonksiyon zincirle→yeni).
+Canlı: +17 op, kütüphane 0→36, 8 öz-kompozisyon, elle müdahale YOK. **DÜRÜST FRONTIER:** yeni
+OPERASYON+FONKSİYON otonom büyür; yeni STRATEJİ/ŞEMA (koşullu/fold gibi) icadı = meta-sentez, YOK.
+
+**Test:** 67 kod-testi yeşil (code_synthesis 18 + behavior 9 + intent 13 + compose 7 + research 8 +
+nl_code 6 + agent 8). Hepsi commit+push `claude/seninle-agi-yapacagiz-XwJRz`.
+
+**SIRADAKİ (devam eden kim için):** (a) grow_code'u resumable sürekli döngüye bağla (ai.grow gibi);
+(b) meta-sentez frontier'ı — stratejilerin kendisini sentezleyen katman (yeni program-şeması keşfi);
+(c) durumlu kod derinleştir (while/nested loop/class); (d) build_app kapsamını genişlet (daha çok
+ikili/composite op). Detay: docs/UNIFIED_ARCHITECTURE.md §12.
 - **ASI Mimarisi (5 pilar + birleşik döngü, F50–F54):** A hipotez · B hedef-güdümlü özerklik ·
   C peptit · D veri · E korpus — hepsi `ai.research()` ile kapalı bilimsel döngüde zincirli;
   her çıktı köklü + RH-Sturm sertifikalı + deterministik (bkz aşağıdaki "ASI Pilar A-E"

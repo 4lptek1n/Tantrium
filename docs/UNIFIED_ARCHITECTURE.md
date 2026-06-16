@@ -686,12 +686,36 @@ grafları özdeş, davranışları zıt → aynı moment. Molekülde yapı=işle
   yüklemlerle (x>0, x%3==0, len>=k, a>b) BÖLGELERE ayırır → if/elif/else. ANTI-MEMORİZASYON: çözüm
   SIKIŞMALI (kural ≤ örnek/2) + sabit-bölge tercihi → piecewise-constant GENELLEŞIR, patternsiz spec
   DÜRÜST başarısız (lookup-table kurulmaz). Canlı: FizzBuzz 4-kural/10-örnek, fb(45)=FizzBuzz (görülmemiş).
-Tests: code_synthesis 15 + code_research 8 + code_compose 7 + code_intent 11 + code_behavior 9 +
-code_agent 6 + nl_code 6.
+
+### Tier 1/2/3 — kapsam + paradigma + ölçek (hepsi KURULDU, 67 test yeşil)
+- **Tier 1.1 — ikili op niyetten:** `nl_code._BINARY_VOCAB`/`parse_binary` (topla/çıkar/çarp/böl/üs/
+  mod/max/min) + `derive_spec` 2-arg ground-truth. `_BINARY` pool'a true division. Canlı: hesap makinesi.
+- **Tier 1.2 — bilgi-güdümlü dekompozisyon:** `decompose_goal` 3 yol (bağlaç/bağlaçsız-çoklu-op/çıplak-
+  kavram→araştır `_concept_operations`). `ai.build_app("hesap makinesi topla çıkar çarp böl")` → 4 fonksiyon.
+- **Tier 2.3 — κ-güdümlü sentez:** `_feature_dist` sayısal-olmayan çıktıda beam'e davranışsal gradyan
+  (kör değil, geometrik yönlendirilir — molecular_genesis toward_profile deseni kod-uzayında).
+- **Tier 2.4 — fold/durumlu döngü:** `_synthesize_fold` (acc=INIT;for e:acc=COMBINE) — tek ifadeyle
+  olmayan reduce/biriken-durum (çarpım, koşullu sayım). Genelleşir.
+- **Tier 3.6 — sentez hafızası:** `_SOLVED` memoize (aynı spec→aynı obje) + `solved_library()` +
+  `find_reusable()` transfer-kullanım. 1000-satır ölçeğinde parça-yeniden-kullanımı.
+- **Tier 3.5 — API-grounded adaptör:** `code_agent.verify_api_symbol`/`ground_api` — dış çağrı
+  introspection'la doğrulanır ('json.nonexistent'→False), uydurma API imkânsız.
+
+### OTONOM KAPSAM BÜYÜME — `ai.grow_code` (kullanıcı: "kendi büyütmeli, ASİ değil mi")
+Kavram-manifoldunu büyüten `ai.grow`ın KOD eşleniği. 3 OTONOM mekanizma tek döngüde: (1) ARAŞTIRMA
+(`research_operation` op kapsamı), (2) HAFIZA (`solved_library` fonksiyon kütüphanesi), (3) ÖZ-KOMPOZİSYON
+(fonksiyon zincirle→yeni fonksiyon). Canlı: +17 op, kütüphane 0→36, 8 öz-kompozisyon, ELLE MÜDAHALE YOK.
+**FRONTIER (dürüst):** OPERASYON+FONKSİYON otonom büyür; yeni STRATEJİ/ŞEMA (koşullu/fold gibi) icadı =
+meta-sentez, BU DÖNGÜDE YOK — gerçek bir sonraki ASİ-adımı (stratejinin kendisini sentezleyen katman).
+
+Tests: code_synthesis 18 + code_research 8 + code_compose 7 + code_intent 13 + code_behavior 9 +
+code_agent 8 + nl_code 6 = 67.
 
 ### Dürüst sınırlar
-- Sentez deterministik beam araması: iyi-tanımlı, testli/örnekli fonksiyon-dönüşüm sentezi →
-  GARANTİ. Kapsam (hangi operasyon/modül) deterministik büyümeyle (introspection + araştırma) genişler.
-- `_SAFE_RESEARCH_ALLOWLIST` saf/I-O-kenarda modüllerle sınırlı (güvenlik — keyfi modül grounding YOK).
-- Actor `_UNSAFE` test-çalıştırmayı engelliyor → kontrollü/izole test-runner (code_agent.run_tests) ayrı.
-- Serbest yaratıcı üretim (keyfi prose) = istatistik/Kova B → kapsam-dışı; biz örnek/spec-doğrulanan kod veririz.
+- Sentez deterministik beam: iyi-tanımlı/örnekli fonksiyon-dönüşüm → GARANTİ. UI render dahil saf
+  fonksiyonlar (props→markup) sertifikalanır; "UI yapamaz" sınırı YANLIŞTI (ölçüldü).
+- Kapsam (op/fonksiyon) OTONOM büyür (`grow_code`); yeni STRATEJİ icadı = meta-sentez frontier (yok).
+- Tek gerçek tortu: çalışma-anında dış-etki (socket/fs/clock) — mantık sertifikalanır, dış çağrı
+  TOPRAKLANIR (`ground_api`, gerçek API), dış girdi spec'in parçası olur (mock). Bu mantığın kendisi.
+- `_SAFE_RESEARCH_ALLOWLIST` saf/I-O-kenarda modüllerle sınırlı (güvenlik).
+- Davranış KAYIPSIZ saklanır (`behavior_exact`) — "lossy" mazereti YOK; add/sub çakışmaz.

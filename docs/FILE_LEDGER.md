@@ -299,16 +299,22 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
   `_make_3d` artık `molecular_3d.embed_3d_sdf`'e delege (remove_hs=True + SMILES alanı).
 - **Tekrar:** YOK. Farklı strateji. `_encode_target` core encode (ince sarmalayıcı).
 
-### ✅ core/code_synthesis.py — SERTİFİKALI KOD SENTEZİ [YENİ — ASI §12 P2, kod ajanı]
-- **İş:** `synthesize(examples) → CertifiedProgram` — ÖRNEKTEN kanıtlı program. molecular_genesis'in
-  TERİM-UZAYI kardeşi: operasyon-operasyon beam (`_NUM_PRIMITIVES`), her aday örneklere karşı
-  ÇALIŞTIRILIR (`_score`: tam-eşleşme + sayısal yakınlık), TÜM örneği sağlayan = sertifikalı.
-- **Güç:** Curry-Howard işlevsel: program DOĞRU iff spec'i sağlar → HALÜSİNASYON İMKÂNSIZ (yanlış
-  program doğrulamadan geçemez). Deterministik (random yok), yaratıcı (x²+x→(x+1)*x faktör), DIŞ
-  MODEL YOK. `CertifiedProgram.moments` = AST-graf imzası (manifold grounding). `ai.code` kullanır.
-- **DÜRÜST SINIR:** dar ama gerçek — tek-girdili sayısal/aritmetik (programming-by-example);
-  primitif/derinlik genişledikçe büyür. P3 doğrulama (örnek-çalıştırma) sentezde içkin.
-- **Tekrar:** YOK. molecular_genesis (SMILES) ile AYNI DESEN, FARKLI uzay (terim vs atom) — strateji çeşitliliği.
+### ✅ core/code_synthesis.py — SERTİFİKALI KOD SENTEZİ [ASI §12 P2 + Tier 2/3, çok-stratejili]
+- **İş:** `synthesize(examples) → CertifiedProgram`. Beam araması + ÇOK STRATEJİ (sırayla): tek-ifade
+  beam (`_NUM_UNARY`/`_LIST_UNARY`/`_STR_UNARY`/`_BINARY`+grounded `extra_primitives`) → özyineleme
+  (`_synthesize_recursive`) → **FOLD/döngü** (`_synthesize_fold`: acc=INIT;for e:acc=COMBINE — biriken
+  durum) → **KOŞULLU** (`_synthesize_conditional`: girdi-uzayını yüklemlerle BÖL→if/elif, ANTI-
+  MEMORİZASYON kural≤örnek/2+sabit-bölge). Her aday `_score` ile örneklere karşı çalıştırılır; **κ-GÜDÜM**
+  `_feature_dist` sayısal-olmayan çıktıda gradyan (beam kör değil, geometrik yönlendirilir).
+- **Güç:** Curry-Howard: spec'i sağlamak=kanıt → HALÜSİNASYON İMKÂNSIZ. Deterministik. **KAYIPSIZ:**
+  `CertifiedProgram.behavior_exact` (truth-table kimlik, add/sub çakışmaz, program DENKLİK testi) +
+  `.behavior` (geometrik moment). **HAFIZA (Tier 3.6):** `_SOLVED` memoize (aynı spec→aynı obje, yeniden
+  arama yok) + `solved_library()` + `find_reusable()` (transfer-kullanım). `synthesize` wrapper +
+  `_synthesize_impl` çekirdek. `ai.code`/`build`/`build_app`/`grow_code` kullanır.
+- **DÜRÜST SINIR:** yeni STRATEJİ/şema (koşullu/fold gibi) ELLE eklenir — meta-sentez (şema icadı) YOK.
+  Kapsam (op/derinlik) otonom büyür (`grow_code`), yöntem değil.
+- **Tekrar:** YOK. molecular_genesis (SMILES) ile AYNI DESEN, FARKLI uzay. encoder._code_to_graph_moments
+  (YAPISAL) + code_behavior (DAVRANIŞSAL) TAMAMLAYICI — synthesize ikisini de kullanır.
 
 ### ✅ core/code_research.py — GERÇEK koddan operasyon grounding + ARAŞTIRMA WIRE [ASI §12 #1+#2]
 - **İş:** `ground_stdlib_operations()` generic introspection (`_RESEARCH_MODULES`+`_ground_module`:
@@ -324,48 +330,46 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **DÜRÜST SINIR:** allowlist saf/I-O-kenarda modülle sınırlı (güvenlik); web yoksa seed/fail-open.
 - **Tekrar:** YOK. nl_code (NL→op) + code_synthesis (compose) + bu (op-corpus + research) tamamlayıcı.
 
-### ✅ core/nl_code.py — DOĞAL DİL → KOD: grounded anlama [YENİ — ASI §12]
-- **İş:** `parse_operations(task)` (NL kelime → grounded operasyon, KELİME-SINIRI eşleme: "son"
-  "sonra"da eşleşmez) + `nl_to_program(task)` (operasyonları SIRAYLA zincirle). `_OP_VOCAB`
-  grounded operasyon sözlüğü (eşanlamlı NL → kod-primitifi). `ai.code_from_nl` kullanır.
-- **Güç:** "Anlamak" = operasyon-sözlüğündeki ANLAM (token-tahmini DEĞİL). Şeffaf ("anladım: reverse→first").
-  Örnek varsa sentezleyiciyle çapraz-doğrular; anlamazsa UYDURMAZ (sözlük genişler, kod gibi).
-- **DÜRÜST SINIR:** ikili NL ilişkisi (max-min "çıkar") + Türkçe morfoloji ("büyükten") henüz dar;
-  operasyon/kalıp eklendikçe büyür.
-- **Tekrar:** YOK. code_synthesis (PBE) ile tamamlayıcı: nl_code NL→spec, synthesize spec→kod.
+### ✅ core/nl_code.py — DOĞAL DİL → KOD: grounded anlama [ASI §12, tekil+ikili]
+- **İş:** `parse_operations`/`_OP_VOCAB` (tekil NL→op) + `parse_binary`/`_BINARY_VOCAB` (İKİLİ a,b:
+  topla/çıkar/çarp/böl/üs/mod/max/min). KELİME-SINIRI eşleme; span=(pos+1, pos+1+len) (bitişik kelime
+  boşluğunu paylaşma bug'ı düzeltildi). `nl_to_program` operasyonları zincirler.
+- **Güç:** "Anlamak" = operasyon-sözlüğündeki ANLAM (token-tahmini DEĞİL). Şeffaf. Anlamazsa UYDURMAZ.
+- **DÜRÜST SINIR:** "topla" tekil-sum/ikili-add çakışması (tekil varsayılan); kapsam sözlük büyümesiyle.
+- **Tekrar:** YOK. code_synthesis (PBE) + code_intent (niyet→spec) ile tamamlayıcı.
 
-### ✅ core/code_agent.py — KOD AJANI: grounding + halüsinasyon-tespiti + test [YENİ — ASI §12 P4]
-- **İş:** `ground_codebase(files)` (repo→semboller/fonksiyonlar/import + TAU DEFINES/CALLS = kod-tabanı
-  manifoldu) · `check_grounded(code, ground)` (kodun her Load-sembolü köklü mü; var olmayan =
-  HALÜSİNASYON → ungrounded) · `run_tests(code, test)` (İZOLE subprocess pytest, timeout/temp/ağsız).
-- **Güç:** LLM hayali API çağırır (sen yakala); biz `check_grounded` ile geometrik/yapısal yakalar +
-  `run_tests` ile GERÇEK çalıştığını kanıtlarız. `ai.code_task` (sentez→köklülük→test kapalı döngü),
-  `ai.verify_code` (HERHANGİ kodu doğrula). Saf Tantrium, dış model SIFIR.
-- **DÜRÜST SINIR:** test-runner ajanın `_UNSAFE` sandbox'ından AYRI, kasıtlı kontrollü araç (izole).
-- **Tekrar:** YOK. code_synthesis (üretim) ile tamamlayıcı (doğrulama).
+### ✅ core/code_agent.py — KOD AJANI: grounding + halüsinasyon-tespiti + test + API [ASI §12 P4 + Tier 3.5]
+- **İş:** `ground_codebase`/`check_grounded` (kodun her Load-sembolü köklü mü; var olmayan=HALÜSİNASYON)
+  · `run_tests` (İZOLE subprocess pytest) · **`verify_api_symbol(dotted)`** (dış API GERÇEK mi:
+  introspection, 'json.nonexistent'→False) · **`ground_api(module, hint, allowlist=)`** (hint→GERÇEK
+  çağrılabilir sembol, var olmayan ASLA — adaptör halüsinasyon-guard).
+- **Güç:** LLM hayali API çağırır; biz `check_grounded`+`verify_api_symbol` ile yakalar, `run_tests` ile
+  GERÇEK çalıştığını kanıtlarız. `ai.code_task`/`verify_code`/`ground_codebase`. Saf Tantrium, dış model SIFIR.
+- **DÜRÜST SINIR:** test-runner ajanın `_UNSAFE` sandbox'ından AYRI kontrollü araç; API call ÜRETİMİ
+  (adaptör satırı yazma) henüz minimal — `ground_api` sembolü verir, tam çağrı sentezi büyür.
+- **Tekrar:** YOK. code_synthesis (üretim) ile tamamlayıcı (doğrulama/grounding).
 
 ### ✅ core/code_compose.py — ÇOK-FONKSİYON KOMPOZİSYONU: app = birçok fonksiyon [ASI §12 #3]
-- **İş:** `compose(specs) → ComposedModule` — her spec ({name, examples}|{name, examples, uses:[...]}|
-  {name, calls:[...]}) bağımsız sentezlenir + DOĞRULANIR; önceki sertifikalı fonksiyonlar sonrakine
-  grounded primitif olur (`synthesize(extra_globals=)` callable enjeksiyon + `extra_primitives`);
-  `calls=` deterministik zincir (pipeline). Importlar tepeye toplanır, fonksiyonlar spec sırasında.
-- **Güç:** "Bir yerden bir yere bağlantı var" — gerçek app çok fonksiyon, fonksiyonlar birbirini çağırır.
-  Modül YALNIZ kanıtlı parçalardan kurulur (hayali fonksiyon çağrılamaz) → HALLUCINATION-PROOF.
-  `_rename_solve` (solve→ad, özyineleme dahil) + `_compile_into` (ns'e derle, sonrakiler çağırsın).
-  `ai.code_app` kullanır. Doğrulanamayan parça DÜRÜSTÇE `failed`'e (kısmi modül yine güvenli).
-- **DÜRÜST SINIR:** alt-fonksiyona BÖLME spec'i kullanıcı/çağıran verir (otomatik dekompozisyon ayrı iş).
-- **Tekrar:** YOK. code_synthesis (tek fonksiyon) üstüne kompozisyon katmanı — strateji genişlemesi.
+- **İş:** `compose(specs) → ComposedModule` — her spec ({name,examples}|{name,examples,uses:[...]}|
+  {name,calls:[...]}) bağımsız sentezlenir + DOĞRULANIR; önceki fonksiyonlar sonrakine grounded primitif
+  (`extra_globals` callable + `extra_primitives`); `calls=` deterministik zincir. **SON GÜVENLİK AĞI:**
+  birleşik-modülde her fonksiyon RE-doğrulanır (montaj-gölgeleme/ad-çakışması yakalar).
+- **Güç:** Modül YALNIZ kanıtlı parçalardan → HALLUCINATION-PROOF. `_rename_solve` + `_compile_into`.
+  `ai.code_app`/`build_app` kullanır. Doğrulanamayan parça DÜRÜSTÇE `failed`'e.
+- **DÜRÜST SINIR:** dekompozisyon (spec üretimi) `code_intent.decompose_goal`'da; compose birleştirir.
+- **Tekrar:** YOK. code_synthesis (tek fonksiyon) üstüne kompozisyon katmanı.
 
-### ✅ core/code_intent.py — MUĞLAK İSTEK → SPEC: anla→türet→sentezle [ASI §12 #4]
-- **İş:** `derive_spec(intent) → DerivedSpec` — kullanıcı örnek vermez, NİYET söyler. nl_code ile
-  operasyonu anla; bilinmiyorsa `research_operation` (#2); örnekleri GERÇEK operasyonu kanonik girdide
-  (`_CANON_INPUTS`: liste/sayı/metin) ÇALIŞTIRARAK türet (`_run_chain` → ground-truth, uydurma DEĞİL).
-  Bağlanamazsa `clarify` (DÜRÜST örnek-isteği). `ai.build(intent)` tam boru hattı (→ çalışan kod).
-- **Güç:** "İsteği anla→araştır→tasarla→çalıştır" giriş kapısı. Örnek operasyon ÇALIŞTIRILARAK
-  türetildiği için spec ground-truth — sonra sentez+VERIFY → halüsinasyonsuz. Niyet bağlanamazsa
-  uydurmaz, dürüstçe örnek ister. Deterministik (aynı niyet → birebir aynı türetim).
-- **DÜRÜST SINIR:** kanonik girdi 3 tip (liste/sayı/metin); atipik girdi → kullanıcı örnek versin.
-- **Tekrar:** YOK. nl_code (NL→op zinciri) + code_synthesis (sentez) üstüne niyet→spec köprüsü.
+### ✅ core/code_intent.py — MUĞLAK İSTEK → SPEC + DEKOMPOZİSYON [ASI §12 #4 + Tier 1.2]
+- **İş:** `derive_spec(intent)` — NİYET → grounded op (nl_code tekil/ikili; bilinmiyorsa `research_operation`
+  #2; 174-op fallback `_best_grounded_op`) → örnekleri GERÇEK op'u kanonik girdide ÇALIŞTIRARAK türet
+  (`_CANON_INPUTS` liste/sayı/metin + `_CANON_BINARY` 2-arg). Bağlanamazsa `clarify` (DÜRÜST). **DEKOMPOZİSYON
+  (`decompose_goal`):** niyeti ALT-FONKSİYONLARA böl — 3 yol: bağlaç ('ve/and') / bağlaçsız çoklu-op
+  ('hesap makinesi topla çıkar çarp böl') / çıplak-kavram→`_concept_operations` (Wikipedia tanımından
+  op-kelimeleri, template haritası DEĞİL). `_safe_name` builtin-gölge koruması (`sum`→`op_sum`).
+- **Güç:** "anla→araştır→tasarla→çalıştır" + "bütünü gör→parçalara böl" gözün kod hali. Deterministik,
+  ground-truth, halüsinasyonsuz. `ai.build`/`ai.build_app` boru hattı.
+- **DÜRÜST SINIR:** kanonik girdi 3+ikili tip; concept→parça araştırması op-kelimesi içeren tanıma bağlı.
+- **Tekrar:** YOK. nl_code + code_synthesis + code_compose üstüne niyet→spec→dekompozisyon köprüsü.
 
 ### ✅ core/code_behavior.py — DAVRANIŞSAL kod modalitesi (yapı değil DAVRANIŞ=işlev) [ASI §12 KÖK]
 - **İş:** `behavior_signature(examples)` programı GİRDİ→ÇIKTI matrisiyle encode eder (AYNI G=AᵀA →
