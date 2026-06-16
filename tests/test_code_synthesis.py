@@ -125,6 +125,15 @@ def test_conditional_rejects_memorization():
     assert not junk.verified                              # uydurma branch-per-point YOK
 
 
+def test_fold_synthesis_stateful_loop():
+    """Biriken-durum (fold) döngüsü: tek-ifadeyle OLMAYAN reduce desenleri (koşullu sayım/birikim)."""
+    ev = synthesize([([1, 2, 3, 4], 2), ([2, 4, 6], 3), ([1, 3, 5], 0), ([2], 1)])
+    assert ev.verified and "for e in" in ev.source()       # gerçek döngü
+    assert _run_source(ev.source(), [2, 2, 1, 4]) == 3     # genelleşir
+    ps = synthesize([([1, -2, 3], 4), ([-1, -2], 0), ([5, 5], 10), ([10, -3, 2], 12)])
+    assert ps.verified and _run_source(ps.source(), [7, -1, 3]) == 10
+
+
 def test_conditional_preserves_recursion():
     """Regresyon: faktöriyel koşullu'dan ÖNCE özyinelemeyle çözülür (temiz tek-yasa, dallanma değil)."""
     fac = synthesize([(3, 6), (4, 24), (5, 120), (6, 720)])

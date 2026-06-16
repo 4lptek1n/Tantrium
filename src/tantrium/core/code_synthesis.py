@@ -424,6 +424,34 @@ def _synthesize_conditional(examples, argnames, *, extra_primitives=None,
     return imp + f"def solve({', '.join(argnames)}):\n" + "\n".join(body)
 
 
+# Fold/accumulator (biriken-durum) sentezi: acc=INIT; for e in x: acc=COMBINE(acc,e); return acc.
+# Tek ifadeyle ifade edilemeyen GERÇEK döngülü programlar (koşullu sayım, çarpım, kümülatif kuruluş).
+_FOLD_COMBINES = [
+    "acc + e", "acc * e", "acc + e * 2", "acc + e ** 2", "max(acc, e)", "min(acc, e)",
+    "acc + 1", "acc + (1 if e > 0 else 0)", "acc + (1 if e % 2 == 0 else 0)",
+    "acc + (e if e > 0 else 0)", "acc + [e]", "acc + [e * 2]", "acc + [e ** 2]",
+    "acc + [e] if e > 0 else acc", "acc + str(e)", "acc + len(str(e))", "(acc) * 10 + e",
+]
+
+
+def _synthesize_fold(examples, argnames) -> str | None:
+    """Biriken-durum (fold) programı sentezle: tek iterable girdi üzerinde acc-döngüsü. INIT × COMBINE
+    aday-ızgarası, her aday örneklere karşı ÇALIŞTIRILIR (kanıtlı). Tek-ifadeyle olmayan döngülü kodu açar."""
+    if len(argnames) != 1:
+        return None
+    if not all(isinstance(i, (list, tuple, str)) for i, _ in examples):
+        return None
+    a = argnames[0]
+    for init in ["0", "1", "[]", "''", f"{a}[0]"]:
+        iter_expr = f"{a}[1:]" if init == f"{a}[0]" else a
+        for comb in _FOLD_COMBINES:
+            src = (f"def solve({a}):\n    acc = {init}\n    for e in {iter_expr}:\n"
+                   f"        acc = {comb}\n    return acc")
+            if _verify_source(src, examples, argnames):
+                return src
+    return None
+
+
 def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
                primitives=None, extra_primitives=None,
                extra_globals: dict | None = None,
@@ -527,6 +555,11 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
     rec_src = _synthesize_recursive(examples)
     if rec_src is not None and _verify_source(rec_src, examples, argnames):
         return _from_source(rec_src, "<özyinelemeli>")
+
+    # S6: FOLD (biriken-durum döngüsü) — tek-ifade olmayan reduce desenleri (koşullu sayım, çarpım)
+    fold_src = _synthesize_fold(examples, argnames)
+    if fold_src is not None and _verify_source(fold_src, examples, argnames):
+        return _from_source(fold_src, "<döngü>")
 
     # S5: tek ifade/özyineleme yoksa KOŞULLU sentez (girdi-uzayı dekompozisyonu = çok dallı GERÇEK kod)
     if conditional:
