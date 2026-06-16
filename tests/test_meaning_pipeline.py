@@ -7,6 +7,7 @@ import math
 
 from tantrium.core.meaning_pipeline import (
     MeaningSignature, measure, signature_distance, _li_cascade,
+    nearest_meaning, _graph_candidates,
 )
 
 
@@ -120,3 +121,49 @@ def test_signature_distance_falls_to_surface_when_ungrounded():
     sig_u = measure(eng, "lonely")
     d = signature_distance(sig_g, sig_u)
     assert isinstance(d, float) and d >= 0.0
+
+
+# ── nearest_meaning: graf-tabanlı retrieve + topoloji rerank ──
+def _shared_neighbor_engine():
+    """access ve sibling AYNI komşuları paylaşır (co-citation); stranger paylaşmaz."""
+    edges = {
+        "access": [_E("IS_A", "history"), _E("USES", "world"), _E("USES", "expansion"),
+                   _E("REQUIRES", "intention"), _E("ACHIEVES", "intuition")],
+        "sibling": [_E("IS_A", "history"), _E("USES", "world"), _E("REQUIRES", "intention")],
+        "stranger": [_E("IS_A", "rock"), _E("USES", "stone")],
+        "world": [_E("IS_A", "history")],
+    }
+    return _FakeEngine(edges)
+
+
+def test_graph_candidates_share_neighbors():
+    """Aday çekme co-citation: komşu paylaşan kavram gelir, paylaşmayan gelmez."""
+    eng = _shared_neighbor_engine()
+    cands = _graph_candidates(eng, "access",
+                              ["history", "world", "expansion", "intention", "intuition"], 10)
+    assert "sibling" in cands          # 3 paylaşılan komşu
+    assert "stranger" not in cands     # 0 paylaşılan komşu
+
+
+def test_nearest_meaning_graph_retrieve_and_rerank():
+    """Köklü sorgu → graf adayları topoloji ile sıralanır; en yakın co-citation önde."""
+    eng = _shared_neighbor_engine()
+    hits = nearest_meaning(eng, "access", n=5)
+    names = [nm for nm, _, _ in hits]
+    assert "sibling" in names          # anlam-komşusu döner
+    assert "stranger" not in names     # ilgisiz dönmez
+    assert all(mod in ("relational", "surface") for _, _, mod in hits)
+
+
+def test_nearest_meaning_surface_fallback():
+    """Topraksız sorgu → graf aday üretemez, harf-yüzeyine düşer (modality=surface)."""
+    class _Manifold:
+        def nearest(self, concept, n=5):
+            from fractions import Fraction
+            return [("alpha", Fraction(1, 10)), ("beta", Fraction(2, 10))]
+
+    eng = _FakeEngine({"isolated": []})
+    eng.manifold = _Manifold()
+    hits = nearest_meaning(eng, "isolated", n=2)
+    assert all(mod == "surface" for _, _, mod in hits)
+    assert [nm for nm, _, _ in hits] == ["alpha", "beta"]

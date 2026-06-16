@@ -142,3 +142,63 @@ def measure_distance(engine, a: str, b: str, *, max_neighbors: int = 24,
     sa = measure(engine, a, max_neighbors=max_neighbors, topo_encoder=te)
     sb = measure(engine, b, max_neighbors=max_neighbors, topo_encoder=te)
     return signature_distance(sa, sb, cascade_weight=cascade_weight)
+
+
+def _graph_candidates(engine, query: str, neighbors: list[str], limit: int) -> list[str]:
+    """GRAF-tabanlı aday çekme: sorguyla semantik komşu PAYLAŞAN kavramlar (co-citation).
+
+    Harf-retrieve yazılış-benzeri çeker (electric~protein) — anlam için yanlış havuz.
+    Doğru retrieval graftan: q'nun komşularına da işaret eden/onlarca işaret edilen
+    kavramlar yapısal olarak yakındır. O(E) tek geçiş (semantik kenarlar). Paylaşılan-
+    komşu sayısına göre sıralanır → en yüksek yapısal örtüşme önce.
+    """
+    from tantrium.core.topology_encode import _SEMANTIC_PARADIGMS
+    nset = set(neighbors)
+    if not nset:
+        return []
+    scores: dict[str, int] = {}
+    for nm, elist in engine.tau.edges.items():
+        if nm == query:
+            continue
+        shared = 0
+        for e in elist:
+            if e.paradigm in _SEMANTIC_PARADIGMS and e.target in nset:
+                shared += 1
+        if shared > 0:
+            scores[nm] = shared
+    return sorted(scores, key=lambda k: -scores[k])[:limit]
+
+
+def nearest_meaning(engine, query: str, *, n: int = 10, pool: int = 60,
+                    max_neighbors: int = 24, cascade_weight: float = 0.0
+                    ) -> list[tuple[str, float, str]]:
+    """GRAF-birincil en yakın komşu: RETRIEVE graftan + RERANK topolojiyle.
+
+    Mimari tez canlı: anlam grafta. İki kademe, İKİSİ DE graf-temelli (harf DEĞİL):
+      1. RETRIEVE : sorgunun semantik komşularını paylaşan kavramlar (`_graph_candidates`,
+                    co-citation) — yapısal örtüşme, O(E) ucuz.
+      2. RERANK   : adayları topoloji (anlam) mesafesiyle sırala — keskin hüküm.
+
+    Sorgu topraksız (semantik komşusu yok) → graf aday üretemez: harf-yüzeyine düş
+    (`manifold.nearest`), dürüstçe modality="surface" işaretle.
+    Döner: [(name, distance, modality), ...].
+    """
+    te = TopologyEncoder(engine)
+    q_sig = measure(engine, query, max_neighbors=max_neighbors, topo_encoder=te)
+
+    # Sorgu topraksız → anlam yapamayız: harf adresine dürüstçe düş.
+    if not q_sig.grounded:
+        from tantrium.core.semantic import Concept
+        q_obj = engine.encoder.encode(query, name=query[:64])
+        wide = engine.manifold.nearest(Concept(name=query, moments=list(q_obj.moments)), n=pool)
+        return [(nm, float(d), "surface") for nm, d in wide if nm != query][:n]
+
+    cands = _graph_candidates(engine, query, q_sig.neighbors, pool)
+    reranked: list[tuple[float, str, str]] = []
+    for nm in cands:
+        c_sig = measure(engine, nm, max_neighbors=max_neighbors, topo_encoder=te)
+        d = signature_distance(q_sig, c_sig, cascade_weight=cascade_weight)
+        reranked.append((d, nm, c_sig.modality))
+    reranked.sort(key=lambda x: x[0])
+    return [(nm, float(d), mod) for d, nm, mod in reranked[:n]]
+

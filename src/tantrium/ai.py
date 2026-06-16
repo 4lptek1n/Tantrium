@@ -3653,6 +3653,23 @@ class AI:
         return _md(self._engine, a, b, max_neighbors=max_neighbors,
                    cascade_weight=cascade_weight)
 
+    def nearest_meaning(self, query: str, *, n: int = 10, pool: int = 40,
+                        max_neighbors: int = 24, cascade_weight: float = 0.0
+                        ) -> "list[tuple[str, float, str]]":
+        """ANLAM-birincil en yakın komşu: harfle çek (adres) + topolojiyle sırala (anlam).
+
+        İki kademe (retrieve-then-rerank): `manifold.nearest` ile harf-moment kaba
+        adaylar (ucuz), sonra köklü sorgu için topoloji (graf) mesafesiyle yeniden
+        sırala. Sorgu topraksızsa harf sırası dürüstçe korunur.
+
+        `nearest`'ten farkı: orada harf-momenti HÜKÜM verir (yazılış-benzeri döner);
+        burada graf-topolojisi HÜKÜM verir (anlam-benzeri döner). Döner:
+        [(name, distance, modality), ...].
+        """
+        from tantrium.core.meaning_pipeline import nearest_meaning as _nm
+        return _nm(self._engine, query, n=n, pool=pool,
+                   max_neighbors=max_neighbors, cascade_weight=cascade_weight)
+
     def bind_percept(
         self,
         concept_name: str,
