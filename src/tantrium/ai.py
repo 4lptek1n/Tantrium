@@ -5039,6 +5039,11 @@ class AI:
             print(cog.summary())
         """
         from tantrium.research.cognition import Cognition
+        # Native özerklik geri-referansı: cognition fazları tüm yeti-yüzeyini (relearn/
+        # generate_questions/produce/grow_code) facade üzerinden çağırabilsin. _autonomy=True
+        # (network/native mod) ağ/ağır özerklik fazlarını açar; batch-test (network=False) ucuz kalır.
+        self._engine._ai = self
+        self._engine._autonomy = bool(network) or mode == "stream"
         cog = Cognition(self._engine, strategies=strategies)
         return cog.cycle(
             mode=mode,

@@ -90,3 +90,65 @@ def test_generate_accepts_use_bridges():
     assert "use_bridges" in sig.parameters
     from tantrium.language.generator import CertifiedGenerator
     assert "use_bridges" in inspect.signature(CertifiedGenerator.generate).parameters
+
+
+# ── Native özerklik kablolamaları (9 adet) ──
+from tantrium.research.cognition import (
+    SchedulePhase, CuriosityPhase, CodeGrowthPhase, GoalPhase, CognitionState,
+    _DEFAULT_BATCH_PHASES, CognitionReport,
+)
+
+
+def test_all_autonomy_phases_registered():
+    """9 kablolamanın faz-seviyesi olanları varsayılan döngüde (öksüz değil)."""
+    names = [p.name for p in _DEFAULT_BATCH_PHASES]
+    for need in ("schedule", "curiosity", "code_growth", "goal", "science", "verify", "flywheel"):
+        assert need in names, need
+    assert names[0] == "schedule"   # meta-kontrol ilk
+
+
+def test_schedule_phase_sets_focus_and_budget():
+    """SchedulePhase #8/#9: zayıf-eksenden odak + koridordan üretim-beam."""
+    eng = _FakeEngine({})
+    st = CognitionState()
+    st.benchmark_score = 0.5            # dış-hata yüksek
+    st.transport_corridor = -1e-5       # geniş koridor
+    out = SchedulePhase().execute(eng, st)
+    assert out.focus == "verify"
+    assert out.prod_budget == 8         # geniş koridor → büyük beam
+
+
+def test_autonomy_phases_noop_without_flag():
+    """Ağ/ağır fazlar (#3,#6) _autonomy YOKKEN no-op — batch-test yavaşlamaz, çökmez."""
+    eng = _FakeEngine({})               # _autonomy yok, _ai yok
+    st = CognitionState()
+    assert CuriosityPhase().execute(eng, st) is st
+    assert CodeGrowthPhase().execute(eng, st) is st
+    assert st.curiosity_researched == 0 and st.code_grown == 0
+
+
+def test_auto_goal_clean_concept_filter():
+    """#1 auto-goal yalnız temiz kavram seçer (sentetik/markup/paradigma değil)."""
+    assert GoalPhase._clean_goal_concept("egfr")
+    assert not GoalPhase._clean_goal_concept("⟨bridge:x⟩")
+    assert not GoalPhase._clean_goal_concept("ALEPH:DYADIC_TRANSPORT")
+    assert not GoalPhase._clean_goal_concept("oeis:A102283")
+
+
+def test_auto_goal_failopen_on_minimal_engine():
+    """#1 auto-goal fail-open: encoder'sız sahte engine'de çökmez (None döner)."""
+    eng = _FakeEngine({})
+    st = CognitionState()
+    st.open_gap_names = ["egfr", "⟨bridge:x⟩"]
+    g, gm = GoalPhase()._auto_goal(eng, st)   # encode_goal sahte engine'de başarısız → None
+    assert g is None and gm is None           # fail-open, exception yok
+
+
+def test_report_has_autonomy_fields():
+    """CognitionReport 9-kablolama sayaçlarını taşır (raporlanabilir)."""
+    r = CognitionReport(mode="batch", total_cycles=1, concepts_added=0, edges_added=0,
+                        gaps_found=0, proofs_completed=0, elapsed_s=0.0)
+    for f in ("relearned", "contradictions_resolved", "curiosity_researched",
+              "hypotheses_tested", "artifacts_reingested", "code_grown",
+              "hypotheses_generated"):
+        assert hasattr(r, f), f

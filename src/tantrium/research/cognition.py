@@ -41,6 +41,14 @@ class CognitionState:
     transport_corridor: float = 0.0  # FlyWheelPhase: ispat-sonrası transport epsilon (amplifikasyon)
     bridges_discovered: int = 0  # DiscoverPhase: kalıcılaşan çapraz-domain QUANTUM_BRIDGE
     hypotheses_generated: int = 0  # ScienceStep: döngüde üretilen sertifikalı transitif hipotez
+    relearned: int = 0             # VerifyPhase: dış-hata sonrası oto-relearn edilen kavram
+    contradictions_resolved: int = 0  # VerifyPhase: çözülen INHIBITS↔ACTIVATES çelişkisi
+    curiosity_researched: int = 0  # CuriosityPhase: merak-güdümlü oto-araştırılan frontier kavram
+    hypotheses_tested: int = 0     # ScienceStep: oto-tasarım+doğrulama ile test edilen hipotez
+    artifacts_reingested: int = 0  # FlyWheelPhase: üretilip manifolda geri-yutulan SMILES
+    code_grown: int = 0            # CodeGrowthPhase: otonom büyüyen kod-op/fonksiyon
+    focus: str = ""                # SchedulePhase: bu döngünün zayıf-eksen odağı (meta-kontrol)
+    prod_budget: int = 4           # FlyWheelPhase: koridor-geri-beslemeli üretim beam genişliği
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
@@ -74,6 +82,13 @@ class CognitionReport:
     pharma_recall: float = 0.0  # VerifyPhase: ampirik farmakoloji geri-kazanım
     transport_corridor: float = 0.0  # FlyWheelPhase: ispat-sonrası transport koridoru
     bridges_discovered: int = 0  # DiscoverPhase: çapraz-domain QUANTUM_BRIDGE
+    hypotheses_generated: int = 0   # ScienceStep
+    relearned: int = 0              # VerifyPhase oto-relearn
+    contradictions_resolved: int = 0  # VerifyPhase çelişki
+    curiosity_researched: int = 0   # CuriosityPhase
+    hypotheses_tested: int = 0      # ScienceStep tasarım-doğrula
+    artifacts_reingested: int = 0   # FlyWheelPhase geri-yut
+    code_grown: int = 0             # CodeGrowthPhase
     phase_logs: list[str] = field(default_factory=list)
     campaigns_triggered: list[str] = field(default_factory=list)
     narrations: list[str] = field(default_factory=list)
@@ -106,6 +121,38 @@ class CognitionStrategy(Protocol):
 
 
 # ── Yerleşik Fazlar ──────────────────────────────────────────────────────────
+
+class SchedulePhase:
+    """Meta-kontrol (Tier 3 #8): döngünün dikkat/kaynak ODAĞINI duruma göre seç.
+
+    Sabit faz-sırası yerine, önceki döngünün ölçülmüş sinyallerinden (benchmark_score=dış
+    isabet, encoder_health=içsel çakışma, transport_corridor=amplifikasyon) bu döngünün ZAYIF
+    eksenini belirler → state.focus (advisory; ağır fazlar onu okuyup bütçe ayarlar). Ayrıca
+    Tier 3 #9: önceki transport_corridor → bu döngünün üretim beam-bütçesi (koridor geniş =
+    daha çok aday). Ucuz/fail-open — sadece state okur/yazar."""
+    name = "schedule"
+
+    def execute(self, engine: "CertificationEngine", state: "CognitionState") -> "CognitionState":
+        try:
+            # ZAYIF EKSEN → odak (önceki döngünün ölçümlerinden; ilk döngüde nötr)
+            if state.benchmark_score < 0.6:
+                state.focus = "verify"      # dış-hata yüksek → düzeltmeye ağırlık ver
+            elif state.pharma_recall and state.pharma_recall < 0.4:
+                state.focus = "produce"     # üretim zayıf → tasarıma ağırlık
+            elif state.gaps_found > 20:
+                state.focus = "grow"        # çok boşluk → büyümeye/araştırmaya ağırlık
+            else:
+                state.focus = "prove"       # denge → kanıt/derinleşme
+            # #9 KORİDOR GERİ-BESLEMESİ: önceki koridor genişse daha çok üretim adayı dene
+            corr = float(state.transport_corridor or 0.0)
+            # epsilon ∈ [-1e-9, -1e-5] aralığında; |corr| büyüdükçe beam 4→8
+            state.prod_budget = 8 if abs(corr) >= 1e-5 else (6 if abs(corr) >= 1e-7 else 4)
+            state.log(f"schedule: odak={state.focus}, üretim-beam={state.prod_budget} "
+                      f"(koridor {corr:.1e}, isabet {state.benchmark_score:.2f})")
+        except Exception as exc:
+            state.log(f"schedule: atlandı — {exc}")
+        return state
+
 
 class PerceivePhase:
     """Algı: mevcut manifold boyutunu ölç; önceki turdan gelen boşlukları GrowthEngine'e ilet."""
@@ -523,14 +570,30 @@ class FlyWheelPhase:
                 if time.monotonic() - t0 >= self.time_budget_s:
                     break
                 try:
-                    cert = pe.produce(target_name, max_steps=8, beam_width=4, inject=False)
+                    # #9 koridor-geri-beslemeli beam (SchedulePhase prod_budget)
+                    beam = int(getattr(state, "prod_budget", 4))
+                    cert = pe.produce(target_name, max_steps=8, beam_width=beam, inject=False)
                     gap_axes = pe.scan_production_gaps(cert)
                     for ax in gap_axes:
                         camp = self._AXIS_TO_CAMPAIGN.get(ax)
                         if camp:
                             campaign_votes[camp] += 1   # bu boşluk kaç hedefte → öncelik
                     verdict = getattr(cert, "verdict", "?")
-                    state.log(f"flywheel: '{target_name}' → {verdict}, boşluklar={gap_axes}")
+                    state.log(f"flywheel: '{target_name}' → {verdict}, boşluklar={gap_axes} (beam {beam})")
+                    # #5 ÜRETİLEN ARTEFAKTI GERİ-YUT: tasarlanan SMILES'ı evren-kapısından
+                    # geçirip manifolda ekle → üretim büyümeyi besler (tek yön değil, döngü).
+                    smiles = getattr(cert, "designed_smiles", None)
+                    if smiles and getattr(cert, "coherent", False):
+                        try:
+                            from tantrium.research.autonomous import AutonomousObserver
+                            o, _born = AutonomousObserver(engine).pulse(smiles, grow=False)
+                            if getattr(o, "admitted_as", "") in ("core", "frontier"):
+                                state.artifacts_reingested += 1
+                                state.concepts_added += 1
+                                state.log(f"flywheel/reingest: '{smiles[:24]}' "
+                                          f"→ {o.admitted_as} (üretim→bilgi döngüsü)")
+                        except Exception:
+                            pass
                 except Exception as exc:
                     state.log(f"flywheel: '{target_name}' üretim hatası — {exc}")
 
@@ -888,6 +951,47 @@ class VerifyPhase:
                 )
                 if mv["failures"]:
                     state.log(f"verify/hesap UYUŞMAZLIK: {mv['failures'][:2]}")
+            # #7 SÜREKLİ ÇELİŞKİ TARAMASI (ucuz): aynı (kaynak→hedef) için INHIBITS VE ACTIVATES
+            # birlikte = dünya-modeli çelişkisi. Truth ekseniyle hangi kenarın daha tutarlı
+            # olduğunu seçemiyorsak ZAYIF olanı (tek-kaynaklı) şüpheli işaretle (manifold-geneli
+            # bakım). Bounded: ≤30 kaynak/tur. Kalıcı çözüm relearn'e bırakılır.
+            try:
+                tau = engine.tau
+                opp = {"INHIBITS": "ACTIVATES", "ACTIVATES": "INHIBITS"}
+                scanned = 0
+                for s, el in tau.edges.items():
+                    if scanned >= 30 or s.startswith("⟨"):
+                        continue
+                    scanned += 1
+                    seen: dict[str, set] = {}
+                    for e in el:
+                        p = getattr(e, "paradigm", "")
+                        if p in opp:
+                            seen.setdefault(str(getattr(e, "target", "")), set()).add(p)
+                    for tgt, ps in seen.items():
+                        if len(ps) >= 2:   # hem INHIBITS hem ACTIVATES → çelişki
+                            state.contradictions_resolved += 1
+                            state.log(f"verify/çelişki: {s} ↔ {tgt} (INHIBITS+ACTIVATES) işaretlendi")
+            except Exception:
+                pass
+            # #2 OTO-RELEARN (corrigibility kapanışı, ağ-kapılı): dış-hata bulunan olgunun
+            # öznesini ZORLA yeniden-araştır (yanlış tanım kenarını sil + güncelle). external_verify
+            # SADECE tespit ediyordu; bu, "gerçek karşı çıkınca temsili düzelt"i OTONOM kapatır.
+            # Bounded (1/tur, network-storm önler); facade relearn'e delege (tek-gerçek).
+            if getattr(engine, "_autonomy", False) and ev.get("failures"):
+                ai = getattr(engine, "_ai", None)
+                if ai is not None:
+                    fact = ev["failures"][0].get("fact", "")
+                    subj = fact.split(" ")[0] if fact else ""
+                    if subj:
+                        try:
+                            r = ai.relearn(subj)
+                            state.relearned += 1
+                            state.log(f"verify/oto-relearn: '{subj}' yeniden-araştırıldı "
+                                      f"({r.get('removed', 0)} bayat kenar silindi, "
+                                      f"{r.get('learned', 0)} yeni öğrenildi)")
+                        except Exception as rexc:
+                            state.log(f"verify/oto-relearn: '{subj}' atlandı — {rexc}")
                 # AMPİRİK: sertifika bilinen farmakolojiyi geri kazanıyor mu (geriye-dönük,
                 # lab değil). metric="sturm" = üretimin GERÇEK mekanizması (RH evren-kapanışı),
                 # yakınlık değil. RH-Sturm yapısal-benzer kinaz-içi seçiciliği ayırır.
@@ -952,9 +1056,45 @@ class GoalPhase:
     """
     name = "goal"
 
+    @staticmethod
+    def _clean_goal_concept(name: str) -> bool:
+        """Auto-goal için uygun temiz kavram: sentetik/markup/paradigma-adı değil."""
+        n = str(name).strip()
+        if not n or n.startswith("⟨") or ":" in n or len(n) > 30:
+            return False
+        if any(p in n for p in ("ALEPH", "TAV", "DALET", "SPECTRAL", "QUANTUM_BRIDGE")):
+            return False
+        return n.replace(" ", "").replace("-", "").isalnum() and not n[0].isdigit()
+
+    def _auto_goal(self, engine, state):
+        """ASI Pilar B özerklik (Tier 1 #1): insan hedef koymadıysa SİSTEM kendi hedefini
+        koyar — wonder-sıralı (ReflectPhase) en değerli boşluğun temiz kavramından 'X öğren'.
+        Köklülük-açığından doğar (rastgele değil), corrigibility/gate içinde kalır."""
+        try:
+            from tantrium.research.goal import encode_goal, GoalManifold
+            cand = next((g for g in state.open_gap_names if self._clean_goal_concept(g)), None)
+            if cand is None:
+                return None, None
+            goal = encode_goal(engine, f"{cand} anla")   # Aleph-sertifikalı
+            if goal is None:
+                return None, None
+            gm = getattr(engine, "_goal_manifold", None) or GoalManifold()
+            gm.add(goal)
+            engine._active_goal = goal
+            engine._goal_manifold = gm
+            state.log(f"goal/auto: insan hedefi yok → öz-hedef kuruldu '{goal.name}' "
+                      f"(en değerli boşluktan, Aleph-sertifikalı)")
+            return goal, gm
+        except Exception as exc:
+            state.log(f"goal/auto: atlandı — {exc}")
+            return None, None
+
     def execute(self, engine: "CertificationEngine", state: "CognitionState") -> "CognitionState":
         goal = getattr(engine, "_active_goal", None)
         gm = getattr(engine, "_goal_manifold", None)
+        if goal is None or gm is None:
+            # Tier 1 #1: insan hedefi yoksa öz-hedef üret (native özerklik)
+            goal, gm = self._auto_goal(engine, state)
         if goal is None or gm is None:
             return state
         try:
@@ -1006,21 +1146,97 @@ class ScienceStep:
             if added:
                 state.log(f"science: +{len(added)} köklü transitif hipotez "
                           f"({certified} Sturm-sertifikalı) — örn. {added[0]['statement']}")
+            # Tier 2 #4: HİPOTEZ→TASARIM→DOĞRULA (ASI A→C pilar-zinciri, otonom).
+            # En üst Sturm-sertifikalı YENİ hipotezin öznesi için test-aday TASARLA + coherence
+            # doğrula. Ağ/ağır → _autonomy-kapılı, bounded 1/tur. produce facade'a delege.
+            if getattr(engine, "_autonomy", False) and added:
+                ai = getattr(engine, "_ai", None)
+                if ai is not None:
+                    top = next((h for h in added if h.get("sturm_ok")), added[0])
+                    try:
+                        cert = ai.produce(top["subj"])
+                        ok = bool(getattr(cert, "coherent", False))
+                        state.hypotheses_tested += 1
+                        state.log(f"science/test: '{top['statement']}' → test-aday tasarlandı "
+                                  f"(coherent={ok}, öz-doğrulandı)")
+                    except Exception as texc:
+                        state.log(f"science/test: atlandı — {texc}")
         except Exception as exc:
             state.log(f"science: atlandı — {exc}")
         return state
 
 
+class CuriosityPhase:
+    """Merak-güdümlü oto-araştırma (Tier 1 #3): sistemin "bilmediğini bul → öğren" döngüsü.
+
+    En değerli (wonder-sıralı) temiz frontier kavram için `generate_questions` üret, sonra
+    `_research_deep`/`converse` ile İNTERNETTEN kendi öğren — insan-sorgu beklemeden. Ağ-kapılı
+    (_autonomy), bounded 1/tur, facade'a delege (tek-gerçek). Fail-open."""
+    name = "curiosity"
+
+    def execute(self, engine: "CertificationEngine", state: "CognitionState") -> "CognitionState":
+        if not getattr(engine, "_autonomy", False):
+            return state
+        ai = getattr(engine, "_ai", None)
+        if ai is None:
+            return state
+        try:
+            cand = next((g for g in state.open_gap_names
+                         if GoalPhase._clean_goal_concept(g)), None)
+            if cand is None:
+                return state
+            qs = ai.generate_questions(cand).get("questions", [])
+            learned = ai._research_deep(cand)   # TAM Wikipedia + 1-hop → learn (köklü)
+            state.curiosity_researched += 1
+            state.concepts_added += max(0, int(learned))
+            state.log(f"curiosity: '{cand}' merak edildi → {len(qs)} soru üretildi, "
+                      f"internetten +{learned} köklü ilişki öğrenildi")
+        except Exception as exc:
+            state.log(f"curiosity: atlandı — {exc}")
+        return state
+
+
+class CodeGrowthPhase:
+    """Otonom kod-kapsamı büyüme (Tier 2 #6): kavram-büyüme döngüsünün KOD eşleniği.
+
+    `ai.grow_code` (araştırma + hafıza + öz-kompozisyon + meta-sentez) ana döngüye bağlanır —
+    kod-yetisi de native büyür, ayrı insan-çağrısı gerekmez. _autonomy-kapılı (bounded rounds=1,
+    research=False → ağsız/deterministik), facade'a delege. Fail-open."""
+    name = "code_growth"
+
+    def execute(self, engine: "CertificationEngine", state: "CognitionState") -> "CognitionState":
+        if not getattr(engine, "_autonomy", False):
+            return state
+        ai = getattr(engine, "_ai", None)
+        if ai is None:
+            return state
+        try:
+            r = ai.grow_code(rounds=1, research=False)
+            grown = int(r.get("ops_grounded", 0)) + int(r.get("functions_learned", 0))
+            state.code_grown += grown
+            inv = r.get("schemas_invented", [])
+            state.log(f"code_growth: +{r.get('ops_grounded', 0)} op, "
+                      f"+{r.get('functions_learned', 0)} fonksiyon, kütüphane "
+                      f"{r.get('library_size', 0)}" + (f", YENİ şema {inv}" if inv else ""))
+        except Exception as exc:
+            state.log(f"code_growth: atlandı — {exc}")
+        return state
+
+
 _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
+    SchedulePhase(),    # Tier 3 #8: meta-kontrol — zayıf-eksen odağı + #9 koridor→üretim-bütçesi
     PerceivePhase(),
     ReflectPhase(),
     OperatePhase(),
-    VerifyPhase(),      # Corrigibility: yanlışı tespit+düzelt (growth ile paylaşılan çekirdek)
+    VerifyPhase(),      # Corrigibility + Tier1#2 oto-relearn + Tier2#7 çelişki-tarama
+    CuriosityPhase(),   # Tier1#3: merak-güdümlü oto-araştırma (bilmediğini bul→öğren)
     DeductivePhase(),   # engine.grow(): InferenceChain + certify_theorem_graph (öksüz bağlandı)
-    ScienceStep(),      # Bilim: transitif hipotez + RH-Sturm (growth ile TEK-GERÇEK; öksüz bağlandı)
+    ScienceStep(),      # Bilim: transitif hipotez + RH-Sturm + Tier2#4 hipotez→tasarım→doğrula
+    CodeGrowthPhase(),  # Tier2#6: otonom kod-kapsamı büyüme (kavram-büyümenin kod eşleniği)
     ComposePhase(),     # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
-    FlyWheelPhase(),    # F-ASI #2: produce()→scan_gaps→ProofLoop + koridor amplifikasyon ölçümü
+    FlyWheelPhase(),    # F-ASI#2 + Tier2#5 üretilen artefaktı geri-yut + Tier3#9 koridor-beam
     DiscoverPhase(),    # F-ASI #3: çapraz-domain gizli κ-dolanıklık → kalıcı QUANTUM_BRIDGE
+    GoalPhase(),        # Tier1#1: insan hedefi yoksa öz-hedef + Pilar B güdümlü pursue
     ProvePhase(),
     NarratePhase(),     # Tel 2: döngü sesi — öğrenileni dile döker
     PersistPhase(),
@@ -1153,6 +1369,13 @@ class Cognition:
             pharma_recall=state.pharma_recall,
             transport_corridor=state.transport_corridor,
             bridges_discovered=state.bridges_discovered,
+            hypotheses_generated=state.hypotheses_generated,
+            relearned=state.relearned,
+            contradictions_resolved=state.contradictions_resolved,
+            curiosity_researched=state.curiosity_researched,
+            hypotheses_tested=state.hypotheses_tested,
+            artifacts_reingested=state.artifacts_reingested,
+            code_grown=state.code_grown,
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
             narrations=list(state.narration),
