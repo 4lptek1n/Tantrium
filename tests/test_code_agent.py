@@ -1,5 +1,20 @@
 """ASI §12 P4 — kod ajanı: grounding + halüsinasyon-tespiti + izole test-runner + agentic."""
-from tantrium.core.code_agent import ground_codebase, check_grounded, run_tests
+from tantrium.core.code_agent import (ground_codebase, check_grounded, run_tests,
+                                      verify_api_symbol, ground_api)
+
+
+def test_verify_api_symbol_hallucination_guard():
+    """Dış API çağrısı GERÇEK mi (introspection) — uydurma sembol reddedilir (Tier 3.5)."""
+    assert verify_api_symbol("json.dumps") and verify_api_symbol("math.sqrt")
+    assert not verify_api_symbol("json.nonexistent")      # HAYALİ API → False
+    assert not verify_api_symbol("nosuchmodule.foo")      # import edilemez → False
+
+
+def test_ground_api_returns_real_symbol():
+    """Hint → GERÇEK API sembolü (var olmayan asla üretilmez); allowlist geçidi."""
+    g = ground_api("math", "square root sqrt")
+    assert g and g["qualname"] == "math.sqrt" and g["exists"]
+    assert ground_api("os", "anything", allowlist={"math", "json"}) is None   # allowlist DIŞI
 
 
 def test_ground_codebase():

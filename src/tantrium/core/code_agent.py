@@ -113,6 +113,61 @@ def check_grounded(code: str, ground: dict | None = None) -> dict:
             "syntax_ok": True}
 
 
+def verify_api_symbol(dotted: str) -> bool:
+    """'json.dumps' / 'math.sqrt' GERÇEKTEN var mı (introspection) — HALÜSİNASYON GUARD.
+    Var olmayan API ('json.nonexistent') → False. Modül import edilemezse → False."""
+    parts = dotted.split(".")
+    if len(parts) < 2:
+        return False
+    import importlib
+    try:
+        obj = importlib.import_module(parts[0])
+    except Exception:
+        return False
+    for attr in parts[1:]:
+        obj = getattr(obj, attr, None)
+        if obj is None:
+            return False
+    return True
+
+
+def ground_api(module_name: str, hint: str = "", *, allowlist=None) -> dict | None:
+    """Dış API adaptörünü GROUNDED üret: modülü introspect et, hint'e en uygun GERÇEK çağrılabilir
+    sembolü bul. Yalnız GERÇEKTEN var olan sembol döner (uydurma API imkânsız). allowlist verilirse
+    yalnız o güvenli modüller. Döner: {module, symbol, qualname, signature, call, exists} | None."""
+    if allowlist is not None and module_name not in allowlist:
+        return None
+    import importlib
+    import inspect
+    import re
+    try:
+        mod = importlib.import_module(module_name)
+    except Exception:
+        return None
+    words = set(re.findall(r"[a-z]{3,}", hint.lower()))
+    best = None
+    best_score = -1
+    for name in dir(mod):
+        if name.startswith("_"):
+            continue
+        fn = getattr(mod, name, None)
+        if not callable(fn):
+            continue
+        doc = (inspect.getdoc(fn) or "").lower()
+        score = (3 if name.lower() in words else 0) + len(words & set(re.findall(r"[a-z]{3,}", doc)))
+        if score > best_score:
+            best_score, best = score, name
+    if best is None or best_score <= 0:
+        return None
+    qual = f"{module_name}.{best}"
+    try:
+        sig = str(inspect.signature(getattr(mod, best)))
+    except (TypeError, ValueError):
+        sig = "(...)"
+    return {"module": module_name, "symbol": best, "qualname": qual, "signature": sig,
+            "call": f"{qual}{sig}", "exists": verify_api_symbol(qual)}
+
+
 def run_tests(code: str, test_code: str, *, timeout: float = 15.0) -> dict:
     """code + pytest test'ini İZOLE subprocess'te çalıştır → gerçek doğrulama geçidi.
 
