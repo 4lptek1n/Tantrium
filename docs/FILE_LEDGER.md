@@ -367,6 +367,19 @@ her dosyanın gerçek gücünü kayda geçirir — katalog özetine değil, dosy
 - **DÜRÜST SINIR:** kanonik girdi 3 tip (liste/sayı/metin); atipik girdi → kullanıcı örnek versin.
 - **Tekrar:** YOK. nl_code (NL→op zinciri) + code_synthesis (sentez) üstüne niyet→spec köprüsü.
 
+### ✅ core/code_behavior.py — DAVRANIŞSAL kod modalitesi (yapı değil DAVRANIŞ=işlev) [ASI §12 KÖK]
+- **İş:** `behavior_signature(examples)` programı GİRDİ→ÇIKTI matrisiyle encode eder (AYNI G=AᵀA →
+  eigenvalue → Hausdorff makine, davranış matrisi). `behavior_fingerprint_of(fn)`/`fingerprint_from_examples`
+  KAYIPSIZ extensional kimlik (kanonik tabanda TAM I/O, Fraction, hashable). `_exact`/`_is_literal`.
+- **Güç:** KÖK düzeltme — `_code_to_graph_moments` (AST) `a+b` ile `a-b`'yi çakıştırıyordu (yapı özdeş,
+  davranış zıt). Davranışsal encode kodu κ-uzayında molekülle aynı rejime koyar (lineer vs nonlineer
+  ayrılır); KAYIPSIZ kimlik add/sub/mul/div'i ASLA çakıştırmaz + program DENKLİK testi (aynı davranış
+  farklı syntax → aynı kimlik). Örnek = ÖLÇÜ (molekül spektrumu gibi), şablon değil. CertifiedProgram
+  artık `.behavior` (geometrik) + `.behavior_exact` (kayıpsız) taşır.
+- **DÜRÜST SINIR:** moment kayıplı (sınıf ayırır, tam pinlemez) → kesin ayrım `behavior_exact`'ten;
+  bu yüzden örnek irreducible (kanıt = ölçü), eksiklik değil.
+- **Tekrar:** YOK. encoder._code_to_graph_moments (yapısal/refactor-denkliği) ile TAMAMLAYICI (davranışsal).
+
 ### ✅ core/molecular_3d.py — TEK kanonik 3D SDF util [#7 dedup ÇÖZÜLDÜ 2026-06]
 - **İş:** `embed_3d_sdf(smiles, name, out_dir, *, prefix, props, remove_hs, enforce_chirality)`.
   SMILES → ETKDGv3 (randomSeed=42) + MMFF94 → SDF. `inverse._make_3d` (props={SMILES},

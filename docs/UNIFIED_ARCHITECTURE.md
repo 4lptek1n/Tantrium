@@ -666,7 +666,28 @@ Kapsam açığı YÖNTEMLE değil KODLAMAYLA kapanır (kullanıcı ilkesi: "dar 
 
 **Boru hattı:** `ai.build(niyet)` → anla(nl_code) → araştır(#2) → ground-truth örnek(#4) →
 sentezle(#1 grounded havuz) → doğrula(P3) → çalışan kod. Çok-fonksiyon: `ai.code_app(specs)` (#3).
-Tests: code_synthesis 12 + code_research 8 + code_compose 7 + code_intent 7 + code_agent 6 + nl_code 6.
+**Tek istek → çok-fonksiyon modül:** `ai.build_app(goal)` → `decompose_goal` (bağlaçla parçala) →
+her parça grounded+ground-truth+kanıt → `compose` birleştir (#5).
+
+### Paradigma Düzeltmesi — kod GERÇEK modalite (yapı değil DAVRANIŞ = işlev) [KÖK, ölçüldü]
+Kullanıcı itirazı: "şablon dolduruyorsun, mock datadan farkı ne, bu matematiği neden bulduk." HAKLI.
+KÖK BULGU (ölçüldü): `_code_to_graph_moments` kodu AST YAPISIYLA encode ediyordu — `a+b` ile `a-b`
+grafları özdeş, davranışları zıt → aynı moment. Molekülde yapı=işlev olduğu için paradigma orada
+çalışır; KODDA davranış=işlevdir. Düzeltme katmanları:
+- **`core/code_behavior.py` — davranışsal modalite:** `behavior_signature(examples)` programı
+  GİRDİ→ÇIKTI matrisiyle encode eder (AYNI G=AᵀA makine). Kod artık κ-uzayında molekül/kavramla
+  aynı rejimde: lineer add/sub vs nonlineer mul/div geometrik ayrılır.
+- **KAYIPSIZ kimlik:** moment kayıplı (add/sub davranışsal κ'da bile çakışır) → `behavior_fingerprint_of`
+  kanonik tabanda TAM I/O cevabı (truth-table, Fraction). add/sub/mul/div ASLA çakışmaz. İKİ KATMAN:
+  moment=geometrik konum (transport/κ-güdüm), `behavior_exact`=kayıpsız extensional kimlik (kesin
+  ayrım + program DENKLİK testi: aynı davranış farklı syntax → aynı kimlik). Örnek = ÖLÇÜ (molekül
+  spektrumu gibi kodu uzaya koyar), ŞABLON DEĞİL.
+- **Koşullu sentez — çok-dallı GERÇEK kod:** `_synthesize_conditional` girdi-uzayını grounded
+  yüklemlerle (x>0, x%3==0, len>=k, a>b) BÖLGELERE ayırır → if/elif/else. ANTI-MEMORİZASYON: çözüm
+  SIKIŞMALI (kural ≤ örnek/2) + sabit-bölge tercihi → piecewise-constant GENELLEŞIR, patternsiz spec
+  DÜRÜST başarısız (lookup-table kurulmaz). Canlı: FizzBuzz 4-kural/10-örnek, fb(45)=FizzBuzz (görülmemiş).
+Tests: code_synthesis 15 + code_research 8 + code_compose 7 + code_intent 11 + code_behavior 9 +
+code_agent 6 + nl_code 6.
 
 ### Dürüst sınırlar
 - Sentez deterministik beam araması: iyi-tanımlı, testli/örnekli fonksiyon-dönüşüm sentezi →
