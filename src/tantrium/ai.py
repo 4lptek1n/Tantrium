@@ -3684,6 +3684,33 @@ class AI:
         return _nm(self._engine, query, n=n, pool=pool,
                    max_neighbors=max_neighbors, cascade_weight=cascade_weight)
 
+    def _meaning_store(self):
+        """Kalıcı zengin-düğüm cache'i (lazy singleton, diskten yüklenir)."""
+        store = getattr(self._engine, "_meaning_store", None)
+        if store is None:
+            from tantrium.core.meaning_cache import MeaningStore
+            store = MeaningStore.load()
+            self._engine._meaning_store = store
+        return store
+
+    def refresh_meaning_cache(self, *, limit: int = 30) -> dict:
+        """Zengin-düğüm katmanını büyüt: en-köklü ölçülmemiş kavramları ölç + kalıcılaştır.
+
+        Köklü kavramların ölçüm imzasını (topoloji + RH-cascade + AKIŞ) ayrı kalıcı
+        cache'e (results/agi/meaning_cache.json) ekler — manifold şemasına dokunmadan.
+        Bounded (limit) + resumable. Döner: {added, total}.
+        """
+        from tantrium.core.meaning_cache import refresh_meaning_cache as _refresh
+        store = self._meaning_store()
+        added = _refresh(self._engine, store, limit=limit)
+        if added:
+            store.save()
+        return {"added": added, "total": len(store)}
+
+    def meaning_cache(self, name: str) -> "dict | None":
+        """Bir kavramın kalıcı zengin imzasını oku (topo/li/flow/komşular) ya da None."""
+        return self._meaning_store().get(name)
+
     def bind_percept(
         self,
         concept_name: str,

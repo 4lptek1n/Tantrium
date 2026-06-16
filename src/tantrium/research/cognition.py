@@ -47,6 +47,7 @@ class CognitionState:
     hypotheses_tested: int = 0     # ScienceStep: oto-tasarım+doğrulama ile test edilen hipotez
     artifacts_reingested: int = 0  # FlyWheelPhase: üretilip manifolda geri-yutulan SMILES
     code_grown: int = 0            # CodeGrowthPhase: otonom büyüyen kod-op/fonksiyon
+    meaning_cached: int = 0        # MeaningCachePhase: kalıcılaşan zengin-düğüm imzası (topo+cascade+flow)
     focus: str = ""                # SchedulePhase: bu döngünün zayıf-eksen odağı (meta-kontrol)
     prod_budget: int = 4           # FlyWheelPhase: koridor-geri-beslemeli üretim beam genişliği
     frontier_concepts: list = field(default_factory=list)  # ReflectPhase: WEAKLY_GROUNDED gerçek
@@ -91,6 +92,7 @@ class CognitionReport:
     hypotheses_tested: int = 0      # ScienceStep tasarım-doğrula
     artifacts_reingested: int = 0   # FlyWheelPhase geri-yut
     code_grown: int = 0             # CodeGrowthPhase
+    meaning_cached: int = 0         # MeaningCachePhase kalıcı zengin-düğüm imzası
     phase_logs: list[str] = field(default_factory=list)
     campaigns_triggered: list[str] = field(default_factory=list)
     narrations: list[str] = field(default_factory=list)
@@ -1325,6 +1327,35 @@ class CodeGrowthPhase:
         return state
 
 
+class MeaningCachePhase:
+    """Kalıcı zengin-düğüm katmanı (b): köklü kavramların ÖLÇÜLEN imzasını biriktir.
+
+    Tez kanıtlandı (rename-invariance): anlam grafta. `measure` o ölçümü (topoloji +
+    RH-cascade + AKIŞ) üretir; bu faz onu KALICI yapar — her turda en-köklü ÖLÇÜLMEMİŞ
+    N kavram ölçülüp `results/agi/meaning_cache.json`'a yazılır (manifold şemasına
+    DOKUNMADAN, ayrı dosya). 8-momentin sahip olmadığı `flow` ekseni ilk kez kalıcı.
+    _autonomy-kapılı, bounded (limit=20), fail-open — büyümeyi yavaşlatmaz."""
+    name = "meaning_cache"
+
+    def execute(self, engine: "CertificationEngine", state: "CognitionState") -> "CognitionState":
+        if not getattr(engine, "_autonomy", False):
+            return state
+        try:
+            from tantrium.core.meaning_cache import MeaningStore, refresh_meaning_cache
+            store = getattr(engine, "_meaning_store", None)
+            if store is None:
+                store = MeaningStore.load()
+                engine._meaning_store = store
+            added = refresh_meaning_cache(engine, store, limit=20)
+            if added:
+                store.save()
+                state.meaning_cached += added
+                state.log(f"meaning_cache: +{added} zengin imza (toplam {len(store)}, flow dahil)")
+        except Exception as exc:
+            state.log(f"meaning_cache: atlandı — {exc}")
+        return state
+
+
 _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     SchedulePhase(),    # Tier 3 #8: meta-kontrol — zayıf-eksen odağı + #9 koridor→üretim-bütçesi
     PerceivePhase(),
@@ -1338,6 +1369,7 @@ _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     ComposePhase(),     # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
     FlyWheelPhase(),    # F-ASI#2 + Tier2#5 üretilen artefaktı geri-yut + Tier3#9 koridor-beam
     DiscoverPhase(),    # F-ASI #3: çapraz-domain gizli κ-dolanıklık → kalıcı QUANTUM_BRIDGE
+    MeaningCachePhase(), # (b): kalıcı zengin-düğüm katmanı (topoloji+cascade+flow ölçümü biriktir)
     GoalPhase(),        # Tier1#1: insan hedefi yoksa öz-hedef + Pilar B güdümlü pursue
     ProvePhase(),
     NarratePhase(),     # Tel 2: döngü sesi — öğrenileni dile döker
@@ -1478,6 +1510,7 @@ class Cognition:
             hypotheses_tested=state.hypotheses_tested,
             artifacts_reingested=state.artifacts_reingested,
             code_grown=state.code_grown,
+            meaning_cached=state.meaning_cached,
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
             narrations=list(state.narration),
