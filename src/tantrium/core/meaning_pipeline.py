@@ -72,13 +72,34 @@ class MeaningSignature:
         """Karşılaştırmada kullanılacak BİRİNCİL ölçü: köklüyse topoloji, değilse harf."""
         return self.topo_moments if self.grounded else self.surface_moments
 
+    @classmethod
+    def from_cache(cls, name: str, rec: dict) -> "MeaningSignature":
+        """Kalıcı cache kaydından hafif imza kur (topoloji baştan hesaplanmaz — UCUZ).
+
+        Düşünme motorları saniyede çok kez mesafe ölçer; cache hit → topoloji-encode
+        atlanır. surface boş (köklü karşılaştırma topoloji kullanır, harfe düşmez)."""
+        return cls(
+            name=name,
+            surface_moments=[],
+            modality="relational",
+            topo_moments=list(rec.get("topo") or []),
+            li_cascade=list(rec["li"]) if rec.get("li") else None,
+            flow=list(rec["flow"]) if rec.get("flow") else None,
+            n_neighbors=int(rec.get("n_neighbors", 0)),
+            neighbors=list(rec.get("neighbors", [])),
+        )
+
 
 def measure(engine, name: str, *, max_neighbors: int = 24,
-            topo_encoder: TopologyEncoder | None = None) -> MeaningSignature:
+            topo_encoder: TopologyEncoder | None = None, store=None) -> MeaningSignature:
     """Kavramı üç katta ölç. Köklüyse topoloji birincil + RH-cascade; değilse harf.
 
     `topo_encoder` verilirse yeniden kurulmaz (indegree cache paylaşımı — toplu ölçüm hızlı).
+    `store` verilir ve kavram cache'te ise topoloji BAŞTAN HESAPLANMAZ (hafif cache-imzası
+    döner — düşünme motorlarının ucuz mesafe okuması için).
     """
+    if store is not None and store.has(name):
+        return MeaningSignature.from_cache(name, store.get(name))
     surface = [float(m) for m in engine.encoder.encode(name, name=name[:64]).moments]
     te = topo_encoder or TopologyEncoder(engine)
     obj = te.encode(name, max_neighbors=max_neighbors)
@@ -193,12 +214,24 @@ def nearest_meaning(engine, query: str, *, n: int = 10, pool: int = 60,
         wide = engine.manifold.nearest(Concept(name=query, moments=list(q_obj.moments)), n=pool)
         return [(nm, float(d), "surface") for nm, d in wide if nm != query][:n]
 
+    store = getattr(engine, "_meaning_store", None)
     cands = _graph_candidates(engine, query, q_sig.neighbors, pool)
     reranked: list[tuple[float, str, str]] = []
     for nm in cands:
-        c_sig = measure(engine, nm, max_neighbors=max_neighbors, topo_encoder=te)
+        c_sig = measure(engine, nm, max_neighbors=max_neighbors, topo_encoder=te, store=store)
         d = signature_distance(q_sig, c_sig, cascade_weight=cascade_weight)
         reranked.append((d, nm, c_sig.modality))
     reranked.sort(key=lambda x: x[0])
     return [(nm, float(d), mod) for d, nm, mod in reranked[:n]]
+
+
+def meaning_neighbor_names(engine, name: str, *, n: int = 6, pool: int = 60) -> list[str]:
+    """Düşünme motorları için: anlam-sıralı komşu İSİMLERİ (köklüyse graf, değilse harf).
+
+    `nearest_meaning`'in ince sarmalı — motorlar yalnız isim listesi ister (yürünecek
+    komşular). Cache-farkında (ucuz). Köklü değilse harf-yüzeyine düşer (dürüst sınır)."""
+    try:
+        return [nm for nm, _, _ in nearest_meaning(engine, name, n=n, pool=pool)]
+    except Exception:
+        return []
 

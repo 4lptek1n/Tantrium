@@ -22,6 +22,24 @@ if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
 
 
+def _meaning_neighbors(engine, name: str, fallback_concept, n: int, _fallback: bool = True):
+    """Anlam-pusulası: köklü kavramda graf-topolojiyle komşu (anlam); değilse harf-nearest.
+
+    Sistem düşünürken yazılış-benzeri (egfr→aupr) yerine anlam-benzeri (egfr→akt3) komşuya
+    yürür. Köklü değilse: `_fallback=True` → harf-nearest (mevcut davranış KORUNUR); `_fallback=
+    False` → boş liste (çağıran kendi fallback'ini seçsin). Fail-open → regresyon yok."""
+    try:
+        from tantrium.core.meaning_pipeline import nearest_meaning
+        hits = nearest_meaning(engine, name, n=n)
+        if any(mod == "relational" for _, _, mod in hits):
+            return [(nm, Fraction(d).limit_denominator(10 ** 6)) for nm, d, _ in hits]
+    except Exception:
+        pass
+    if not _fallback:
+        return []
+    return engine.manifold.nearest(fallback_concept, n=n)
+
+
 # ─── Data model ───────────────────────────────────────────────────────────────
 
 @dataclass
@@ -167,7 +185,9 @@ class Thinker:
         if known_words and tau:
             # Semantic edges (IS_A, USES, ACHIEVES, ...) > ALEPH (byte-geometric)
             # Collect both, prefer semantic when available
-            _SEMANTIC_PARADIGMS = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
+            _SEMANTIC_PARADIGMS = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
+                                   "CAUSES", "ACTIVATES", "INHIBITS", "TARGETS", "BINDS",
+                                   "COMPONENT_OF"}
             sem_seen: dict[str, tuple[float, str]] = {}   # name → (dist, paradigm)
             aleph_seen: dict[str, float] = {}
             for w in known_words[:neighbors]:
@@ -182,26 +202,44 @@ class Thinker:
             sem_list = sorted(sem_seen.items(), key=lambda x: x[1][0])
             aleph_list = sorted(aleph_seen.items(), key=lambda x: x[1])
 
-            # Fill up to `neighbors` slots: semantic first, then ALEPH for remainder
+            # Doldurma sırası: (1) tipli semantik kenarlar (gerçek anlam) ÖNCE,
+            # (2) kalan boşluk ANLAM-komşusuyla (graf-topoloji) — ham ALEPH değil,
+            # (3) yine eksikse son çare ham ALEPH. Böylece yazılış-çöpü (skew/fail/annz)
+            # yerine anlam-komşusu (akt3/kdr) yürünür.
             combined: list[tuple[str, float, str]] = []
             for name, (d, paradigm) in sem_list:
                 if len(combined) >= neighbors:
                     break
                 combined.append((name, d, paradigm))
+            if len(combined) < neighbors and known_words:
+                _picked = {n for n, _, _ in combined}
+                # GERÇEK kavramın (known_words[0]) anlam-komşusu — sentetik q_name değil.
+                for nm, dd in _meaning_neighbors(engine, known_words[0], concept_0, neighbors,
+                                                 _fallback=False):
+                    if len(combined) >= neighbors:
+                        break
+                    if nm not in sem_seen and nm not in _picked and nm not in known_words:
+                        combined.append((nm, float(dd), "MEANING"))
+                        _picked.add(nm)
             for name, d in aleph_list:
                 if len(combined) >= neighbors:
                     break
-                if name not in sem_seen:
+                if name not in sem_seen and name not in {n for n, _, _ in combined}:
                     combined.append((name, d, "ALEPH"))
 
             neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d, _ in combined]
             # Tag semantic edges in certified_claims later via paradigm info
             _neighbor_paradigms = {n: p for n, _, p in combined}
         elif tau and q_name in tau.edges and tau.edges[q_name]:
-            raw_neighbors = tau.nearest(q_name)
-            neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d in raw_neighbors]
+            # Köklü kavram → anlam-pusulası (graf-topoloji); değilse harf/moment-komşu.
+            meaning_hits = _meaning_neighbors(engine, q_name, concept_0, neighbors, _fallback=False)
+            if meaning_hits:
+                neighbor_list = meaning_hits
+            else:
+                raw_neighbors = tau.nearest(q_name)
+                neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d in raw_neighbors]
         else:
-            neighbor_list = engine.manifold.nearest(concept_0, n=neighbors)
+            neighbor_list = _meaning_neighbors(engine, q_name, concept_0, neighbors)
 
         if neighbor_list:
             avg_drift = sum(d for _, d in neighbor_list) / len(neighbor_list)
@@ -270,7 +308,7 @@ class Thinker:
                 moments=list(d_obj.moments),
                 domain="derived",
             )
-            d_neighbors = engine.manifold.nearest(d_concept, n=3)
+            d_neighbors = _meaning_neighbors(engine, derived_name[:64], d_concept, 3)
             for n2, dist2 in d_neighbors:
                 if n2 not in second_order_seen:
                     second_order_seen.add(n2)
