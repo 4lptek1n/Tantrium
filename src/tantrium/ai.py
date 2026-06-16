@@ -3458,6 +3458,16 @@ class AI:
             dist, ent = e.get("classical_dist"), e.get("entangled")
         except Exception:
             pass
+        # ANLAM mesafesi (topoloji): kanıtladık ki harf-moment yakınlığı anlamı ölçmez.
+        # İkisi de köklüyse "yakın/uzak" hükmünü GRAF mesafesinden ver (rename-invariant).
+        mdist = None
+        try:
+            sa = self.measure(a); sb = self.measure(b)
+            if sa.grounded and sb.grounded:
+                from tantrium.core.meaning_pipeline import signature_distance
+                mdist = round(signature_distance(sa, sb), 4)
+        except Exception:
+            pass
         Aa, Bb = a[:1].upper() + a[1:], b[:1].upper() + b[1:]
         parts = []
         if shared:
@@ -3466,15 +3476,19 @@ class AI:
             parts.append(f"{Aa}'yı ayıran: {gen_join(distinct_a)}")
         if distinct_b:
             parts.append(f"{Bb}'yi ayıran: {gen_join(distinct_b)}")
-        if dist is not None:
+        if mdist is not None:
+            rel = "yakın" if mdist < 0.1 else ("orta uzaklıkta" if mdist < 0.3 else "uzak")
+            parts.append(f"anlam (graf-topoloji) uzayında {rel} (Δ={mdist})"
+                         + ("; gizli κ-bağ da var" if ent else ""))
+        elif dist is not None:
             rel = "yakın" if dist < 0.1 else ("orta uzaklıkta" if dist < 0.3 else "uzak")
             parts.append(f"moment uzayında {rel} (W₂={dist})"
                          + ("; ama gizli κ-bağ var (klasik-uzak/κ-yakın)" if ent else ""))
         answer = (". ".join(parts) + "." if parts else
                   f"{Aa} ve {Bb} için karşılaştırılacak köklü ilişki bulamadım.")
         return {"a": a, "b": b, "shared": shared, "distinct_a": distinct_a,
-                "distinct_b": distinct_b, "distance": dist, "entangled": ent,
-                "answer": answer}
+                "distinct_b": distinct_b, "distance": dist, "meaning_distance": mdist,
+                "entangled": ent, "answer": answer}
 
     def enumerate_kind(self, category: str, relation: str = "IS_A") -> dict:
         """LİSTELE — "X türleri / örnekleri / inhibitörleri" (TAU ters arama, köklü).
