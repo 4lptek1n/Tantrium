@@ -1019,12 +1019,16 @@ class AI:
         goal: str | None = None,
         lang: str = "tr",
         use_meaning: bool = False,
+        use_bridges: bool = False,
     ) -> GenResult:
-        """TAU walk → Sturm-garantili certified metin üretimi."""
+        """TAU walk → Sturm-garantili certified metin üretimi.
+
+        use_bridges=True → QUANTUM_BRIDGE dolanık kenarlarını da gez (opt-in non-lokal
+        sıçrama; F7 grounding garantisi korunur — yalnız köklü hedefe)."""
         from tantrium.language.generator import CertifiedGenerator
         gen = CertifiedGenerator(self._engine, lang=lang)
         result = gen.generate(seed, max_steps=steps, goal_name=goal,
-                              use_meaning=use_meaning)
+                              use_meaning=use_meaning, use_bridges=use_bridges)
         return GenResult(
             seed=seed,
             text=result.text,

@@ -28,6 +28,10 @@ _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
 # SPECTRAL_BRIDGE hariç: genesis yapay köprüsüdür, anlamsal bilgi taşımaz.
 # Kritik hat: yalnız moment-uzayı değil, anlamsal TAU kökü olan kavramlar.
 _CERTIFIED = {"ALEPH"}
+# QUANTUM_BRIDGE = klasik-uzak/κ-yakın gizli dolanıklık (F9). Üretimde OPT-IN (use_bridges):
+# non-lokal yaratıcı sıçramalar açar, ama F7 garantisi korunur — yalnız KÖKLÜ hedefe
+# (_is_grounded_proxy) ve yalnız semantik/ALEPH komşu bulunamadığında (Pass 3) gezilir.
+_BRIDGE = {"QUANTUM_BRIDGE"}
 
 _CONNECTIVE: dict[str, str] = {
     "IS_A":            "{src}, bir {tgt} türüdür",
@@ -49,6 +53,7 @@ _CONNECTIVE: dict[str, str] = {
     "ACTIVATES":       "{src}, {tgt}'yi etkinleştirir",
     "ALEPH":           "{src}, moment uzayında {tgt} ile komşu",
     "SPECTRAL_BRIDGE": "{src}, {tgt} ile spektral köprü kuruyor",
+    "QUANTUM_BRIDGE":  "{src}, {tgt} ile kuantum dolanık (klasik-uzak, κ-yakın)",
 }
 
 _EN_CONNECTIVE: dict[str, str] = {
@@ -71,6 +76,7 @@ _EN_CONNECTIVE: dict[str, str] = {
     "ACTIVATES":       "{src} activates {tgt}",
     "ALEPH":           "{src} is moment-adjacent to {tgt}",
     "SPECTRAL_BRIDGE": "{src} has a spectral bridge to {tgt}",
+    "QUANTUM_BRIDGE":  "{src} is quantum-entangled with {tgt} (classically far, κ-near)",
 }
 
 
@@ -151,6 +157,7 @@ class CertifiedGenerator:
         beam: int = 3,
         context_decay: float = 0.7,
         use_meaning: bool = False,
+        use_bridges: bool = False,
     ) -> GenerationResult:
         """Seed kavramından başlayarak certified yörünge üret.
 
@@ -159,6 +166,7 @@ class CertifiedGenerator:
         goal_name:     hedefe doğru yönlendir (opsiyonel)
         beam:          kaç adayı değerlendir (bellek/kalite dengesi)
         context_decay: context momentum faktörü (α=0.7 → ağırlık mevcut)
+        use_bridges:   QUANTUM_BRIDGE kenarlarını da gez (opt-in non-lokal sıçrama, F7-korumalı)
         """
         from tantrium.core.semantic import moment_distance
 
@@ -198,6 +206,7 @@ class CertifiedGenerator:
                 visited, beam,
                 fallback_concept=seed_concept,
                 use_meaning=use_meaning,
+                use_bridges=use_bridges,
             )
             if nxt is None:
                 break
@@ -245,6 +254,7 @@ class CertifiedGenerator:
         beam: int,
         fallback_concept=None,
         use_meaning: bool = False,
+        use_bridges: bool = False,
     ) -> tuple[str, str, float] | None:
         """TAU komşularından en yakın adayı döndür.
 
@@ -311,6 +321,21 @@ class CertifiedGenerator:
         # Pass 3 (canlı moment arama) KALDIRILDI — Jensen hiperbolisitesi ihlali.
         # manifold.nearest() topraklı olmayan kavramları da döndürür: kritik hattan
         # sapma = anlamsız metin. Yörünge topraklı komşu bulamazsa durur.
+
+        # Pass 3' (OPT-IN): QUANTUM_BRIDGE — non-lokal dolanık sıçrama. F7 KORUNUR:
+        # yalnız use_bridges=True iken VE semantik/ALEPH komşu yokken VE hedef KÖKLÜ ise.
+        if use_bridges and not candidates:
+            for edge in tau.edges.get(current, []):
+                if edge.paradigm not in _BRIDGE:
+                    continue
+                if edge.target in visited or edge.target == current:
+                    continue
+                tc = manifold.concepts.get(edge.target)
+                if tc is None or not tc.is_real():
+                    continue
+                if not self._is_grounded_proxy(edge.target):
+                    continue
+                candidates.append((_score(tc), edge.target, edge.paradigm))
 
         if not candidates:
             return None

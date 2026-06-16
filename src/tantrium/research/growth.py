@@ -970,74 +970,17 @@ class GrowthEngine:
     ) -> None:
         """Büyüyen kausal-zengin kavramlardan TRANSİTİF hipotez üret (A→B→C ⟹ A-C),
         YENİ olanları (doğrudan kenar OLMAYAN) RH-Sturm ile sertifikala, kalıcı günlüğe yaz.
-        Bounded/fail-open — büyümeyi yavaşlatmaz. growth_state['hypotheses'] (son 500)."""
+        Bounded/fail-open — büyümeyi yavaşlatmaz. growth_state['hypotheses'] (son 500).
+
+        Derivasyon TEK-GERÇEK: `causal_rules.derive_transitive_hypotheses` (cognition.ScienceStep
+        ile ortak — kopya yok). Burada yalnız kalıcı günlük + dedup + rapor kalır."""
         try:
-            tau = self.engine.tau
-            seeds: list = []
-            for s, el in tau.edges.items():
-                if s.startswith("⟨") or len(s) > 40 or s.lower() in self._SCI_GENERIC:
-                    continue
-                cz = [e for e in el if getattr(e, "paradigm", "") in self._SCI_CAUSAL]
-                if len(cz) >= 2:
-                    seeds.append((s, cz))
-                if len(seeds) >= max_seeds * 4:
-                    break
-            seeds = seeds[:max_seeds]
-            hyps: list = []
-            seen: set = set()
-            for s, cz in seeds:
-                for e1 in cz:
-                    b = str(getattr(e1, "target", ""))
-                    for e2 in tau.edges.get(b, []):
-                        p2 = getattr(e2, "paradigm", "")
-                        if p2 not in self._SCI_CAUSAL:
-                            continue
-                        c = str(getattr(e2, "target", ""))
-                        derived = self._SCI_TRANS.get((e1.paradigm, p2))
-                        if (not derived or c == s or c == b
-                                or c.lower() in self._SCI_GENERIC
-                                or b.lower() in self._SCI_GENERIC):
-                            continue
-                        key = (s, derived, c)
-                        if key in seen:
-                            continue
-                        # YENİ mi? (zaten doğrudan kenar değilse hipotez)
-                        if any(str(getattr(e, "target", "")) == c
-                               and getattr(e, "paradigm", "") == derived
-                               for e in tau.edges.get(s, [])):
-                            continue
-                        seen.add(key)
-                        # YAPISAL subj/obj (çok-kelime kavram "tumor cell" .split()'i KIRARDI)
-                        hyps.append({"statement": f"{s} {derived} {c}", "subj": s,
-                                     "obj": c, "via": b,
-                                     "chain": f"{s} -{e1.paradigm}-> {b} -{p2}-> {c}"})
-                        if len(hyps) >= max_hyps:
-                            break
-                    if len(hyps) >= max_hyps:
-                        break
-                if len(hyps) >= max_hyps:
-                    break
+            from tantrium.reasoning.causal_rules import derive_transitive_hypotheses
+            hyps = derive_transitive_hypotheses(
+                self.engine, max_seeds=max_seeds, max_hyps=max_hyps, sturm_check=sturm_check)
             if not hyps:
                 return
-            # RH-Sturm sertifika (bounded sample) — kritik hat / gerçek-ölçü yolu
-            certified = 0
-            try:
-                from tantrium.core.production import ProductionEngine
-                pe = ProductionEngine(self.engine)
-                for h in hyps[:sturm_check]:
-                    ca = self.engine.manifold.concepts.get(h["subj"])
-                    cc = self.engine.manifold.concepts.get(h["obj"])
-                    if ca is not None and cc is not None:
-                        try:
-                            ok, pmin = pe._sturm_path_pivot_min(
-                                [float(m) for m in ca.moments],
-                                [float(m) for m in cc.moments])
-                            h["sturm_ok"] = bool(pmin >= -1e-3)
-                            certified += int(h["sturm_ok"])
-                        except Exception:
-                            h["sturm_ok"] = None
-            except Exception:
-                pass
+            certified = sum(1 for h in hyps if h.get("sturm_ok"))
             log_h = self.state.setdefault("hypotheses", [])
             existing = {h.get("statement") for h in log_h}
             added = [h for h in hyps if h["statement"] not in existing]

@@ -40,6 +40,7 @@ class CognitionState:
     pharma_recall: float = 0.0  # VerifyPhase: ampirik farmakoloji geri-kazanım (akraba tepe-1)
     transport_corridor: float = 0.0  # FlyWheelPhase: ispat-sonrası transport epsilon (amplifikasyon)
     bridges_discovered: int = 0  # DiscoverPhase: kalıcılaşan çapraz-domain QUANTUM_BRIDGE
+    hypotheses_generated: int = 0  # ScienceStep: döngüde üretilen sertifikalı transitif hipotez
     elapsed_s: float = 0.0
     should_stop: bool = False
     logs: list[str] = field(default_factory=list)
@@ -144,6 +145,17 @@ class ReflectPhase:
             from tantrium.reasoning.gap_finder import GapFinder
             gaps = GapFinder(engine).find(signal="all")
             state.gaps_found += len(gaps)
+            # WONDER önceliklendirmesi: boşlukları dış-değer×yenilik−dejenerasyon skoruyla
+            # sırala (kendini-tımar cezalı) → döngü en DEĞERLİ boşluğa odaklanır, ilk gelene değil.
+            try:
+                from tantrium.reasoning.wonder import WonderScorer
+                ranked = WonderScorer(engine).rank(gaps)
+                gaps = [w.gap for w in ranked]
+                state.log("reflect/wonder: en değerli boşluklar "
+                          + str([(getattr(w.gap, "name", "?"), round(w.score, 3))
+                                 for w in ranked[:3]]))
+            except Exception as wexc:
+                state.log(f"reflect/wonder: atlandı — {wexc}")
             gap_names = [getattr(g, "name", str(g)) for g in gaps]
             state.open_gap_names = gap_names
             state.log(f"reflect: {len(gaps)} boşluk → {gap_names[:3]}")
@@ -966,12 +978,46 @@ class GoalPhase:
 
 # ── Cognition Ana Sınıf ──────────────────────────────────────────────────────
 
+class ScienceStep:
+    """Bilim: döngüde TRANSİTİF hipotez üret (A→B→C ⟹ A-C), RH-Sturm sertifikala.
+
+    `growth._science_consolidate` büyürken bilim üretiyordu ama BATCH cognition döngüsünde
+    yoktu (öksüz güç). Bu faz onu bağlar: TEK-GERÇEK `causal_rules.derive_transitive_hypotheses`
+    (growth ile ORTAK — kopya yok) → yeni köklü hipotezleri `engine._cognition_hypotheses`
+    günlüğüne (son 500) yazar. Bounded/fail-open — döngüyü yavaşlatmaz."""
+    name = "science"
+
+    def execute(self, engine: "CertificationEngine", state: CognitionState) -> CognitionState:
+        try:
+            from tantrium.reasoning.causal_rules import derive_transitive_hypotheses
+            hyps = derive_transitive_hypotheses(engine, max_seeds=12, max_hyps=10, sturm_check=6)
+            if not hyps:
+                return state
+            log_h = getattr(engine, "_cognition_hypotheses", None)
+            if log_h is None:
+                log_h = []
+                engine._cognition_hypotheses = log_h
+            existing = {h.get("statement") for h in log_h}
+            added = [h for h in hyps if h["statement"] not in existing]
+            log_h.extend(added)
+            engine._cognition_hypotheses = log_h[-500:]
+            state.hypotheses_generated += len(added)
+            certified = sum(1 for h in added if h.get("sturm_ok"))
+            if added:
+                state.log(f"science: +{len(added)} köklü transitif hipotez "
+                          f"({certified} Sturm-sertifikalı) — örn. {added[0]['statement']}")
+        except Exception as exc:
+            state.log(f"science: atlandı — {exc}")
+        return state
+
+
 _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     PerceivePhase(),
     ReflectPhase(),
     OperatePhase(),
     VerifyPhase(),      # Corrigibility: yanlışı tespit+düzelt (growth ile paylaşılan çekirdek)
     DeductivePhase(),   # engine.grow(): InferenceChain + certify_theorem_graph (öksüz bağlandı)
+    ScienceStep(),      # Bilim: transitif hipotez + RH-Sturm (growth ile TEK-GERÇEK; öksüz bağlandı)
     ComposePhase(),     # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
     FlyWheelPhase(),    # F-ASI #2: produce()→scan_gaps→ProofLoop + koridor amplifikasyon ölçümü
     DiscoverPhase(),    # F-ASI #3: çapraz-domain gizli κ-dolanıklık → kalıcı QUANTUM_BRIDGE
