@@ -103,3 +103,29 @@ def test_recursive_does_not_break_expression():
     """Regresyon: tek-ifade hâlâ ifade olarak döner (özyinelemeye düşmez)."""
     cp = synthesize([(1, 3), (2, 5), (3, 7)])
     assert cp.verified and cp.full_source == "" and "solve" not in cp.program
+
+
+def _run_source(src, *args):
+    ns: dict = {}
+    exec(src, ns)
+    return ns["solve"](*args)
+
+
+def test_conditional_synthesis_real_branching():
+    """Tek ifade olmayan PARÇALI davranış → gerçek if/elif/else (girdi-uzayı dekompozisyonu)."""
+    sign = synthesize([(-5, -1), (-3, -1), (0, 0), (3, 1), (8, 1), (6, 1), (-2, -1)])
+    assert sign.verified and "if" in sign.source()        # çok-dallı GERÇEK kod
+    assert _run_source(sign.source(), 7) == 1 and _run_source(sign.source(), -9) == -1
+
+
+def test_conditional_rejects_memorization():
+    """ANTI-MEMORİZASYON: patternsiz spec lookup-table'a (dal-başına-nokta) ÇEVRİLMEZ — dürüst fail.
+    Gerçek kod sıkıştırır; ezber sıkıştırmaz → her dal ≥2 örnek bölgesi şartı."""
+    junk = synthesize([(1, 999), (2, 7), (3, 0), (4, 42), (5, 13), (6, 88)])
+    assert not junk.verified                              # uydurma branch-per-point YOK
+
+
+def test_conditional_preserves_recursion():
+    """Regresyon: faktöriyel koşullu'dan ÖNCE özyinelemeyle çözülür (temiz tek-yasa, dallanma değil)."""
+    fac = synthesize([(3, 6), (4, 24), (5, 120), (6, 720)])
+    assert fac.verified and _run_source(fac.source(), 7) == 5040   # GENELLEŞIR (ezber değil)

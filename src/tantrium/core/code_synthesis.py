@@ -93,7 +93,7 @@ def register_safe_module(name: str):
 _NUM_UNARY = [
     "({c}) + 1", "({c}) - 1", "({c}) * 2", "({c}) * 3", "({c}) ** 2", "({c}) + ({c})",
     "({c}) // 2", "-({c})", "abs({c})", "({c}) % 2", "({c}) * 10", "({c}) + 2",
-    "({c}) - 2", "({c}) * 5",
+    "({c}) - 2", "({c}) * 5", "str({c})",
 ]
 _LIST_UNARY = [
     "sum({c})", "len({c})", "max({c})", "min({c})", "sorted({c})", "({c})[::-1]",
@@ -268,9 +268,166 @@ def _synthesize_recursive(examples) -> str | None:
     return None
 
 
+def _getarg(inp, k=0):
+    """Ham örnek girdisinden k. argümanı al (tek-arg=skaler, çok-arg=tuple)."""
+    return inp[k] if isinstance(inp, tuple) else inp
+
+
+def _is_literal(v) -> bool:
+    """Değer güvenli bir literal mı (repr ile round-trip eden sabit dal için)."""
+    if isinstance(v, (bool, int, float, str)) or v is None:
+        return True
+    if isinstance(v, (list, tuple)):
+        return all(_is_literal(x) for x in v)
+    return False
+
+
+def _predicate_pool(examples, argnames) -> list:
+    """Girdi-uzayını BÖLGELERE ayıran grounded yüklemler (koşullu sentez = dekompozisyon).
+    Her yüklem (src, fn): fn(ham_girdi)->bool. Tip-duyarlı; geçersizler kullanımda elenir."""
+    sample = examples[0][0]
+    vals = list(sample) if isinstance(sample, tuple) else [sample]
+    a0 = argnames[0]
+    is_num = any(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals)
+    is_list = any(isinstance(v, (list, tuple)) for v in vals)
+    is_str = any(isinstance(v, str) for v in vals)
+    pool: list = []
+    if is_num and len(argnames) == 1:
+        pool += [(f"{a0} > 0", lambda inp: _getarg(inp) > 0),
+                 (f"{a0} < 0", lambda inp: _getarg(inp) < 0),
+                 (f"{a0} == 0", lambda inp: _getarg(inp) == 0),
+                 (f"{a0} % 2 == 0", lambda inp: _getarg(inp) % 2 == 0),
+                 (f"{a0} % 3 == 0", lambda inp: _getarg(inp) % 3 == 0),
+                 (f"{a0} % 5 == 0", lambda inp: _getarg(inp) % 5 == 0),
+                 (f"{a0} % 15 == 0", lambda inp: _getarg(inp) % 15 == 0)]
+        for c in sorted({_getarg(i) for i, _ in examples
+                         if isinstance(_getarg(i), (int, float))}):
+            pool.append((f"{a0} >= {c}", (lambda c: lambda inp: _getarg(inp) >= c)(c)))
+    if is_list:
+        pool += [(f"len({a0}) == 0", lambda inp: len(_getarg(inp)) == 0),
+                 (f"len({a0}) == 1", lambda inp: len(_getarg(inp)) == 1)]
+        for c in sorted({len(_getarg(i)) for i, _ in examples
+                         if isinstance(_getarg(i), (list, tuple))}):
+            pool.append((f"len({a0}) >= {c}", (lambda c: lambda inp: len(_getarg(inp)) >= c)(c)))
+    if is_str:
+        pool += [(f"{a0} == ''", lambda inp: _getarg(inp) == ""),
+                 (f"len({a0}) == 1", lambda inp: len(_getarg(inp)) == 1)]
+    if len(argnames) >= 2:
+        a, b = argnames[0], argnames[1]
+        pool += [(f"{a} > {b}", lambda inp: inp[0] > inp[1]),
+                 (f"{a} == {b}", lambda inp: inp[0] == inp[1]),
+                 (f"{a} < {b}", lambda inp: inp[0] < inp[1])]
+    return pool
+
+
+def _verify_source(src: str, examples, argnames) -> bool:
+    """Çok-satırlı (koşullu/özyinelemeli) kaynağı exec'leyip TÜM örneğe karşı doğrula (kayıpsız)."""
+    ns: dict = {}
+    try:
+        exec(src, ns)  # noqa: S102 (kapalı üretim)
+        fn = ns.get("solve")
+        if fn is None:
+            return False
+        for inp, out in examples:
+            args = inp if isinstance(inp, tuple) else (inp,)
+            try:
+                if fn(*args) != out:
+                    return False
+            except Exception:
+                return False
+        return True
+    except Exception:
+        return False
+
+
+def _synthesize_conditional(examples, argnames, *, extra_primitives=None,
+                            extra_globals=None) -> str | None:
+    """Tek ifade TÜM örneği sağlamıyorsa: girdi-uzayını yüklemlerle BÖL, her bölgeyi ayrı sentezle,
+    if/elif/else kur (gerçek çok-dallı kod). Her kural kendi bölgesinde KANITLI; bütün kayıpsız
+    doğrulanır. Evrensel-göz dekompozisyonunun kod hali — şablon değil, üretilmiş dallanma."""
+    pool = _predicate_pool(examples, argnames)
+    # yüklemleri doğrula: herhangi örnekte hata veren yüklem elenir (uygulanamaz)
+    valid: list = []
+    for src, f in pool:
+        oks = []
+        bad = False
+        for i, _ in examples:
+            try:
+                oks.append(bool(f(i)))
+            except Exception:
+                bad = True
+                break
+        if not bad:
+            valid.append((src, oks))
+
+    def _region_expr(sub):
+        """Bir bölgeyi kapatan ifade: çıktılar SABİT ise sabit (en genel+temiz), değilse tek-ifade
+        sentezle. Sabit-bölge tercihi piecewise-constant'ı (sign/FizzBuzz/sınıflama) TEMİZ+GENEL kurar."""
+        outs = [o for _, o in sub]
+        if outs and all(o == outs[0] for o in outs) and _is_literal(outs[0]):
+            return repr(outs[0])                 # sabit bölge → genelleşen temiz dal
+        cp = synthesize(sub, extra_primitives=extra_primitives,
+                        extra_globals=extra_globals, conditional=False)
+        return cp.program if (cp.verified and not cp.full_source) else None
+
+    # ANTI-MEMORİZASYON: çözüm SIKIŞMALI — toplam kural ≤ örnek/2. Ezber (dal-başına-nokta) sıkışmaz →
+    # patternsiz spec budget'ı aşar, dürüstçe BAŞARISIZ olur. Meşru tek-nokta bölge (x==0) serbest,
+    # ama ÇOK tek-nokta = lookup-table = red. Sıkışma oranı doğru ölçü (per-region min DEĞİL).
+    if len(examples) < 4:
+        return None
+    budget = max(2, len(examples) // 2)
+    remaining = set(range(len(examples)))
+    rules: list = []          # (pred_src | None, expr)
+    while remaining:
+        if len(rules) >= budget:                 # sıkışmıyor → gerçek kod değil, ezber → red
+            return None
+        rem_ex = [examples[i] for i in sorted(remaining)]
+        d = _region_expr(rem_ex)                 # kalanların TAMAMINI kapatıyor mu → default
+        if d is not None:
+            rules.append((None, d))
+            remaining.clear()
+            break
+        best = None                              # MAX-kapsama yüklem (sıkıştırmayı en çoklar)
+        for src, oks in valid:
+            subset = {i for i in remaining if oks[i]}
+            if not subset or len(subset) == len(remaining):
+                continue
+            e = _region_expr([examples[i] for i in sorted(subset)])
+            if e is not None and (best is None or len(subset) > best[0]):
+                best = (len(subset), src, e, subset)
+        if best is None:
+            return None                          # bölünemedi — dürüst başarısızlık
+        _, src, expr, subset = best
+        rules.append((src, expr))
+        remaining -= subset
+    if remaining:
+        return None
+    # if/elif/else kur (default en sonda)
+    imports: set = set()
+    body: list = []
+    default_expr = None
+    first = True
+    for pred, expr in rules:
+        for m in _SAFE_MODULES:
+            if (m + ".") in expr:
+                imports.add(m)
+        if pred is None:
+            default_expr = expr
+        else:
+            kw = "if" if first else "elif"
+            body.append(f"    {kw} {pred}:\n        return {expr}")
+            first = False
+    if default_expr is None or first:            # en az bir dal + default şart
+        return None
+    body.append(f"    else:\n        return {default_expr}")
+    imp = "".join(f"import {m}\n" for m in sorted(imports))
+    return imp + f"def solve({', '.join(argnames)}):\n" + "\n".join(body)
+
+
 def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
                primitives=None, extra_primitives=None,
-               extra_globals: dict | None = None) -> CertifiedProgram:
+               extra_globals: dict | None = None,
+               conditional: bool = True) -> CertifiedProgram:
     """examples: [(girdi, çıktı), ...] → CertifiedProgram (kanıtlı veya verified=False).
 
     Beam arama: argümanlardan başla, operasyon-operasyon genişlet, her aday örneklere karşı
@@ -349,22 +506,33 @@ def synthesize(examples, *, max_depth: int = 6, beam_width: int = 18,
         cands.sort(key=lambda t: (-t[1][0], -t[1][1], len(t[0]), t[0]))
         beam = [e for e, _ in cands[:beam_width]]
 
-    # S4: tek-ifade bulunamadıysa ÖZYİNELEME dene (faktöriyel/fibonacci)
-    rec_src = _synthesize_recursive(examples)
-    if rec_src is not None:
+    def _from_source(src, tag):
+        """Çok-satırlı kaynaktan (koşullu/özyinelemeli) sertifikalı program kur (kayıpsız fingerprint)."""
         from tantrium.core.encoder import _code_to_graph_moments
         from tantrium.core.code_behavior import behavior_fingerprint_of
-        mom = _code_to_graph_moments(rec_src) or []
-        rec_fp: tuple = ()
+        mom = _code_to_graph_moments(src) or []
+        fp: tuple = ()
         try:
             _ns: dict = {}
-            exec(rec_src, _ns)  # noqa: S102 (kapalı şablon)
-            rec_fp = behavior_fingerprint_of(_ns.get("solve"), nargs=len(argnames),
-                                             basis=_fp_basis) or ()
+            exec(src, _ns)  # noqa: S102 (kapalı üretim)
+            fp = behavior_fingerprint_of(_ns.get("solve"), nargs=len(argnames),
+                                         basis=_fp_basis) or ()
         except Exception:
             pass
-        return CertifiedProgram(program="<özyinelemeli>", verified=True, examples_passed=n,
-                                examples_total=n, steps=-1, args=list(argnames),
-                                moments=[float(m) for m in mom], behavior=list(behav),
-                                behavior_exact=rec_fp, full_source=rec_src)
+        return CertifiedProgram(program=tag, verified=True, examples_passed=n, examples_total=n,
+                                steps=-1, args=list(argnames), moments=[float(m) for m in mom],
+                                behavior=list(behav), behavior_exact=fp, full_source=src)
+
+    # S4: ÖZYİNELEME dene (faktöriyel/fibonacci) — koşullu'dan ÖNCE (temiz tek-yasa, dallanma değil)
+    rec_src = _synthesize_recursive(examples)
+    if rec_src is not None and _verify_source(rec_src, examples, argnames):
+        return _from_source(rec_src, "<özyinelemeli>")
+
+    # S5: tek ifade/özyineleme yoksa KOŞULLU sentez (girdi-uzayı dekompozisyonu = çok dallı GERÇEK kod)
+    if conditional:
+        cond_src = _synthesize_conditional(examples, argnames, extra_primitives=extra_primitives,
+                                           extra_globals=extra_globals)
+        if cond_src is not None and _verify_source(cond_src, examples, argnames):
+            return _from_source(cond_src, "<koşullu>")
+
     return _make(best_expr, max_depth, max(best_key[0], 0))
