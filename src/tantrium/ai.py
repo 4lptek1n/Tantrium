@@ -2908,6 +2908,86 @@ class AI:
                 "functions": names, "parts": parts, "failed": m.failed, "clarify": None,
                 "answer": ans, "cert": m}
 
+    def grow_code(self, tasks=None, *, rounds: int = 2, research: bool = True) -> dict:
+        """ASI §12 — OTONOM KOD-KAPSAMI BÜYÜTME (sistem KENDİ büyütür, elle DEĞİL).
+
+        Kavram-manifoldunu büyüten `ai.grow`ın KOD eşleniği. Üç otonom mekanizmayı tek döngüye bağlar:
+        (1) ARAŞTIRMA — bilinmeyen operasyonu internetten/seed'den KENDİ topraklar (research_operation),
+        (2) HAFIZA — çözdüğü her fonksiyonu KENDİ biriktirir (solved_library),
+        (3) ÖZ-KOMPOZİSYON — çözülmüş tek-arg fonksiyonları zincirleyip YENİ fonksiyon türetir
+            (h=g∘f), ground-truth'la doğrular, hatırlar. Hiçbiri elle müdahale gerektirmez.
+
+        tasks: NL niyet ya da örnek-spec listesi (verilmezse yalnız öz-kompozisyon). Döner:
+        {ops_grounded, functions_learned, library_size, composed, failed, answer}.
+        DÜRÜST SINIR: yeni OPERASYON+FONKSİYON otonom büyür; yeni STRATEJİ (koşullu/fold gibi şema)
+        icadı meta-sentez frontier'ı — bu döngüde YOK (dürüstçe).
+        """
+        import itertools
+        from tantrium.core.code_research import ground_stdlib_operations
+        from tantrium.core.code_synthesis import solved_library, synthesize
+        from tantrium.core.code_behavior import _exact
+
+        ops_before = len(ground_stdlib_operations())
+        lib_before = len(solved_library())
+        learned: list = []
+        failed: list = []
+        composed: list = []
+
+        for t in (tasks or []):
+            try:
+                if isinstance(t, str):
+                    r = self.build(t, research=research)
+                    (learned if r["verified"] else failed).append(t)
+                else:
+                    cp = synthesize(list(t))
+                    (learned if cp.verified else failed).append("spec")
+            except Exception:
+                failed.append(str(t)[:40])
+
+        # ÖZ-KOMPOZİSYON: çözülmüş tek-arg fonksiyonları zincirle → yeni fonksiyon (otonom genişleme)
+        _GLOB = {"abs": abs, "max": max, "min": min, "len": len, "sum": sum,
+                 "sorted": sorted, "str": str, "reversed": reversed, "list": list}
+        _CANON_SETS = [[1, 2, 3, 5, 8], [[3, 1, 2], [5, 4], [2, 8, 1]], ["abc", "hi", "test"]]
+        for _round in range(max(0, rounds)):
+            lib = [cp for cp in solved_library()
+                   if len(cp.args) == 1 and not cp.full_source]
+            made = 0
+            for f, g in itertools.permutations(lib, 2):
+                if made >= 4:
+                    break
+                expr = g.program.replace("x", f"({f.program})")   # g(f(x)) zinciri
+                ex: list = []                                     # tip-uyumlu kanonik küme bul
+                for canon in _CANON_SETS:
+                    trial: list = []
+                    ok = True
+                    for v in canon:
+                        try:
+                            trial.append((v, _exact(eval(expr, _GLOB, {"x": v}))))  # noqa: S307
+                        except Exception:
+                            ok = False
+                            break
+                    if ok:
+                        ex = trial
+                        break
+                if not ex or len({o for _, o in ex}) <= 1:        # sabit/çöken zincir atla
+                    continue
+                cp = synthesize(ex)
+                if cp.verified and cp.program not in {c[1] for c in composed}:
+                    composed.append((expr, cp.program))
+                    made += 1
+            if made == 0:
+                break
+
+        ops_after = len(ground_stdlib_operations())
+        lib_after = len(solved_library())
+        ans = (f"Otonom büyüme: {ops_after - ops_before} yeni operasyon topraklandı (araştırma), "
+               f"kütüphane {lib_before}→{lib_after} fonksiyon (hafıza), {len(composed)} yeni fonksiyon "
+               f"öz-kompozisyonla türedi. Hepsi KANITLI — elle müdahale yok. (Yeni strateji icadı "
+               f"meta-sentez frontier'ı, bu döngüde değil.)")
+        return {"ops_grounded": ops_after - ops_before, "functions_learned": len(learned),
+                "library_size": lib_after, "composed": [c[1] for c in composed],
+                "failed": failed, "answer": ans}
+
     def ground_codebase(self, files: dict) -> dict:
         """ASI §12 P4 — repo'yu KÖKLÜ manifolda çevir (kod-tabanı = topoloji).
         files: {path: source}. Döner: {symbols, imports, functions, edges, n_symbols}."""

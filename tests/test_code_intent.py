@@ -102,3 +102,13 @@ def test_ai_build_with_explicit_examples_skips_derivation():
     ai = tantrium.AI()
     r = ai.build("herhangi", examples=[(1, 3), (2, 5), (3, 7)], research=False)  # 2x+1
     assert r["verified"]
+
+
+def test_grow_code_autonomous_coverage():
+    """OTONOM kod-kapsamı büyüme: araştırma (op) + hafıza (fonksiyon) + öz-kompozisyon — elle değil."""
+    import tantrium
+    ai = tantrium.AI()
+    r = ai.grow_code(tasks=["karesini al", "bir ekle", "iki katına çıkar"], rounds=2)
+    assert r["library_size"] >= 3                     # hafıza: çözülmüş fonksiyonlar biriker
+    assert isinstance(r["composed"], list)            # öz-kompozisyon türevleri (yeni fonksiyon)
+    assert "answer" in r

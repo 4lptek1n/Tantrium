@@ -74,13 +74,24 @@ def behavior_fingerprint_of(fn, *, nargs: int | None = None, basis=None) -> tupl
         return None
 
 
+def _safe_float(v) -> float:
+    """OverflowError-güvenli float (devasa int — ör. faktöriyel/üs zincirleri — patlamaz)."""
+    try:
+        return float(v)
+    except (OverflowError, ValueError, TypeError):
+        try:
+            return 1e18 if v > 0 else -1e18
+        except Exception:
+            return 0.0
+
+
 def _to_features(value) -> list:
     """Herhangi bir değeri (sayı/dizi/metin/bool) sayısal özellik vektörüne indir (davranış ölçüsü).
     Tip-kör: encoder felsefesi — her şey AYNI sayısal rejime."""
     if isinstance(value, bool):
         return [float(value)]
     if isinstance(value, (int, float)):
-        return [float(value)]
+        return [_safe_float(value)]
     if isinstance(value, str):
         # metin → kod-noktası istatistikleri (uzunluk + ortalama + ilk/son)
         cps = [ord(c) for c in value] or [0]
