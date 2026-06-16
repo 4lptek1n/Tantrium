@@ -3618,6 +3618,41 @@ class AI:
         return float(sum(abs(float(x) - float(y))
                          for x, y in zip(oa.moments, ob.moments)))
 
+    def measure(self, name: str, *, max_neighbors: int = 24) -> "object":
+        """ÖLÇTÜĞÜMÜZÜ kullanan tek ölçüm yolu — yüzey + topoloji + RH-cascade.
+
+        Rename-invariance kanıtladı: anlam harfte değil grafta. Bu metod o ölçümü
+        üç katta toplar:
+          .surface_moments = harf (bootstrap adresi — köklendikçe körelir)
+          .topo_moments    = graf (ANLAM — köklüyse BİRİNCİL, rename-invariant)
+          .topo_spectrum   = tam Laplacian spektrumu (n≤25, 8-moment darboğazı YOK)
+          .li_cascade      = Li katsayıları topoloji spektrumunda (RH-merdiveni, darboğazsız)
+          .flow            = akış gradyanı (8 momentin sahip olmadığı dinamik eksen)
+          .modality        = "relational" (köklü) | "surface" (topraksız → harfe düş)
+
+        `.primary_moments()` köklüyse topolojiyi, değilse harfi döndürür.
+        Döner: MeaningSignature.
+        """
+        from tantrium.core.meaning_pipeline import measure as _measure
+        te = getattr(self, "_topo_encoder", None)
+        if te is None:
+            from tantrium.core.topology_encode import TopologyEncoder
+            te = TopologyEncoder(self._engine)
+            self._topo_encoder = te
+        return _measure(self._engine, name, max_neighbors=max_neighbors, topo_encoder=te)
+
+    def measure_distance(self, a: str, b: str, *, max_neighbors: int = 24,
+                         cascade_weight: float = 0.0) -> float:
+        """Anlam-birincil mesafe: İKİSİ DE köklüyse topoloji (graf), değilse harf.
+
+        cascade_weight>0 → topoloji-moment mesafesine darboğazsız RH-cascade (Li)
+        mesafesi karışır (ek ayrım). meaning_distance'tan farkı: topraksız kavramda
+        None DÖNMEZ — harf yüzeyine düşer (dürüst ama her zaman sayı verir).
+        """
+        from tantrium.core.meaning_pipeline import measure_distance as _md
+        return _md(self._engine, a, b, max_neighbors=max_neighbors,
+                   cascade_weight=cascade_weight)
+
     def bind_percept(
         self,
         concept_name: str,
