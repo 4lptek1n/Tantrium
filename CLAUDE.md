@@ -396,11 +396,14 @@ ai.code_app([{"name":"double","examples":[(2,4)]}, # → dict: ÇOK-FONKSİYON U
             {"name":"pipe","calls":["double"]}])#   app=birçok sertifikalı fonksiyon; uses=/calls= bağlantı
                                                #   {source, verified, n_functions, functions, failed}
                                                #   her parça kanıtlı; modül yalnız doğrulanmış parçalardan kurulur
-ai.build_app("listeyi ters çevir ve topla ve sırala") # → dict: TEK İSTEK → ÇOK-FONKSİYON MODÜL (uçtan uca)
-                                               #   niyeti bağlaçlarla parçala → her parçayı grounded op'a bağla
-                                               #   + ground-truth örnek + KANITLA → tek modülde birleştir
+ai.build_app("hesap makinesi topla çıkar çarp böl") # → dict: TEK İSTEK → ÇOK-FONKSİYON MODÜL (uçtan uca)
+                                               #   3 yol: bağlaç / bağlaçsız-çoklu-op / çıplak-kavram→araştır
+                                               #   her parça grounded op + ground-truth + KANITLA → birleştir
                                                #   {source, verified, n_functions, functions, parts, failed}
-                                               #   builtin-gölge koruması + birleşik-modül re-doğrulama
+                                               #   ikili op (topla/çıkar/çarp/böl) + builtin-gölge koruması
+                                               #   NOT: synthesize artık koşullu (if/elif) + fold (döngü) +
+                                               #   κ-güdüm (davranışsal mesafe) + HAFIZA (memoize/find_reusable)
+                                               #   code_agent.ground_api/verify_api_symbol: dış API halüsinasyon-guard
 ai.code_task(examples=[(1,3),(2,5)],           # → dict: AGENTIC kod görevi (ASI §12 P4) — kapalı döngü
             tests="def test(): assert solve(5)==11",#   SENTEZLE→KÖKLÜLÜK→TEST üç kapı; {verified, grounded, tests_passed}
             codebase={"lib.py":"..."})          #   üç kapı geçerse verified — halüsinasyonsuz
