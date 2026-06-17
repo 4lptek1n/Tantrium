@@ -21,6 +21,8 @@ import urllib.request
 
 _PUBCHEM_NAME = ("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
                  "{}/property/SMILES/JSON")
+_UNIPROT_GENE = ("https://rest.uniprot.org/uniprotkb/search?query=gene:{}"
+                 "+AND+organism_id:9606&format=json&fields=sequence&size=1")
 
 
 def fetch_molecular_smiles(name: str, *, timeout: float = 8.0) -> str | None:
@@ -39,21 +41,48 @@ def fetch_molecular_smiles(name: str, *, timeout: float = 8.0) -> str | None:
     return None
 
 
-def enrich_concept(ai, name: str, *, smiles: str | None = None,
-                   dna: str | None = None, law: str | None = None,
-                   network: bool = True) -> dict:
-    """Kavramı çok-boyutlu kökle: molekül (+verilmişse DNA/yasa) boyutunu `ground_full`'le bağla.
+def fetch_protein_sequence(name: str, *, timeout: float = 8.0, max_len: int = 400) -> str | None:
+    """İsimle UniProt'tan protein dizisi çek (kavram gen/protein ise). Yoksa/ağ → None.
 
-    `smiles`/`dna`/`law` verilirse onlar kullanılır (deterministik, ağsız test edilebilir);
-    `smiles` yok + `network` ise PubChem'den isimle dener. Döner: {concept, bound:[paradigmalar], smiles}.
+    egfr→EGFR proteini, tp53→p53. encoder `_detect_bio_sequence` proteini DNA'dan ayırır
+    (Kyte-Doolittle hidropati spektrumu). max_len: encode maliyetini sınırla (uzun dizi kesilir)."""
+    if not name or not name.replace(" ", "").isalnum():
+        return None
+    try:
+        url = _UNIPROT_GENE.format(urllib.parse.quote(name))
+        with urllib.request.urlopen(url, timeout=timeout) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        results = data.get("results", [])
+        if results:
+            seq = results[0].get("sequence", {}).get("value", "")
+            if seq and len(seq) >= 10:
+                return seq[:max_len]
+    except Exception:
+        return None
+    return None
+
+
+def enrich_concept(ai, name: str, *, smiles: str | None = None,
+                   protein: str | None = None, dna: str | None = None,
+                   law: str | None = None, network: bool = True) -> dict:
+    """Kavramı ÇOK-BOYUTLU kökle: molekül + bio-dizi (protein/DNA) + yasa → `ground_full`.
+
+    Boyutlar TAMAMLAYICI: kimyasal kavram molekül (PubChem SMILES) alır, gen/protein kavram
+    bio-dizi (UniProt) alır — ne kadar çok boyut bağlanırsa o kadar çapraz-modal gizli bağ.
+    Elle verilirse onlar (ağsız test); yoksa `network` ile isimle dener. protein/dna ikisi de
+    `ground_full(dna=)`'dan geçer (encoder DNA'yı proteinden kendi ayırır). Döner:
+    {concept, bound:[paradigmalar], smiles, bio}.
     """
     if smiles is None and network:
         smiles = fetch_molecular_smiles(name)
-    if not (smiles or dna or law):
-        return {"concept": name, "bound": [], "smiles": None}
+    if protein is None and dna is None and network:
+        protein = fetch_protein_sequence(name)
+    bio = dna or protein          # ikisi de _detect_bio_sequence'tan geçer (DNA↔protein ayrımı)
+    if not (smiles or bio or law):
+        return {"concept": name, "bound": [], "smiles": None, "bio": None}
     try:
-        gs = ai.ground_full(name, molecule=smiles, dna=dna, law=law)
+        gs = ai.ground_full(name, molecule=smiles, dna=bio, law=law)
         bound = list(getattr(gs, "bound", {}).keys()) if hasattr(gs, "bound") else []
     except Exception:
         bound = []
-    return {"concept": name, "bound": bound, "smiles": smiles}
+    return {"concept": name, "bound": bound, "smiles": smiles, "bio": bio}

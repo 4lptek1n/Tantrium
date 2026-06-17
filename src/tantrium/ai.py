@@ -3901,17 +3901,19 @@ class AI:
         return sig
 
     def enrich(self, name: str, *, smiles: "str | None" = None,
-               dna: "str | None" = None, law: "str | None" = None,
-               network: bool = True) -> dict:
+               protein: "str | None" = None, dna: "str | None" = None,
+               law: "str | None" = None, network: bool = True) -> dict:
         """Kavramı ÇOK-BOYUTLU kökle — kelimeyle değil GERÇEK boyutlarıyla (F8 vizyonu).
 
-        'caffeine' öğrenince onun MOLEKÜLÜNÜ de bağlar → caffeine kelimesi + gerçek
-        spektrumu AYNI kavramda. İsim→SMILES (PubChem) arar, `ground_full` ile HAS_COMPOUND
-        bağlar; çapraz-modal `quantum_bridges` keşfini açar. smiles/dna/law elle verilebilir
-        (ağsız). Kimyasal-DB'de olmayan kavram (postal) → boyut bağlanmaz, dürüstçe boş döner.
-        Döner: {concept, bound, smiles}."""
+        Boyutlar TAMAMLAYICI: kimyasal kavram MOLEKÜL alır (PubChem SMILES→HAS_COMPOUND),
+        gen/protein kavram BİO-DİZİ alır (UniProt→HAS_DNA). 'caffeine'→molekülü, 'egfr'→
+        proteini bağlanır → her biri AYNI kavramda gerçek spektrumuyla yaşar. Ne kadar çok
+        boyut → o kadar çapraz-modal `quantum_bridges` (görmediğimiz bağlar). Elle smiles/
+        protein/dna/law verilebilir (ağsız). DB'de olmayan kavram (postal) → boş döner.
+        Döner: {concept, bound, smiles, bio}."""
         from tantrium.core.enrichment import enrich_concept
-        return enrich_concept(self, name, smiles=smiles, dna=dna, law=law, network=network)
+        return enrich_concept(self, name, smiles=smiles, protein=protein, dna=dna,
+                              law=law, network=network)
 
     def ground_full(
         self,

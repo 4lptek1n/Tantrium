@@ -51,6 +51,21 @@ def test_enrich_dna_dimension():
     assert "HAS_DNA" in r["bound"]
 
 
+def test_enrich_protein_dimension_binds_as_bio():
+    """Protein dizisi de bio-boyut olarak bağlanır (ground_full dna= üzerinden, encoder ayırır)."""
+    ai = _AI()
+    r = enrich_concept(ai, "egfr", protein="MEEPQSDPSVEPPLSQ", network=False)
+    assert "HAS_DNA" in r["bound"]        # bio-dizi HAS_DNA kenarıyla bağlanır
+    assert r["bio"] == "MEEPQSDPSVEPPLSQ"
+
+
+def test_enrich_complementary_dimensions():
+    """Molekül + bio aynı kavrama bağlanabilir (çok-boyutlu, tamamlayıcı)."""
+    ai = _AI()
+    r = enrich_concept(ai, "egfr", smiles="CC(=O)O", protein="MEEPQSDP", network=False)
+    assert set(r["bound"]) == {"HAS_COMPOUND", "HAS_DNA"}
+
+
 def test_fetch_rejects_non_alnum_and_empty():
     assert fetch_molecular_smiles("⟨bridge:x⟩") is None
     assert fetch_molecular_smiles("") is None
