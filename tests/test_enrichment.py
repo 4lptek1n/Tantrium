@@ -85,10 +85,19 @@ def test_dims_filter_restricts():
     assert r["dimensions"] == ["protein"]
 
 
-def test_registry_has_all_seven_dimensions():
+def test_registry_has_all_eight_dimensions():
     keys = {d.key for d in _DIMENSIONS}
     assert keys == {"molecule", "protein", "dna", "properties",
-                    "law", "structure3d", "sound"}
+                    "law", "structure3d", "sound", "image"}
+
+
+def test_image_dimension_binds():
+    """Görsel piksel matrisi → HAS_IMAGE (manuel, ağsız)."""
+    import numpy as np
+    ai = _AI()
+    img = np.random.RandomState(1).rand(16, 16) * 255
+    r = enrich_concept(ai, "apple", image=img, network=False)
+    assert "image" in r["dimensions"] and "HAS_IMAGE" in r["bound"]
 
 
 def test_no_molecule_3d_dimension():

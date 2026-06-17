@@ -166,6 +166,41 @@ def fetch_governing_law(name: str, ai) -> list[float] | None:
     return fp if len(fp) >= 2 else None
 
 
+_WIKIMEDIA = ("https://en.wikipedia.org/w/api.php?action=query&titles={}"
+              "&prop=pageimages&format=json&pithumbsize=160")
+
+
+def fetch_image(name: str, *, timeout: float = 10.0, size: int = 48) -> "Any":
+    """İsimle Wikimedia kavram görseli → gri-tonlu küçük piksel matrisi (görsel imza).
+
+    Wikimedia thumbnail → PIL çöz → gri+yeniden-boyutla → numpy. Görsel BAĞIMSIZ bir kanal
+    (yapı/diziden farklı). PIL ister — yoksa fail-open (None). DÜRÜST: tek-instans görsel
+    (kanonik değil) ama gerçek görsel-spektrum grounding'i."""
+    if not _valid_name(name):
+        return None
+    try:
+        import io
+        import numpy as np
+        from PIL import Image
+        req = urllib.request.Request(_WIKIMEDIA.format(urllib.parse.quote(name)),
+                                     headers={"User-Agent": "Tantrium/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            d = json.loads(r.read().decode("utf-8"))
+        url = None
+        for p in d.get("query", {}).get("pages", {}).values():
+            url = p.get("thumbnail", {}).get("source")
+            if url:
+                break
+        if not url:
+            return None
+        ireq = urllib.request.Request(url, headers={"User-Agent": "Tantrium/1.0"})
+        with urllib.request.urlopen(ireq, timeout=timeout) as r:
+            img = Image.open(io.BytesIO(r.read())).convert("L").resize((size, size))
+        return np.asarray(img, dtype=float)
+    except Exception:
+        return None
+
+
 def fetch_protein_3d(name: str, ai, *, timeout: float = 10.0, max_res: int = 48) -> "Any":
     """Protein 3D yapısı (AlphaFold) → Cα uzaklık matrisi (katlanma geometrisi). Gen/protein için.
 
@@ -255,6 +290,12 @@ def _bind_sound(ai, concept: str, signal, key: str) -> None:
                     name=f"⟨percept:{concept}:sound⟩")
 
 
+def _bind_image(ai, concept: str, pixels, key: str) -> None:
+    """Görsel piksel matrisi → HAS_IMAGE (singular-değer dağılımı momenti)."""
+    ai.bind_percept(concept, pixels, modality="image", paradigm="HAS_IMAGE",
+                    name=f"⟨percept:{concept}:image⟩")
+
+
 # ─── Genişletilebilir boyut REGİSTRY'si ───────────────────────────────────────
 
 @dataclass(frozen=True)
@@ -280,6 +321,7 @@ _DIMENSIONS: list[Dimension] = [
     Dimension("structure3d", "HAS_TOPOLOGY", fetch_protein_3d, _bind_structure3d),
     Dimension("molecule", "HAS_COMPOUND", _adapt(fetch_molecular_smiles), _bind_molecule),
     Dimension("properties", "HAS_GEOMETRY", _adapt(fetch_physical_properties), _bind_properties),
+    Dimension("image", "HAS_IMAGE", _adapt(fetch_image), _bind_image),
     # sound: oto-kaynak yok (isimle çekilemez) → fetch None; yalnız elle sound= ile.
     Dimension("sound", "HAS_SIGNAL", lambda name, ai: None, _bind_sound),
 ]
@@ -287,7 +329,7 @@ _DIMENSIONS: list[Dimension] = [
 # Elle-override anahtarları (ağsız test / kullanıcı verisi) → boyut anahtarı eşlemesi.
 _MANUAL_ALIASES = {"smiles": "molecule", "protein": "protein", "dna": "dna",
                    "properties": "properties", "law": "law", "structure3d": "structure3d",
-                   "sound": "sound"}
+                   "sound": "sound", "image": "image"}
 
 
 def enrich_concept(ai, name: str, *, network: bool = True, dims: list[str] | None = None,
