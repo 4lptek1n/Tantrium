@@ -78,6 +78,17 @@ _CAUSAL_VERB_MAP: list[tuple[str, str]] = [
 ]
 _COMPILED_VERBS = [(_re.compile(p, _re.IGNORECASE), rel) for p, rel in _CAUSAL_VERB_MAP]
 
+# PASİF SES: "Y is/are/was/were VERB-ed by X" → (X, REL, Y) — özne/nesne YER DEĞİŞTİRİR
+# (etken: X VERB Y). Bilimsel metin pasif-ağırlıklı; bunsuz 'RAS is activated by EGFR' kayıp.
+_PASSIVE_MAP = {"activated": "ACTIVATES", "inhibited": "INHIBITS", "blocked": "INHIBITS",
+                "suppressed": "INHIBITS", "repressed": "INHIBITS", "caused": "CAUSES",
+                "induced": "CAUSES", "driven": "CAUSES", "bound": "BINDS", "targeted": "TARGETS",
+                "regulated": "REGULATES", "modulated": "REGULATES", "encoded": "ENCODES",
+                "expressed": "EXPRESSES", "phosphorylated": "PHOSPHORYLATES",
+                "produced": "ACHIEVES", "required": "REQUIRES", "mediated": "CAUSES",
+                "recruited": "BINDS"}
+_PASSIVE_PAT = _re.compile(r"\b(?:is|are|was|were|been|being)\s+(\w+ed)\s+by\b", _re.IGNORECASE)
+
 # ── TÜRKÇE ilişki çıkarımı (SOV: özne nesne+ek YÜKLEM) — Dalga 2/3 omurgası ──
 # Türkçe dil-yüzeyi (check_claim/translate/extract) için: İngilizce pattern Türkçeyi görmez.
 # "Erlotinib EGFR'yi baskılar" → (erlotinib, INHIBITS, egfr). Apostrof-eki regexte yutulur.
@@ -226,6 +237,12 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
     # Parantez içi açıklamaları at (özneyi yüklemden ayırıp kalıbı kırıyor:
     # "X (pl. ...) is a Y" → "X  is a Y").
     text = _re.sub(r"\([^)]*\)", " ", text)
+    # APPOSITIVE ÇÖK: "X, <açıklama>, is/are VERB" → "X is/are VERB" — özne-yüklem bağını
+    # kur (gramer-parse'ın yaptığını yüzeyde yap): "Gravity, also known as gravitation, is..."
+    # → "Gravity is...". Yoksa özne yüklemden kopuk, IS_A çıkmıyor (ölçüldü: BOŞ).
+    text = _re.sub(
+        r"\b([A-Za-z][\w]{1,30}),\s+[^,]{2,70}?,\s+(is|are|was|were)\b",
+        r"\1 \2", text)
     # Önce bağlaç "and" üzerinden alt cümlelere ayır
     sentences = _re.split(r"[.!?;]", text)
     # TANIM (IS_A) — "X is a Y" kalıbı (ansiklopedik metnin temel bilgisi)
@@ -239,8 +256,21 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
                     and subj != obj and not _is_nonclass_obj(obj)):
                 relations.append((subj, "IS_A", obj))
     for sent in sentences:
+        # PASİF SES: "Y is VERB-ed by X" → (X, REL, Y). Özne/nesne yer değiştirir.
+        for pm in _PASSIVE_PAT.finditer(sent):
+            rel_type = _PASSIVE_MAP.get(pm.group(1).lower())
+            if not rel_type:
+                continue
+            patient = _clean_term(_re.sub(r"[,;\"'()]", " ", sent[:pm.start()]).split()[-5:],
+                                  take_last=True)            # "is"ten önce = nesne (Y)
+            agent = _clean_term(_re.sub(r"[,;\"'()]", " ", sent[pm.end():]).split()[:5],
+                                take_last=False)              # "by"den sonra = özne (X)
+            if (2 < len(agent) < 50 and 2 < len(patient) < 50 and agent != patient
+                    and agent not in _BOUNDARY and patient not in _BOUNDARY):
+                relations.append((agent, rel_type, patient))
         # "X verb Y and Z verb W" → ["X verb Y", "Z verb W"]
         sub_sents = _re.split(r"\band\b", sent, flags=_re.IGNORECASE)
+        _last_subj = ""                                       # KOORDİNASYON: özne taşıma
         for sub in sub_sents:
             sub = sub.strip()
             if len(sub) < 5:
@@ -254,11 +284,16 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
                     after  = _re.sub(r"[,;\"'()]", " ", sub[m.end():]).split()
                     # Son 2 anlamlı kelime = özne, ilk 2 anlamlı kelime = nesne
                     subj = _clean_term(before[-5:], take_last=True)
+                    # KOORDİNASYON: "X binds Y and activates Z" → ikinci alt-cümle
+                    # ("activates Z") öznesiz; önceki özneyi taşı (X activates Z).
+                    if len(subj) <= 2 and _last_subj:
+                        subj = _last_subj
                     obj  = _clean_term(after[:5],  take_last=False)
                     if (2 < len(subj) < 50 and 2 < len(obj) < 50 and subj != obj
                             and obj not in _STOPWORDS and obj not in _BOUNDARY
                             and subj not in _BOUNDARY):
                         relations.append((subj, rel_type, obj))
+                        _last_subj = subj                     # sonraki öznesiz cümle için
     # TÜRKÇE pass (SOV): "özne nesne+ek yüklem" — apostrof-eki regexte yutulur
     for sent in sentences:
         for pat, rel_type in _TR_COMPILED:
