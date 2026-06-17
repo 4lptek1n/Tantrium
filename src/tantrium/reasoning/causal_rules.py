@@ -37,6 +37,28 @@ TRANSITIVE_CAUSAL: dict[tuple[str, str], str] = {
 CAUSAL_PARADIGMS: frozenset = frozenset({
     "INHIBITS", "ACTIVATES", "CAUSES", "EXPRESSES", "ENCODES", "PHOSPHORYLATES"})
 
+
+# ─── ÖĞRENİLEN kurallar (meta-sentez) — elle yazılmadı, sistem icat etti + sertifikaladı ──
+# core/meta.py'nin GraphAdapter'ı grafı gözlemleyip (relA,relB)→relC kuralını LEAVE-ONE-OUT
+# genelleşme + pozitiflikle sertifikalarsa buraya yazar. derive_transitive_hypotheses elle-yazılı
+# TRANSITIVE_CAUSAL ∪ ÖĞRENİLEN'i okur → kule kendini yükseltir (öğrenilen kural sonraki türetimin
+# girdisi olur). Sabit kurallar EZİLMEZ (yalnız yeni çift eklenir) — elle bilgi korunur.
+LEARNED_TRANSITIVE: dict[tuple[str, str], str] = {}
+
+
+def register_transitive_rule(rel_a: str, rel_b: str, derived: str) -> bool:
+    """Sertifikalı yeni transitif kuralı kaydet. Sabit tabloyu EZMEZ; aynı çift bir kez."""
+    key = (rel_a, rel_b)
+    if key in TRANSITIVE_CAUSAL or key in LEARNED_TRANSITIVE:
+        return False
+    LEARNED_TRANSITIVE[key] = derived
+    return True
+
+
+def lookup_transitive(rel_a: str, rel_b: str):
+    """Elle-yazılı ∪ öğrenilen kural tablosundan derived ilişkiyi getir (yoksa None)."""
+    return TRANSITIVE_CAUSAL.get((rel_a, rel_b)) or LEARNED_TRANSITIVE.get((rel_a, rel_b))
+
 # JENERİK terimler: hipotez öznesi/nesnesi olamaz (role/complex/factor → anlamsız "bilim").
 # TEK-GERÇEK: growth._science_consolidate + cognition.ScienceStep ikisi de buradan okur.
 GENERIC_TERMS: frozenset = frozenset({
@@ -81,7 +103,7 @@ def derive_transitive_hypotheses(engine, *, max_seeds: int = 12, max_hyps: int =
                     if p2 not in CAUSAL_PARADIGMS:
                         continue
                     c = str(getattr(e2, "target", ""))
-                    derived = TRANSITIVE_CAUSAL.get((e1.paradigm, p2))
+                    derived = lookup_transitive(e1.paradigm, p2)  # elle ∪ ÖĞRENİLEN (meta-sentez)
                     if (not derived or c == s or c == b
                             or c.lower() in GENERIC_TERMS or b.lower() in GENERIC_TERMS):
                         continue
