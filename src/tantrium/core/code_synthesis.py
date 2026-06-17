@@ -217,6 +217,13 @@ def _primitive_pool(examples, argnames) -> list:
         pool += _LIST_UNARY
     if any(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals):
         pool += _NUM_UNARY
+        # CAPSTONE: icat edilmiş atomik ilkeller (primitive_invention) taban havuza katılır —
+        # sistem kendi icat ettiği operatörü gelecekte kullanır (özyinelemeli ilkel-genişleme).
+        try:
+            from tantrium.core.primitive_invention import invented_primitives
+            pool += invented_primitives()
+        except Exception:
+            pass
     return pool or _NUM_UNARY
 
 
