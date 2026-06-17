@@ -46,14 +46,22 @@ _CAUSAL_VERB_MAP: list[tuple[str, str]] = [
     (r"\bcauses?\b",      "CAUSES"),
     (r"\binduces?\b",     "CAUSES"),
     (r"\bcontrols?\b",    "CAUSES"),
-    (r"\bregulates?\b",   "CAUSES"),
     (r"\bdrives?\b",      "CAUSES"),
     (r"\bactivates?\b",   "ACTIVATES"),
     (r"\bpromotes?\b",    "ACTIVATES"),
     (r"\bstimulates?\b",  "ACTIVATES"),
     (r"\bupregulates?\b", "ACTIVATES"),
-    (r"\btargets?\b",     "INHIBITS"),
-    (r"\bbinds?\b",       "CAUSES"),
+    # Kesin biyokimyasal yüklemler — gramatik ÇÖKÜŞÜ önler. Anlam kenarda yaşar →
+    # her ayrım anlam çözünürlüğüdür (binds≠causes, targets≠inhibits, regulates yön-nötr).
+    (r"\btargets?\b",     "TARGETS"),         # eski: INHIBITS (yanlış çöküştü)
+    (r"\bbinds?(?: to)?\b", "BINDS"),         # eski: CAUSES (yanlış çöküştü)
+    (r"\bassociates? with\b", "BINDS"),
+    (r"\brecruits?\b",    "BINDS"),
+    (r"\bregulates?\b",   "REGULATES"),       # eski: CAUSES (yön kaybı) → nötr düzenleme
+    (r"\bmodulates?\b",   "REGULATES"),
+    (r"\bphosphorylates?\b", "PHOSPHORYLATES"),
+    (r"\bexpresses?\b",   "EXPRESSES"),
+    (r"\bencodes?\b",     "ENCODES"),
     (r"\brequires?\b",    "REQUIRES"),
     (r"\bneeds?\b",       "REQUIRES"),
     # Tanımsal/yapısal fiiller (ansiklopedik metin — IS_A darboğazını kapatır)

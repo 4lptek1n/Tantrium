@@ -23,7 +23,8 @@ if TYPE_CHECKING:
 _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
              "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
              "HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY",
-             "INHIBITS", "CAUSES", "ACTIVATES"}
+             "INHIBITS", "CAUSES", "ACTIVATES",
+             "TARGETS", "BINDS", "REGULATES", "PHOSPHORYLATES", "EXPRESSES", "ENCODES"}
 # ALEPH (Hankel/Wasserstein certified) kullanılabilir — moment uzayında komşu.
 # SPECTRAL_BRIDGE hariç: genesis yapay köprüsüdür, anlamsal bilgi taşımaz.
 # Kritik hat: yalnız moment-uzayı değil, anlamsal TAU kökü olan kavramlar.
@@ -51,6 +52,12 @@ _CONNECTIVE: dict[str, str] = {
     "INHIBITS":        "{src}, {tgt}'yi engeller",
     "CAUSES":          "{src}, {tgt}'ye yol açar",
     "ACTIVATES":       "{src}, {tgt}'yi etkinleştirir",
+    "TARGETS":         "{src}, {tgt}'yi hedefler",
+    "BINDS":           "{src}, {tgt}'ye bağlanır",
+    "REGULATES":       "{src}, {tgt}'yi düzenler",
+    "PHOSPHORYLATES":  "{src}, {tgt}'yi fosforile eder",
+    "EXPRESSES":       "{src}, {tgt} ifade eder",
+    "ENCODES":         "{src}, {tgt} kodlar",
     "ALEPH":           "{src}, moment uzayında {tgt} ile komşu",
     "SPECTRAL_BRIDGE": "{src}, {tgt} ile spektral köprü kuruyor",
     "QUANTUM_BRIDGE":  "{src}, {tgt} ile kuantum dolanık (klasik-uzak, κ-yakın)",
@@ -74,6 +81,12 @@ _EN_CONNECTIVE: dict[str, str] = {
     "INHIBITS":        "{src} inhibits {tgt}",
     "CAUSES":          "{src} causes {tgt}",
     "ACTIVATES":       "{src} activates {tgt}",
+    "TARGETS":         "{src} targets {tgt}",
+    "BINDS":           "{src} binds {tgt}",
+    "REGULATES":       "{src} regulates {tgt}",
+    "PHOSPHORYLATES":  "{src} phosphorylates {tgt}",
+    "EXPRESSES":       "{src} expresses {tgt}",
+    "ENCODES":         "{src} encodes {tgt}",
     "ALEPH":           "{src} is moment-adjacent to {tgt}",
     "SPECTRAL_BRIDGE": "{src} has a spectral bridge to {tgt}",
     "QUANTUM_BRIDGE":  "{src} is quantum-entangled with {tgt} (classically far, κ-near)",

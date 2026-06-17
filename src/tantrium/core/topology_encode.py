@@ -34,6 +34,8 @@ from tantrium.core.encoder import (
 _SEMANTIC_PARADIGMS = frozenset({
     "IS_A", "USES", "REQUIRES", "ACHIEVES", "COMPOSED",
     "DEFINES", "INHIBITS", "CAUSES", "ACTIVATES", "TARGETS", "BINDS",
+    # Kesin biyokimyasal yüklemler (gramatik zenginleştirme — çöküş yok)
+    "REGULATES", "PHOSPHORYLATES", "EXPRESSES", "ENCODES",
     # Multi-modal ve kausal zincir paradigmaları (atom→DNA→elma)
     "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
     # Çok-boyutlu grounding: DNA + geometri + topoloji + yasa (elma = tüm boyutlar)

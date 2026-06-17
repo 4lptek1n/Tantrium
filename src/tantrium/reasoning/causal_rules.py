@@ -19,10 +19,23 @@ TRANSITIVE_CAUSAL: dict[tuple[str, str], str] = {
     ("ACTIVATES", "INHIBITS"): "INHIBITS",
     ("CAUSES", "CAUSES"):      "CAUSES",
     ("CAUSES", "ACTIVATES"):   "CAUSES",
+    # Gramatik zenginleştirme — yalnız yön-belirgin (savunulabilir) kompozisyonlar.
+    # Gen/hücre bir aktivatör/inhibitör ÜRETİR/KODLAR → etki o yönde propagatlar.
+    ("EXPRESSES", "ACTIVATES"): "ACTIVATES",
+    ("EXPRESSES", "INHIBITS"):  "INHIBITS",
+    ("EXPRESSES", "CAUSES"):    "CAUSES",
+    ("ENCODES", "ACTIVATES"):   "ACTIVATES",
+    ("ENCODES", "INHIBITS"):    "INHIBITS",
+    # Fosforilasyon bir aktivasyon/inhibisyon zincirine bağlanırsa o yönü taşır.
+    ("PHOSPHORYLATES", "ACTIVATES"): "ACTIVATES",
+    ("PHOSPHORYLATES", "INHIBITS"):  "INHIBITS",
+    # DÜRÜST SINIR: TARGETS/BINDS/REGULATES yön-belirsiz → transitife GİRMEZ
+    # (yanlış kural, kuralsızlıktan kötüdür — biyokimya temiz transitif değil).
 }
 
-# Kausal ilişki paradigmaları (transitif çıkarıma giren kenar tipleri)
-CAUSAL_PARADIGMS: frozenset = frozenset({"INHIBITS", "ACTIVATES", "CAUSES"})
+# Kausal ilişki paradigmaları (transitif çıkarıma giren kenar tipleri) — yön-belirgin olanlar.
+CAUSAL_PARADIGMS: frozenset = frozenset({
+    "INHIBITS", "ACTIVATES", "CAUSES", "EXPRESSES", "ENCODES", "PHOSPHORYLATES"})
 
 # JENERİK terimler: hipotez öznesi/nesnesi olamaz (role/complex/factor → anlamsız "bilim").
 # TEK-GERÇEK: growth._science_consolidate + cognition.ScienceStep ikisi de buradan okur.

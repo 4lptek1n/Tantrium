@@ -271,6 +271,8 @@ class KnowledgeGraph:
         _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
                      "SPECTRAL_BRIDGE", "QUANTUM_BRIDGE",
                      "CAUSES", "INHIBITS", "ACTIVATES",
+                     "TARGETS", "BINDS", "REGULATES", "PHOSPHORYLATES",
+                     "EXPRESSES", "ENCODES",
                      "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
                      "HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY"}
         # Paradigm → single-char code for compact storage
@@ -278,6 +280,8 @@ class KnowledgeGraph:
               "ACHIEVES": "V", "REQUIRES": "R", "COMPOSED": "C",
               "SPECTRAL_BRIDGE": "S", "QUANTUM_BRIDGE": "Q",
               "CAUSES": "CA", "INHIBITS": "IN", "ACTIVATES": "AC",
+              "TARGETS": "TG", "BINDS": "BN", "REGULATES": "RG",
+              "PHOSPHORYLATES": "PH", "EXPRESSES": "EX", "ENCODES": "EN",
               "COMPONENT_OF": "CO", "HAS_SIGNAL": "HS",
               "HAS_COMPOUND": "HC", "HAS_IMAGE": "HI",
               "HAS_DNA": "HD", "HAS_GEOMETRY": "HG",
@@ -329,6 +333,8 @@ class KnowledgeGraph:
                       "V": "ACHIEVES", "R": "REQUIRES", "C": "COMPOSED",
                       "S": "SPECTRAL_BRIDGE", "Q": "QUANTUM_BRIDGE",
                       "CA": "CAUSES", "IN": "INHIBITS", "AC": "ACTIVATES",
+                      "TG": "TARGETS", "BN": "BINDS", "RG": "REGULATES",
+                      "PH": "PHOSPHORYLATES", "EX": "EXPRESSES", "EN": "ENCODES",
                       "CO": "COMPONENT_OF", "HS": "HAS_SIGNAL",
                       "HC": "HAS_COMPOUND", "HI": "HAS_IMAGE",
                       "HD": "HAS_DNA", "HG": "HAS_GEOMETRY",

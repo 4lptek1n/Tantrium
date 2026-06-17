@@ -187,6 +187,7 @@ class Thinker:
             # Collect both, prefer semantic when available
             _SEMANTIC_PARADIGMS = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
                                    "CAUSES", "ACTIVATES", "INHIBITS", "TARGETS", "BINDS",
+                                   "REGULATES", "PHOSPHORYLATES", "EXPRESSES", "ENCODES",
                                    "COMPONENT_OF"}
             sem_seen: dict[str, tuple[float, str]] = {}   # name → (dist, paradigm)
             aleph_seen: dict[str, float] = {}
