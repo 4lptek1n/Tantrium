@@ -81,6 +81,7 @@ class GrowthReport:
     # Anlam kanalı entegrasyonu (TopologyEncoder) bilançosu
     meaning_enriched: int = 0  # anlam imzası hesaplanan (semantik-köklü) kavram
     bridges_found: int = 0     # keşfedilen çapraz-boyutlu kuantum köprü
+    dimensions_bound: int = 0  # çok-boyutlu: kavrama bağlanan GERÇEK boyut (molekül vs)
     hypotheses_generated: int = 0  # büyürken üretilen sertifikalı transitif hipotez (BİLİM)
     # Corrigibility (yanlıştan-dön) bilançosu
     suspect_flagged: int = 0   # dejenere/çakışma şüphesiyle işaretlenen (düzeltilemeyen)
@@ -1070,6 +1071,46 @@ class GrowthEngine:
         if rep is not None:
             rep.meaning_enriched += enriched
             rep.bridges_found += linked
+        # ÇOK-BOYUTLU: kavramı kelimeyle değil GERÇEK boyutuyla da kökle (F8 — molekül).
+        self._enrich_multidim(candidates, _log, rep)
+
+    def _enrich_multidim(
+        self, candidates: list[str], _log: Callable[[str], None],
+        rep: "GrowthReport | None" = None, *, max_per_pass: int = 4,
+    ) -> None:
+        """Çok-boyutlu kökleme (F8): kimyasal-aday kavrama GERÇEK molekülünü bağla.
+
+        Büyüme ince kelime ekliyordu; bu, kavramı çok-boyutlu kökler — 'caffeine' öğrenince
+        onun molekülünü de (PubChem isim→SMILES → HAS_COMPOUND). Çapraz-modal quantum_bridges
+        keşfini besler. Bounded (max_per_pass), network fail-open, zaten-bağlıyı atlar,
+        kimyasal-olmayan adı (postal) PubChem None döner → boyut bağlanmaz, kelime yine kalır.
+        DÜRÜST SINIR: yalnız molekül boyutu; DNA/genom isimle aramak kırılgan (henüz yok)."""
+        ai = getattr(self.engine, "_ai", None)
+        if ai is None or not hasattr(ai, "enrich"):
+            return
+        tau = self.engine.tau
+        bound = 0
+        attempts = 0
+        for name in candidates:
+            if attempts >= max_per_pass:
+                break
+            # zaten molekül-boyutu bağlı mı? (idempotent)
+            if any(getattr(e, "paradigm", None) == "HAS_COMPOUND" for e in tau.edges.get(name, [])):
+                continue
+            # yalnız kimyasal-aday (tek alfabetik sözcük, makul uzunluk) — boşa PubChem çağrısı azalt
+            if not (name.isalpha() and 3 <= len(name) <= 30):
+                continue
+            attempts += 1
+            try:
+                r = ai.enrich(name, network=True)
+            except Exception:
+                continue
+            if r.get("bound"):
+                bound += 1
+                smi = (r.get("smiles") or "")[:24]
+                _log(f"çok-boyutlu: {name} ← molekül bağlandı (HAS_COMPOUND, {smi}…)")
+        if rep is not None:
+            rep.dimensions_bound += bound
 
     def _dedup_family_windows(
         self, _log: Callable[[str], None], rep: "GrowthReport | None" = None,
