@@ -3502,13 +3502,65 @@ class AI:
         items = self._reverse_relations(cat, relation)
         Cc = cat[:1].upper() + cat[1:]
         verb = {"IS_A": "türleri/örnekleri", "INHIBITS": "baskılayanlar",
-                "ACTIVATES": "etkinleştirenler", "CAUSES": "yol açanlar"}.get(relation, "ilişkililer")
+                "ACTIVATES": "etkinleştirenler", "CAUSES": "yol açanlar",
+                "TARGETS": "hedefleyenler", "BINDS": "bağlananlar",
+                "REGULATES": "düzenleyenler", "PHOSPHORYLATES": "fosforile edenler",
+                "EXPRESSES": "ifade edenler", "ENCODES": "kodlayanlar"}.get(relation, "ilişkililer")
         if items:
             answer = (f"{Cc} {verb}: {gen_join(items[:10])}. "
                       f"Hepsi TAU bilgi-grafında gerçek kenarlara dayanıyor — uydurma değil.")
         else:
             answer = f"{Cc} için grafta köklü {verb} bulamadım."
         return {"category": cat, "relation": relation, "items": items, "answer": answer}
+
+    def relations_of(self, concept: str, *, max_per: int = 8) -> dict:
+        """TİPLİ İLİŞKİ HARİTASI — kavramın tüm precise ilişkileri, yüklemle gruplu (ileri+geri).
+
+        Gramatik zenginleştirmeyi SORGULANABİLİR kılar: "X neyi hedefler/fosforile eder/bağlar/
+        baskılar?" + "X'i ne hedefler/bağlar?". Yalnız tipli (anlam) kenarlar — ALEPH/geometrik
+        gürültü hariç. Köklü kavramın gerçek ilişki-grafını denetlenebilir tek görünümde verir.
+        Döner: {concept, forward:{paradigm:[hedefler]}, reverse:{paradigm:[kaynaklar]}, answer}.
+        """
+        from tantrium.core.topology_encode import _SEMANTIC_PARADIGMS
+        from tantrium.language.fluent import gen_join
+        e = self._engine
+        name = self._converse_topic(concept) or str(concept).lower()
+        if name not in e.tau.edges and concept in e.tau.edges:
+            name = concept
+        # İleri: kavramın tipli çıkan kenarları
+        forward: dict[str, list[str]] = {}
+        for ed in e.tau.edges.get(name, []):
+            if ed.paradigm in _SEMANTIC_PARADIGMS and not str(ed.target).startswith("⟨"):
+                forward.setdefault(ed.paradigm, [])
+                if ed.target not in forward[ed.paradigm]:
+                    forward[ed.paradigm].append(ed.target)
+        # Geri: kavramı tipli hedefleyenler (O(E) tek geçiş)
+        reverse: dict[str, list[str]] = {}
+        for src, elist in e.tau.edges.items():
+            if src == name or str(src).startswith("⟨"):
+                continue
+            for ed in elist:
+                if ed.target == name and ed.paradigm in _SEMANTIC_PARADIGMS:
+                    reverse.setdefault(ed.paradigm, [])
+                    if src not in reverse[ed.paradigm]:
+                        reverse[ed.paradigm].append(src)
+        forward = {p: v[:max_per] for p, v in forward.items()}
+        reverse = {p: v[:max_per] for p, v in reverse.items()}
+        # Doğal-dil özet (Türkçe yüklemlerle)
+        _V = {"IS_A": "bir {} türüdür", "INHIBITS": "{} baskılar", "ACTIVATES": "{} etkinleştirir",
+              "CAUSES": "{} yol açar", "TARGETS": "{} hedefler", "BINDS": "{} bağlar",
+              "REGULATES": "{} düzenler", "PHOSPHORYLATES": "{} fosforile eder",
+              "EXPRESSES": "{} ifade eder", "ENCODES": "{} kodlar", "USES": "{} kullanır",
+              "REQUIRES": "{} gerektirir", "COMPOSED": "{} bileşenlerine sahip",
+              "COMPONENT_OF": "{} parçasıdır"}
+        Cc = name[:1].upper() + name[1:]
+        lines = []
+        for p, tgts in forward.items():
+            if tgts and p in _V:
+                lines.append(f"{Cc}, " + _V[p].format(gen_join(tgts[:5])))
+        ans = (". ".join(lines) + "." if lines
+               else f"{Cc} için grafta tipli ilişki bulamadım (köklü değil ya da yalıtık).")
+        return {"concept": name, "forward": forward, "reverse": reverse, "answer": ans}
 
     def transport(self, source: str, target: str, use_smiles: bool = False) -> "object":
         """Certified dyadic transport from source → target moment sequences.
