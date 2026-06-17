@@ -1917,6 +1917,17 @@ class AI:
         return ""
 
     def _research_deep(self, topic: str, expand: int = 3) -> int:
+        """DERİN OTONOM ARAŞTIRMA — gramatik parser AÇIK (kalite-yolu). spaCy ile pasif/
+        appositive/koordinasyon/gömülü genel çözülür; growth-observe hızlı regex'te kalır.
+        Parser açık-kapama burada izole (finally) → sızıntı yok."""
+        from tantrium.research.autonomous import enable_parser
+        enable_parser(True)
+        try:
+            return self._research_deep_impl(topic, expand)
+        finally:
+            enable_parser(False)
+
+    def _research_deep_impl(self, topic: str, expand: int = 3) -> int:
         """DERİN OTONOM ARAŞTIRMA — tek cümle değil, çok kaynaktan zengin köklü bilgi kur.
 
         1. Konunun TAM Wikipedia makalesini çek → learn() (çok ilişki).  2. Yeni öğrenilen,

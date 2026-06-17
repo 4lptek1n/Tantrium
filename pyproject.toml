@@ -29,6 +29,12 @@ dev = [
 vision = [
   "pillow>=10.0"
 ]
+# Gramatik parser (deep-research kapsamlı kavrama → spaCy dependency parsing: pasif/
+# appositive/koordinasyon/gömülü TEK genel mekanizma). Yoksa regex-kalıplara fail-open düşer.
+#   kurulum: pip install spacy && python -m spacy download en_core_web_sm
+nlp = [
+  "spacy>=3.7"
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

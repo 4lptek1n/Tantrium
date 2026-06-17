@@ -89,6 +89,110 @@ _PASSIVE_MAP = {"activated": "ACTIVATES", "inhibited": "INHIBITS", "blocked": "I
                 "recruited": "BINDS"}
 _PASSIVE_PAT = _re.compile(r"\b(?:is|are|was|were|been|being)\s+(\w+ed)\s+by\b", _re.IGNORECASE)
 
+# ─── GERÇEK GRAMATİK PARSER (spaCy dependency) — kapsamlı kavrama ─────────────
+# Kalıp-kalıp regex yerine grameri PARSE eder: pasif/appositive/koordinasyon/gömülü hepsini
+# TEK genel mekanizmayla çözer (LLM'in yaptığının deterministik-yerel karşılığı). Parser
+# metni→YAPIYA çevirir; ilişkiler RH-geometrisine girer (akıl/sertifika BİZİM kalır).
+# Fiil lemma → ilişki tipi (verb-map'ten lemma-anahtarlı türet).
+_LEMMA_REL: dict[str, str] = {
+    "inhibit": "INHIBITS", "block": "INHIBITS", "suppress": "INHIBITS", "repress": "INHIBITS",
+    "downregulate": "INHIBITS", "cause": "CAUSES", "induce": "CAUSES", "drive": "CAUSES",
+    "mediate": "CAUSES", "activate": "ACTIVATES", "promote": "ACTIVATES", "stimulate": "ACTIVATES",
+    "upregulate": "ACTIVATES", "target": "TARGETS", "bind": "BINDS", "associate": "BINDS",
+    "recruit": "BINDS", "regulate": "REGULATES", "modulate": "REGULATES", "control": "REGULATES",
+    "phosphorylate": "PHOSPHORYLATES", "express": "EXPRESSES", "encode": "ENCODES",
+    "require": "REQUIRES", "need": "REQUIRES", "produce": "ACHIEVES", "generate": "ACHIEVES",
+    "contain": "COMPOSED", "comprise": "COMPOSED", "use": "USES",
+}
+_NLP = None
+# spaCy parse YAVAŞ (~0.3s/cümle) → yüksek-debili growth'ta yük. OPT-IN: varsayılan KAPALI
+# (growth/test regex ile hızlı); converse/_research_deep KALİTE için açar (tek-seferlik, yavaşlık kabul).
+_PARSER_ENABLED = False
+
+
+def enable_parser(on: bool = True) -> None:
+    """Gramatik parser'ı (spaCy) aç/kapat — kalite-yolu (converse/research) açar, growth kapalı tutar."""
+    global _PARSER_ENABLED
+    _PARSER_ENABLED = bool(on)
+
+
+def _get_nlp():
+    """spaCy İngilizce parser (lazy, yerel, deterministik). Yoksa False → regex'e düş."""
+    global _NLP
+    if _NLP is None:
+        try:
+            import spacy
+            _NLP = spacy.load("en_core_web_sm")
+        except Exception:
+            _NLP = False
+    return _NLP
+
+
+def _span_term(tok) -> str:
+    """Token için en bilgilendirici terim: adlandırılmış varlık > özel-isim çocuk > lemma.
+    'MDM2 protein' → 'MDM2' (varlık); baş-isim sığlığını ('protein') aşar."""
+    if tok.ent_type_:                      # adlandırılmış varlık → tam varlık metni başı
+        ent = next((e for e in tok.doc.ents if e.start <= tok.i < e.end), None)
+        if ent:
+            return _normalize_entity(ent.text.split()[0].lower())
+    # bileşik özel-isim niteleyici (MDM2 protein → MDM2)
+    for c in tok.children:
+        if c.dep_ == "compound" and (c.ent_type_ or c.text[:1].isupper()):
+            return _normalize_entity(c.text.lower())
+    return _normalize_entity(tok.lemma_.lower())
+
+
+def _spacy_extract(text: str) -> list[tuple[str, str, str]]:
+    """Dependency-parsing ile ilişki çıkar — pasif/appositive/koordinasyon/gömülü TEK mekanizma.
+
+    nsubj/nsubjpass + dobj/attr + agent bağımlılıkları → (özne, ilişki, nesne). Pasifte
+    agent=özne. Koordinasyonda (conj fiil) özne taşınır. 'is a' → IS_A. Gramer-genel,
+    kalıp-kalıp değil → yeni cümle yapısı kodlamadan çözülür."""
+    nlp = _get_nlp()
+    if not nlp:
+        return []
+    out: list[tuple[str, str, str]] = []
+    try:
+        doc = nlp(text[:2000])    # tanım-zengin lead; hız için sınırlı (regex full-text'i tarar)
+    except Exception:
+        return []
+    for tok in doc:
+        # öznesi yoksa conj zincirinden taşı (koordinasyon: "X binds Y and activates Z")
+        def _subjects(t):
+            s = [c for c in t.children if c.dep_ in ("nsubj", "nsubjpass")]
+            h = t
+            while not s and h.dep_ == "conj":
+                h = h.head
+                s = [c for c in h.children if c.dep_ in ("nsubj", "nsubjpass")]
+            return s
+        # IS_A: "X is a Y" (kopula)
+        if tok.lemma_ == "be":
+            subs = _subjects(tok)
+            attrs = [c for c in tok.children if c.dep_ in ("attr", "acomp")]
+            for s in subs:
+                for a in attrs:
+                    if a.pos_ in ("NOUN", "PROPN"):
+                        out.append((_span_term(s), "IS_A", _span_term(a)))
+            continue
+        rel = _LEMMA_REL.get(tok.lemma_)
+        if not rel or tok.pos_ != "VERB":
+            continue
+        subs = _subjects(tok)
+        pass_subs = [c for c in subs if c.dep_ == "nsubjpass"]
+        act_subs = [c for c in subs if c.dep_ == "nsubj"]
+        dobjs = [c for c in tok.children if c.dep_ in ("dobj", "dative", "attr")]
+        agents = [g for c in tok.children if c.dep_ == "agent"
+                  for g in c.children if g.dep_ == "pobj"]
+        if pass_subs and agents:           # PASİF: agent=özne, nsubjpass=nesne
+            for a in agents:
+                for p in pass_subs:
+                    out.append((_span_term(a), rel, _span_term(p)))
+        else:                              # ETKEN
+            for s in act_subs:
+                for o in dobjs:
+                    out.append((_span_term(s), rel, _span_term(o)))
+    return out
+
 # ── TÜRKÇE ilişki çıkarımı (SOV: özne nesne+ek YÜKLEM) — Dalga 2/3 omurgası ──
 # Türkçe dil-yüzeyi (check_claim/translate/extract) için: İngilizce pattern Türkçeyi görmez.
 # "Erlotinib EGFR'yi baskılar" → (erlotinib, INHIBITS, egfr). Apostrof-eki regexte yutulur.
@@ -303,6 +407,17 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
                 if (2 < len(subj) < 40 and 2 < len(obj) < 40 and subj != obj
                         and subj not in _STOPWORDS and obj not in _STOPWORDS):
                     relations.append((subj, rel_type, obj))
+    # GRAMATİK PARSER (spaCy) pass — yalnız OPT-IN (kalite-yolu: converse/research). Growth/test
+    # KAPALI (regex hızlı). Açıkken kapsamlı genel çıkarım (regex'i AUGMENTE eder; Türkçe korunur).
+    if _PARSER_ENABLED:
+        try:
+            for s, rel, o in _spacy_extract(text):
+                if (2 < len(s) < 50 and 2 < len(o) < 50 and s != o
+                        and o not in _STOPWORDS and o not in _BOUNDARY and o not in _NONCONTENT
+                        and s not in _BOUNDARY and not (rel == "IS_A" and _is_nonclass_obj(o))):
+                    relations.append((s, rel, o))
+        except Exception:
+            pass
     # tekilleştir (sıra korunur)
     _seen: set = set()
     _uniq: list[tuple[str, str, str]] = []
