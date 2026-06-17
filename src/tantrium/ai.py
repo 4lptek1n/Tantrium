@@ -5320,6 +5320,8 @@ class AI:
             ai.grow(time_limit_s=None)           # sınırsız — kendi kendine
         """
         from tantrium.research.growth import GrowthEngine
+        # 8-boyut enrichment + facade-bağımlı işler için engine→ai köprüsü (grow yolunda da)
+        self._engine._ai = self
         ge = getattr(self, "_grower", None)
         if ge is None:
             from tantrium.research.autonomous import AutonomousObserver

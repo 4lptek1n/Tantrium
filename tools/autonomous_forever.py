@@ -30,8 +30,9 @@ STATUS_FILE = STATE_DIR / "autonomy_status.json"
 HYP_FILE = STATE_DIR / "autonomy_hypotheses.jsonl"
 
 COMMIT_EVERY = 3          # kaç turda bir git'e dayanıklılık commit'i
-CYCLES_PER_ROUND = 4      # tur başına cognition batch döngüsü
+CYCLES_PER_ROUND = 2      # tur başına cognition batch döngüsü (ağsız akıl/self)
 ROUND_BUDGET_S = 1200     # tur başına süre tavanı (sonsuz döngü, tur sınırlı)
+FOCUS = "oncology"        # ODAKLI büyüme: genişlik-spam yerine tek-domain UZMAN derinlik
 BRANCH = "claude/seninle-agi-yapacagiz-XwJRz"
 
 
@@ -68,14 +69,27 @@ def main() -> None:
     while not STOP_FILE.exists():
         round_n += 1
         t0 = time.time()
+        # FAZ 1 — ODAKLI VERİ: onkoloji-yoğun büyüme (yalnız onkoloji kaynakları +
+        # 8-boyut enrichment + corrigibility temizlik). Genişlik-spam'i yerine derinlik.
+        grow_added = 0
+        try:
+            grp = ai.grow(focus=FOCUS, time_limit_s=ROUND_BUDGET_S * 0.6,
+                          network=True, verbose=False)
+            grow_added = int(getattr(grp, "concepts_end", 0) - getattr(grp, "concepts_start", 0))
+        except Exception as exc:
+            print(f"[{time.strftime('%H:%M:%S')}] tur {round_n} grow hata: {exc} — devam", flush=True)
+
+        # FAZ 2 — AĞSIZ AKIL/SELF: odaklı veri ÜSTÜNDE reasoning/self/hipotez
+        # (ağ=False → yeni odaksız spam çekmez; yalnız var olan onkoloji çekirdeğini işler).
         try:
             rep = ai.cognition(mode="batch", max_cycles=CYCLES_PER_ROUND,
-                               time_limit_s=ROUND_BUDGET_S, network=True)
+                               time_limit_s=ROUND_BUDGET_S * 0.4, network=False)
         except Exception as exc:  # fail-open: bir tur çökse de SONSUZ döngü durmaz
-            print(f"[{time.strftime('%H:%M:%S')}] tur {round_n} hata: {exc} — devam", flush=True)
+            print(f"[{time.strftime('%H:%M:%S')}] tur {round_n} cognition hata: {exc} — devam", flush=True)
             time.sleep(5)
             continue
 
+        totals["concepts"] += grow_added
         totals["concepts"] += rep.concepts_added
         totals["edges"] += rep.edges_added
         totals["hypotheses"] += rep.hypotheses_generated
