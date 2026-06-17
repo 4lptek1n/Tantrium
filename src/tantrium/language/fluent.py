@@ -233,8 +233,10 @@ def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3,
             c += ". Köklü olmasaydı bu konuda konuşmaz, asla uydurmazdım."
             s.append(c)
         elif verdict == "WEAKLY_GROUNDED":
-            s.append(f"Dürüst olmam gerekirse {topic} bende zayıf köklü, o yüzden "
-                     f"temkinli konuşuyorum.")
+            # OLASILIK DEĞİL, dürüst eksiklik: araştırıp köklendirmeye çalıştım ama bu kavramı
+            # henüz tam yerine oturtamadım (yerini koyamadığım sokak gibi) — uydurmuyorum.
+            s.append(f"{topic} konusunu araştırdım ama henüz tam köklendiremedim; "
+                     f"bildiğim kadarını söylüyorum, gerisini uydurmam.")
     # teknik register: yapısal not (geometrik sertifika vurgusu)
     if register == "teknik" and (what or does):
         s.append("Bu ifadelerin her biri TAU bilgi-grafında gerçek bir kenara dayanıyor "
@@ -243,12 +245,7 @@ def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3,
 
 
 def _confidence_lead(score, verdict: str) -> str:
-    """Güven kalibrasyonu (dilde): grounding skoru → emin/muhtemel/temkinli açılış.
-    LLM'ler güveni istatistikten taklit eder; biz GEOMETRİK köklülükten ölçeriz."""
-    if score is None:
-        return "Bunları güvenle söylüyorum" if verdict == "GROUNDED" else "Bildiğim kadarıyla"
-    if score >= 0.66:
-        return "Bundan eminim"
-    if score >= 0.4:
-        return "Büyük olasılıkla doğru"
-    return "Tam emin değilim ama bildiğim kadarıyla"
+    """Güven AÇILIŞI — OLASILIK YOK. Kritik hatta köklüyse KESİN; değilse sistem zaten
+    araştırıp köklendirir (converse), 'büyük olasılıkla/tam emin değilim' bir LLM hedge'idir
+    ve burada YASAK. İki durum: köklü→eminim, (araştırma sonrası hâlâ) köksüz→dürüst açılış."""
+    return "Bundan eminim" if verdict == "GROUNDED" else "Bildiğim kadarıyla"

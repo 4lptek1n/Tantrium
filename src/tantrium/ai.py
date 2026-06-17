@@ -2445,6 +2445,17 @@ class AI:
                 lf = self._tau_facts(last)
                 if lf:
                     topic, facts = last, lf
+        # EMİN OLMAMA = HEDGE DEĞİL, ÇÖZ: facts var ama ZAYIF köklüyse (tam emin olamayacağı
+        # durum) "büyük olasılıkla" demek YASAK — o an internetten araştırır, buluşu hafızaya
+        # yazar, köklendirir → artık emin olur. Bounded: bir ek araştırma; learn_if_unknown kapılı.
+        if facts and learn_if_unknown and not learned:
+            try:
+                if self.grounding(topic).verdict != "GROUNDED":
+                    self._research_deep(topic)       # emin olmadığını ANINDA öğren+köklendir
+                    learned = True
+                    facts = self._tau_facts(topic) or facts
+            except Exception:
+                pass
         if facts:
             if detail:
                 # AKICI anlatım motoru (ek-uyumlu Türkçe + köklülük doğal cümlede)
