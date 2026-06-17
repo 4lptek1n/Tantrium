@@ -2418,6 +2418,36 @@ class AI:
                 out.append({"claim": f"{topic} —{p}→ {t}", "paradigm": p, "target": t})
         return out
 
+    def _derive_certain(self, topic: str) -> bool:
+        """MATEMATİK belirsizliğini TÜRETEREK çöz — internet YOK (kullanıcı: math'ta gerek yok).
+
+        Konuyu içeren Sturm-SERTİFİKALI transitif ilişkileri sistemin KENDİ tümdengeliminden
+        türetip ekler (hesap, arama değil). Türetilebilir bağ yoksa dürüstçe hiçbir şey eklemez
+        (sahte üretmez) — gerçek math boşluğu ProofLoop/close()'a kalır. Bounded, ağsız, fail-open.
+        """
+        added = 0
+        try:
+            from tantrium.reasoning.causal_rules import derive_transitive_hypotheses
+            from tantrium.graph.knowledge_graph import KnowledgeEdge
+            tau = self._engine.tau
+            for h in derive_transitive_hypotheses(self._engine, max_seeds=16,
+                                                  max_hyps=24, sturm_check=16):
+                if h.get("sturm_ok") is not True:
+                    continue
+                subj, obj, derived = h.get("subj", ""), h.get("obj", ""), h.get("derived", "")
+                if topic not in (subj, obj) or not derived:   # yalnız bu konuyu içeren türevler
+                    continue
+                el = tau.edges.setdefault(subj, [])
+                if any(str(getattr(e, "target", "")) == obj
+                       and getattr(e, "paradigm", "") == derived for e in el):
+                    continue
+                el.append(KnowledgeEdge(source=subj, target=obj, distance=0.0, paradigm=derived))
+                tau._dirty = True
+                added += 1
+        except Exception:
+            pass
+        return added > 0
+
     def _ensure_certain(self, topic: str, *, learn_if_unknown: bool = True):
         """TEK-GERÇEK kesinleştirme: belirsizliği HEDGE etme, ÇÖZ.
 
@@ -2429,6 +2459,16 @@ class AI:
 
         Döner: (topic, facts, learned) — topic öbek-düşürmeyle güncellenebilir.
         """
+        # YÖNTEM SEÇİMİ (kullanıcı: matematikte internete gerek yok): girdi GERÇEK-matematik
+        # nesnesiyse (molekül/sayı/ispat-yapısı, F24) belirsizliği TÜRETEREK çöz — ASLA internet.
+        # Dünya-bilgisiyse araştır. Beyin çekirdeği dil-yolundan ayrı kapıyla ayrılır.
+        try:
+            from tantrium.core.meaning_pipeline import _is_math_core_object
+            if _is_math_core_object(self._engine, topic):
+                learned = self._derive_certain(topic)
+                return topic, self._tau_facts(topic), learned
+        except Exception:
+            pass
         facts = self._tau_facts(topic)
         learned = False
         if not facts and learn_if_unknown:
