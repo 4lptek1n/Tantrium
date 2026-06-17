@@ -3902,18 +3902,20 @@ class AI:
 
     def enrich(self, name: str, *, smiles: "str | None" = None,
                protein: "str | None" = None, dna: "str | None" = None,
-               law: "str | None" = None, network: bool = True) -> dict:
-        """Kavramı ÇOK-BOYUTLU kökle — kelimeyle değil GERÇEK boyutlarıyla (F8 vizyonu).
+               properties: "list | None" = None, network: bool = True,
+               dims: "list | None" = None) -> dict:
+        """Kavramı ÇOK-BOYUTLU kökle — kelimeyle değil tüm GERÇEK boyutlarıyla (F8 vizyonu).
 
-        Boyutlar TAMAMLAYICI: kimyasal kavram MOLEKÜL alır (PubChem SMILES→HAS_COMPOUND),
-        gen/protein kavram BİO-DİZİ alır (UniProt→HAS_DNA). 'caffeine'→molekülü, 'egfr'→
-        proteini bağlanır → her biri AYNI kavramda gerçek spektrumuyla yaşar. Ne kadar çok
-        boyut → o kadar çapraz-modal `quantum_bridges` (görmediğimiz bağlar). Elle smiles/
-        protein/dna/law verilebilir (ağsız). DB'de olmayan kavram (postal) → boş döner.
-        Döner: {concept, bound, smiles, bio}."""
+        Genişletilebilir boyut-registry (`core.enrichment._DIMENSIONS`): tip-farkında —
+        kimyasal kavram MOLEKÜL(PubChem)+FİZİKSEL-ÖZELLİK(PubChem) alır, gen/protein kavram
+        PROTEİN(UniProt)+DNA-nükleotid(NCBI) alır → her boyut AYNI kavramda gerçek spektrumuyla.
+        Ne kadar çok BAĞIMSIZ boyut → o kadar çapraz-modal `quantum_bridges` (görmediğimiz
+        bağlar) → genelleşen zeka. Elle smiles/protein/dna/properties verilebilir (ağsız);
+        `dims=` belirli boyutlarla sınırla. İlgisiz kavram (postal) → boş. Döner:
+        {concept, bound, dimensions, values}."""
         from tantrium.core.enrichment import enrich_concept
         return enrich_concept(self, name, smiles=smiles, protein=protein, dna=dna,
-                              law=law, network=network)
+                              properties=properties, network=network, dims=dims)
 
     def ground_full(
         self,

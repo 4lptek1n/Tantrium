@@ -1105,10 +1105,10 @@ class GrowthEngine:
                 r = ai.enrich(name, network=True)
             except Exception:
                 continue
-            if r.get("bound"):
-                bound += 1
-                smi = (r.get("smiles") or "")[:24]
-                _log(f"çok-boyutlu: {name} ← molekül bağlandı (HAS_COMPOUND, {smi}…)")
+            dims = r.get("dimensions") or []
+            if dims:
+                bound += len(dims)
+                _log(f"çok-boyutlu: {name} ← {len(dims)} boyut bağlandı ({', '.join(dims)})")
         if rep is not None:
             rep.dimensions_bound += bound
 
