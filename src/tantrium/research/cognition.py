@@ -648,6 +648,13 @@ class FlyWheelPhase:
                             if getattr(o, "admitted_as", "") in ("core", "frontier"):
                                 state.artifacts_reingested += 1
                                 state.concepts_added += 1
+                                # ⟨SELF⟩ bunu YAŞASIN: "X ürettim" — ben, ürettiklerimle de tanımlı
+                                _ai = getattr(engine, "_ai", None)
+                                if _ai is not None:
+                                    try:
+                                        _ai.experience(smiles[:48], kind="produced", persist=False)
+                                    except Exception:
+                                        pass
                                 state.log(f"flywheel/reingest: '{smiles[:24]}' "
                                           f"→ {o.admitted_as} (üretim→bilgi döngüsü)")
                         except Exception:
@@ -1238,6 +1245,13 @@ class ScienceStep:
             state.hypotheses_generated += len(added)
             certified = sum(1 for h in added if h.get("sturm_ok"))
             if added:
+                # ⟨SELF⟩ bunu YAŞASIN: "X hakkında hipotez kurdum" — ben, düşündüklerimle de tanımlı
+                _ai = getattr(engine, "_ai", None)
+                if _ai is not None:
+                    try:
+                        _ai.experience(added[0]["subj"], kind="hypothesized", persist=False)
+                    except Exception:
+                        pass
                 state.log(f"science: +{len(added)} köklü transitif hipotez "
                           f"({certified} Sturm-sertifikalı) — örn. {added[0]['statement']}")
             # Tier 2 #4: HİPOTEZ→TASARIM→DOĞRULA (ASI A→C pilar-zinciri, otonom).
