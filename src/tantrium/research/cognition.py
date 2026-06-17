@@ -1293,6 +1293,11 @@ class CuriosityPhase:
             done.add(cand)                       # işaretle → bir daha seçilmez (rotasyon ilerler)
             state.curiosity_researched += 1
             state.concepts_added += max(0, int(learned))
+            # ⟨SELF⟩ bunu YAŞASIN: "X'i araştırdım" — boş öz-referansı aktiviteyle+zamanla kökle
+            try:
+                ai.experience(cand, kind="researched", persist=False)
+            except Exception:
+                pass
             state.log(f"curiosity: '{cand}' merak edildi → {len(qs)} soru üretildi, "
                       f"internetten +{learned} köklü ilişki öğrenildi (işlendi: {len(done)})")
         except Exception as exc:

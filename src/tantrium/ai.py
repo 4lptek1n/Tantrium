@@ -4531,6 +4531,17 @@ class AI:
         from tantrium.meta.self_model import SelfModel
         return SelfModel(self._engine).reflect(persist=persist)
 
+    def experience(self, name: str, kind: str = "did", *, persist: bool = True) -> dict:
+        """⟨SELF⟩'i bir GERÇEK aktiviteye bağla — boş öz-referansı içerikle ve zamanla doldur.
+
+        Sistemin yaptığı/algıladığı önemli şeyi (öğrenilen kavram, üretilen molekül, kanıtlanan
+        teorem) ⟨SELF⟩'e ENACTED kenarıyla bağlar + öznel zaman-sırasına (idx) ve gerçek
+        zaman-damgasına (ts) işler. 'zaman öznel yaşanır' = idx deneyimlerin yaşanmış sırası.
+        Bounded (son 64, episodik) → hub-taşması yok. 'ben'i NE YAPTIĞIYLA tanımlar.
+        Döner: {name, kind, idx}."""
+        from tantrium.meta.self_model import SelfModel
+        return SelfModel(self._engine).experience(name, kind, persist=persist)
+
     def trace(self, name: str, depth: int = 5) -> dict:
         """Bir kavramın TAU'daki soy zincirini ve ileri yolunu göster.
 
