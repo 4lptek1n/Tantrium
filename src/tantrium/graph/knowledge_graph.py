@@ -91,28 +91,6 @@ class KnowledgeEdge:
     distance: float
     paradigm: str = "ALEPH"  # certifying paradigm
     quantum_dist: float = 0.0  # κ-mesafe (serbest kümülant uzaklığı)
-    # Birikimli KANIT/GÜVEN — keskin var/yok değil, DERECELİ. Tekrar görülen ilişki güçlenir
-    # (öğrenme=pekişme), çelişki/çürüme zayıflatır. Bağlam/çıkarım bu ağırlıkla temsil edilir.
-    strength: float = 1.0
-
-
-# Dereceli kenar sabitleri — kanıt birikimi sınırlı, çok-zayıf kenar unutulur (konsolidasyon).
-STRENGTH_CAP = 6.0          # bir ilişkiye duyulan güvenin tavanı (sonsuz pekişme yok)
-STRENGTH_PRUNE = 0.25       # bu eşiğin altı = "artık inanmıyorum" → budanır (unutma)
-
-
-def strengthen(edge: "KnowledgeEdge", amount: float = 0.5) -> "KnowledgeEdge":
-    """Kenarı kanıtla pekiştir (tekrar gözlem → daha emin). Tavanla sınırlı."""
-    edge.strength = min(STRENGTH_CAP, edge.strength + amount)
-    return edge
-
-
-def weaken(edge: "KnowledgeEdge", amount: float = 0.5) -> "KnowledgeEdge":
-    """Kenarı zayıflat (çelişki/çürüme → daha az emin). Sıfırda durur."""
-    edge.strength = max(0.0, edge.strength - amount)
-    return edge
-
-
 
 
 # ─── TAU Graph ────────────────────────────────────────────────────────────────
@@ -358,16 +336,10 @@ class KnowledgeGraph:
             # Tüm tipli/öğrenilen kenarlar (ALEPH dışı her şey) tam saklanır — açık-sözlük.
             semantic = [e for e in all_edges if e.paradigm != "ALEPH"]
             combined = aleph + semantic
-            rows = []
-            for e in combined:
-                if e.target not in id_map:
-                    continue
-                row = [id_map[e.target], round(e.distance, 6), _P.get(e.paradigm, e.paradigm)]
-                # strength yalnız varsayılandan farklıysa yazılır (kompaktlık korunur)
-                if abs(getattr(e, "strength", 1.0) - 1.0) > 1e-6:
-                    row.append(round(float(e.strength), 3))
-                rows.append(row)
-            edge_list.append(rows)
+            edge_list.append(
+                [[id_map[e.target], round(e.distance, 6), _P.get(e.paradigm, e.paradigm)]
+                 for e in combined if e.target in id_map]
+            )
             total_edges += len(combined)
 
         data = {"n": node_list, "e": edge_list}
@@ -415,8 +387,6 @@ class KnowledgeGraph:
                         distance=row[1],
                         # bilinen kod → tam ad; bilinmeyen (açık-sözlük) → literal ad korunur
                         paradigm=(lambda c: _P_REV.get(c, c))(row[2] if len(row) > 2 else "A"),
-                        # dereceli kanıt: 4. eleman varsa oku, yoksa varsayılan 1.0 (geri uyumlu)
-                        strength=(float(row[3]) if len(row) > 3 else 1.0),
                     )
                     for row in edge_rows
                     if row[0] < len(names)

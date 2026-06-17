@@ -3598,27 +3598,25 @@ class AI:
         name = self._converse_topic(concept) or str(concept).lower()
         if name not in e.tau.edges and concept in e.tau.edges:
             name = concept
-        # İleri: kavramın tipli çıkan kenarları — KANIT-AĞIRLIKLI (en emin ilişki önce = bağlam)
-        forward_w: dict[str, dict[str, float]] = {}
+        # İleri: kavramın tipli çıkan kenarları
+        forward: dict[str, list[str]] = {}
         for ed in e.tau.edges.get(name, []):
             if ed.paradigm in _SEMANTIC_PARADIGMS and not str(ed.target).startswith("⟨"):
-                d = forward_w.setdefault(ed.paradigm, {})
-                d[ed.target] = max(d.get(ed.target, 0.0), getattr(ed, "strength", 1.0))
+                forward.setdefault(ed.paradigm, [])
+                if ed.target not in forward[ed.paradigm]:
+                    forward[ed.paradigm].append(ed.target)
         # Geri: kavramı tipli hedefleyenler (O(E) tek geçiş)
-        reverse_w: dict[str, dict[str, float]] = {}
+        reverse: dict[str, list[str]] = {}
         for src, elist in e.tau.edges.items():
             if src == name or str(src).startswith("⟨"):
                 continue
             for ed in elist:
                 if ed.target == name and ed.paradigm in _SEMANTIC_PARADIGMS:
-                    d = reverse_w.setdefault(ed.paradigm, {})
-                    d[src] = max(d.get(src, 0.0), getattr(ed, "strength", 1.0))
-
-        def _by_strength(d: dict[str, float]) -> list[str]:
-            return [t for t, _ in sorted(d.items(), key=lambda kv: -kv[1])][:max_per]
-
-        forward = {p: _by_strength(v) for p, v in forward_w.items()}
-        reverse = {p: _by_strength(v) for p, v in reverse_w.items()}
+                    reverse.setdefault(ed.paradigm, [])
+                    if src not in reverse[ed.paradigm]:
+                        reverse[ed.paradigm].append(src)
+        forward = {p: v[:max_per] for p, v in forward.items()}
+        reverse = {p: v[:max_per] for p, v in reverse.items()}
         # Doğal-dil özet (Türkçe yüklemlerle)
         _V = {"IS_A": "bir {} türüdür", "INHIBITS": "{} baskılar", "ACTIVATES": "{} etkinleştirir",
               "CAUSES": "{} yol açar", "TARGETS": "{} hedefler", "BINDS": "{} bağlar",

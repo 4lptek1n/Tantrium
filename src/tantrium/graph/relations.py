@@ -225,18 +225,15 @@ def certify_and_add_edge(
         return False
 
     from tantrium.core.semantic import moment_distance
-    from tantrium.graph.knowledge_graph import strengthen
     d = float(moment_distance(c_a, c_b))
 
-    # DERECELİ + çift yönlü: aynı (özne→nesne, tip) tekrar gelirse PEKİŞTİR (kanıt birikimi),
-    # yoksa yeni kenar. Tekrar gözlem → daha emin; ağırlık bağlam/çelişki-çözümünü besler.
-    for s, t in ((subj, obj), (obj, subj)):
-        edges = engine.tau.edges.setdefault(s, [])
-        ex = next((e for e in edges if e.target == t and e.paradigm == paradigm), None)
-        if ex is not None:
-            strengthen(ex, 0.5)
-        else:
-            edges.append(KnowledgeEdge(source=s, target=t, distance=d, paradigm=paradigm))
+    existing = engine.tau.edges.setdefault(subj, [])
+    if obj not in {e.target for e in existing}:
+        existing.append(KnowledgeEdge(source=subj, target=obj, distance=d, paradigm=paradigm))
+
+    existing_r = engine.tau.edges.setdefault(obj, [])
+    if subj not in {e.target for e in existing_r}:
+        existing_r.append(KnowledgeEdge(source=obj, target=subj, distance=d, paradigm=paradigm))
 
     return True
 
