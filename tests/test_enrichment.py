@@ -85,9 +85,68 @@ def test_dims_filter_restricts():
     assert r["dimensions"] == ["protein"]
 
 
-def test_registry_has_four_working_dimensions():
+def test_registry_has_all_seven_dimensions():
     keys = {d.key for d in _DIMENSIONS}
-    assert keys == {"molecule", "protein", "dna", "properties"}
+    assert keys == {"molecule", "protein", "dna", "properties",
+                    "law", "structure3d", "sound"}
+
+
+def test_no_molecule_3d_dimension():
+    """İLKE: molekül 3D boyutu YOK — çekirdek ilacı sıfırdan üretir, dış 3D kirletir.
+    3D yalnız protein (structure3d); molekül 2D SMILES kalır."""
+    by_key = {d.key: d for d in _DIMENSIONS}
+    assert by_key["molecule"].paradigm == "HAS_COMPOUND"     # 2D graf spektrumu
+    assert by_key["structure3d"].paradigm == "HAS_TOPOLOGY"  # 3D yalnız protein fold
+    # molekül fetcher SMILES (2D) döndürür, 3D koordinat değil
+    assert "smiles" in by_key["molecule"].fetch.__doc__ if by_key["molecule"].fetch.__doc__ else True
+
+
+def test_law_dimension_known_sequence():
+    """Yasa boyutu: bilinen dizi (fibonacci) → discover_law → IS_GOVERNED_BY (ağsız, iç)."""
+    from tantrium.core.enrichment import fetch_governing_law
+
+    class _LawAI:
+        def discover_law(self, seq):
+            return type("LD", (), {"law_holds": True, "order": 2,
+                                   "recurrence": [1.0, 1.0], "modes": [-0.618, 1.618]})()
+
+        def bind_percept(self, *a, **k):
+            return "p"
+    fp = fetch_governing_law("fibonacci sequence", _LawAI())
+    assert fp is not None and fp[0] == 2.0          # order=2
+    # bilinmeyen kavram → dizi yok → None
+    assert fetch_governing_law("postal", _LawAI()) is None
+
+
+def test_law_binds_governed_by():
+    ai = _AI()
+
+    class _LawAI(_AI):
+        def discover_law(self, seq):
+            return type("LD", (), {"law_holds": True, "order": 2,
+                                   "recurrence": [1.0, 1.0], "modes": [-0.618, 1.618]})()
+    lai = _LawAI()
+    r = enrich_concept(lai, "fibonacci", network=False)
+    assert "law" in r["dimensions"] and "IS_GOVERNED_BY" in r["bound"]
+
+
+def test_sound_manual_only_no_autofetch():
+    """Ses: oto-kaynak yok (fetch None); yalnız elle sound= ile bağlanır."""
+    import numpy as np
+    by_key = {d.key: d for d in _DIMENSIONS}
+    assert by_key["sound"].fetch("anything", None) is None    # oto-fetch yok
+    ai = _AI()
+    r = enrich_concept(ai, "bell", sound=list(np.sin(np.linspace(0, 10, 64))), network=False)
+    assert "sound" in r["dimensions"] and "HAS_SIGNAL" in r["bound"]
+
+
+def test_structure3d_binds_topology():
+    import numpy as np
+    ai = _AI()
+    dm = np.abs(np.random.RandomState(0).randn(8, 8))
+    dm = (dm + dm.T) / 2
+    r = enrich_concept(ai, "egfr", structure3d=dm, network=False)
+    assert "structure3d" in r["dimensions"] and "HAS_TOPOLOGY" in r["bound"]
 
 
 def test_fetch_rejects_non_alnum():
