@@ -1016,27 +1016,46 @@ class VerifyPhase:
                 )
                 if mv["failures"]:
                     state.log(f"verify/hesap UYUŞMAZLIK: {mv['failures'][:2]}")
-            # #7 SÜREKLİ ÇELİŞKİ TARAMASI (ucuz): aynı (kaynak→hedef) için INHIBITS VE ACTIVATES
-            # birlikte = dünya-modeli çelişkisi. Truth ekseniyle hangi kenarın daha tutarlı
-            # olduğunu seçemiyorsak ZAYIF olanı (tek-kaynaklı) şüpheli işaretle (manifold-geneli
-            # bakım). Bounded: ≤30 kaynak/tur. Kalıcı çözüm relearn'e bırakılır.
+            # #7 ÇELİŞKİ ÇÖZÜMÜ — KANIT-AĞIRLIKLI (dereceli kenar): aynı (kaynak→hedef) için
+            # INHIBITS VE ACTIVATES birlikte = dünya-modeli çelişkisi. Artık yalnız İŞARETLEMİYORUZ:
+            # GÜÇLÜ (daha çok kanıtlanmış) kenarı tutup ZAYIF olanı zayıflatıyoruz; inanç prune
+            # eşiğinin altına düşerse BUDUYORUZ (unutma). Eşit kanıtta ikisini de hafif zayıflat
+            # (belirsizliği temsil et). Bounded: ≤40 kaynak/tur.
             try:
+                from tantrium.graph.knowledge_graph import weaken, STRENGTH_PRUNE
                 tau = engine.tau
                 opp = {"INHIBITS": "ACTIVATES", "ACTIVATES": "INHIBITS"}
                 scanned = 0
-                for s, el in tau.edges.items():
-                    if scanned >= 30 or s.startswith("⟨"):
+                for s, el in list(tau.edges.items()):
+                    if scanned >= 40 or s.startswith("⟨"):
                         continue
                     scanned += 1
-                    seen: dict[str, set] = {}
+                    # hedef → {paradigma: kenar} (zıt çiftleri yakala)
+                    by_tgt: dict[str, dict[str, object]] = {}
                     for e in el:
                         p = getattr(e, "paradigm", "")
                         if p in opp:
-                            seen.setdefault(str(getattr(e, "target", "")), set()).add(p)
-                    for tgt, ps in seen.items():
-                        if len(ps) >= 2:   # hem INHIBITS hem ACTIVATES → çelişki
+                            by_tgt.setdefault(str(getattr(e, "target", "")), {})[p] = e
+                    for tgt, pe in by_tgt.items():
+                        if "INHIBITS" in pe and "ACTIVATES" in pe:
+                            e1, e2 = pe["INHIBITS"], pe["ACTIVATES"]
+                            s1 = getattr(e1, "strength", 1.0)
+                            s2 = getattr(e2, "strength", 1.0)
+                            loser = e1 if s1 < s2 else (e2 if s2 < s1 else None)
+                            if loser is not None:           # net kazanan var → zayıfı zayıflat
+                                weaken(loser, 0.5)
+                                if loser.strength < STRENGTH_PRUNE:   # inanç bitti → unut (buda)
+                                    el[:] = [x for x in el if x is not loser]
+                                    state.log(f"verify/çelişki ÇÖZÜLDÜ: {s}→{tgt} "
+                                              f"'{loser.paradigm}' budandı (kanıt yetersiz)")
+                                else:
+                                    state.log(f"verify/çelişki: {s}→{tgt} '{loser.paradigm}' "
+                                              f"zayıflatıldı (str={loser.strength:.2f})")
+                            else:                            # eşit kanıt → ikisini de hafif zayıflat
+                                weaken(e1, 0.25); weaken(e2, 0.25)
+                                state.log(f"verify/çelişki: {s}↔{tgt} eşit kanıt, ikisi de zayıflatıldı")
                             state.contradictions_resolved += 1
-                            state.log(f"verify/çelişki: {s} ↔ {tgt} (INHIBITS+ACTIVATES) işaretlendi")
+                            engine.tau._dirty = True
             except Exception:
                 pass
             # #2 OTO-RELEARN (corrigibility kapanışı, ağ-kapılı): dış-hata bulunan olgunun

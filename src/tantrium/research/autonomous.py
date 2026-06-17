@@ -732,15 +732,20 @@ class AutonomousObserver:
                     except Exception:
                         pass
 
-            # İlişki kenarını TAU'ya ekle (idempotent)
+            # İlişki kenarını TAU'ya ekle — DERECELİ: tekrar görülürse PEKİŞTİR (kanıt birikimi),
+            # yoksa yeni kenar (strength=1.0). "Öğrenme = pekişme": aynı olguyu çok kez okuyan
+            # sistem ona daha emin olur; bu ağırlık sonra bağlam/çelişki-çözümünde kullanılır.
+            from tantrium.graph.knowledge_graph import strengthen
             edges = self.engine.tau.edges.setdefault(subj, [])
-            already = any(e.target == obj and e.paradigm == rel_type for e in edges)
-            if not already:
+            existing = next((e for e in edges if e.target == obj and e.paradigm == rel_type), None)
+            if existing is not None:
+                strengthen(existing, 0.5)
+            else:
                 edges.append(KnowledgeEdge(
                     source=subj, target=obj,
                     distance=0.0, paradigm=rel_type,
                 ))
-                self.engine.tau._dirty = True
+            self.engine.tau._dirty = True
 
     def _add_bridge_edge(self, a: str, b: str, distance: float) -> None:
         """TAU'ya çift yönlü SPECTRAL_BRIDGE edge ekle (idempotent)."""
