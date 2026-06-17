@@ -1874,6 +1874,48 @@ class AI:
             pass
         return ""
 
+    def _fetch_wiki_summary(self, title: str) -> str:
+        """Wikipedia REST summary — TEMİZ lead extract (ham full-text regex çöpünü önler).
+
+        Deep-research'ün 2. kaynağı: REST API kanonik, iyi-biçimli özet döndürür → temiz
+        ilişki çıkarımı ('gravity → quite' gibi dağınık-cümle çöpü olmaz)."""
+        from tantrium.research.net import http_get_json
+        import urllib.parse as _up
+        try:
+            url = ("https://en.wikipedia.org/api/rest_v1/page/summary/"
+                   + _up.quote(title.replace(" ", "_")))
+            d = http_get_json(url, errors="replace")
+            ex = d.get("extract", "") if isinstance(d, dict) else ""
+            return ex[:2000] if ex and len(ex) > 40 else ""
+        except Exception:
+            return ""
+
+    def _fetch_wikidata_type(self, topic: str) -> str:
+        """Wikidata küratörlü TİP (entity description) — IS_A ÇAPRAZ-DOĞRULAMA kaynağı.
+
+        gravity → 'fundamental interaction affecting all matter'. Küratörlü = regex-çöpü yok;
+        Wikipedia-extract'ın IS_A'sını bağımsız 3. kaynakla doğrular."""
+        from tantrium.research.net import http_get_json
+        import urllib.parse as _up
+        try:
+            s = http_get_json(
+                "https://www.wikidata.org/w/api.php?action=wbsearchentities&search="
+                + _up.quote(topic) + "&language=en&format=json&limit=1", errors="replace")
+            hits = s.get("search", []) if isinstance(s, dict) else []
+            if hits:
+                # BELİRSİZLİK KORUMASI: yalnız etiketi konuyla TAM eşleşen entity (gravity→film/
+                # yazılım gibi yanlış entity'nin tip-gürültüsünü ele). Aksi halde boş döner.
+                label = (hits[0].get("label") or "").strip().lower()
+                if label != topic.strip().lower():
+                    return ""
+                desc = (hits[0].get("description") or "").strip()
+                # yalnız tip-benzeri açıklama (fiil/cümle değil) — kısa isim öbeği
+                if desc and 2 <= len(desc.split()) <= 8 and " is " not in desc:
+                    return desc
+        except Exception:
+            return ""
+        return ""
+
     def _research_deep(self, topic: str, expand: int = 3) -> int:
         """DERİN OTONOM ARAŞTIRMA — tek cümle değil, çok kaynaktan zengin köklü bilgi kur.
 
@@ -1894,6 +1936,24 @@ class AI:
                 main = self._fetch_wikipedia(topic, full=True)
         else:
             main = self._fetch_wikipedia(topic, full=True)
+
+        # ÇOK-KAYNAK ÇAPRAZ-DOĞRULANMIŞ TANIM (gerçek deep-research):
+        # (a) Wikipedia REST summary = TEMİZ lead → otoriter tanımı buradan kur (full-text
+        #     regex çöpü değil). (b) Wikidata küratörlü tip = bağımsız çapraz-doğrulama.
+        # İkisi ÖNCE öğrenilir → ilk-IS_A otoritesi TEMİZ kaynaktan gelir; full-text yalnız
+        # breadth ekler. 'gravity→quite' hayatta kalmaz: temiz özet 'interaction' der, Wikidata
+        # doğrular; tek-kaynak dağınık çöpü artık tanımı belirlemez.
+        summary = self._fetch_wiki_summary(fetch_title)
+        if summary:
+            rs = self.learn(summary)
+            total += int(rs.get("relations", 0)) + int(rs.get("new_concepts", 0))
+        wd_type = self._fetch_wikidata_type(topic)
+        if wd_type:
+            try:
+                self.learn(f"{topic} is a {wd_type}.")   # küratörlü tip → IS_A çapraz-doğrulama
+            except Exception:
+                pass
+
         if main:
             # KISALTMA/TAKMA-AD yeniden-bağlama: "FullName (; ABBR) is/are X." — Wikipedia
             # redirect'i sorguyu (dna) tam-ada (deoxyribonucleic acid) çevirir, tanım baş-isme

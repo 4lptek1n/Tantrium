@@ -167,6 +167,13 @@ _BOUNDARY = {"of", "in", "on", "at", "by", "with", "for", "to", "from", "which",
 _POSTVERB = {"found", "made", "led", "known", "seen", "given", "built", "held",
              "called", "named", "used", "based", "related", "consisting", "produced"}
 
+# İçerik-DIŞI: zarf/belirteç/muğlak — IS_A nesnesi/baş-isim OLAMAZ ("gravity is QUITE a..." →
+# quite atlanır, gerçek içeriğe ('force/interaction') geçilir). Regex-çöpünü (quite/sentence) eler.
+_NONCONTENT = {"quite", "very", "rather", "somewhat", "fairly", "more", "most", "less",
+               "much", "also", "even", "just", "only", "still", "really", "simply",
+               "merely", "highly", "sentence", "word", "thing", "way", "lot", "bit",
+               "example", "number", "one", "set", "group", "form"}
+
 
 def _clean_term(words: list[str], take_last: bool = False) -> str:
     """İsim öbeğinin BAŞ-İSMİNİ (head noun) çıkar — '2 kelime al' değil.
@@ -183,10 +190,10 @@ def _clean_term(words: list[str], take_last: bool = False) -> str:
             if span:
                 break
             continue
-        if wl in _BOUNDARY or wl in _STOPWORDS:
+        if wl in _BOUNDARY or wl in _STOPWORDS or wl in _NONCONTENT:
             if span:
-                break          # içerik kelimesinden sonra sınır/stopword = öbek bitti
-            continue           # baştaki artikel/edat/sınır = atla
+                break          # içerik kelimesinden sonra sınır/stopword/içerik-dışı = öbek bitti
+            continue           # baştaki artikel/edat/sınır/zarf = atla
         # -ly zarfı (usually/commonly/typically) = isim öbeğinin SONU, ardı bir yan-cümle:
         # "infectious disease usually caused by..." → öbek "disease"te biter, "usually" girmez.
         if (wl.endswith("ly") and len(wl) > 3) or wl in _POSTVERB:
