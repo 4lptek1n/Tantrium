@@ -184,11 +184,8 @@ class Thinker:
 
         if known_words and tau:
             # Semantic edges (IS_A, USES, ACHIEVES, ...) > ALEPH (byte-geometric)
-            # Collect both, prefer semantic when available
-            _SEMANTIC_PARADIGMS = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
-                                   "CAUSES", "ACTIVATES", "INHIBITS", "TARGETS", "BINDS",
-                                   "REGULATES", "PHOSPHORYLATES", "EXPRESSES", "ENCODES",
-                                   "COMPONENT_OF"}
+            # Açık-sözlük: geometrik OLMAYAN her tip (öğrenilen yeni tipler dahil) anlamdır.
+            from tantrium.graph.knowledge_graph import SEMANTIC_PARADIGMS as _SEMANTIC_PARADIGMS
             sem_seen: dict[str, tuple[float, str]] = {}   # name → (dist, paradigm)
             aleph_seen: dict[str, float] = {}
             for w in known_words[:neighbors]:

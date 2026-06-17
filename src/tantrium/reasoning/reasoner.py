@@ -50,8 +50,8 @@ _CHAIN_RULES: list[tuple[str, str, str]] = [
     ("USES",      "CAUSES",    "CAUSES"),
 ]
 
-_SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
-             "CAUSES", "INHIBITS", "ACTIVATES"}
+# Açık-sözlük anlam kümesi (geometrik OLMAYAN her tip) — öğrenilen yeni tipler dahil.
+from tantrium.graph.knowledge_graph import SEMANTIC_PARADIGMS as _SEMANTIC
 
 
 # ─── Veri yapıları ────────────────────────────────────────────────────────────

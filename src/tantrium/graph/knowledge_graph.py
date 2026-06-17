@@ -28,6 +28,52 @@ if TYPE_CHECKING:
     from tantrium.core.semantic import Concept, SemanticManifold
 
 
+# ─── Açık-sözlük anlam ekseni ───────────────────────────────────────────────
+# Kenar TİPLERİ sabit ontoloji DEĞİL — sistem dille karşılaştıkça yeni tip öğrenir
+# (X degrades Y → DEGRADES). Bu yüzden "anlam mı?" testi WHITELIST değil BLACKLIST:
+# geometrik (anlam-taşımayan, yapısal/üretim artefaktı) OLMAYAN her tip anlamdır.
+# Geometrik tipler: ALEPH (moment-yakınlık), SPECTRAL/QUANTUM_BRIDGE (genesis köprüsü).
+GEOMETRIC_PARADIGMS = frozenset({"ALEPH", "SPECTRAL_BRIDGE", "QUANTUM_BRIDGE"})
+
+# Tarihsel/çekirdek anlam tipleri — yalnız ITERASYON için (üyelik açık-sözlüktür).
+_KNOWN_SEMANTIC = (
+    "IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
+    "CAUSES", "INHIBITS", "ACTIVATES", "TARGETS", "BINDS", "REGULATES",
+    "PHOSPHORYLATES", "EXPRESSES", "ENCODES", "COMPONENT_OF",
+    "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE", "HAS_DNA",
+    "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY",
+)
+
+
+def is_semantic(paradigm) -> bool:
+    """Kenar tipi ANLAM taşıyor mu? Açık-sözlük: geometrik OLMAYAN her tip anlamdır.
+
+    Sabit liste yok — öğrenilen yeni tip (DEGRADES, ACTIVATES_VIA, ...) otomatik anlam.
+    """
+    return bool(paradigm) and paradigm not in GEOMETRIC_PARADIGMS
+
+
+class _OpenSemanticParadigms:
+    """`paradigm in SEMANTIC_PARADIGMS` → açık-sözlük üyelik (is_semantic).
+
+    Sonsuz açık küme: üyelik blacklist'le karar verilir; iterasyon çekirdek tipleri verir
+    (sonlu, anlamlı). Eski whitelist-set'lerin yerini saydam doldurur — çağrı sitesi değişmez."""
+    __slots__ = ()
+
+    def __contains__(self, p) -> bool:
+        return is_semantic(p)
+
+    def __iter__(self):
+        return iter(_KNOWN_SEMANTIC)
+
+    def __len__(self) -> int:
+        return len(_KNOWN_SEMANTIC)
+
+
+# Tek-gerçek açık anlam kümesi — tüm akıl/topoloji/dil katmanları bunu paylaşır.
+SEMANTIC_PARADIGMS = _OpenSemanticParadigms()
+
+
 # ─── Node & Edge ──────────────────────────────────────────────────────────────
 
 @dataclass
@@ -266,16 +312,9 @@ class KnowledgeGraph:
         ]
 
         # ALEPH: moment-distance certified (L2 Hankel kernel) — k=10, distance sorted
-        # Semantic: pattern-extracted logical relationships (IS_A, USES, ACHIEVES, etc.)
-        # L0 statistical (sentence co-occurrence, PPMI) is excluded.
-        _SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
-                     "SPECTRAL_BRIDGE", "QUANTUM_BRIDGE",
-                     "CAUSES", "INHIBITS", "ACTIVATES",
-                     "TARGETS", "BINDS", "REGULATES", "PHOSPHORYLATES",
-                     "EXPRESSES", "ENCODES",
-                     "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
-                     "HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY"}
-        # Paradigm → single-char code for compact storage
+        # Geri kalan HER kenar (tipli ilişki + genesis köprüleri + AÇIK-sözlük öğrenilen
+        # yeni tipler) tam saklanır — açık-sözlük: whitelist yok, yalnız ALEPH budanır.
+        # Paradigm → single-char code for compact storage (bilinmeyen=literal ad korunur)
         _P = {"ALEPH": "A", "IS_A": "I", "USES": "U", "DEFINES": "D",
               "ACHIEVES": "V", "REQUIRES": "R", "COMPOSED": "C",
               "SPECTRAL_BRIDGE": "S", "QUANTUM_BRIDGE": "Q",
@@ -294,11 +333,11 @@ class KnowledgeGraph:
             aleph = [e for e in all_edges if e.paradigm == "ALEPH"]
             aleph.sort(key=lambda e: e.distance)
             aleph = aleph[:10]
-            # Semantic edges: logically certified relationships
-            semantic = [e for e in all_edges if e.paradigm in _SEMANTIC]
+            # Tüm tipli/öğrenilen kenarlar (ALEPH dışı her şey) tam saklanır — açık-sözlük.
+            semantic = [e for e in all_edges if e.paradigm != "ALEPH"]
             combined = aleph + semantic
             edge_list.append(
-                [[id_map[e.target], round(e.distance, 6), _P.get(e.paradigm, "A")]
+                [[id_map[e.target], round(e.distance, 6), _P.get(e.paradigm, e.paradigm)]
                  for e in combined if e.target in id_map]
             )
             total_edges += len(combined)
@@ -346,7 +385,8 @@ class KnowledgeGraph:
                         source=src,
                         target=names[row[0]],
                         distance=row[1],
-                        paradigm=_P_REV.get(row[2] if len(row) > 2 else "A", "ALEPH"),
+                        # bilinen kod → tam ad; bilinmeyen (açık-sözlük) → literal ad korunur
+                        paradigm=(lambda c: _P_REV.get(c, c))(row[2] if len(row) > 2 else "A"),
                     )
                     for row in edge_rows
                     if row[0] < len(names)

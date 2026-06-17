@@ -28,7 +28,8 @@ def _now() -> str:
 
 
 _GOAL_DIR = "results/agi/goals"
-_SEMANTIC_PARADIGMS = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED"}
+# Açık-sözlük: geometrik OLMAYAN her tip (kausal + öğrenilen yeni tipler dahil) anlamdır.
+from tantrium.graph.knowledge_graph import SEMANTIC_PARADIGMS as _SEMANTIC_PARADIGMS
 
 
 @dataclass

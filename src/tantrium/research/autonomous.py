@@ -104,6 +104,14 @@ _LEMMA_REL: dict[str, str] = {
     "require": "REQUIRES", "need": "REQUIRES", "produce": "ACHIEVES", "generate": "ACHIEVES",
     "contain": "COMPOSED", "comprise": "COMPOSED", "use": "USES",
 }
+# AÇIK SÖZLÜK guardı: bu hafif/yardımcı/aktarım fiilleri ilişki TİPİ üretmez (gürültü).
+# Bunların DIŞINDAKİ her geçişli içerik fiili kendi tipini doğurur (X degrades Y → DEGRADE).
+_OPEN_VERB_STOP = frozenset({
+    "be", "have", "do", "make", "get", "go", "come", "take", "give", "put",
+    "seem", "become", "let", "say", "tell", "show", "see", "look", "find",
+    "want", "try", "call", "mean", "keep", "begin", "start", "appear",
+    "remain", "consider", "describe", "discuss", "note", "report", "suggest",
+})
 _NLP = None
 # spaCy parse YAVAŞ (~0.3s/cümle) → yüksek-debili growth'ta yük. OPT-IN: varsayılan KAPALI
 # (growth/test regex ile hızlı); converse/_research_deep KALİTE için açar (tek-seferlik, yavaşlık kabul).
@@ -174,9 +182,16 @@ def _spacy_extract(text: str) -> list[tuple[str, str, str]]:
                     if a.pos_ in ("NOUN", "PROPN"):
                         out.append((_span_term(s), "IS_A", _span_term(a)))
             continue
-        rel = _LEMMA_REL.get(tok.lemma_)
-        if not rel or tok.pos_ != "VERB":
+        if tok.pos_ != "VERB":
             continue
+        rel = _LEMMA_REL.get(tok.lemma_)
+        if not rel:
+            # AÇIK SÖZLÜK: bilinmeyen içerik fiili → KENDİ ilişki tipini öğren (lemma→TİP).
+            # "is a" elle eklenmiş değil; sistem karşılaştıkça yeni kenar tipi türetir.
+            lemma = tok.lemma_.lower()
+            if lemma in _OPEN_VERB_STOP or len(lemma) < 3 or not lemma.isalpha():
+                continue
+            rel = lemma.upper()
         subs = _subjects(tok)
         pass_subs = [c for c in subs if c.dep_ == "nsubjpass"]
         act_subs = [c for c in subs if c.dep_ == "nsubj"]

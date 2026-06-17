@@ -20,11 +20,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
 
-_SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
-             "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
-             "HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY",
-             "INHIBITS", "CAUSES", "ACTIVATES",
-             "TARGETS", "BINDS", "REGULATES", "PHOSPHORYLATES", "EXPRESSES", "ENCODES"}
+# Açık-sözlük anlam kümesi: geometrik (ALEPH/SPECTRAL_BRIDGE/QUANTUM_BRIDGE) OLMAYAN
+# her tip — öğrenilen yeni tipler dahil. SPECTRAL_BRIDGE dil üretiminde hariç (geometrik).
+from tantrium.graph.knowledge_graph import SEMANTIC_PARADIGMS as _SEMANTIC
 # ALEPH (Hankel/Wasserstein certified) kullanılabilir — moment uzayında komşu.
 # SPECTRAL_BRIDGE hariç: genesis yapay köprüsüdür, anlamsal bilgi taşımaz.
 # Kritik hat: yalnız moment-uzayı değil, anlamsal TAU kökü olan kavramlar.

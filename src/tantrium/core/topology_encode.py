@@ -28,19 +28,10 @@ from tantrium.core.encoder import (
     _sequence_to_hankel_matrix,
 )
 
-# Anlam taşıyan tipli kenarlar — geometrik (ALEPH/SPECTRAL_BRIDGE) HARİÇ.
-# Geometrik kenarlar moment-yakınlığından doğar (doygun manifoldda gürültü);
-# tipli kenarlar gerçek ilişkidir (relations.extract_relations + ingest üçlüleri).
-_SEMANTIC_PARADIGMS = frozenset({
-    "IS_A", "USES", "REQUIRES", "ACHIEVES", "COMPOSED",
-    "DEFINES", "INHIBITS", "CAUSES", "ACTIVATES", "TARGETS", "BINDS",
-    # Kesin biyokimyasal yüklemler (gramatik zenginleştirme — çöküş yok)
-    "REGULATES", "PHOSPHORYLATES", "EXPRESSES", "ENCODES",
-    # Multi-modal ve kausal zincir paradigmaları (atom→DNA→elma)
-    "COMPONENT_OF", "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE",
-    # Çok-boyutlu grounding: DNA + geometri + topoloji + yasa (elma = tüm boyutlar)
-    "HAS_DNA", "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY",
-})
+# Anlam taşıyan tipli kenarlar — AÇIK SÖZLÜK (geometrik OLMAYAN her tip anlamdır).
+# Sabit liste yok: sistem dille karşılaştıkça yeni tip öğrenir (X degrades Y → DEGRADES);
+# tek-gerçek üyelik testi knowledge_graph.is_semantic (blacklist: ALEPH/SPECTRAL/QUANTUM).
+from tantrium.graph.knowledge_graph import SEMANTIC_PARADIGMS as _SEMANTIC_PARADIGMS
 
 _MAX_NEIGHBORS = 24       # alt-graf kenarı ≤ 25 → eigvalsh O(n³) hızlı
 _MIN_NEIGHBORS = 2        # bunun altında topraksız — None (caller yüzeye düşer)
