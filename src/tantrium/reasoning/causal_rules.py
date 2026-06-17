@@ -59,6 +59,26 @@ def lookup_transitive(rel_a: str, rel_b: str):
     """Elle-yazılı ∪ öğrenilen kural tablosundan derived ilişkiyi getir (yoksa None)."""
     return TRANSITIVE_CAUSAL.get((rel_a, rel_b)) or LEARNED_TRANSITIVE.get((rel_a, rel_b))
 
+
+# ─── ÖĞRENİLEN converse/ters kurallar (meta-sentez 2. aile) ───────────────────
+# Transitif kompozisyondan FARKLI bir aile: "a relX b ⟹ b relY a" (ters/simetri). IS_A'ya
+# bağlı değil — COMPONENT_OF↔COMPOSED, BINDS↔BINDS gibi. GraphAdapter ≥3 tutarlı gözlemle
+# (relX'in ters kenarı hep relY) + leave-one-out genelleşmeyle icat eder.
+LEARNED_CONVERSE: dict[str, str] = {}
+
+
+def register_converse_rule(rel_x: str, rel_y: str) -> bool:
+    """Sertifikalı ters kuralı kaydet (relX → relY). Aynı relX bir kez."""
+    if rel_x in LEARNED_CONVERSE:
+        return False
+    LEARNED_CONVERSE[rel_x] = rel_y
+    return True
+
+
+def lookup_converse(rel_x: str):
+    """relX'in öğrenilmiş ters ilişkisini getir (yoksa None)."""
+    return LEARNED_CONVERSE.get(rel_x)
+
 # JENERİK terimler: hipotez öznesi/nesnesi olamaz (role/complex/factor → anlamsız "bilim").
 # TEK-GERÇEK: growth._science_consolidate + cognition.ScienceStep ikisi de buradan okur.
 GENERIC_TERMS: frozenset = frozenset({

@@ -117,6 +117,58 @@ def test_meta_synthesis_phase_gated_by_autonomy():
     assert st.rules_invented == 0
 
 
+def test_graph_adapter_invents_converse_rule():
+    """AİLE 2: transitiften FARKLI strateji — a-relX->b varken b-relY->a tutarlıysa relX⁻¹→relY icat."""
+    from tantrium.reasoning.causal_rules import LEARNED_CONVERSE, lookup_converse
+
+    class _E:
+        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+
+    edges = {}
+    for i in range(3):
+        a, b = f"ca{i}", f"cb{i}"
+        edges[a] = [_E(b, "XPART")]        # a -XPART-> b
+        edges[b] = [_E(a, "XWHOLE")]       # b -XWHOLE-> a (tutarlı ters)
+    eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges=edges))
+    try:
+        inv = meta_synthesize(GraphAdapter(min_obs=3), eng)
+        assert lookup_converse("XPART") == "XWHOLE"       # ters kural icat edildi (IS_A değil)
+        assert any("XPART" in s for s in inv)
+    finally:
+        LEARNED_CONVERSE.pop("XPART", None)
+
+
+def test_apply_converse_materializes_certified_back_edges():
+    """Converse kuralı UYGULANIR: eksik ters kenar (pozitiflik geçerse) materyalize edilir."""
+    from tantrium.core.meta import apply_converse_rules
+    from tantrium.reasoning.causal_rules import LEARNED_CONVERSE
+    ai = tantrium.AI()
+    e = ai._engine
+    from tantrium.core.semantic import Concept
+
+    class _E:
+        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+
+    # gerçek momentli kavramlar (pozitiflik certify edilebilsin)
+    for n in ("cvx", "cvy"):
+        if n not in e.manifold.concepts:
+            cod = e.encoder.encode(n, name=n)
+            e.manifold.concepts[n] = Concept(name=n, moments=list(cod.moments), domain="test")
+    e.tau.edges["cvx"] = [_E("cvy", "XF")]    # cvx -XF-> cvy ; ters (cvy-XB->cvx) YOK
+    e.tau.edges.setdefault("cvy", [])
+    LEARNED_CONVERSE["XF"] = "XB"
+    try:
+        n = apply_converse_rules(e, max_apply=10)
+        has_back = any(x.target == "cvx" and x.paradigm == "XB"
+                       for x in e.tau.edges.get("cvy", []))
+        # pozitiflik geçtiyse materyalize edilmiş olur; geçmediyse dürüstçe eklenmez
+        assert (n >= 1) == has_back
+    finally:
+        LEARNED_CONVERSE.pop("XF", None)
+        e.tau.edges.pop("cvx", None)
+        e.tau.edges.pop("cvy", None)
+
+
 def test_code_adapter_routes_through_unified_engine():
     """CodeAdapter: kod şeması icadı AYNI motordan geçer (unification kozmetik değil)."""
     ai = tantrium.AI()

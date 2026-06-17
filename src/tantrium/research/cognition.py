@@ -1469,17 +1469,22 @@ class MetaSynthesisPhase:
         if not getattr(engine, "_autonomy", False):
             return state
         try:
-            from tantrium.core.meta import meta_synthesize, GraphAdapter
+            from tantrium.core.meta import meta_synthesize, apply_converse_rules, GraphAdapter
             # TELEOLOJİ: boşluk/frontier kavramlarını öncelik tohumu yap (en önemli yerde ara)
             priority = [c for c in (list(state.frontier_concepts)
                                     + list(state.open_gap_names)) if isinstance(c, str)]
+            # İKİ kural AİLESİ tek geçişte: transitif kompozisyon + converse/ters (IS_A'ya bağlı değil)
             invented = meta_synthesize(
                 GraphAdapter(max_seeds=300, min_obs=3, max_pairs=12), engine,
                 priority=priority or None)
             if invented:
                 state.rules_invented += len(invented)
                 state.log(f"meta-sentez: {len(invented)} YENİ kural İCAT edildi + sertifikalandı "
-                          f"(öğrenilen kural sonraki türetimde kullanılır): {invented[:4]}")
+                          f"(transitif + converse; sonraki türetimde kullanılır): {invented[:4]}")
+            # Converse kuralları boşta bırakma: eksik ters kenarları sertifikalı materyalize et
+            mat = apply_converse_rules(engine, max_apply=100)
+            if mat:
+                state.log(f"meta-sentez/converse: {mat} ters kenar sertifikalı materyalize edildi")
         except Exception as exc:
             state.log(f"meta-sentez: atlandı — {exc}")
         return state

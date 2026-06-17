@@ -86,6 +86,7 @@ class GraphAdapter:
         from tantrium.graph.knowledge_graph import is_semantic
         from tantrium.reasoning.causal_rules import (
             TRANSITIVE_CAUSAL, LEARNED_TRANSITIVE, register_transitive_rule, GENERIC_TERMS,
+            LEARNED_CONVERSE, register_converse_rule,
         )
         tau = engine.tau
         # TELEOLOJİ: öncelik tohumları (boşluk/frontier) ÖNCE taranır — kör arama değil, en
@@ -99,8 +100,10 @@ class GraphAdapter:
             order += [a for a in tau.edges if a not in seen]
         else:
             order = list(tau.edges)
-        # (relA,relB) → [(a,b,c,relC_gözlem), ...]
+        # AİLE 1 transitif: (relA,relB) → [(a,b,c,relC_gözlem), ...]
         obs: dict[tuple, list] = {}
+        # AİLE 2 converse: relX → [(a,b,relY_gözlem), ...]  (a-relX->b varken b-relY->a)
+        conv_obs: dict[str, list] = {}
         seen_seeds = 0
         for a in order:
             el = tau.edges.get(a, [])
@@ -121,6 +124,11 @@ class GraphAdapter:
                 b = str(getattr(e1, "target", ""))
                 if b == a or b.lower() in GENERIC_TERMS:
                     continue
+                # AİLE 2 (converse): a-relX->b varken b'nin a'ya ters kenarı (b-relY->a) var mı
+                for eb in tau.edges.get(b, []):
+                    if (str(getattr(eb, "target", "")) == a
+                            and is_semantic(getattr(eb, "paradigm", ""))):
+                        conv_obs.setdefault(ra, []).append((a, b, eb.paradigm))
                 for e2 in tau.edges.get(b, []):
                     rb = getattr(e2, "paradigm", "")
                     if not is_semantic(rb):
@@ -143,7 +151,28 @@ class GraphAdapter:
             cands.append(self._make_candidate(ra, rb, ol, register_transitive_rule))
             if len(cands) >= self.max_pairs:
                 break
+        # AİLE 2: converse/ters kural adayları (transitiften FARKLI strateji; IS_A'ya bağlı değil)
+        for relX, ol in conv_obs.items():
+            if len(cands) >= self.max_pairs:
+                break
+            if len(ol) < self.min_obs or relX in LEARNED_CONVERSE:
+                continue
+            cands.append(self._make_converse_candidate(relX, ol, register_converse_rule))
         return cands
+
+    def _make_converse_candidate(self, relX, observations, register_fn) -> MetaCandidate:
+        def build(train):
+            labels = {o[2] for o in train}            # tutarlı relY → o; tutarsız → None
+            return labels.pop() if len(labels) == 1 else None
+
+        def verify(relY, held):
+            return all(obs_relY == relY for (_a, _b, obs_relY) in held)
+
+        def commit(relY):
+            return f"{relX}⁻¹→{relY}" if register_fn(relX, relY) else None
+
+        return MetaCandidate(name=f"{relX}⁻¹", build=build,
+                             instances=list(observations), verify=verify, commit=commit)
 
     def _make_candidate(self, ra, rb, observations, register_fn) -> MetaCandidate:
         def build(train):
@@ -162,6 +191,47 @@ class GraphAdapter:
 
         return MetaCandidate(name=f"{ra}∘{rb}", build=build,
                              instances=list(observations), verify=verify, commit=commit)
+
+
+def apply_converse_rules(engine, *, max_apply: int = 100) -> int:
+    """Öğrenilen converse kurallarını UYGULA: a-relX->b varsa eksik b-relY->a kenarını,
+    geçiş POZİTİFLİK (Sturm/kritik hat) geçerse materyalize et. Kural icadı boşta kalmaz —
+    grafa gerçek ters bilgi örer. Her uygulama AYRI sertifikalı (halüsinasyon yok). Bounded."""
+    from tantrium.reasoning.causal_rules import LEARNED_CONVERSE
+    from tantrium.graph.knowledge_graph import KnowledgeEdge
+    from tantrium.core.certificate import certify_transition
+    if not LEARNED_CONVERSE:
+        return 0
+    tau = engine.tau
+    manifold = getattr(engine, "manifold", None)
+    added = 0
+    for a in list(tau.edges):
+        if added >= max_apply:
+            break
+        for e in list(tau.edges.get(a, [])):
+            relY = LEARNED_CONVERSE.get(getattr(e, "paradigm", ""))
+            if not relY:
+                continue
+            b = str(getattr(e, "target", ""))
+            back = tau.edges.setdefault(b, [])
+            if any(str(getattr(x, "target", "")) == a
+                   and getattr(x, "paradigm", "") == relY for x in back):
+                continue
+            # POZİTİFLİK: b→a geçişi kritik hatta mı (her uygulama ayrı sertifikalı)
+            if manifold is not None:
+                cb = manifold.concepts.get(b)
+                ca = manifold.concepts.get(a)
+                if cb is not None and ca is not None:
+                    r = certify_transition([float(m) for m in cb.moments],
+                                           [float(m) for m in ca.moments], min_depth=2)
+                    if not r.on_path:
+                        continue
+            back.append(KnowledgeEdge(source=b, target=a, distance=0.0, paradigm=relY))
+            tau._dirty = True
+            added += 1
+            if added >= max_apply:
+                break
+    return added
 
 
 # ─── CodeAdapter — kod şema icadını AYNI motora bağlar (tek-gerçek) ───────────
