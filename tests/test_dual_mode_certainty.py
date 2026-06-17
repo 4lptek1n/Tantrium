@@ -51,24 +51,30 @@ def test_world_topic_still_researches(monkeypatch):
     assert hit["research"] == 1 and hit["derive"] == 0
 
 
-def test_derive_certain_no_network_and_certified_only():
-    """_derive_certain yalnız Sturm-sertifikalı + konuyu içeren türevi ekler; ağ yok."""
+def test_derive_certain_never_adds_world_relation_edges():
+    """F24 sınırı: _derive_certain matematik nesnesine dünya-ilişkisi (kausal) kenarı EKLEMEZ.
+
+    Eski hata: derive_transitive_hypotheses (dünya-relasyon motoru) çağrılıyordu → math'e
+    INHIBITS/ACTIVATES kenarı eklenebilirdi (kontaminasyon). Düzeltildi: sayı/SMILES no-op.
+    """
     ai = tantrium.AI()
     e = ai._engine
+    # saf sayısal kavram (math-core, theorem domain DEĞİL) — hiçbir kausal kenar eklenmemeli
+    topic = "2 3 5 7 11 13"
+    before = {k: len(v) for k, v in e.tau.edges.items()}
+    res = ai._derive_certain(topic)
+    after = {k: len(v) for k, v in e.tau.edges.items()}
+    assert res is False                      # sayı dizisi: kontamine etmez, no-op
+    # hiçbir düğüme yeni (dünya-ilişkisi) kenar eklenmedi
+    assert all(after.get(k, 0) == before.get(k, 0) for k in after)
 
-    class _E:
-        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
 
-    # 'mathx' konusu: var olan kausal kenarlardan transitif türev mümkün olsun
-    e.tau.edges["mathx"] = [_E("mid1", "ACTIVATES")]
-    e.tau.edges["mid1"] = [_E("end1", "ACTIVATES")]   # mathx -ACT-> mid1 -ACT-> end1 ⟹ ACTIVATES
-    for n in ("mathx", "mid1", "end1"):
-        if n not in e.manifold.concepts:
-            from tantrium.core.semantic import Concept
-            cod = e.encoder.encode(n, name=n)
-            e.manifold.concepts[n] = Concept(name=n, moments=list(cod.moments), domain="math_kernel")
-    # ağ çağrısı OLMAMALI — _research_deep'i patlatıcıya bağla
-    import pytest
-    # sadece çalıştığını ve hata vermediğini doğrula (türev eklenebilir veya eklenmeyebilir)
-    res = ai._derive_certain("mathx")
-    assert isinstance(res, bool)
+def test_derive_certain_does_not_call_transitive_engine(monkeypatch):
+    """Kanıt: dünya-relasyon motoru (derive_transitive_hypotheses) ÇAĞRILMAZ."""
+    import tantrium.reasoning.causal_rules as cr
+    ai = tantrium.AI()
+    called = {"n": 0}
+    monkeypatch.setattr(cr, "derive_transitive_hypotheses",
+                        lambda *a, **k: called.__setitem__("n", called["n"] + 1) or [])
+    ai._derive_certain("2 3 5 7 11")
+    assert called["n"] == 0                  # math çözümünde dünya-motoru hiç çağrılmadı

@@ -2419,34 +2419,32 @@ class AI:
         return out
 
     def _derive_certain(self, topic: str) -> bool:
-        """MATEMATİK belirsizliğini TÜRETEREK çöz — internet YOK (kullanıcı: math'ta gerek yok).
+        """MATEMATİK belirsizliğini GERÇEK-YAPIDAN çöz — internet YOK, dünya-ilişkisi de YOK.
 
-        Konuyu içeren Sturm-SERTİFİKALI transitif ilişkileri sistemin KENDİ tümdengeliminden
-        türetip ekler (hesap, arama değil). Türetilebilir bağ yoksa dürüstçe hiçbir şey eklemez
-        (sahte üretmez) — gerçek math boşluğu ProofLoop/close()'a kalır. Bounded, ağsız, fail-open.
+        F24 sınırı: matematik nesnesi dünya-ilişkisi kausal transitifliğiyle (INHIBITS∘ACTIVATES…)
+        DEĞİL, kendi gerçek yapısıyla çözülür. Bu yüzden buraya ASLA `derive_transitive_hypotheses`
+        (dünya-relasyon motoru) girmez — math nesnesine dünya-ilişkisi kenarı eklemek kontaminasyon.
+
+        Yönlendirme math alt-tipine göre, hepsi AĞSIZ + gerçek-math:
+          • teorem/ispat-yapısı (theorem_graph/math_kernel) → içsel tümdengelimsel kapanış (deduce),
+          • sayı dizisi / SMILES → graf-köklü kavram DEĞİL; kesinlik = hesaplanabilir gerçek yapı
+            (reason() bunları zaten discover_law/transport facade'ına yönlendirir) → TAU'ya
+            dünya-kenarı EKLEMEZ, dürüstçe hiçbir şey yapmadan çıkar.
         """
-        added = 0
         try:
-            from tantrium.reasoning.causal_rules import derive_transitive_hypotheses
-            from tantrium.graph.knowledge_graph import KnowledgeEdge
-            tau = self._engine.tau
-            for h in derive_transitive_hypotheses(self._engine, max_seeds=16,
-                                                  max_hyps=24, sturm_check=16):
-                if h.get("sturm_ok") is not True:
-                    continue
-                subj, obj, derived = h.get("subj", ""), h.get("obj", ""), h.get("derived", "")
-                if topic not in (subj, obj) or not derived:   # yalnız bu konuyu içeren türevler
-                    continue
-                el = tau.edges.setdefault(subj, [])
-                if any(str(getattr(e, "target", "")) == obj
-                       and getattr(e, "paradigm", "") == derived for e in el):
-                    continue
-                el.append(KnowledgeEdge(source=subj, target=obj, distance=0.0, paradigm=derived))
-                tau._dirty = True
-                added += 1
+            c = self._engine.manifold.concepts.get(topic)
         except Exception:
-            pass
-        return added > 0
+            c = None
+        domain = getattr(c, "domain", "") if c is not None else ""
+        if domain in {"theorem_graph", "math_kernel"}:
+            # teorem → içsel tümdengelim (ağsız, gerçek math); bounded tek tur, fail-open
+            try:
+                rep = self.deduce(max_rounds=1)
+                return int(rep.get("inferences_derived", 0)) > 0
+            except Exception:
+                return False
+        # sayı/SMILES: gerçek yapısı dedicated facade'larda hesaplanır; burada KONTAMİNE ETME
+        return False
 
     def _ensure_certain(self, topic: str, *, learn_if_unknown: bool = True):
         """TEK-GERÇEK kesinleştirme: belirsizliği HEDGE etme, ÇÖZ.
