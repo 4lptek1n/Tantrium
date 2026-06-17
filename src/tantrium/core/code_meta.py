@@ -99,19 +99,18 @@ _CANDIDATE_SCHEMAS: list = [
 
 
 def _generalizes(builder, examples, argnames) -> bool:
-    """Leave-one-out: her örneği SIRAYLA dışarıda bırak, kalanlara şemayı kur, dışarıdaki örneği
-    sağlıyor mu denetle. HEPSİ geçerse şema GENELLEŞİR (ezber değil) — koşullu sentezdeki dürüstlük
-    geçidiyle aynı ruh. <3 örnek → güvenilir test edilemez (genelleşme İDDİA ETME)."""
-    examples = list(examples)
-    n = len(examples)
-    if n < 3:
-        return False
-    for i in range(n):
-        train = examples[:i] + examples[i + 1:]
-        src = builder(train, argnames)
-        if src is None or not _verify_source(src, [examples[i]], argnames):
-            return False
-    return True
+    """Leave-one-out genelleşme — TEK certify arayüzüne delege (core/certificate).
+
+    Davranış birebir korunur (golden): her örneği sırayla dışarıda bırak, kalanlara şemayı
+    kur, dışarıdakini sağlıyor mu; HEPSİ geçerse genelleşir (ezber değil). <3 örnek → False.
+    """
+    from tantrium.core.certificate import certify_generalization
+    return certify_generalization(
+        lambda train: builder(train, argnames),
+        list(examples),
+        lambda src, held: src is not None and _verify_source(src, held, argnames),
+        min_instances=3,
+    )
 
 
 def _build_program(src: str, examples, argnames, *, tag: str) -> CertifiedProgram:
