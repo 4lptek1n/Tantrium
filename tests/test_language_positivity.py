@@ -70,13 +70,13 @@ def test_sturm_positive_rooted_candidate_preferred(ai, monkeypatch):
     e.tau.edges["zzrooted_tgt"] = [_E("a", "CAUSES"), _E("b", "CAUSES"), _E("c", "ACTIVATES")]
     e.tau.edges["zziso_tgt"] = []
 
-    # Sturm: pos_rooted hedefi pozitif, izole hedef negatif (momentlere göre ayır)
+    # Pozitiflik derinliği: pos_rooted hedefi derin (3), izole hedef sapma (0) — momentlere göre
     rooted_mu = [float(x) for x in pos_rooted.moments]
 
-    def fake_pivot(src, tgt):
-        return (True, 0.5) if list(tgt) == rooted_mu else (False, -0.5)
-    monkeypatch.setattr(g._pe(), "_sturm_path_pivot_min", fake_pivot)
+    def fake_depth(src, tgt, **kw):
+        return (3, {}) if [float(x) for x in tgt] == rooted_mu else (0, {})
+    monkeypatch.setattr("tantrium.core.positivity_ladder.positivity_depth", fake_depth)
 
     nxt = g._next_step("zzcur_pos", list(cur.moments), None, {"zzcur_pos"}, beam=3)
     assert nxt is not None
-    assert nxt[0] == "zzrooted_tgt"    # pozitif+köklü, izole-negatife tercih edildi
+    assert nxt[0] == "zzrooted_tgt"    # derin-pozitif+köklü, sapma-hedefe tercih edildi

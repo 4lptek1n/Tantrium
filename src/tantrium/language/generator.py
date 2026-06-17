@@ -369,24 +369,24 @@ class CertifiedGenerator:
         if cc is not None:
             cur_moments = [float(m) for m in cc.moments]
 
+        from tantrium.core.positivity_ladder import positivity_depth
+
         def _rank(item):
             score, cand_name, _par = item
-            # (1) Sturm-pivot pozitifliği (kritik hat) — geçiş gerçek-ölçü manifoldunda mı
-            on_line = True
+            # (1) POZİTİFLİK DERİNLİĞİ (0–3): geçiş RH-merdiveninin kaç basamağını geçiyor
+            # (Hankel PSD → Newton → Sturm/Jensen). Derin = daha 'kritik hatta' = daha az
+            # halüsinasyon. Sapan adım (depth 0) en sona düşer. İlaç/rooting ile AYNI substrat.
+            depth = 3
             if cur_moments is not None:
                 tcn = manifold.concepts.get(cand_name)
                 if tcn is not None:
-                    try:
-                        _ok, pmin = self._pe()._sturm_path_pivot_min(
-                            cur_moments, [float(m) for m in tcn.moments])
-                        on_line = (pmin >= -1e-3)
-                    except Exception:
-                        on_line = True
+                    depth, _r = positivity_depth(
+                        cur_moments, [float(m) for m in tcn.moments])
             # (2) köklülük (hızlı proxy: semantik çıkan-derece ≥ 3 = landmark)
             deg = sum(1 for e in tau.edges.get(cand_name, [])
                       if e.paradigm in _SEMANTIC)
             rooted = deg >= 3
-            return (0 if on_line else 1, 0 if rooted else 1, score)
+            return (-depth, 0 if rooted else 1, score)   # önce EN DERİN pozitiflik
 
         candidates.sort(key=_rank)
         d, name, paradigm = candidates[0]
