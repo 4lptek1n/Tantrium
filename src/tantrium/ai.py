@@ -2418,6 +2418,40 @@ class AI:
                 out.append({"claim": f"{topic} —{p}→ {t}", "paradigm": p, "target": t})
         return out
 
+    def _ensure_certain(self, topic: str, *, learn_if_unknown: bool = True):
+        """TEK-GERÇEK kesinleştirme: belirsizliği HEDGE etme, ÇÖZ.
+
+        Kullanıcı ilkesi: kritik hatta köklüyse zaten kesin; emin olmadığı şeyi 'büyük
+        olasılıkla' diye geçiştirmez — o an internetten araştırır (_research_deep), buluşu
+        hafızaya yazıp köklendirir, artık emin olur. İki tetik: (1) hiç fact yok = bilmiyor,
+        (2) fact var ama ZAYIF köklü = tam emin değil. Bounded (en çok bir ek araştırma),
+        learn_if_unknown kapılı, fail-open. Tüm dil yüzeyleri (converse/reason) buna bağlanır.
+
+        Döner: (topic, facts, learned) — topic öbek-düşürmeyle güncellenebilir.
+        """
+        facts = self._tau_facts(topic)
+        learned = False
+        if not facts and learn_if_unknown:
+            self._research_deep(topic)          # DERİN araştırma (tek cümle değil)
+            learned = True
+            facts = self._tau_facts(topic)
+            if not facts and " " in topic:
+                # öbek köklenmediyse son içerik kelimesini dene ("lung cancer"→"cancer")
+                last = topic.split()[-1]
+                lf = self._tau_facts(last)
+                if lf:
+                    topic, facts = last, lf
+        # ZAYIF köklü (tam emin olamayacağı durum) → araştır+köklendir → emin ol (hedge YOK)
+        if facts and learn_if_unknown and not learned:
+            try:
+                if self.grounding(topic).verdict != "GROUNDED":
+                    self._research_deep(topic)
+                    learned = True
+                    facts = self._tau_facts(topic) or facts
+            except Exception:
+                pass
+        return topic, facts, learned
+
     def converse(self, question: str, learn_if_unknown: bool = True,
                  detail: bool = True, *, depth: str = "normal",
                  register: str = "neutral") -> dict:
@@ -2433,29 +2467,8 @@ class AI:
         if not topic:
             return {"topic": "", "answer": "Soruyu anlayamadım.", "learned": False,
                     "grounded": False}
-        facts = self._tau_facts(topic)
-        learned = False
-        if not facts and learn_if_unknown:
-            self._research_deep(topic)          # DERİN araştırma (tek cümle değil)
-            learned = True
-            facts = self._tau_facts(topic)
-            if not facts and " " in topic:
-                # öbek köklenmediyse son içerik kelimesini dene ("lung cancer"→"cancer")
-                last = topic.split()[-1]
-                lf = self._tau_facts(last)
-                if lf:
-                    topic, facts = last, lf
-        # EMİN OLMAMA = HEDGE DEĞİL, ÇÖZ: facts var ama ZAYIF köklüyse (tam emin olamayacağı
-        # durum) "büyük olasılıkla" demek YASAK — o an internetten araştırır, buluşu hafızaya
-        # yazar, köklendirir → artık emin olur. Bounded: bir ek araştırma; learn_if_unknown kapılı.
-        if facts and learn_if_unknown and not learned:
-            try:
-                if self.grounding(topic).verdict != "GROUNDED":
-                    self._research_deep(topic)       # emin olmadığını ANINDA öğren+köklendir
-                    learned = True
-                    facts = self._tau_facts(topic) or facts
-            except Exception:
-                pass
+        # TEK-GERÇEK kesinleştirme: bilmiyorsa/zayıf köklüyse hedge ETMEZ, araştırıp köklendirir.
+        topic, facts, learned = self._ensure_certain(topic, learn_if_unknown=learn_if_unknown)
         if facts:
             if detail:
                 # AKICI anlatım motoru (ek-uyumlu Türkçe + köklülük doğal cümlede)
