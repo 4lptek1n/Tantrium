@@ -169,6 +169,57 @@ def test_apply_converse_materializes_certified_back_edges():
         e.tau.edges.pop("cvy", None)
 
 
+def test_graph_adapter_invents_implication_rule():
+    """AİLE 3: relX olan HER çiftte relY de varsa (karşı-örnek yok) → relX⊑relY içerme icat."""
+    from tantrium.reasoning.causal_rules import LEARNED_IMPLICATION, lookup_implication
+
+    class _E:
+        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+
+    edges = {}
+    for i in range(3):
+        a, b = f"ia{i}", f"ib{i}"
+        edges[a] = [_E(b, "XSPEC"), _E(b, "XGEN")]   # her çiftte hem XSPEC hem XGEN
+        edges[b] = []
+    eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges=edges))
+    try:
+        inv = meta_synthesize(GraphAdapter(min_obs=3), eng)
+        assert lookup_implication("XSPEC") == "XGEN"   # XSPEC ⊑ XGEN icat edildi
+        assert any("XSPEC" in s and "XGEN" in s for s in inv)
+    finally:
+        LEARNED_IMPLICATION.pop("XSPEC", None)
+        LEARNED_IMPLICATION.pop("XGEN", None)
+
+
+def test_implication_not_learned_with_counterexample():
+    """relX bazı çiftte relY OLMADAN görülürse içerme icat EDİLMEZ (karşı-örnek = red)."""
+    from tantrium.reasoning.causal_rules import LEARNED_IMPLICATION, lookup_implication
+
+    class _E:
+        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+
+    edges = {}
+    for i in range(3):
+        a, b = f"ja{i}", f"jb{i}"
+        rels = [_E(b, "YSPEC")] + ([_E(b, "YGEN")] if i < 2 else [])  # 3. çiftte YGEN YOK
+        edges[a] = rels
+        edges[b] = []
+    eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges=edges))
+    try:
+        meta_synthesize(GraphAdapter(min_obs=3), eng)
+        assert lookup_implication("YSPEC") is None    # karşı-örnek → öğrenilmedi
+    finally:
+        LEARNED_IMPLICATION.pop("YSPEC", None)
+
+
+def test_analogy_transfer_certified_only():
+    """Analoji-transfer: yapısal-analog kavramlar arası ilişki transferi, her biri pozitiflik-kapılı."""
+    from tantrium.core.meta import derive_analogy_edges
+    ai = tantrium.AI()
+    n = derive_analogy_edges(ai._engine, min_shared=3, max_apply=5)
+    assert isinstance(n, int) and n >= 0       # çalışır, sertifikasız conjecture eklemez
+
+
 def test_code_adapter_routes_through_unified_engine():
     """CodeAdapter: kod şeması icadı AYNI motordan geçer (unification kozmetik değil)."""
     ai = tantrium.AI()

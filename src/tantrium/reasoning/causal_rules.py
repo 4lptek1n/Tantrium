@@ -79,6 +79,26 @@ def lookup_converse(rel_x: str):
     """relX'in öğrenilmiş ters ilişkisini getir (yoksa None)."""
     return LEARNED_CONVERSE.get(rel_x)
 
+
+# ─── ÖĞRENİLEN implication/içerme kuralları (meta-sentez 3. aile) ─────────────
+# Transitif ve converse'den FARKLI 3. aile: "a relX b ⟹ a relY b" (AYNI yön, AYNI çift —
+# relX, relY'yi İÇERİR/ima eder). İlişki taksonomisi: PHOSPHORYLATES ⊑ REGULATES gibi.
+# GraphAdapter, relX olan HER çiftte relY de varsa (karşı-örnek yok, ≥3) icat eder.
+LEARNED_IMPLICATION: dict[str, str] = {}
+
+
+def register_implication_rule(rel_x: str, rel_y: str) -> bool:
+    """Sertifikalı içerme kuralını kaydet (relX ⊑ relY). Aynı relX bir kez; kendine-ima yok."""
+    if rel_x == rel_y or rel_x in LEARNED_IMPLICATION:
+        return False
+    LEARNED_IMPLICATION[rel_x] = rel_y
+    return True
+
+
+def lookup_implication(rel_x: str):
+    """relX'in öğrenilmiş içerdiği (ima ettiği) ilişkiyi getir (yoksa None)."""
+    return LEARNED_IMPLICATION.get(rel_x)
+
 # JENERİK terimler: hipotez öznesi/nesnesi olamaz (role/complex/factor → anlamsız "bilim").
 # TEK-GERÇEK: growth._science_consolidate + cognition.ScienceStep ikisi de buradan okur.
 GENERIC_TERMS: frozenset = frozenset({

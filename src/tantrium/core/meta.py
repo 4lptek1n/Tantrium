@@ -87,6 +87,7 @@ class GraphAdapter:
         from tantrium.reasoning.causal_rules import (
             TRANSITIVE_CAUSAL, LEARNED_TRANSITIVE, register_transitive_rule, GENERIC_TERMS,
             LEARNED_CONVERSE, register_converse_rule,
+            LEARNED_IMPLICATION, register_implication_rule,
         )
         tau = engine.tau
         # TELEOLOJİ: öncelik tohumları (boşluk/frontier) ÖNCE taranır — kör arama değil, en
@@ -104,6 +105,8 @@ class GraphAdapter:
         obs: dict[tuple, list] = {}
         # AİLE 2 converse: relX → [(a,b,relY_gözlem), ...]  (a-relX->b varken b-relY->a)
         conv_obs: dict[str, list] = {}
+        # AİLE 3 implication: (a,b) → {relations}  (aynı çiftteki tüm ilişkiler — içerme için)
+        pair_rels: dict[tuple, set] = {}
         seen_seeds = 0
         for a in order:
             el = tau.edges.get(a, [])
@@ -124,6 +127,7 @@ class GraphAdapter:
                 b = str(getattr(e1, "target", ""))
                 if b == a or b.lower() in GENERIC_TERMS:
                     continue
+                pair_rels.setdefault((a, b), set()).add(ra)   # AİLE 3: çiftteki ilişkiler
                 # AİLE 2 (converse): a-relX->b varken b'nin a'ya ters kenarı (b-relY->a) var mı
                 for eb in tau.edges.get(b, []):
                     if (str(getattr(eb, "target", "")) == a
@@ -158,7 +162,35 @@ class GraphAdapter:
             if len(ol) < self.min_obs or relX in LEARNED_CONVERSE:
                 continue
             cands.append(self._make_converse_candidate(relX, ol, register_converse_rule))
+        # AİLE 3: implication/içerme — relX olan HER çiftte relY de varsa (karşı-örnek yok)
+        relX_pairs: dict[str, list] = {}
+        for pr, rels in pair_rels.items():
+            for rx in rels:
+                relX_pairs.setdefault(rx, []).append(pr)
+        for relX, prs in relX_pairs.items():
+            if len(cands) >= self.max_pairs:
+                break
+            if len(prs) < self.min_obs or relX in LEARNED_IMPLICATION:
+                continue
+            common = set.intersection(*[pair_rels[p] for p in prs]) - {relX}  # her çiftte ortak
+            for relY in sorted(common):
+                cands.append(self._make_implication_candidate(
+                    relX, relY, prs, pair_rels, register_implication_rule))
+                break   # relX için tek içerme (deterministik, ilk) — fazlası ayrı turda
         return cands
+
+    def _make_implication_candidate(self, relX, relY, pairs, pair_rels, register_fn) -> MetaCandidate:
+        def build(train):
+            return relY if all(relY in pair_rels.get(p, set()) for p in train) else None
+
+        def verify(ry, held):
+            return all(ry in pair_rels.get(p, set()) for p in held)
+
+        def commit(ry):
+            return f"{relX}⊑{relY}" if register_fn(relX, relY) else None
+
+        return MetaCandidate(name=f"{relX}⊑{relY}", build=build,
+                             instances=list(pairs), verify=verify, commit=commit)
 
     def _make_converse_candidate(self, relX, observations, register_fn) -> MetaCandidate:
         def build(train):
@@ -230,6 +262,102 @@ def apply_converse_rules(engine, *, max_apply: int = 100) -> int:
             tau._dirty = True
             added += 1
             if added >= max_apply:
+                break
+    return added
+
+
+def apply_implication_rules(engine, *, max_apply: int = 100) -> int:
+    """Öğrenilen içerme kurallarını UYGULA: a-relX->b varsa eksik a-relY->b (relX⊑relY) kenarını,
+    geçiş pozitiflik geçerse materyalize et. Her uygulama Sturm-sertifikalı. Bounded, fail-open."""
+    from tantrium.reasoning.causal_rules import LEARNED_IMPLICATION
+    from tantrium.graph.knowledge_graph import KnowledgeEdge
+    from tantrium.core.certificate import certify_transition
+    if not LEARNED_IMPLICATION:
+        return 0
+    tau = engine.tau
+    manifold = getattr(engine, "manifold", None)
+    added = 0
+    for a in list(tau.edges):
+        if added >= max_apply:
+            break
+        el = tau.edges.get(a, [])
+        for e in list(el):
+            relY = LEARNED_IMPLICATION.get(getattr(e, "paradigm", ""))
+            if not relY:
+                continue
+            b = str(getattr(e, "target", ""))
+            if any(str(getattr(x, "target", "")) == b
+                   and getattr(x, "paradigm", "") == relY for x in el):
+                continue
+            if manifold is not None:
+                ca = manifold.concepts.get(a)
+                cb = manifold.concepts.get(b)
+                if ca is not None and cb is not None:
+                    r = certify_transition([float(m) for m in ca.moments],
+                                           [float(m) for m in cb.moments], min_depth=2)
+                    if not r.on_path:
+                        continue
+            el.append(KnowledgeEdge(source=a, target=b, distance=0.0, paradigm=relY))
+            tau._dirty = True
+            added += 1
+            if added >= max_apply:
+                break
+    return added
+
+
+def derive_analogy_edges(engine, *, min_shared: int = 3, max_apply: int = 30) -> int:
+    """ANALOJİ-TRANSFER (4. aile, conjecture). Yapısal-analog kavram çiftleri (≥min_shared ORTAK
+    tipli komşu, AYNI paradigma) bulur; X relR Z varken analog Y'de eksikse Y relR Z'yi
+    ÖNERİR — geçiş pozitiflik (Sturm/kritik hat) geçerse materyalize eder. Conjecture üretir,
+    ama HER biri sertifikalı (halüsinasyon yok). Seyrek manifold gürültüsüne karşı KONSERVATİF
+    (yüksek örtüşme + pozitiflik); hypothesize_novel'in opt-in analoji duruşuyla tutarlı. Bounded.
+    """
+    from tantrium.graph.knowledge_graph import is_semantic, KnowledgeEdge
+    from tantrium.reasoning.causal_rules import GENERIC_TERMS
+    from tantrium.core.certificate import certify_transition
+    tau = engine.tau
+    manifold = getattr(engine, "manifold", None)
+    if manifold is None:
+        return 0
+
+    def typed_neighbors(name):
+        return {(getattr(e, "paradigm", ""), str(getattr(e, "target", "")))
+                for e in tau.edges.get(name, []) if is_semantic(getattr(e, "paradigm", ""))}
+
+    added = 0
+    nodes = [n for n in list(tau.edges)[:400]
+             if isinstance(n, str) and not n.startswith("⟨") and n.lower() not in GENERIC_TERMS]
+    nbr = {n: typed_neighbors(n) for n in nodes}
+    for i, X in enumerate(nodes):
+        if added >= max_apply:
+            break
+        nx = nbr[X]
+        if len(nx) < min_shared:
+            continue
+        for Y in nodes[i + 1:]:
+            if added >= max_apply:
+                break
+            ny = nbr[Y]
+            if len(nx & ny) < min_shared:        # yapısal analoji: yeterince ORTAK tipli komşu
+                continue
+            cy = manifold.concepts.get(Y)
+            if cy is None:
+                continue
+            for (relR, Z) in nx:                 # X'in ilişkisini analog Y'ye transfer et (eksikse)
+                if Z == Y or any(p == relR and t == Z for (p, t) in ny):
+                    continue
+                cz = manifold.concepts.get(Z)
+                if cz is None:
+                    continue
+                r = certify_transition([float(m) for m in cy.moments],
+                                       [float(m) for m in cz.moments], min_depth=2)
+                if not r.on_path:                # pozitiflik: conjecture kritik hatta mı
+                    continue
+                tau.edges.setdefault(Y, []).append(
+                    KnowledgeEdge(source=Y, target=Z, distance=0.0, paradigm=relR))
+                ny.add((relR, Z))
+                tau._dirty = True
+                added += 1
                 break
     return added
 

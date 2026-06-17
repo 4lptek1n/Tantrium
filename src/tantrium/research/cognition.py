@@ -1469,22 +1469,29 @@ class MetaSynthesisPhase:
         if not getattr(engine, "_autonomy", False):
             return state
         try:
-            from tantrium.core.meta import meta_synthesize, apply_converse_rules, GraphAdapter
+            from tantrium.core.meta import (
+                meta_synthesize, apply_converse_rules, apply_implication_rules,
+                derive_analogy_edges, GraphAdapter,
+            )
             # TELEOLOJİ: boşluk/frontier kavramlarını öncelik tohumu yap (en önemli yerde ara)
             priority = [c for c in (list(state.frontier_concepts)
                                     + list(state.open_gap_names)) if isinstance(c, str)]
-            # İKİ kural AİLESİ tek geçişte: transitif kompozisyon + converse/ters (IS_A'ya bağlı değil)
+            # ÜÇ kural AİLESİ tek geçişte: transitif kompozisyon + converse/ters + implication/içerme
             invented = meta_synthesize(
                 GraphAdapter(max_seeds=300, min_obs=3, max_pairs=12), engine,
                 priority=priority or None)
             if invented:
                 state.rules_invented += len(invented)
                 state.log(f"meta-sentez: {len(invented)} YENİ kural İCAT edildi + sertifikalandı "
-                          f"(transitif + converse; sonraki türetimde kullanılır): {invented[:4]}")
-            # Converse kuralları boşta bırakma: eksik ters kenarları sertifikalı materyalize et
-            mat = apply_converse_rules(engine, max_apply=100)
-            if mat:
-                state.log(f"meta-sentez/converse: {mat} ters kenar sertifikalı materyalize edildi")
+                          f"(transitif + converse + implication): {invented[:5]}")
+            # Kuralları BOŞTA bırakma: eksik kenarları sertifikalı materyalize et (her biri Sturm)
+            mat = apply_converse_rules(engine, max_apply=100) + apply_implication_rules(engine, max_apply=100)
+            # AİLE 4 — analoji-transfer (conjecture): KONSERVATİF + pozitiflik-kapılı (hypothesize_novel
+            # opt-in duruşuyla tutarlı — seyrek manifold gürültüsüne karşı yüksek örtüşme şartı)
+            analog = derive_analogy_edges(engine, min_shared=3, max_apply=20)
+            if mat or analog:
+                state.log(f"meta-sentez/uygula: {mat} kural-kenarı + {analog} analoji-conjecture "
+                          f"sertifikalı materyalize edildi")
         except Exception as exc:
             state.log(f"meta-sentez: atlandı — {exc}")
         return state
