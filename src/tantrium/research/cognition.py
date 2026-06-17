@@ -45,6 +45,8 @@ class CognitionState:
     contradictions_resolved: int = 0  # VerifyPhase: çözülen INHIBITS↔ACTIVATES çelişkisi
     curiosity_researched: int = 0  # CuriosityPhase: merak-güdümlü oto-araştırılan frontier kavram
     hypotheses_tested: int = 0     # ScienceStep: oto-tasarım+doğrulama ile test edilen hipotez
+    concepts_rooted: int = 0       # RootingPhase: zayıf-köklü→landmark sertifikalı bağ ile köklenen
+    wires_added: int = 0           # RootingPhase: eklenen sertifikalı köklendirme kenarı
     artifacts_reingested: int = 0  # FlyWheelPhase: üretilip manifolda geri-yutulan SMILES
     code_grown: int = 0            # CodeGrowthPhase: otonom büyüyen kod-op/fonksiyon
     meaning_cached: int = 0        # MeaningCachePhase: kalıcılaşan zengin-düğüm imzası (topo+cascade+flow)
@@ -93,6 +95,7 @@ class CognitionReport:
     artifacts_reingested: int = 0   # FlyWheelPhase geri-yut
     code_grown: int = 0             # CodeGrowthPhase
     meaning_cached: int = 0         # MeaningCachePhase kalıcı zengin-düğüm imzası
+    concepts_rooted: int = 0        # RootingPhase: landmark'a sertifikalı bağ ile köklenen kavram
     phase_logs: list[str] = field(default_factory=list)
     campaigns_triggered: list[str] = field(default_factory=list)
     narrations: list[str] = field(default_factory=list)
@@ -1375,6 +1378,79 @@ class MeaningCachePhase:
         return state
 
 
+class RootingPhase:
+    """Köklendirme — 'şehri sokak sokak öğrenmek'. Yarı-öğrenilmiş (ZAYIF köklü) kavramı
+    GERÇEK + SERTİFİKALI bir ilişkiyle bir LANDMARK'a (köklü kavram) bağlar; böylece kavram
+    kalıcı yerine oturur, "kullanılabilir/akıcı" hâle gelir.
+
+    İnsan örneği (kullanıcı): her gün sürdüğün sokağı bildiğin bir anımsatıcıya kablolamazsan
+    aklında kalmıyor. Burada anımsatıcı = köklü landmark; kablolama = transitif çıkarımla
+    türetilen RH-Sturm SERTİFİKALI kenar. KRİTİK FARK (self-grooming değil): bağ uydurma
+    yakınlık DEĞİL, sistemin kendi tümdengeliminden çıkan + Sturm-sertifikalı gerçek ilişki;
+    landmark'a böyle bir bağ türetilemezse kavram DÜRÜSTÇE köksüz kalır (yerini koyamadığın
+    sokak gibi). Determinist, ağsız. _autonomy-kapılı, bounded, idempotent, fail-open.
+
+    Ağırlık (frekans) DEĞİL: 'derece' = ağdaki BAĞ derecesi (graph degree). Köklülük =
+    yeterli gerçek bağ; eşik grounding.py ile aynı (≥3 semantik kenar = landmark)."""
+    name = "rooting"
+    _LANDMARK_MIN = 3   # ≥3 semantik kenar = köklü landmark (grounding._GROUNDED_NEIGHBOR_MIN_EDGES)
+
+    def execute(self, engine: "CertificationEngine", state: "CognitionState") -> "CognitionState":
+        if not getattr(engine, "_autonomy", False):
+            return state
+        try:
+            from tantrium.reasoning.causal_rules import derive_transitive_hypotheses
+            from tantrium.graph.knowledge_graph import KnowledgeEdge, is_semantic
+            tau = engine.tau
+
+            # Semantik in-derece haritası (tek O(E) geçiş) — köklülük ölçüsü
+            indeg: dict[str, int] = {}
+            for el in tau.edges.values():
+                for e in el:
+                    if is_semantic(getattr(e, "paradigm", "")):
+                        t = str(getattr(e, "target", ""))
+                        indeg[t] = indeg.get(t, 0) + 1
+
+            def sem_degree(name: str) -> int:
+                out = sum(1 for e in tau.edges.get(name, [])
+                          if is_semantic(getattr(e, "paradigm", "")))
+                return out + indeg.get(name, 0)
+
+            # Sistemin kendi tümdengeliminden SERTİFİKALI aday ilişkiler (ağsız)
+            cands = derive_transitive_hypotheses(engine, max_seeds=16, max_hyps=24, sturm_check=16)
+            rooted = wired = 0
+            for h in cands:
+                if h.get("sturm_ok") is not True:     # YALNIZ RH-Sturm sertifikalı bağ
+                    continue
+                subj, obj, derived = h.get("subj", ""), h.get("obj", ""), h.get("derived", "")
+                if not (subj and obj and derived) or subj.startswith("⟨") or obj.startswith("⟨"):
+                    continue
+                ds = sem_degree(subj)
+                if not (1 <= ds < self._LANDMARK_MIN):  # hedef ZAYIF köklü (1-2 bağ, landmark'a yakın)
+                    continue
+                if sem_degree(obj) < self._LANDMARK_MIN:  # obj LANDMARK olmalı (anımsatıcı köklü)
+                    continue
+                el = tau.edges.setdefault(subj, [])
+                if any(str(getattr(e, "target", "")) == obj
+                       and getattr(e, "paradigm", "") == derived for e in el):
+                    continue
+                el.append(KnowledgeEdge(source=subj, target=obj, distance=0.0, paradigm=derived))
+                indeg[obj] = indeg.get(obj, 0) + 1   # haritayı güncel tut (aynı turda tutarlı)
+                tau._dirty = True
+                wired += 1
+                if sem_degree(subj) >= self._LANDMARK_MIN:   # eşiği GEÇTİ → artık kullanılabilir
+                    rooted += 1
+                    state.log(f"rooting: '{subj}' KÖKLENDİ → landmark '{obj}' ({derived}, "
+                              f"Sturm-sertifikalı); artık {sem_degree(subj)} bağ")
+            state.wires_added += wired
+            state.concepts_rooted += rooted
+            if wired and not rooted:
+                state.log(f"rooting: {wired} sertifikalı bağ eklendi (henüz eşik geçilmedi)")
+        except Exception as exc:
+            state.log(f"rooting: atlandı — {exc}")
+        return state
+
+
 _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     SchedulePhase(),    # Tier 3 #8: meta-kontrol — zayıf-eksen odağı + #9 koridor→üretim-bütçesi
     PerceivePhase(),
@@ -1384,6 +1460,8 @@ _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     CuriosityPhase(),   # Tier1#3: merak-güdümlü oto-araştırma (bilmediğini bul→öğren)
     DeductivePhase(),   # engine.grow(): InferenceChain + certify_theorem_graph (öksüz bağlandı)
     ScienceStep(),      # Bilim: transitif hipotez + RH-Sturm + Tier2#4 hipotez→tasarım→doğrula
+    RootingPhase(),     # Köklendirme: zayıf-köklü kavramı landmark'a SERTİFİKALI bağla (şehri
+    #                     sokak sokak öğren) — sahte değil, kendi tümdengelimi; ağırlık DEĞİL bağ
     CodeGrowthPhase(),  # Tier2#6: otonom kod-kapsamı büyüme (kavram-büyümenin kod eşleniği)
     ComposePhase(),     # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
     FlyWheelPhase(),    # F-ASI#2 + Tier2#5 üretilen artefaktı geri-yut + Tier3#9 koridor-beam
@@ -1530,6 +1608,7 @@ class Cognition:
             artifacts_reingested=state.artifacts_reingested,
             code_grown=state.code_grown,
             meaning_cached=state.meaning_cached,
+            concepts_rooted=state.concepts_rooted,
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
             narrations=list(state.narration),

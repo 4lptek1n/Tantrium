@@ -94,7 +94,7 @@ def derive_transitive_hypotheses(engine, *, max_seeds: int = 12, max_hyps: int =
                         continue
                     seen.add(key)
                     out.append({"statement": f"{s} {derived} {c}", "subj": s,
-                                "obj": c, "via": b,
+                                "obj": c, "via": b, "derived": derived,
                                 "chain": f"{s} -{e1.paradigm}-> {b} -{p2}-> {c}"})
                     if len(out) >= max_hyps:
                         break
