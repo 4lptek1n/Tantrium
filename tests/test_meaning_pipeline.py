@@ -70,6 +70,38 @@ def test_grounded_concept_is_relational():
     assert sig.primary_moments() is sig.topo_moments
 
 
+def test_math_core_gate_numbers_are_structural():
+    """F24 KAPISI: saf sayı/sayı-dizisi → structural (gerçek yapı), kelime-anlamı DEĞİL."""
+    eng = _grounded_engine()
+    s = measure(eng, "7")
+    assert s.modality == "structural" and not s.grounded
+    s2 = measure(eng, "3 5 7 11")
+    assert s2.modality == "structural"
+    # structural'ın birincil ölçüsü gerçek yapı (surface/moment), topoloji DEĞİL
+    assert s.primary_moments() is s.surface_moments
+
+
+def test_math_core_gate_theorem_domain_structural():
+    """İspat-yapısı domain'i (theorem_graph/math_kernel) → structural, kelime-anlamına girmez."""
+    eng = _grounded_engine()
+
+    class _C:
+        domain = "theorem_graph"
+
+    eng.manifold = type("M", (), {"concepts": {"D_POSITIVITY": _C()}})()
+    s = measure(eng, "D_POSITIVITY")
+    assert s.modality == "structural"
+
+
+def test_math_core_object_detection():
+    """_is_math_core_object: sayı/teorem True; kelime False (dil dışında kalır)."""
+    from tantrium.core.meaning_pipeline import _is_math_core_object
+    eng = _grounded_engine()
+    assert _is_math_core_object(eng, "42")
+    assert _is_math_core_object(eng, "2 3 5 7")
+    assert not _is_math_core_object(eng, "access")     # kelime → dil
+
+
 def test_ungrounded_falls_to_surface():
     """Semantik komşuluğu olmayan kavram → modality=surface, harf birincil."""
     eng = _FakeEngine({"lonely": []})

@@ -90,6 +90,43 @@ class MeaningSignature:
         )
 
 
+def _looks_numeric(tok: str) -> bool:
+    try:
+        float(tok)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def _is_math_core_object(engine, name: str) -> bool:
+    """GERÇEK-matematik nesnesi mi (molekül/sayı/ispat-yapısı) — dil DEĞİL (F24 yasası).
+
+    Bunlar kelime-anlamıyla (graf-topoloji) DEĞİL, kendi GERÇEK yapısıyla (spektrum/
+    moment) gezilmeli. Beyin çekirdeğini dil katmanından AÇIK kapıyla ayırır — örtük
+    'kelime-kenarı yok' tesadüfüne güvenmez (math nesnesi kazara IS_A edinse bile korur).
+
+    Tip-dedektörüne dayanır (konusal domain'e DEĞİL — o kırılgan): SMILES · saf sayı(lar) ·
+    theorem_graph/math_kernel ispat-yapısı."""
+    if not isinstance(name, str) or not name:
+        return False
+    try:
+        from tantrium.core.encoder import _is_valid_smiles
+        if _is_valid_smiles(name):
+            return True
+    except Exception:
+        pass
+    toks = name.strip().replace(",", " ").replace(";", " ").split()
+    if toks and all(_looks_numeric(t) for t in toks):
+        return True
+    try:
+        c = engine.manifold.concepts.get(name)
+    except AttributeError:
+        c = None
+    if c is not None and getattr(c, "domain", "") in {"theorem_graph", "math_kernel"}:
+        return True
+    return False
+
+
 def measure(engine, name: str, *, max_neighbors: int = 24,
             topo_encoder: TopologyEncoder | None = None, store=None) -> MeaningSignature:
     """Kavramı üç katta ölç. Köklüyse topoloji birincil + RH-cascade; değilse harf.
@@ -97,7 +134,13 @@ def measure(engine, name: str, *, max_neighbors: int = 24,
     `topo_encoder` verilirse yeniden kurulmaz (indegree cache paylaşımı — toplu ölçüm hızlı).
     `store` verilir ve kavram cache'te ise topoloji BAŞTAN HESAPLANMAZ (hafif cache-imzası
     döner — düşünme motorlarının ucuz mesafe okuması için).
+
+    GERÇEK-MATH KAPISI (F24): molekül/sayı/ispat-yapısı → topoloji ATLANIR, gerçek yapı
+    (moment) döner (modality="structural"). Beyin çekirdeği kelime-anlamıyla kirlenmez.
     """
+    if _is_math_core_object(engine, name):
+        struct = [float(m) for m in engine.encoder.encode(name, name=name[:64]).moments]
+        return MeaningSignature(name=name, surface_moments=struct, modality="structural")
     if store is not None and store.has(name):
         return MeaningSignature.from_cache(name, store.get(name))
     surface = [float(m) for m in engine.encoder.encode(name, name=name[:64]).moments]
