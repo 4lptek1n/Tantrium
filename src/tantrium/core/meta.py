@@ -82,16 +82,28 @@ class GraphAdapter:
         self.min_obs = min_obs
         self.max_pairs = max_pairs
 
-    def candidates(self, engine, **kw) -> list[MetaCandidate]:
+    def candidates(self, engine, *, priority=None, **kw) -> list[MetaCandidate]:
         from tantrium.graph.knowledge_graph import is_semantic
         from tantrium.reasoning.causal_rules import (
             TRANSITIVE_CAUSAL, LEARNED_TRANSITIVE, register_transitive_rule, GENERIC_TERMS,
         )
         tau = engine.tau
+        # TELEOLOJİ: öncelik tohumları (boşluk/frontier) ÖNCE taranır — kör arama değil, en
+        # önemli yerde kural ara. Sonra kalan düğümlerle max_seeds'e kadar doldurulur.
+        order = []
+        if priority:
+            seen = set()
+            for p in priority:
+                if p in tau.edges and p not in seen:
+                    order.append(p); seen.add(p)
+            order += [a for a in tau.edges if a not in seen]
+        else:
+            order = list(tau.edges)
         # (relA,relB) → [(a,b,c,relC_gözlem), ...]
         obs: dict[tuple, list] = {}
         seen_seeds = 0
-        for a, el in tau.edges.items():
+        for a in order:
+            el = tau.edges.get(a, [])
             if seen_seeds >= self.max_seeds:
                 break
             if not isinstance(a, str) or a.startswith("⟨") or a.lower() in GENERIC_TERMS:

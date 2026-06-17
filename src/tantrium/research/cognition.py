@@ -47,6 +47,7 @@ class CognitionState:
     hypotheses_tested: int = 0     # ScienceStep: oto-tasarım+doğrulama ile test edilen hipotez
     concepts_rooted: int = 0       # RootingPhase: zayıf-köklü→landmark sertifikalı bağ ile köklenen
     wires_added: int = 0           # RootingPhase: eklenen sertifikalı köklendirme kenarı
+    rules_invented: int = 0        # MetaSynthesisPhase: icat edilen + sertifikalı yeni transitif kural
     artifacts_reingested: int = 0  # FlyWheelPhase: üretilip manifolda geri-yutulan SMILES
     code_grown: int = 0            # CodeGrowthPhase: otonom büyüyen kod-op/fonksiyon
     meaning_cached: int = 0        # MeaningCachePhase: kalıcılaşan zengin-düğüm imzası (topo+cascade+flow)
@@ -96,6 +97,7 @@ class CognitionReport:
     code_grown: int = 0             # CodeGrowthPhase
     meaning_cached: int = 0         # MeaningCachePhase kalıcı zengin-düğüm imzası
     concepts_rooted: int = 0        # RootingPhase: landmark'a sertifikalı bağ ile köklenen kavram
+    rules_invented: int = 0         # MetaSynthesisPhase: icat edilen sertifikalı yeni kural
     phase_logs: list[str] = field(default_factory=list)
     campaigns_triggered: list[str] = field(default_factory=list)
     narrations: list[str] = field(default_factory=list)
@@ -1451,6 +1453,38 @@ class RootingPhase:
         return state
 
 
+class MetaSynthesisPhase:
+    """Meta-sentez (Faz C+D) — sistem kendi KURALINI icat eder, döngünün içinde.
+
+    GraphAdapter grafı gözleyip ≥3 tutarlı gözlemden (relA,relB)→relC transitif kuralını
+    leave-one-out genelleşmeyle İCAT eder + kaydeder. ÖZYİNELEME (Faz D): kaydedilen kural
+    `lookup_transitive` üzerinden bir SONRAKİ turun `derive_transitive_hypotheses`'ine girer —
+    kule kendini yükseltir (öğrenilen kural yeni türetimlerin girdisi). TELEOLOJİ (Faz D):
+    boşluk/frontier kavramları öncelik tohumu olarak verilir (kör arama değil). Kabul ölçütü
+    TEK certify (genelleşme); her uygulama ayrıca Sturm-sertifikalı → halüsinasyon imkânsız.
+    _autonomy-kapılı, bounded, idempotent (aynı kural bir kez), fail-open."""
+    name = "meta_synthesis"
+
+    def execute(self, engine: "CertificationEngine", state: "CognitionState") -> "CognitionState":
+        if not getattr(engine, "_autonomy", False):
+            return state
+        try:
+            from tantrium.core.meta import meta_synthesize, GraphAdapter
+            # TELEOLOJİ: boşluk/frontier kavramlarını öncelik tohumu yap (en önemli yerde ara)
+            priority = [c for c in (list(state.frontier_concepts)
+                                    + list(state.open_gap_names)) if isinstance(c, str)]
+            invented = meta_synthesize(
+                GraphAdapter(max_seeds=300, min_obs=3, max_pairs=12), engine,
+                priority=priority or None)
+            if invented:
+                state.rules_invented += len(invented)
+                state.log(f"meta-sentez: {len(invented)} YENİ kural İCAT edildi + sertifikalandı "
+                          f"(öğrenilen kural sonraki türetimde kullanılır): {invented[:4]}")
+        except Exception as exc:
+            state.log(f"meta-sentez: atlandı — {exc}")
+        return state
+
+
 _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     SchedulePhase(),    # Tier 3 #8: meta-kontrol — zayıf-eksen odağı + #9 koridor→üretim-bütçesi
     PerceivePhase(),
@@ -1462,6 +1496,8 @@ _DEFAULT_BATCH_PHASES: list[CognitionStrategy] = [
     ScienceStep(),      # Bilim: transitif hipotez + RH-Sturm + Tier2#4 hipotez→tasarım→doğrula
     RootingPhase(),     # Köklendirme: zayıf-köklü kavramı landmark'a SERTİFİKALI bağla (şehri
     #                     sokak sokak öğren) — sahte değil, kendi tümdengelimi; ağırlık DEĞİL bağ
+    MetaSynthesisPhase(),  # Faz C+D: sistem kendi KURALINI icat eder (graf gözlem→leave-one-out
+    #                     →kaydet); özyineleme (öğrenilen kural sonraki türetimde) + teleoloji
     CodeGrowthPhase(),  # Tier2#6: otonom kod-kapsamı büyüme (kavram-büyümenin kod eşleniği)
     ComposePhase(),     # Kademe 6: boşluk → anlam kanalı → üretim hedefleri
     FlyWheelPhase(),    # F-ASI#2 + Tier2#5 üretilen artefaktı geri-yut + Tier3#9 koridor-beam
@@ -1609,6 +1645,7 @@ class Cognition:
             code_grown=state.code_grown,
             meaning_cached=state.meaning_cached,
             concepts_rooted=state.concepts_rooted,
+            rules_invented=state.rules_invented,
             phase_logs=phase_logs,
             campaigns_triggered=list(state.campaigns_triggered),
             narrations=list(state.narration),
