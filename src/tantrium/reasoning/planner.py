@@ -128,8 +128,6 @@ class Planner:
 
         PSD garantisi: her adım TAU sertifikalı kenar — D-positivity korunur.
         """
-        from tantrium.core.semantic import moment_distance
-
         # Başlangıç kavramları
         if not known_concepts:
             known_concepts = self._infer_known()
@@ -138,8 +136,13 @@ class Planner:
         # Hedef kavramını encode et
         goal_concept = goal.to_concept()
 
+        # ANLAM-PUSULASI: hedef köklü kavrama indirgenebiliyorsa "yaklaştım mı?" yazılış
+        # değil ANLAM mesafesiyle ölçülür; değilse moment (eski davranış). TEK tutarlı metrik.
+        from tantrium.core.meaning_pipeline import goal_distance_function
+        dist_fn = goal_distance_function(self.engine, goal.name, goal_concept)
+
         # Başlangıç mesafesini hesapla
-        initial_dist = self._goal_distance(known_concepts, goal_concept)
+        initial_dist = self._goal_distance(known_concepts, dist_fn)
 
         steps: list[PlanStep] = []
         frontier: dict[str, tuple[float, str, str]] = {}  # name → (dist, from, paradigm)
@@ -152,7 +155,7 @@ class Planner:
                     tc = self.engine.manifold.concepts.get(edge.target)
                     if tc is None:
                         continue
-                    d = float(moment_distance(goal_concept, tc))
+                    d = dist_fn(edge.target)
                     frontier[edge.target] = (d, src, edge.paradigm)
 
         for step_num in range(1, max_steps + 1):
@@ -164,7 +167,7 @@ class Planner:
             best_name, (best_dist, from_name, paradigm) = best
 
             # Bu adım ilerleme sağlıyor mu?
-            current_min = self._goal_distance(known_concepts, goal_concept)
+            current_min = self._goal_distance(known_concepts, dist_fn)
             if best_dist >= current_min and step_num > 1:
                 break  # daha fazla ilerleyemiyoruz
 
@@ -193,7 +196,7 @@ class Planner:
                     tc = self.engine.manifold.concepts.get(edge.target)
                     if tc is None:
                         continue
-                    d = float(moment_distance(goal_concept, tc))
+                    d = dist_fn(edge.target)
                     frontier[edge.target] = (d, best_name, edge.paradigm)
 
             # Frontier'ı beam_width ile sınırla (bellekte)
@@ -210,15 +213,14 @@ class Planner:
             final_distance=final_dist,
         )
 
-    def _goal_distance(self, known: list[str], goal_concept) -> float:
-        from tantrium.core.semantic import moment_distance
+    def _goal_distance(self, known: list[str], dist_fn) -> float:
+        """known kavramların hedefe min mesafesi — TEK tutarlı dist_fn ile (anlam ya da moment)."""
         if not known:
             return float("inf")
         dists = []
         for name in known[:10]:
-            c = self.engine.manifold.concepts.get(name)
-            if c is not None:
-                dists.append(float(moment_distance(goal_concept, c)))
+            if name in self.engine.manifold.concepts:
+                dists.append(dist_fn(name))
         return min(dists) if dists else float("inf")
 
     def _infer_known(self) -> list[str]:

@@ -145,6 +145,45 @@ def test_different_meaning_separates():
     assert signature_distance(sig_a, sig_b) > 1e-3
 
 
+def test_goal_anchors_filter_generic_verbs():
+    """Hedef-çapası jenerik fiili (understand) eler, köklü içerik kelimesini tutar."""
+    from tantrium.core.meaning_pipeline import resolve_goal_anchors
+    eng = _grounded_engine()
+    eng.tau.edges["egfr"] = [_E("ACTIVATES", "ras"), _E("ACTIVATES", "pi3k"),
+                             _E("CAUSES", "tumor"), _E("ACTIVATES", "akt"),
+                             _E("INHIBITS", "pten")]
+    anchors = resolve_goal_anchors(eng, "understand egfr signaling")
+    assert "egfr" in anchors
+    assert "understand" not in anchors          # jenerik fiil elendi
+
+
+def test_goal_distance_function_uses_meaning_when_anchored():
+    """Çapa köklüyse hedefe-mesafe ANLAM (topoloji) ile; aday çapaya yakınsa düşük."""
+    from tantrium.core.meaning_pipeline import goal_distance_function
+    eng = _grounded_engine()
+    eng.tau.edges["egfr"] = [_E("ACTIVATES", "ras"), _E("ACTIVATES", "pi3k"),
+                             _E("CAUSES", "tumor"), _E("ACTIVATES", "akt"),
+                             _E("INHIBITS", "pten")]
+    eng.tau.edges["sibling"] = list(eng.tau.edges["egfr"])   # egfr ile aynı komşuluk
+    df = goal_distance_function(eng, "understand egfr", None)
+    # sibling egfr ile aynı komşuluğa sahip → çapaya çok yakın olmalı
+    assert df("sibling") < 0.1
+
+
+def test_goal_distance_function_falls_to_moment_when_no_anchor():
+    """Çapa yoksa (math-nesnesi hedef) moment-mesafesine düşer (fallback)."""
+    from tantrium.core.meaning_pipeline import goal_distance_function
+
+    class _C:
+        def __init__(self, m): self.moments = m
+
+    eng = _grounded_engine()
+    eng.manifold = type("M", (), {"concepts": {"x": _C([1.0, 0.5, 0.2])}})()
+    df = goal_distance_function(eng, "42", _C([1.0, 0.4, 0.1]))   # sayı hedef → çapa yok
+    d = df("x")
+    assert isinstance(d, float) and d >= 0.0
+
+
 def test_signature_distance_falls_to_surface_when_ungrounded():
     """Biri topraksızsa karşılaştırma yüzeye düşer (None DÖNMEZ — her zaman sayı)."""
     eng = _grounded_engine()

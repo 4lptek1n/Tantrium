@@ -128,30 +128,59 @@ class GoalManifold:
             return []
 
         goal_concept = goal.to_concept()
-        # L1: manifold'dan hedefe en yakın N kavram
-        nearest = engine.manifold.nearest(goal_concept, n=top_n * 2)
+
+        # ANLAM-PUSULASI: hedef köklü kavram(lar)a indirgenebiliyorsa "hedefe yakınlık"
+        # yazılış değil ANLAM mesafesiyle ölçülür; değilse moment (eski davranış). dist_fn
+        # no-anchor'da otomatik momente düşer → fail-open, math-hedef güvenli.
+        from tantrium.core.meaning_pipeline import goal_distance_function
+        dist_fn = goal_distance_function(engine, goal.name, goal_concept)
+
+        # L1: SEED havuzu. Çapa köklüyse çapanın GRAF komşuları (anlam-havuzu); değilse
+        # manifold.nearest (harf adresi). Havuz baştan doğru olmalı — sonra dist_fn sıralar.
+        nearest = self._seed_candidates(goal, goal_concept, engine, top_n)
         result: dict[str, tuple[float, str]] = {}
 
         for seed_name, seed_dist in nearest:
-            d = float(seed_dist)
-            if seed_name not in result or d < result[seed_name][0]:
+            d = dist_fn(seed_name)
+            if d != float("inf") and (seed_name not in result or d < result[seed_name][0]):
                 result[seed_name] = (d, "ALEPH")
 
-            # L2: seed'in semantic komşularının hedefe gerçek mesafesi
+            # L2: seed'in semantic komşularının hedefe ANLAM mesafesi (typed-edge bonus ×0.5)
             for edge in tau.edges.get(seed_name, []):
                 if edge.paradigm not in _SEMANTIC_PARADIGMS:
                     continue
                 t = edge.target
-                tc = engine.manifold.concepts.get(t)
-                if tc is None:
+                if engine.manifold.concepts.get(t) is None:
                     continue
-                from tantrium.core.semantic import moment_distance
-                t_dist = float(moment_distance(goal_concept, tc)) * 0.5  # semantic bonus
+                td = dist_fn(t)
+                if td == float("inf"):
+                    continue
+                t_dist = td * 0.5  # semantic bonus
                 if t not in result or t_dist < result[t][0]:
                     result[t] = (t_dist, edge.paradigm)
 
         candidates = sorted(result.items(), key=lambda x: x[1][0])
         return [(name, dist, p) for name, (dist, p) in candidates[:top_n]]
+
+    def _seed_candidates(self, goal: Goal, goal_concept, engine, top_n: int):
+        """Hedef-pursuit seed havuzu: çapa köklüyse çapanın GRAF komşuları, değilse harf-nearest.
+
+        Çapa-grafından çekmek 'understand egfr signaling' için egfr'nin gerçek komşularını
+        (akt3/kdr/grb2) verir; harf-nearest cümlenin yazılışına benzer jenerik çöp verirdi."""
+        try:
+            from tantrium.core.meaning_pipeline import resolve_goal_anchors, nearest_meaning
+            anchors = resolve_goal_anchors(engine, goal.name)
+            if anchors:
+                seen: dict[str, float] = {}
+                for a in anchors:
+                    for nm, d, _ in nearest_meaning(engine, a, n=top_n * 2):
+                        if nm not in seen and nm not in anchors:
+                            seen[nm] = d
+                if seen:
+                    return list(seen.items())
+        except Exception:
+            pass
+        return engine.manifold.nearest(goal_concept, n=top_n * 2)
 
     # ─── Kalıcılık ────────────────────────────────────────────────────────────
 

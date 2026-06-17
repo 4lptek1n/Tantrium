@@ -196,7 +196,12 @@ def signature_distance(sa: MeaningSignature, sb: MeaningSignature, *,
             dc = _cascade_distance(sa.li_cascade, sb.li_cascade)
             d = (1.0 - cascade_weight) * d + cascade_weight * dc
         return d
-    return _l1(sa.surface_moments, sb.surface_moments)
+    # Karışık/yüzey: biri köklü biri değilse ya da surface boşsa (cache imzası) →
+    # AYNI rejimde değiller, KARŞILAŞTIRILAMAZ → uzak (boş-surface'i spurious 0 yapma).
+    sm_a, sm_b = sa.surface_moments, sb.surface_moments
+    if not sm_a or not sm_b:
+        return 2.0
+    return _l1(sm_a, sm_b)
 
 
 def measure_distance(engine, a: str, b: str, *, max_neighbors: int = 24,
@@ -277,4 +282,62 @@ def meaning_neighbor_names(engine, name: str, *, n: int = 6, pool: int = 60) -> 
         return [nm for nm, _, _ in nearest_meaning(engine, name, n=n, pool=pool)]
     except Exception:
         return []
+
+
+# Hedef-cümlesindeki jenerik fiil/sözcükler — çapa olamaz (anlam taşımaz, hub'dır).
+_GOAL_STOPWORDS = frozenset({
+    "understand", "learn", "know", "find", "explore", "study", "analyze", "discover",
+    "the", "a", "an", "of", "to", "how", "what", "why", "about", "with", "for",
+    "anla", "öğren", "bul", "keşfet", "incele", "araştır", "nedir", "nasıl",
+})
+
+
+def resolve_goal_anchors(engine, goal_name: str, *, topo_encoder=None,
+                         max_anchors: int = 3) -> list[str]:
+    """Hedefin köklü içerik-kelimelerini ÇAPA KÜMESİ olarak döndür (tek-kelime seçme tuzağı yok).
+
+    'understand egfr signaling' → ['egfr', 'signaling'] (jenerik 'understand' elenir). Tek
+    'en bağlı' kelimeyi seçmek hub'a kayar (understand>egfr); küme + min-mesafe bunu çözer.
+    Tüm-ad köklüyse tek çapa o. Math-nesnesi/topraksız → boş (planner momente düşer)."""
+    if _is_math_core_object(engine, goal_name):
+        return []
+    te = topo_encoder or TopologyEncoder(engine)
+    if measure(engine, goal_name, topo_encoder=te).grounded:
+        return [goal_name]
+    anchors: list[str] = []
+    for w in goal_name.replace(":", " ").replace("_", " ").split():
+        if len(w) < 3 or w.lower() in _GOAL_STOPWORDS or _is_math_core_object(engine, w):
+            continue
+        if measure(engine, w, topo_encoder=te).grounded and w not in anchors:
+            anchors.append(w)
+    return anchors[:max_anchors]
+
+
+def goal_distance_function(engine, goal_name: str, goal_concept):
+    """Hedefe-mesafe fonksiyonu: çapa-kümesi köklüyse ANLAM mesafesi (min), değilse moment.
+
+    Döner: callable(candidate_name)->float. Planner/goal TEK tutarlı metrikle çalışsın diye
+    (frontier + ilerleme aynı ölçü). Hedef köklü kavram(lar)a indirgenebiliyorsa 'yaklaştım
+    mı?' yazılış değil ANLAM mesafesiyle ölçülür: aday, çapa kelimelerinden HERHANGİ birine
+    yakınsa yakın sayılır (min)."""
+    from tantrium.core.semantic import moment_distance
+    te = TopologyEncoder(engine)
+    store = getattr(engine, "_meaning_store", None)
+    anchors = resolve_goal_anchors(engine, goal_name, topo_encoder=te)
+    anchor_sigs = [measure(engine, a, topo_encoder=te, store=store) for a in anchors]
+    anchor_sigs = [s for s in anchor_sigs if s.grounded]
+    if anchor_sigs:
+        def _meaning_dist(candidate_name: str) -> float:
+            c_sig = measure(engine, candidate_name, topo_encoder=te, store=store)
+            if not c_sig.grounded:
+                return float("inf")     # topraksız aday hedefe yakın SAYILMAZ (çöpe yürüme)
+            return min(signature_distance(a, c_sig) for a in anchor_sigs)
+        return _meaning_dist
+
+    def _moment_dist(candidate_name: str) -> float:
+        c = engine.manifold.concepts.get(candidate_name)
+        if c is None:
+            return float("inf")
+        return float(moment_distance(goal_concept, c))
+    return _moment_dist
 
