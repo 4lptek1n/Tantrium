@@ -5306,13 +5306,24 @@ class AI:
                 except Exception:
                     pass
             grounded = bool(self._tau_facts(topic))
-            # (A) köklü graftan SERTİFİKALI hipotez
-            hn = self.hypothesize_novel(topic)
+            # Topic CÜMLESİNİ köklü ÇAPA kavrama indir (cümle→anchor; "egfr signaling in
+            # cancer"→"egfr") — yoksa hipotez-motoru cümleyi göremez, 0 üretir. resolve_goal_anchors
+            # jenerik sözcükleri eler, en bağlı köklü kelimeyi seçer. Çapa yoksa topic'e düşer.
+            seed = topic
+            try:
+                from tantrium.core.meaning_pipeline import resolve_goal_anchors
+                _anchors = resolve_goal_anchors(self._engine, topic)
+                if _anchors:
+                    seed = _anchors[0]
+            except Exception:
+                pass
+            # (A) köklü graftan SERTİFİKALI hipotez — köklü çapadan
+            hn = self.hypothesize_novel(seed)
             hyps = hn.get("hypotheses", [])
             # (C) en güçlü hipotezi test edecek aday TASARLA (peptit — Sturm-certified)
             if design and hyps:
                 try:
-                    d = self.design_peptide(topic, max_residues=6, beam_width=2)
+                    d = self.design_peptide(seed, max_residues=6, beam_width=2)
                     designs.append({"to_test": hyps[0]["statement"],
                                     "peptide": d["peptide"], "fit": d["fit"]})
                 except Exception:
