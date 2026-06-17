@@ -150,6 +150,14 @@ class CertifiedGenerator:
             self._topo_enc = TopologyEncoder(self.engine)
         return self._topo_enc
 
+    def _pe(self):
+        """ProductionEngine (lazy) — Sturm-pivot pozitifliği = RH-chain kritik-hat sertifikası.
+        Dil yörüngesi, ilaç-gerçeklenebilirliği ve rooting AYNI pozitiflik substratını paylaşır."""
+        if not hasattr(self, "_pe_inst"):
+            from tantrium.core.production import ProductionEngine
+            self._pe_inst = ProductionEngine(self.engine)
+        return self._pe_inst
+
     def _is_grounded_proxy(self, name: str) -> bool:
         """Kavramın anlamsal TAU kenarı ≥ 1 → 'kritik hat' üzerinde.
 
@@ -351,7 +359,36 @@ class CertifiedGenerator:
         if not candidates:
             return None
 
-        candidates.sort(key=lambda x: x[0])
+        # KRİTİK HAT (RH-chain pozitifliği) + KÖKLÜLÜK ile yeniden-sırala. "Düşünmek =
+        # kritik hat üzerinde kalmak": tercih sırası (1) Sturm-pivot POZİTİF geçiş (Jensen
+        # hiperbolisitesi — ilaç-gerçeklenebilirliği/rooting ile AYNI sertifika), (2) KÖKLÜ
+        # hedef (≥3 semantik kenar = landmark, 'konuşulabilir'), (3) moment yakınlığı (tie).
+        # Aday KÜMESİ daraltılmaz (yörünge çıkmaza girmesin) — yalnız öncelik. Determinist.
+        cur_moments = None
+        cc = manifold.concepts.get(current)
+        if cc is not None:
+            cur_moments = [float(m) for m in cc.moments]
+
+        def _rank(item):
+            score, cand_name, _par = item
+            # (1) Sturm-pivot pozitifliği (kritik hat) — geçiş gerçek-ölçü manifoldunda mı
+            on_line = True
+            if cur_moments is not None:
+                tcn = manifold.concepts.get(cand_name)
+                if tcn is not None:
+                    try:
+                        _ok, pmin = self._pe()._sturm_path_pivot_min(
+                            cur_moments, [float(m) for m in tcn.moments])
+                        on_line = (pmin >= -1e-3)
+                    except Exception:
+                        on_line = True
+            # (2) köklülük (hızlı proxy: semantik çıkan-derece ≥ 3 = landmark)
+            deg = sum(1 for e in tau.edges.get(cand_name, [])
+                      if e.paradigm in _SEMANTIC)
+            rooted = deg >= 3
+            return (0 if on_line else 1, 0 if rooted else 1, score)
+
+        candidates.sort(key=_rank)
         d, name, paradigm = candidates[0]
         return name, paradigm, d
 
