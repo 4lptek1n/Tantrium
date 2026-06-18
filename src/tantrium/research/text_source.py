@@ -37,6 +37,23 @@ def fetch_wikipedia(title: str, *, timeout: int = 25) -> str | None:
     return None
 
 
+def fetch_random_titles(n: int = 5, *, timeout: int = 25) -> list[str]:
+    """Wikipedia'dan rastgele makale başlıkları (sonsuz, geniş, çok-domain kaynak — 'her şeyi
+    anla' için küratörsüz). Hata → []."""
+    q = urllib.parse.urlencode({
+        "action": "query", "list": "random", "rnnamespace": "0",
+        "rnlimit": str(min(n, 20)), "format": "json",
+    })
+    try:
+        req = urllib.request.Request(f"{_WIKI_API}?{q}", headers=_UA)
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.load(r)
+        return [it["title"] for it in data.get("query", {}).get("random", [])
+                if it.get("title")]
+    except Exception:
+        return []
+
+
 def absorb_topics(ai, topics, *, persist: bool = False, fetch=fetch_wikipedia,
                   **absorb_kw) -> dict:
     """Konu listesini çek + absorb et (fitsiz öğrenme). Döner: birikimli rapor.
