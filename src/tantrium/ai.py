@@ -2736,7 +2736,8 @@ class AI:
                window: int = 5, dim: int = 40, min_count: int = 2,
                max_concepts: int = 250, persist: bool = False,
                keep_all: bool = False, emergent_types: bool = True,
-               n_types: int = 6, meaning_reencode: bool = True) -> dict:
+               n_types: int = 6, meaning_reencode: bool = True,
+               svo: bool = True) -> dict:
         """UÇTAN UCA FİTSİZ ÖĞRENME — ham metni oku, gizli yapıyı keşfet, KAPIDAN geçir, diz.
 
         Büyümenin tüm borusu, eğitimsiz:
@@ -2825,6 +2826,24 @@ class AI:
                 if mo is not None and getattr(mo, "moments", None):
                     cc.moments = list(mo.moments)
                     reencoded += 1
+        # 5) SVO (fitsiz, desen/POS YOK): cümlede ardışık içerik-kelime üçlüsü (A,V,B) →
+        # A özne, V YÜKLEM (orta kelime = fiil-düğüm, senin sezgin), B nesne. 'pancreas
+        # releases glucagon' → pancreas--[releases]-->glucagon. Tipli kenar (paradigm=SVO:fiil)
+        # → generate/speak gerçek cümle kurar. Heuristik (gürültülü) ama yapıdan, dayatmadan.
+        svo_n = 0
+        if svo:
+            from tantrium.core.cooccurrence import tokenize as _tok
+            for s in sents:
+                cw = [t for t in _tok(s) if not is_noise(t)]
+                for i in range(len(cw) - 2):
+                    a, v, b = cw[i], cw[i + 1], cw[i + 2]
+                    if a == b or is_noise(v):
+                        continue
+                    if admit(a) in ("core", "frontier") and admit(b) in ("core", "frontier"):
+                        eng.tau.edges.setdefault(a, []).append(
+                            KnowledgeEdge(source=a, target=b, distance=0.5,
+                                          paradigm=f"SVO:{v}"))
+                        svo_n += 1
         if persist:
             try:
                 eng.auto_persist()
@@ -2861,6 +2880,29 @@ class AI:
             except Exception:
                 pass
         return {"edges_before": before, "edges_after": after, "removed": removed}
+
+    def speak(self, concept, *, max_facts: int = 4) -> dict:
+        """Absorb edilen bilgiyi CÜMLEYLE söyle — SVO kenarlarından (A--[fiil]-->B). Fitsiz:
+        yüklem cümle yapısından çıktı (ardışık içerik-kelime), desen/POS yok. En sık (fiil,nesne)
+        çiftleri öne. Döner: {concept, sentence, n, facts}."""
+        from collections import Counter
+        eng = self._engine
+        c = str(concept).lower()
+        facts = []
+        for e in eng.tau.edges.get(c, []):
+            p = str(getattr(e, "paradigm", ""))
+            if p.startswith("SVO:"):
+                v = p[4:]
+                o = str(getattr(e, "target", ""))
+                if v and o:
+                    facts.append((v, o))
+        if not facts:
+            return {"concept": c, "sentence": "", "n": 0, "facts": []}
+        cnt = Counter(facts)
+        top = [vo for vo, _ in cnt.most_common(max_facts)]
+        sent = ". ".join(f"{c} {v} {o}" for v, o in top) + "."
+        return {"concept": c, "sentence": sent[:1].upper() + sent[1:],
+                "n": len(facts), "facts": top}
 
     def walk(self, start, *, max_steps: int = 14, strict: bool = False) -> dict:
         """KRİTİK-ÇİZGİ ASAL YÜRÜYÜŞÜ (deep thinking) — TAU grafında, her adımda kritik hatta
