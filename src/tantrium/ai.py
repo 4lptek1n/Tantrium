@@ -2678,6 +2678,39 @@ class AI:
                 "contextualized": (H.tolist() if hasattr(H, "tolist") else H),
                 "kernel": kernel}
 
+    def discover_structure(self, text, *, window: int = 5, dim: int = 40,
+                           min_count: int = 2, top_k: int = 15) -> dict:
+        """FİTSİZ GİZLİ-YAPI KEŞFİ — ham metinden, eğitim olmadan, latent ilişkileri çıkar.
+
+        Fit'in keşfettiğini ÖZAYRIŞTIRMAYLA bulur (Levy-Goldberg: word2vec ≈ ortak-geçiş PMI
+        çarpanlaması). Ortak-geçiş → PPMI → SVD → kelime vektörleri. Hiç birlikte geçmeyen ama
+        bağlam paylaşan kavramlar yakın düşer = GİZLİ keşif (gradyan yok, fit yok). Çıktı = aday
+        ilişkiler — manifolda girmeden ÖNCE evren-kapısından geçirilmeli (sertifika korunur).
+
+        Canlı doğrulandı: gerçek Wikipedia metninde 'water→donor', 'plants→c3/c4/sugarcane',
+        'chlorophyll→pigment/absorbs' sıfır eğitimle keşfedildi.
+        Döner: {n_concepts, pairs:[(a,b,sim)], neighbors:{w:[(x,sim)]}}.
+        """
+        import re
+        import numpy as np
+        from tantrium.core.cooccurrence import discover, neighbors
+        sents = [s for s in re.split(r"(?<=[.!?])\s+", str(text)) if len(s.split()) >= 4]
+        if not sents:
+            sents = [str(text)]
+        E, vocab, idx, _C = discover(sents, window=window, dim=dim, min_count=min_count)
+        if len(vocab) < 2:
+            return {"n_concepts": len(vocab), "pairs": [], "neighbors": {}}
+        En = E / (np.linalg.norm(E, axis=1, keepdims=True) + 1e-9)
+        S = En @ En.T
+        pairs = []
+        for i in range(len(vocab)):
+            for j in range(i + 1, len(vocab)):
+                pairs.append((vocab[i], vocab[j], round(float(S[i, j]), 3)))
+        pairs.sort(key=lambda t: t[2], reverse=True)
+        return {"n_concepts": len(vocab), "pairs": pairs[:top_k],
+                "neighbors": {w: [(x, round(s, 2)) for x, s in neighbors(E, vocab, idx, w, 5)]
+                              for w in vocab[:6]}}
+
     # ════════════════════════ DALGA 2 — Anlama & Dönüşüm ════════════════════════
 
     # İlişki → İngilizce yüklem (çeviri + İngilizce çıktı için)
