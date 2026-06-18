@@ -44,7 +44,7 @@ def main() -> None:
         except Exception:
             pass
     t0 = time.time()
-    dims = {"molecule": 0, "number": 0, "protein": 0, "text": 0, "rejected": 0}
+    dims = {"molecule": 0, "number": 0, "protein": 0, "text": 0, "law": 0, "rejected": 0}
     cyc = 0
     print(f"[{time.strftime('%H:%M:%S')}] çok-boyutlu büyüme — SONSUZ (STOP: {STOP})", flush=True)
 
@@ -64,10 +64,26 @@ def main() -> None:
         for smi in ge._fetch_pubchem(10):
             if _obs(smi):
                 dims["molecule"] += 1
-        # 2) SAYI — gerçek power moment
+        # 2) SAYI — gerçek power moment + VAR EDEN YASA (IS_GOVERNED_BY)
         for seq in ge._fetch_oeis(4):
-            if _obs(seq):
-                dims["number"] += 1
+            try:
+                o = obs.observe(seq)
+            except Exception:
+                continue
+            if getattr(o, "admitted_as", None) == "rejected":
+                dims["rejected"] += 1
+                continue
+            dims["number"] += 1
+            nm = getattr(o, "name", None)
+            # var eden yasa: dizinin yönetici yineleme yasasını KEŞFET → IS_GOVERNED_BY kenarı
+            if nm:
+                try:
+                    law = ai.discover_law(seq)
+                    if getattr(law, "law_holds", False):
+                        ai.ground_full(nm, law=f"recurrence_order_{law.order}")
+                        dims["law"] += 1
+                except Exception:
+                    pass
         # 3) PROTEIN
         try:
             prots = ge._fetch_uniprot(6)
@@ -101,9 +117,9 @@ def main() -> None:
         }
         STATUS.write_text(json.dumps(status, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"[{time.strftime('%H:%M:%S')}] tur {cyc}: molekül={dims['molecule']} "
-              f"sayı={dims['number']} protein={dims['protein']} metin={dims['text']} "
-              f"red={dims['rejected']} | kavram {len(eng.manifold.concepts)} "
-              f"({status['uptime_min']}dk)", flush=True)
+              f"sayı={dims['number']} yasa={dims['law']} protein={dims['protein']} "
+              f"metin={dims['text']} red={dims['rejected']} | kavram "
+              f"{len(eng.manifold.concepts)} ({status['uptime_min']}dk)", flush=True)
 
     print(f"[{time.strftime('%H:%M:%S')}] STOP — durduruldu (tur {cyc}).", flush=True)
     try:
