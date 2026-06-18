@@ -11,6 +11,7 @@ import { AnalyzePage } from "@/pages/analyze";
 import { HuntPage } from "@/pages/hunt";
 import { CorePage } from "@/pages/core";
 import { ReportsPage } from "@/pages/reports";
+import { CodexPage } from "@/pages/codex";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/datasets" component={DatasetsPage} />
       <Route path="/analyze" component={AnalyzePage} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/codex" component={CodexPage} />
       <Route component={NotFound} />
     </Switch>
   );

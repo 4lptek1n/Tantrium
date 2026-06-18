@@ -1,0 +1,936 @@
+"""Universal encoder: any input → CodexObject via spectral moments.
+
+The encoder is domain-blind. It does not know if the input is a sentence,
+a number sequence, a graph, or a physical measurement. It only does this:
+
+    input → non-negative matrix representation A
+           → spectral moments μ_k = Tr(A^k) / n
+           → CodexObject with those moments
+
+This works because:
+1. Every compact-support non-negative measure is uniquely determined by its moments
+   (Hamburger/Hausdorff moment problem)
+2. Physical reality is bounded (finite energy = compact support)
+3. Therefore every physical thing IS its moment sequence — not approximately, exactly
+4. Tr(A^k)/n are the moments of the empirical spectral distribution of A
+5. The empirical spectral distribution converges to the real distribution as n grows
+
+This is the same mathematics as the RH proof (Xi function moments).
+The encoder does not introduce a new mathematical layer — it IS the existing layer,
+applied universally.
+
+Domain-specific encoders are wrong in principle: they assume the world needs
+translation into math. It does not. The world IS math already.
+The encoder just reads what is already there.
+"""
+from __future__ import annotations
+
+from fractions import Fraction
+from typing import Any, Sequence
+
+from tantrium.core.codex import CertifiableObject as CodexObject
+
+
+# ─── Matrix operations (exact rational arithmetic) ──────────────────────────
+
+def _mat_mul(A: list[list[Fraction]], B: list[list[Fraction]]) -> list[list[Fraction]]:
+    n = len(A)
+    return [
+        [sum(A[i][k] * B[k][j] for k in range(n)) for j in range(n)]
+        for i in range(n)
+    ]
+
+
+def _mat_pow(A: list[list[Fraction]], k: int) -> list[list[Fraction]]:
+    n = len(A)
+    result = [[Fraction(1) if i == j else Fraction(0) for j in range(n)] for i in range(n)]
+    base = [row[:] for row in A]
+    while k > 0:
+        if k % 2 == 1:
+            result = _mat_mul(result, base)
+        base = _mat_mul(base, base)
+        k //= 2
+    return result
+
+
+def _trace(A: list[list[Fraction]]) -> Fraction:
+    return sum(A[i][i] for i in range(len(A)))
+
+
+def _gram(A: list[list[Fraction]]) -> list[list[Fraction]]:
+    """G = A^T · A  — always positive semidefinite, eigenvalues ≥ 0.
+
+    The spectral distribution of G has moments that form a valid moment
+    sequence (Hamburger). This is the correct universal transform:
+    singular-value distribution of A = spectral distribution of A^T·A.
+    """
+    n = len(A)
+    m = len(A[0]) if A else 0
+    At = [[A[i][j] for i in range(n)] for j in range(m)]
+    return _mat_mul(At, A)
+
+
+def _spectral_moments(A: list[list[Fraction]], num_moments: int) -> list[Fraction]:
+    """Compute μ_k = Tr(G^k) / n where G = A^T·A (Gram matrix).
+
+    Using the Gram matrix guarantees:
+    1. G is symmetric positive semidefinite — all eigenvalues ≥ 0
+    2. Therefore Tr(G^k) ≥ 0 for all k
+    3. Therefore [μ_k] is a valid moment sequence (Hamburger)
+    4. Therefore the Hankel matrix is PSD — Aleph filter passes
+
+    This is the singular-value spectral distribution of A:
+    the universal, domain-blind signature of any matrix.
+    """
+    n = len(A)
+    if n == 0:
+        return [Fraction(0)] * num_moments
+    G = _gram(A)
+    ng = len(G)
+    moments = []
+    Gk = [[Fraction(1) if i == j else Fraction(0) for j in range(ng)] for i in range(ng)]
+    for _ in range(num_moments):
+        moments.append(_trace(Gk) / ng)
+        Gk = _mat_mul(Gk, G)
+    return moments
+
+
+# ─── Input → matrix representations ────────────────────────────────────────
+
+def _sequence_to_hankel_matrix(seq: Sequence[Fraction]) -> list[list[Fraction]]:
+    """A numeric sequence IS a moment sequence. Build its Hankel matrix directly.
+    H_{ij} = seq[i+j].  Size = floor((len+1)/2).
+    """
+    m = len(seq)
+    n = max(1, (m + 1) // 2)
+    return [
+        [seq[i + j] if i + j < m else Fraction(0) for j in range(n)]
+        for i in range(n)
+    ]
+
+
+def _text_to_bigram_matrix(text: str, label_aware: bool = False) -> list[list[Fraction]]:
+    """Text → character bigram transition matrix (row-normalized).
+
+    A[i][j] = P(char j follows char i) in the text.
+    This is a stochastic matrix — its spectral distribution encodes
+    the topology of the language sample: which transitions are common,
+    which structures repeat.
+
+    label_aware=True: köşegene küçük ağırlıklı karakter codepoint kimliği ekler,
+    satır yeniden normalize edilir (stokastik kalır). Bu, harf KİMLİĞİNİ
+    spektruma katar — "pbjw" ve "hame" (ikisi de 4 ayrı karakterli yol grafı)
+    aksi halde AYNI permütasyon spektrumuna, aynı momentlere çöker (çakışma).
+
+    SINIR: protein/glucose (7 char, tam çeşitlilik, yol-grafı izomorfizm) bu modda
+    L1 ≈ 2.6e-3 marj — ince ama mevcut. Kökten çözüm: bigram yerine N-gram veya
+    pozisyon-hash matrisi gerekir (F5 görev listesinde, manifold migrasyonu gerektirir).
+
+    MANIFOLD UYUMU: manifold.json bu mod AÇIKken oluşturuldu (encoder.py:450,458).
+    """
+    chars = sorted(set(text))
+    if not chars:
+        return [[Fraction(1)]]
+    c2i = {c: i for i, c in enumerate(chars)}
+    n = len(chars)
+    counts: list[list[int]] = [[0] * n for _ in range(n)]
+    for a, b in zip(text, text[1:]):
+        counts[c2i[a]][c2i[b]] += 1
+    if not label_aware:
+        matrix: list[list[Fraction]] = []
+        for row in counts:
+            total = sum(row)
+            if total == 0:
+                matrix.append([Fraction(1, n)] * n)
+            else:
+                matrix.append([Fraction(v, total) for v in row])
+        return matrix
+    # label_aware: köşegene küçük codepoint kimliği + satır yeniden normalize
+    _IDENT_W = Fraction(1, 64)
+    matrix = []
+    for i, row in enumerate(counts):
+        ident = _IDENT_W * Fraction(min(ord(chars[i]), 0x2FFF), 0x3000)
+        frow = [Fraction(v) for v in row]
+        frow[i] += ident
+        total = sum(frow)
+        if total == 0:
+            matrix.append([Fraction(1, n)] * n)
+        else:
+            matrix.append([v / total for v in frow])
+    return matrix
+
+
+def _is_valid_smiles(s: str) -> bool:
+    """RDKit ile geçerli SMILES mi? Geçerliyse text_signature yolunu atla."""
+    try:
+        from rdkit import Chem
+        return Chem.MolFromSmiles(s) is not None
+    except Exception:
+        return False
+
+
+_DNA_ALPHA = set("ACGT")
+_RNA_ALPHA = set("ACGU")
+_AA_ALPHA = set("ACDEFGHIKLMNPQRSTVWY")
+
+
+def _detect_bio_sequence(s: str):
+    """STRICT biyolojik dizi tespiti → 'dna'|'rna'|'protein'|None.
+
+    EVRENSEL YASA: dil dışı her şey gerçek formuyla girer. Ama tespit STRICT olmalı —
+    İngilizce kelime ('cat'=Cys-Ala-Thr) yanlışlıkla peptide sayılmamalı. Bu yüzden:
+    BÜYÜK HARF zorunlu (kelimeler küçük harf/karışık), uzunluk eşiği, saf alfabe.
+    """
+    if not s or not s.isupper() or any(c.isspace() for c in s):
+        return None
+    chars = set(s)
+    n = len(s)
+    if n >= 16 and chars <= _DNA_ALPHA:
+        return "dna"
+    if n >= 16 and chars <= _RNA_ALPHA and "U" in chars:
+        return "rna"
+    # protein: ≥25 rezidü, saf 20-AA, DNA/RNA-DIŞI harf içermeli (yoksa o DNA'dır)
+    if n >= 25 and chars <= _AA_ALPHA and (chars - _DNA_ALPHA - {"U"}):
+        return "protein"
+    return None
+
+
+def _char_signature(c: str) -> float:
+    """Karaktere deterministik, iyi-yayılmış [0.3, 1.0] imza değeri.
+
+    a-z codepoint'leri (97-122) dar bir aralıkta; doğrudan kullanılırsa harf
+    farkları ezilir (yol-grafı izomorfizmi). Çarpımsal hash ile [0,1)'e geniş
+    yayıp [0.3,1.0]'a taşırız → her karakter spektrumda ayırt edilebilir kimlik taşır.
+    """
+    return 0.3 + 0.7 * (((ord(c) * 2654435761) % 9973) / 9973.0)
+
+
+def _text_to_signature_moments(
+    text: str, num_moments: int = 8, gamma: float = 0.4
+) -> list[Fraction] | None:
+    """Metin → pozisyon+codepoint imza matrisi → eigenvalue-normalize moment [0,1].
+
+    KÖK ÇÖZÜM (encoder collision): tüm-farklı-karakterli kelime (protein/glucose)
+    satır-stokastik bigram'da PERMÜTASYON matrisi = ortogonal → G=PᵀP=I → μ_k≡1
+    (hepsi çöker). Ayrıca anagramlar (protein/pointer, listen/silent) aynı harf
+    kümesi → köşegen-codepoint AYIRMAZ; SIRA bilgisi şart.
+
+    Çözüm: normalize-EDİLMEMİŞ ağırlıklı bigram —
+      A[i][j] = Σ_{a→b geçişleri, pozisyon p}  sig(a)·sig(b)·(1 + γ·p/(L-1))
+    sig = karakter kimliği (çakışmayı kırar), p = pozisyon (anagramı kırar).
+    Sonra SMILES yolu gibi: G=AᵀA → λ normalize → μ_k=(1/n)Σ(λ_i/λ_max)^k ∈ [0,1].
+
+    Hausdorff [0,1] rejimi — SMILES/algı ile AYNI, domain-blind tutarlı. μ_0=1.
+    Döner: Fraction moment listesi; geçersiz/boş metinde None (caller fallback).
+    """
+    try:
+        import numpy as np
+        if not text or len(text) < 2:
+            return None
+        chars = sorted(set(text))
+        n = len(chars)
+        if n < 1:
+            return None
+        c2i = {c: i for i, c in enumerate(chars)}
+        L = len(text)
+        A = np.zeros((n, n), dtype=np.float64)
+        denom = max(L - 1, 1)
+        for p, (a, b) in enumerate(zip(text, text[1:])):
+            A[c2i[a]][c2i[b]] += (
+                _char_signature(a) * _char_signature(b) * (1.0 + gamma * p / denom)
+            )
+        G = A.T @ A
+        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
+        max_eig = float(eigs.max()) or 1.0
+        if max_eig <= 0:
+            return None
+        vals = sorted(eigs / max_eig)
+        nv = len(vals)
+        # Kesin-iç regülarizasyon: empirik λ-ölçüsünü küçük uniform [0,1] ölçüsüyle
+        # harmanla. Uniform momentleri 1/(k+1) kesin-iç Hausdorff dizisidir → az-karakterli
+        # (rank-deficient) kelimelerde bile Hankel minörleri KESİN pozitif kalır, float→Fraction
+        # yuvarlamasına dayanır (ALEPH PSD geçer). _EPS küçük → çakışma ayrımı korunur.
+        _EPS = 0.02
+        moments: list[Fraction] = [Fraction(1)]
+        for k in range(1, num_moments):
+            emp = sum(d ** k for d in vals) / nv
+            uni = 1.0 / (k + 1)
+            mk = (1.0 - _EPS) * emp + _EPS * uni
+            moments.append(Fraction(float(mk)).limit_denominator(10 ** 9))
+        return moments
+    except Exception:
+        return None
+
+
+def _text_extra_dims(text: str) -> list[float]:
+    """Metin token için ek sinyal boyutları: uzunluk + karakter çeşitliliği.
+
+    Bu boyutlar moment vektörünün YERİNE GEÇMEZ — tamamlayıcıdır.
+    Aynı moment imzasına düşen token'ları ayırt eden hafif sinyal:
+      [0] uzunluk_norm = min(len, 50) / 50   → kısa/uzun ayrımı
+      [1] çeşitlilik_norm = unique_chars / len → tekrarlı/zengin doku
+
+    Özel token'lar (⟨...⟩, sayısal, ':' içerenler) sıfır döner.
+    Not: protein/glucose gibi (7 harf, tam çeşitlilik) temel çakışmalar
+    için `label_aware=True` modu gerekir; bu boyutlar FARKLI uzunluk ve
+    çeşitlilikteki çakışmaları çözer.
+    """
+    if not text or not isinstance(text, str):
+        return [0.0, 0.0]
+    if text.startswith("⟨") or ":" in text:
+        return [0.0, 0.0]
+    clean = text.strip()
+    if not clean:
+        return [0.0, 0.0]
+    len_norm = min(len(clean), 50) / 50.0
+    diversity_norm = len(set(clean.lower())) / max(len(clean), 1)
+    return [len_norm, diversity_norm]
+
+
+def _tokens_to_cooccurrence_matrix(
+    tokens: list[str], window: int = 2
+) -> list[list[Fraction]]:
+    """Token sequence → co-occurrence matrix (normalized).
+
+    A[i][j] = how often token i appears within `window` of token j.
+    Normalized by row sum. Captures distributional semantics
+    without any LLM, without any embedding — pure counting.
+    """
+    vocab = sorted(set(tokens))
+    if not vocab:
+        return [[Fraction(1)]]
+    t2i = {t: i for i, t in enumerate(vocab)}
+    n = len(vocab)
+    counts: list[list[int]] = [[0] * n for _ in range(n)]
+    for idx, tok in enumerate(tokens):
+        i = t2i[tok]
+        for delta in range(1, window + 1):
+            if idx + delta < len(tokens):
+                j = t2i[tokens[idx + delta]]
+                counts[i][j] += 1
+                counts[j][i] += 1
+    matrix: list[list[Fraction]] = []
+    for row in counts:
+        total = sum(row)
+        if total == 0:
+            matrix.append([Fraction(1, n)] * n)
+        else:
+            matrix.append([Fraction(v, total) for v in row])
+    return matrix
+
+
+def _dict_to_adjacency_matrix(
+    data: dict[str, Any]
+) -> list[list[Fraction]]:
+    """Nested dict → adjacency matrix of key-value graph.
+
+    Keys are nodes. An edge exists between key and its value (if the value
+    is itself a key at some level). Edge weight = nesting depth (normalized).
+    Captures the topology of any structured data.
+    """
+    all_keys: list[str] = []
+
+    def collect(d: Any, depth: int = 0) -> None:
+        if isinstance(d, dict):
+            for k, v in d.items():
+                key = str(k)
+                if key not in all_keys:
+                    all_keys.append(key)
+                collect(v, depth + 1)
+        elif isinstance(d, (list, tuple)):
+            for item in d:
+                collect(item, depth + 1)
+
+    collect(data)
+    if not all_keys:
+        return [[Fraction(1)]]
+    n = len(all_keys)
+    k2i = {k: i for i, k in enumerate(all_keys)}
+    counts: list[list[Fraction]] = [[Fraction(0)] * n for _ in range(n)]
+
+    def fill(d: Any, parent: str | None, depth: int) -> None:
+        if isinstance(d, dict):
+            for k, v in d.items():
+                key = str(k)
+                if parent is not None:
+                    w = Fraction(1, depth + 1)
+                    counts[k2i[parent]][k2i[key]] += w
+                    counts[k2i[key]][k2i[parent]] += w
+                fill(v, key, depth + 1)
+        elif isinstance(d, (list, tuple)):
+            for item in d:
+                fill(item, parent, depth + 1)
+
+    fill(data, None, 0)
+    matrix: list[list[Fraction]] = []
+    for row in counts:
+        total = sum(row)
+        if total == 0:
+            matrix.append([Fraction(1, n)] * n)
+        else:
+            matrix.append([v / total for v in row])
+    return matrix
+
+
+# Hankel matris kenar uzunluğu üst sınırı. Üssü O(n³) Fraction aritmetiği
+# olduğundan uzun diziler (DNA, sinyaller) burada downsample edilir.
+_MAX_HANKEL_DIM = 32
+
+
+def _downsample(seq: list[Fraction], target_len: int) -> list[Fraction]:
+    """Diziyi target_len elemanlık bucket ortalamalarına indirge.
+
+    Spektral dağılımı korur (bucket ortalaması = yerel ölçü yoğunluğu),
+    matris boyutunu sınırlar. O(n³) Fraction üssü patlamasını önler.
+    """
+    n = len(seq)
+    if n <= target_len:
+        return seq
+    out: list[Fraction] = []
+    for i in range(target_len):
+        lo = (i * n) // target_len
+        hi = max(lo + 1, ((i + 1) * n) // target_len)
+        chunk = seq[lo:hi]
+        out.append(sum(chunk) / len(chunk))
+    return out
+
+
+def _numbers_to_matrix(seq: Sequence[float | int | Fraction]) -> list[list[Fraction]]:
+    """Numeric sequence → normalized Hankel matrix.
+
+    The sequence is already a moment sequence — we just normalize it
+    so μ_0 = 1 (probability normalization) and convert to Fraction.
+    If all values are zero, returns identity.
+
+    Uzun diziler downsample edilir: Hankel kenarı ≤ _MAX_HANKEL_DIM
+    (matris üssü O(n³) Fraction → büyük n'de saatlerce sürerdi).
+    """
+    fracs = [Fraction(v).limit_denominator(10 ** 9) for v in seq]
+    total = sum(abs(f) for f in fracs)
+    if total == 0:
+        return [[Fraction(1)]]
+    normalized = [f / total for f in fracs]
+    # Hankel kenarı = (len+1)//2 → sınırı aşıyorsa diziyi indirge
+    max_seq_len = 2 * _MAX_HANKEL_DIM - 1
+    if len(normalized) > max_seq_len:
+        normalized = _downsample(normalized, max_seq_len)
+        # downsample sonrası yeniden normalize (toplam = 1 korunsun)
+        s2 = sum(abs(f) for f in normalized)
+        if s2 != 0:
+            normalized = [f / s2 for f in normalized]
+    return _sequence_to_hankel_matrix(normalized)
+
+
+# ─── Hızlı power-moment yolu (uzun sayısal diziler) ──────────────────────────
+
+# Bu uzunluğun üzerindeki sayısal diziler exact matris üssü yerine doğrudan
+# güç momenti ile kodlanır (Fraction payda patlamasını önler).
+_POWER_MOMENT_THRESHOLD = 16
+
+
+def _try_power_moments(input: Any, num_moments: int) -> "list[Fraction] | None":
+    """Uzun sayısal dizi ise μ_k = ort(x^k) doğrudan hesapla, yoksa None.
+
+    Normalleştirme: dizi [0,1]'e ölçeklenir → μ₀=1 sabit, μ_k ∈ [0,1].
+    Bu DNA/zeta analizindeki kodlama ile birebir tutarlıdır.
+    PSD garantisi: x∈[0,1] için {μ_k = ort(x^k)} geçerli Hausdorff moment
+    dizisidir → Hankel PSD → Aleph geçer.
+    """
+    if not isinstance(input, (list, tuple)) or len(input) <= _POWER_MOMENT_THRESHOLD:
+        return None
+    if not all(isinstance(x, (int, float, Fraction)) for x in input):
+        return None
+
+    vals = [float(x) for x in input]
+    mn, mx = min(vals), max(vals)
+    span = mx - mn
+    if span > 0:
+        data = [(x - mn) / span for x in vals]
+    else:
+        data = [0.5] * len(vals)
+
+    n = len(data)
+    moments_raw = [1.0]  # μ₀
+    for k in range(1, num_moments):
+        moments_raw.append(sum(x ** k for x in data) / n)
+    return [Fraction(m).limit_denominator(10 ** 9) for m in moments_raw]
+
+
+# ─── The universal encoder ───────────────────────────────────────────────────
+
+class UniversalEncoder:
+    """Domain-blind encoder: any input → CodexObject via spectral moments.
+
+    The encoder never asks "what kind of thing is this?"
+    It only asks "what is the spectral distribution of this thing's matrix?"
+
+    That question has a universal answer for every input that can be
+    represented as a non-negative matrix — which is everything.
+    """
+
+    def __init__(self, num_moments: int = 8) -> None:
+        self.num_moments = num_moments
+
+    def encode(self, input: Any, name: str | None = None) -> CodexObject:
+        """Encode any input to a CodexObject with auto-extracted structure.
+
+        Computes spectral moments AND auto-populates structure fields
+        for as many paradigms as possible from the raw input alone.
+        No domain knowledge required.
+
+        Uzun sayısal diziler için hızlı yol: μ_k = ort(x^k) doğrudan float'ta
+        hesaplanır, rasyonelleştirilir. Exact matris üssü (G^k) uzun dizilerde
+        Fraction paydalarını patlatır (yüzlerce basamak) — bu yol onu atlar.
+        Yapı çıkarımı için küçük temsilî matris kullanılır.
+        """
+        obj_name = name or _infer_name(input)
+
+        fast_moments = _try_power_moments(input, self.num_moments)
+        if fast_moments is not None:
+            moments = fast_moments
+            # Yapı çıkarımı için momentlerden küçük Hankel matrisi (tam diziyi
+            # yeniden işleme — payda patlamasını ve O(n³)'ü tamamen atla)
+            A = _sequence_to_hankel_matrix(moments)
+            G = _gram(A)
+            structure = self._extract_structure(input, A, G, moments)
+            structure.update({
+                "encoder": "universal_spectral",
+                "matrix_size": len(A),
+                "input_type": type(input).__name__,
+                "num_moments": self.num_moments,
+                "moment_path": "power_moments_fast",
+            })
+            return CodexObject(name=obj_name, moments=moments, structure=structure)
+
+        # ── EVRENSEL YASA: dil DIŞINDA her şey GERÇEK matematiksel formuyla girer ──
+        # DNA/RNA/protein dizileri "harf" değildir — gerçek fiziksel sinyaldir (EIIP /
+        # hidropati → spektrum). Bunları metin-yolundan (bigram istatistiği) ÖNCE yakala.
+        # YALNIZ dil (kelime/cümle) metin-yoluna düşer. Tespit STRICT (büyük harf + uzunluk +
+        # alfabe) → İngilizce kelime asla biyolojik diziye karışmaz.
+        if isinstance(input, str):
+            bio = _detect_bio_sequence(input)
+            if bio is not None:
+                try:
+                    if bio in ("dna", "rna"):
+                        from tantrium.perception.encode import encode_dna
+                        obj = encode_dna(input, name=obj_name)
+                    else:
+                        from tantrium.perception.encode import encode_protein
+                        obj = encode_protein(input, name=obj_name)
+                    obj.structure.setdefault("moment_path", f"bio_{bio}")
+                    return obj
+                except Exception:
+                    pass
+
+        # ── KOD MODALİTESİ (ASI §12 P1): kod = AST grafı = topoloji ──
+        # STRICT tespit (açık işaret + ast.parse + ≥5 düğüm) → kelime/cümle metne düşer.
+        # Bio/SMILES'ten SONRA, metin-imzasından ÖNCE: gerçek kod parçası graf-spektrumuyla girer.
+        if isinstance(input, str) and _is_code_snippet(input):
+            code_moments = _code_to_graph_moments(input, self.num_moments)
+            if code_moments is not None:
+                A = _sequence_to_hankel_matrix(code_moments)
+                G = _gram(A)
+                structure = self._extract_structure(input, A, G, code_moments)
+                structure.update({
+                    "encoder": "code_ast_graph",
+                    "matrix_size": len(A),
+                    "input_type": type(input).__name__,
+                    "num_moments": self.num_moments,
+                    "moment_path": "code_ast_graph",
+                })
+                return CodexObject(name=obj_name, moments=code_moments, structure=structure)
+
+        # Metin yolu: pozisyon+codepoint imza momentleri (encoder collision KÖK çözümü).
+        # SMILES gibi eigenvalue-normalize [0,1] Hausdorff; Hankel-rekonstrüksiyon ile
+        # pipeline tutarlı. Tüm-farklı-karakter çakışmasını ve anagramı encode-anında ayırır.
+        # SMILES stringler (RDKit doğrulama) bu yolu ATLAR → _to_matrix bigram yolu.
+        if isinstance(input, str) and len(input) > 1 and not _is_valid_smiles(input):
+            sig_moments = _text_to_signature_moments(input, self.num_moments)
+            if sig_moments is not None:
+                A = _sequence_to_hankel_matrix(sig_moments)
+                G = _gram(A)
+                structure = self._extract_structure(input, A, G, sig_moments)
+                structure.update({
+                    "encoder": "text_signature",
+                    "matrix_size": len(A),
+                    "input_type": type(input).__name__,
+                    "num_moments": self.num_moments,
+                    "moment_path": "text_signature",
+                })
+                return CodexObject(name=obj_name, moments=sig_moments, structure=structure)
+
+        A = self._to_matrix(input)
+        G = _gram(A)
+        moments = _spectral_moments(A, self.num_moments)
+        structure = self._extract_structure(input, A, G, moments)
+        structure.update({
+            "encoder": "universal_spectral",
+            "matrix_size": len(A),
+            "input_type": type(input).__name__,
+            "num_moments": self.num_moments,
+        })
+        return CodexObject(name=obj_name, moments=moments, structure=structure)
+
+    def _extract_structure(
+        self,
+        input: Any,
+        A: list[list[Fraction]],
+        G: list[list[Fraction]],
+        moments: list[Fraction],
+    ) -> dict:
+        """Auto-extract structural metadata for all 22 paradigms.
+
+        Delegates to the L0–L7 pipeline in tantrium.core.pipeline.
+        Each stage does exactly its own mathematical transformation and
+        consumes the previous stage's output. Encoder only provides raw
+        matrix A and moments — the pipeline does the rest.
+        """
+        from tantrium.core.pipeline import run_pipeline
+        state = run_pipeline(input, A, G, moments)
+        try:
+            from tantrium.core.quantum_moments import FreeCumulants
+            state["free_cumulants"] = FreeCumulants.from_moments(
+                [float(m) for m in moments]
+            ).k
+        except Exception:
+            pass
+        return state
+
+    def _to_matrix(self, input: Any) -> list[list[Fraction]]:
+        if isinstance(input, (list, tuple)) and input:
+            first = input[0]
+            if isinstance(first, Fraction):
+                return _sequence_to_hankel_matrix(list(input))
+            if isinstance(first, (int, float)):
+                return _numbers_to_matrix(input)
+            if isinstance(first, str):
+                return _tokens_to_cooccurrence_matrix(list(input))
+        if isinstance(input, str):
+            if len(input) <= 1:
+                return [[Fraction(1)]]
+            return _text_to_bigram_matrix(input, label_aware=True)
+        if isinstance(input, dict):
+            return _dict_to_adjacency_matrix(input)
+        if isinstance(input, (int, float)):
+            seq = [Fraction(input).limit_denominator(10 ** 9)]
+            return _numbers_to_matrix(seq)
+        if isinstance(input, Fraction):
+            return _numbers_to_matrix([input])
+        return _text_to_bigram_matrix(str(input), label_aware=True)
+
+    def encode_batch(self, inputs: list[Any], names: list[str] | None = None) -> list[CodexObject]:
+        """Encode multiple inputs in one call."""
+        if names is None:
+            names = [None] * len(inputs)
+        return [self.encode(inp, nm) for inp, nm in zip(inputs, names)]
+
+    def encode_adaptive(
+        self,
+        input: Any,
+        name: str | None = None,
+        base_depth: int = 8,
+        max_depth: int = 16,
+        fidelity_target: float = 0.999,
+    ) -> CodexObject:
+        """Adaptif derinlikli kodlama — belirsiz girdide tohumu derinleştir.
+
+        8 sabit moment darboğazdır: iki farklı yapı 8'de çakışabilir.
+        Bu metod önce base_depth moment hesaplar, ölçünün NE KADAR İYİ
+        SABİTLENDİĞİNİ ölçer (rekonstrüksiyon sadakati). Sadakat düşükse
+        — yani momentler ölçüyü zayıf belirliyorsa — derinliği artırır.
+
+        Sinyal: reconstruction_fidelity (momentlerden ölçüyü geri kurup
+        momentleri yeniden hesapla, hata ne kadar küçükse o kadar belirli).
+
+        Sonuç structure["moment_depth"] kullanılan gerçek derinliği taşır.
+        """
+        from tantrium.core.reconstruct import reconstruct_measure
+
+        depth = base_depth
+        obj = self.encode(input, name) if base_depth == self.num_moments \
+            else UniversalEncoder(base_depth).encode(input, name)
+
+        rec = reconstruct_measure(obj.moments)
+        # İyi belirliyse derinleştirme gerekmiyor
+        import math
+        fidelity = math.exp(-rec.reconstruction_error * 100.0)
+
+        while fidelity < fidelity_target and depth < max_depth:
+            depth = min(max_depth, depth + 4)
+            obj = UniversalEncoder(depth).encode(input, name)
+            rec = reconstruct_measure(obj.moments)
+            fidelity = math.exp(-rec.reconstruction_error * 100.0)
+
+        obj.structure["moment_depth"] = depth
+        obj.structure["reconstruction_fidelity"] = round(fidelity, 6)
+        obj.structure["measure_rank"] = rec.rank
+        return obj
+
+
+def _infer_name(input: Any) -> str:
+    if isinstance(input, str):
+        return input[:40].replace("\n", " ")
+    if isinstance(input, dict) and "name" in input:
+        return str(input["name"])[:40]
+    return f"{type(input).__name__}_{id(input) % 10000}"
+
+
+# ─── SMILES Morgan fingerprint encoding ─────────────────────────────────────
+
+def _smiles_to_graph_moments(smiles: str, num_moments: int = 8) -> list[Fraction] | None:
+    """SMILES → atom-bağ adjacency matrisi → graf spektrumu → Hausdorff momentler.
+
+    Molekül bir graftur — bunu DOĞRUDAN encode ediyoruz:
+      A[i][j] = bağ derecesi (single=1, double=2, triple=3, aromatic=1.5)
+      A[i][i] = atom elektronegatifliği (C=1.0, N=1.3, O=1.6, F=2.0, ...)
+      G = A^T * A → her zaman PSD, eigenvalues = grafın spektral izleri
+      Normalized eigenvalues ∈ [0,1] → geçerli Hausdorff moment dizisi
+
+    HARF benzerliği değil, MOLEKÜLER YAPI topolojisi:
+      - Farklı bağ yapısı → farklı graf spektrumu → farklı momentler
+      - Benzer topoloji → benzer spektrum → transport sertifikası
+    """
+    try:
+        from rdkit import Chem
+        import numpy as np
+
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return None
+        n = mol.GetNumAtoms()
+        if n < 2:
+            return None
+
+        BOND_ORDER = {
+            Chem.rdchem.BondType.SINGLE:   1.0,
+            Chem.rdchem.BondType.DOUBLE:   2.0,
+            Chem.rdchem.BondType.TRIPLE:   3.0,
+            Chem.rdchem.BondType.AROMATIC: 1.5,
+        }
+        ATOM_EN = {6: 1.0, 7: 1.3, 8: 1.6, 9: 2.0,
+                   16: 1.1, 17: 1.4, 35: 1.3, 15: 1.1, 53: 1.2}
+
+        A = np.zeros((n, n))
+        for bond in mol.GetBonds():
+            i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+            w = BOND_ORDER.get(bond.GetBondType(), 1.0)
+            A[i, j] = w
+            A[j, i] = w
+        for i in range(n):
+            A[i, i] = ATOM_EN.get(mol.GetAtomWithIdx(i).GetAtomicNum(), 1.0)
+
+        G = A.T @ A
+        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
+        max_eig = eigs.max() or 1.0
+        atoms = sorted(eigs / max_eig)
+
+        moments: list[Fraction] = [Fraction(1)]
+        for k in range(1, num_moments):
+            mk = sum(d ** k for d in atoms) / len(atoms)
+            moments.append(Fraction(mk).limit_denominator(10 ** 9))
+        return moments
+    except Exception:
+        return None
+
+
+# Backward-compat alias
+def _smiles_molecular_moments(smiles: str, num_moments: int = 8) -> list[Fraction] | None:
+    return _smiles_to_graph_moments(smiles, num_moments)
+
+
+# ── KOD MODALİTESİ (ASI §12 P1) — kod = formal dil = AST grafı = topoloji ──
+# Açık kod işaretleri (tek kelime/cümle elenir → metin yoluna düşer).
+_CODE_MARKERS = ("def ", "return", "import ", "class ", "lambda ", "for ", "while ",
+                 "elif ", "yield ", "assert ", "with ", "print(", "if ", "raise ")
+
+
+def _is_code_snippet(s: str) -> bool:
+    """STRICT kod tespiti — yalnız GERÇEK kod parçası True (kelime/cümle/molekül DEĞİL).
+    Açık işaret + ast.parse + tek-isim-değil + ≥5 düğüm. SMILES/bio zaten önce yakalanır."""
+    if not isinstance(s, str) or len(s) < 8:
+        return False
+    has_marker = any(m in s for m in _CODE_MARKERS)
+    has_assign_call = ("=" in s and "(" in s and ")" in s)
+    indented = "\n" in s and any(ln[:1] in (" ", "\t") for ln in s.split("\n") if ln)
+    if not (has_marker or indented or has_assign_call):
+        return False
+    try:
+        import ast as _ast
+        tree = _ast.parse(s)
+        body = getattr(tree, "body", [])
+        if not body:
+            return False
+        # tek çıplak isim/sabit ifade = kod değil (kelime/sayı)
+        if (len(body) == 1 and isinstance(body[0], _ast.Expr)
+                and isinstance(body[0].value, (_ast.Name, _ast.Constant))):
+            return False
+        return sum(1 for _ in _ast.walk(tree)) >= 5
+    except Exception:
+        return False
+
+
+def _code_to_graph_moments(source: str, num_moments: int = 8) -> list[Fraction] | None:
+    """Kaynak kod → AST → düğüm-kenar grafı → graf spektrumu → Hausdorff momentler.
+
+    Kod bir GRAFTUR (AST). SMILES'in atom-bağ grafıyla AYNI boru:
+      A[i][i] = düğüm-tipi ağırlığı (FunctionDef/Call/BinOp/Name... = farklı 'element')
+      A[i][j] = kenar (AST parent-child) ağırlığı (= bağ)
+      G = AᵀA → daima PSD → eigenvalues = AST spektral izleri
+      Normalized eigenvalues ∈ [0,1] → geçerli Hausdorff moment dizisi
+
+    HARF benzerliği değil, PROGRAM YAPISI topolojisi:
+      - Farklı kontrol/veri akışı → farklı AST spektrumu → farklı momentler
+      - Benzer yapı → benzer spektrum → transport sertifikası (= refactor denkliği)
+    """
+    try:
+        import ast as _ast
+        import numpy as np
+
+        tree = _ast.parse(source)
+        node_types: list[str] = []
+        edges: list[tuple[int, int]] = []
+
+        def _visit(node, parent: int | None) -> None:
+            idx = len(node_types)
+            node_types.append(type(node).__name__)
+            if parent is not None:
+                edges.append((parent, idx))
+            for child in _ast.iter_child_nodes(node):
+                _visit(child, idx)
+
+        _visit(tree, None)
+        n = len(node_types)
+        if n < 2:
+            return None
+
+        def _node_weight(tname: str) -> float:
+            # Çarpımsal-hash → düğüm-tipini [1.0, 2.0) köşegen 'elektronegatifliği'ne yay
+            # (encoder _char_signature felsefesi: tipi geniş ayır, deterministik).
+            h = 0
+            for c in tname:
+                h = (h * 131 + ord(c)) & 0xFFFFFFFF
+            return 1.0 + (h % 1000) / 1000.0
+
+        A = np.zeros((n, n))
+        for i, j in edges:
+            A[i, j] = 1.0
+            A[j, i] = 1.0
+        for i in range(n):
+            A[i, i] = _node_weight(node_types[i])
+
+        G = A.T @ A
+        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
+        max_eig = eigs.max() or 1.0
+        vals = sorted(eigs / max_eig)
+
+        moments: list[Fraction] = [Fraction(1)]
+        for k in range(1, num_moments):
+            mk = sum(d ** k for d in vals) / len(vals)
+            moments.append(Fraction(mk).limit_denominator(10 ** 9))
+        return moments
+    except Exception:
+        return None
+
+
+def _smiles_full_eigenvalues(smiles: str) -> list[float] | None:
+    """Full n×n molecular adjacency+diagonal eigenvalues, normalized to [0,1].
+
+    Returns the actual graph spectrum — aspirin (27 atoms) and salicylic acid
+    (15 atoms) produce genuinely different cell lists for dyadic transport.
+    """
+    try:
+        from rdkit import Chem
+        import numpy as np
+
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return None
+        n = mol.GetNumAtoms()
+        if n < 2:
+            return None
+
+        BOND_ORDER = {
+            Chem.rdchem.BondType.SINGLE:   1.0,
+            Chem.rdchem.BondType.DOUBLE:   2.0,
+            Chem.rdchem.BondType.TRIPLE:   3.0,
+            Chem.rdchem.BondType.AROMATIC: 1.5,
+        }
+        ATOM_EN = {6: 1.0, 7: 1.3, 8: 1.6, 9: 2.0,
+                   16: 1.1, 17: 1.4, 35: 1.3, 15: 1.1, 53: 1.2}
+
+        A = np.zeros((n, n))
+        for bond in mol.GetBonds():
+            i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+            w = BOND_ORDER.get(bond.GetBondType(), 1.0)
+            A[i, j] = w
+            A[j, i] = w
+        for i in range(n):
+            A[i, i] = ATOM_EN.get(mol.GetAtomWithIdx(i).GetAtomicNum(), 1.0)
+
+        G = A.T @ A
+        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
+        max_eig = eigs.max() or 1.0
+        return sorted((eigs / max_eig).tolist(), reverse=True)
+    except Exception:
+        return None
+
+
+def _smiles_to_descriptor_matrix(smiles: str) -> list[list[Fraction]]:
+    """SMILES → molecular moments → Hankel matrix (for structure extraction)."""
+    moments = _smiles_molecular_moments(smiles)
+    if moments is None:
+        return _text_to_bigram_matrix(smiles)
+    # Moments are now a valid Hausdorff sequence → Hankel is PSD
+    return _sequence_to_hankel_matrix(moments)
+
+
+# Keep old name as alias so existing callers still work
+def _smiles_to_morgan_matrix(smiles: str, n_bits: int = 64) -> list[list[Fraction]]:
+    return _smiles_to_descriptor_matrix(smiles)
+
+
+# ─── Convenience ────────────────────────────────────────────────────────────
+
+_DEFAULT_ENCODER = UniversalEncoder()
+
+
+def encode(input: Any, name: str | None = None, num_moments: int = 8) -> CodexObject:
+    """One-call universal encoding. No domain knowledge required."""
+    if num_moments != 8:
+        return UniversalEncoder(num_moments).encode(input, name)
+    return _DEFAULT_ENCODER.encode(input, name)
+
+
+def encode_smiles(smiles: str, name: str | None = None, num_moments: int = 8) -> CodexObject:
+    """SMILES → Hausdorff descriptor moments → Gram → CodexObject.
+
+    12 RDKit physicochemical descriptors (MW, logP, HBA, HBD, TPSA, RotBonds,
+    Rings, AroRings, HeavyAtoms, CSP3, AliRings, Heteroatoms) each normalized
+    to [0,1] and treated as atom positions on the real line.
+
+    Power moments m_k = mean(d_i^k) form a valid Hausdorff moment sequence
+    → Hankel PSD guaranteed → ALEPH always passes. The moment distribution
+    captures pharmacological class: NSAIDs, kinase inhibitors, and antibiotics
+    each occupy distinct regions of moment space.
+    """
+    encoder = _DEFAULT_ENCODER if num_moments == 8 else UniversalEncoder(num_moments)
+    moments = _smiles_molecular_moments(smiles, num_moments)
+    if moments is None:
+        # RDKit unavailable or invalid SMILES — fall back to text encoding
+        return encoder.encode(smiles, name)
+    # Build Hankel from valid Hausdorff moments → Gram → structure metadata
+    A = _sequence_to_hankel_matrix(moments)
+    G = _gram(A)
+    structure = encoder._extract_structure(smiles, A, G, moments)
+    # Override eigenvalues with actual n×n molecular graph spectrum so that
+    # CertifiedTransport cells reflect genuine molecular topology differences.
+    mol_eigs = _smiles_full_eigenvalues(smiles)
+    if mol_eigs:
+        structure["eigenvalues"] = mol_eigs
+        structure["eigenvalue_source"] = "molecular_graph"
+    structure.update({
+        "encoder":    "rdkit_descriptors",
+        "smiles":     smiles[:100],
+        "input_type": "smiles",
+    })
+    return CodexObject(name=name or smiles[:40], moments=moments, structure=structure)

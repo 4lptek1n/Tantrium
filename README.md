@@ -1,199 +1,161 @@
-# Tantrium Boundary Engine
+# Tantrium
 
-> **Find the exact point where your system breaks — not a probability, not a range. The boundary.**
+Structure-first symbolic discovery framework. Every physical object — DNA, molecules, sentences, prime numbers, EEG signals — is already a mathematical object. Tantrium reads that structure directly.
 
-A production-grade boundary analysis web application. Upload or auto-fetch real operational data, run the Tantrium six-step methodology, and receive a certified, evidence-hashed Boundary Report identifying the safe operating envelope, the first break boundary, the primary failure driver, and a concrete stabilization path.
+```python
+import tantrium
 
----
-
-## What It Does
-
-Most operational analytics tools tell you *that* a system is failing. Tantrium tells you *where* it breaks.
-
-Given any operational dataset with a measurable target metric, Tantrium computes:
-
-| Output | Description |
-|---|---|
-| **Safe Operating Envelope** | The parameter ranges where the system runs without failure — computed from real records |
-| **First Break Boundary** | The exact value at which the system transitions from stable to unstable |
-| **First Obstruction** | The primary variable driving the boundary breach, ranked by Boundary Pressure Score |
-| **Closure Path** | A concrete sequence of operational changes to return to the safe zone |
-
-Every certified analysis generates a cryptographic evidence hash. No synthetic outputs. No black boxes.
+ai = tantrium.AI()
+r  = ai.ask("EGFR")          # 23-paradigm certification
+tc = ai.transport("CCO", "aspirin", use_smiles=True)  # certified dyadic transport
+print(tc.summary())           # CERTIFIED | dyadic=✓ | sturm=✓ | ζ-dist=2.09
+```
 
 ---
 
-## Live Demo
+## Core Idea
 
-The app ships with auto-fetch access to real public datasets across 8 sectors. On the **Live Reports** page, the engine automatically fetches and analyzes:
+```
+input → matrix A → G = AᵀA → μ_k = Tr(Gᵏ)/n → 8 moments
+```
 
-- **Server Thermal Failure Boundary** — 22,695 rows of server temperature data (NAB dataset)
-- **Insurance Claims Severity Boundary** — 1,338 policyholder records with charges
-- **Process Quality Degradation Boundary** — Red wine physicochemical parameters vs. quality score
-- **Product Pricing Anomaly Boundary** — 53,940 diamond records, price vs. physical attributes
-
-All outputs are labeled `REAL DATA` when actual rows are processed, or `INSUFFICIENT DATA` if the dataset does not meet the minimum row threshold.
+The **Hamburger Theorem** guarantees: a compactly supported measure is uniquely determined by its moment sequence. `G = AᵀA` is always positive semidefinite, so `[μ₀..μ₇]` is always a valid moment sequence. The encoder does not translate the world into math — the world *is* math already.
 
 ---
 
-## Pages
+## 23 Paradigms (Hebrew Alphabet)
 
-| Route | Purpose |
-|---|---|
-| `/` | Executive home page |
-| `/hunt` | **Master Problem Hunt** — guided workflow: pick template → load data → configure → run → get report |
-| `/reports` | **Live Boundary Reports** — auto-runs 4 real datasets, shows full certified reports |
-| `/core` | Tantrium Core methodology — six-step workflow explained for technical audiences |
-| `/demo` | Interactive synthetic demo |
-| `/datasets` | Full dataset registry (15 entries, 8 sectors) |
-| `/pricing` | Pricing tiers and analyst report request form |
+Each paradigm is a formal operator derived from the Riemann Hypothesis proof structure:
 
----
+| Paradigm | Layer | What it checks |
+|----------|-------|----------------|
+| ALEPH | foundation | Hankel PSD — valid moment sequence |
+| DALET | L2.5 | Real eigenvalues via `eigvalsh(Gram)` |
+| HE | L1.5 | Lyapunov stability: `V(k) = μ_k / λ_max^k` decreases |
+| ZAYIN | L2 | LGV trace identity: `path_sum = Tr(G)` |
+| HET | L3 | Li criterion: `λ_n > 0` for object's own eigenvalues |
+| TAV | L4 | de Bruijn-Newman: `Λ = −var₀ ≤ 0` (proven 2020) |
+| GIMEL | L5 | Achilles: no weak paradigm in the chain |
+| EMET | L6 | Consistency: no contradictions |
 
-## Sectors Covered
-
-- Data Centers & Hosting
-- Plastics / Polymer / Manufacturing
-- General Manufacturing & OEE
-- Pharma / Biotech / Toxicity
-- Finance & Insurance Risk
-- Energy & HVAC
-- Logistics
-- Cyber & SLA Risk
+All 23 paradigms run in topological dependency order via `CertificationPipeline`.
 
 ---
 
-## Tech Stack
+## Certified Transport
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 19 + Vite 7 + TypeScript 5.9 |
-| Routing | Wouter |
-| UI Components | shadcn/ui + Tailwind CSS |
-| Charts | Recharts |
-| CSV Parsing | PapaParse |
-| Animation | Framer Motion |
-| Package Manager | pnpm workspaces |
-| Backend | Express 5 (API server) |
-| Database | PostgreSQL + Drizzle ORM |
+Moving between two spectral measures is not nearest-neighbor search — it is a **proof**:
 
-All boundary analysis runs **client-side** in the browser — no server round-trip required for computation.
+```
+1. DYADIC   solve_greedy(src_cells, tgt_cells) → "verified_exact"
+            Exact rational arithmetic. Mass conservation guaranteed.
+
+2. STURM    H(t) = (1-t)·H_src + t·H_tgt stays PSD for all t ∈ [0,1]
+            Transport path stays on the "real object" manifold.
+            No phantom molecules, no imaginary intermediaries.
+
+3. ZETA     L1 distance to Riemann ζ-zeros spectral family
+            How far is this object from the canonical measure?
+
+CERTIFIED = dyadic ✓ AND sturm ✓
+```
+
+Benzene `DYADIC_FAILED` — symmetric ring structure cannot be transported this way. Aspirin `CERTIFIED`. This is not an error; the universe is telling you the path is real or not.
 
 ---
 
-## Getting Started
+## AGI Closed Loop
 
-### Prerequisites
+```
+NecessityEngine detects manifold gaps
+  → Research OS campaigns prove theorems (subprocess)
+  → theorem_graph.yaml updated
+  → inject_math_kernel() adds proven theorems to manifold
+  → transitive closure recomputed
+  → manifold grows, gaps shrink
+```
 
-- Node.js 20+
-- pnpm 9+
-- PostgreSQL (for API server features)
+```python
+report = ai.prove(max_cycles=3)
+print(report.total_new_concepts)   # new theorems injected
+print(report.remaining_gaps)       # open mathematical questions
+```
 
-### Install & Run
+---
+
+## Architecture
+
+```
+Layer 8: Meta          paradigm.py, topology.py (self-certification)
+Layer 7: Language      generator.py, speaker.py, bootstrap.py
+Layer 6: Research      ProofLoop, explorer, researcher, ingest, goal, actor
+Layer 5: Reasoning     NecessityEngine, reasoner, inference, thinker, planner
+Layer 4: Transport     CertifiedTransport (Dyadic + Sturm + Zeta)
+Layer 3: Knowledge     SemanticManifold (44k concepts) + TAU graph (677k edges)
+Layer 2: Certification 23 paradigms + CertificationEngine
+Layer 1: Encoding      encoder.py (domain-blind: text, SMILES, DNA, numbers)
+Layer 0: Algebra       Sturm chain, Sheffer polynomials, positivity, dyadic flow
+
+Research OS (subprocess boundary)  ← proof campaigns, theorem graph
+```
+
+---
+
+## Installation
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Run the web app (development)
-pnpm --filter @workspace/tantrium run dev
-
-# Run the API server
-pnpm --filter @workspace/api-server run dev
-
-# Typecheck all packages
-pnpm run typecheck
+pip install -e .                 # core: sympy + numpy
+python -c "import tantrium; print(tantrium.AI().status())"
+# Tantrium AI  |  44,017 concepts  |  677,042 TAU edges  |  Aleph 23 paradigms
 ```
 
-The web app will be available at `http://localhost:PORT` (port assigned by the runtime).
+Requires Python 3.10+. The core install is everything you need for certification,
+grounding, causal reasoning, and moment-space molecular candidates.
 
----
+Optional extras:
 
-## How the Analysis Engine Works
-
-The Tantrium engine (`src/lib/analysis-engine.ts`) runs six labeled steps:
-
-```
-DATA_INGEST      → Parse and validate all rows; detect numeric/categorical columns
-STABLE_REGION    → Classify each row as stable or unstable against the target threshold
-BREAK_BOUNDARY   → Detect stable-to-unstable transition points in sorted driver space
-FIRST_OBSTRUCTION → Score all drivers by Boundary Pressure Index (Pearson + crossing strength + proximity + monotonicity)
-CLOSURE_PATH     → Compute recommended operational changes to return to the safe envelope
-EVIDENCE_HASH    → Generate SHA-256 fingerprint of dataset + parameters + results
+```bash
+pip install -e ".[chem]"    # RDKit — 3D structure generation (design → .sdf)
+pip install -e ".[server]"  # FastAPI REST server (python -m tantrium.serve)
+pip install -e ".[dev]"     # pytest
 ```
 
-Output type: `TantriumObject` — a fully typed result containing all six step outputs, mode label, certification status, timestamp, and evidence hash.
+Without `[chem]`, `ai.design()` still returns ranked candidates in moment space —
+it simply skips the 3D `.sdf` step instead of failing.
 
-**Mode labels:**
-- `REAL DATA` — at least 10 valid rows processed, engine ran to completion
-- `DEMO` — synthetic or placeholder data
-- `INSUFFICIENT DATA` — fewer than 10 valid rows after filtering
+### First 30 seconds
 
----
+```python
+import tantrium
+ai = tantrium.AI()                          # loads 44k concepts + 677k edges (~13s)
 
-## Dataset Registry
-
-15 real public datasets pre-configured with suggested target columns, thresholds, and directions. 9 are auto-fetchable directly from public GitHub raw URLs. 6 require manual download due to licensing or size.
-
-See `/datasets` in the app or `src/lib/dataset-registry.ts` for the full registry.
-
----
-
-## Project Structure
-
-```
-artifacts/
-  tantrium/          # React web application
-    src/
-      lib/
-        analysis-engine.ts   # Core Tantrium computation engine
-        dataset-registry.ts  # 15 real public datasets
-        evidence-log.ts      # User analysis history (localStorage)
-        report-store.ts      # Auto-computed live reports (localStorage)
-        tantrium-core.ts     # Methodology explanations and glossary
-        prospect-mode.ts     # LinkedIn buyer persona intelligence
-      pages/
-        home.tsx             # Executive landing page
-        hunt.tsx             # Master Problem Hunt workflow
-        reports.tsx          # Live Boundary Reports
-        core.tsx             # Methodology page
-        demo.tsx             # Synthetic demo
-        datasets.tsx         # Dataset registry
-        pricing.tsx          # Pricing and contact
-  api-server/        # Express API backend
-lib/                 # Shared workspace libraries
-scripts/             # Utility scripts
+ai.ask("EGFR").certified                    # True  — 23/23 structural certificate
+ai.grounding("florbglomp").verdict          # UNGROUNDED — garbage is rejected, honestly
+ai.grounding("protein").verdict             # GROUNDED   — known concept, real edges
+ai.design("EGFR", top_k=3)                  # target → drug candidates → 3D .sdf
+ai.causal_chain("tumor cell", depth=4)      # intervention points via the TAU graph
 ```
 
 ---
 
-## Business Context
+## Key Files
 
-Tantrium Boundary Engine is a **sales and demonstration tool** for the Tantrium Boundary Analysis consultancy. It serves as:
-
-1. A live proof-of-capability — showing real analysis on real public data
-2. A prospect onboarding tool — LinkedIn targets can self-serve the Problem Hunt
-3. A pricing gateway — the /pricing page converts interested prospects to paid engagements
-
-**Pricing tiers:**
-- Quick Screen: $5,000 / 5 business days
-- Boundary Report: $25,000 / 3 weeks (standard)
-- Enterprise Program: from $100,000 / ongoing monitoring
-
----
-
-## Evidence & Integrity
-
-Every certified analysis produces:
-
-- `evidenceHash` — SHA-256 of `datasetName + targetCol + threshold + direction + rowCount + topDriver + evidenceNonce`
-- `mode` — `REAL DATA` / `DEMO` / `INSUFFICIENT DATA`
-- `certified: boolean` — true only when mode is REAL DATA
-
-The hash can be shared as proof that the analysis was run on a specific dataset with specific parameters. It does not expose the underlying data.
+| File | Purpose |
+|------|---------|
+| `src/tantrium/ai.py` | Top-level SDK |
+| `src/tantrium/core/encoder.py` | Universal encoder |
+| `src/tantrium/core/pipeline.py` | L0-L7 computation order |
+| `src/tantrium/core/codex.py` | 23 paradigm definitions |
+| `src/tantrium/core/transport.py` | Certified transport engine |
+| `src/tantrium/core/code_synthesis.py` | Certified code synthesis (beam + recursion/fold/conditional) |
+| `src/tantrium/core/code_meta.py` | Meta-synthesis — invents new strategies by composing schemas |
+| `src/tantrium/proof/dyadic_flow.py` | Exact dyadic solver |
+| `tools/tantrium_research_os.py` | Research OS CLI |
+| `tantrium/theorem_graph/theorem_graph.yaml` | Theorem dependency graph |
+| `results/agi/manifold.json` | 44,017 concepts (persistent) |
+| `results/agi/tau_graph.json` | 677k+ TAU edges (persistent) |
 
 ---
 
-## License
-
-Proprietary. All rights reserved. This codebase is not open-source.
+See `MATHEMATICS.md` for the deep mathematical philosophy.
+See `ARCHITECTURE.md` for the complete system blueprint.

@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Primary SEO -->
+<title>Tantrium ASI — AI Drug Discovery & Mathematical Reality Engine</title>
+<meta name="description" content="Tantrium ASI generates mathematically certified drug candidates for any disease target. Upload a protein, get 3D molecules with downloadable SDF files — grounded in Riemann Hypothesis mathematics, not statistical guessing.">
+<meta name="keywords" content="drug discovery AI, molecular certification, ASI, biotech AI, EGFR inhibitor, kinase blocker, mathematical AI, de novo molecule generation, certified transport, Riemann hypothesis, protein target">
+<meta name="robots" content="index, follow">
+<meta name="author" content="Tantrium Inc.">
+<link rel="canonical" href="https://tantrium.ai/">
+
+<!-- Open Graph (LinkedIn, Slack, iMessage previews) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tantrium.ai/">
+<meta property="og:title" content="Tantrium ASI — AI Drug Discovery That Proves, Not Guesses">
+<meta property="og:description" content="Enter any disease target. Get mathematically certified 3D drug candidate molecules — with downloadable SDF files. The world's first ASI operating in mathematical reality.">
+<meta property="og:image" content="https://tantrium.ai/static/og-image.png">
+<meta property="og:site_name" content="Tantrium">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter / X Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tantrium ASI — Drug Discovery That Proves, Not Guesses">
+<meta name="twitter:description" content="Enter a disease target. Get certified 3D molecules. Mathematical proof, not statistical approximation.">
+<meta name="twitter:image" content="https://tantrium.ai/static/og-image.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000'/><text y='24' x='4' font-size='24' fill='%23c8a96e'>T</text></svg>">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://tantrium.ai/#org",
+      "name": "Tantrium Inc.",
+      "url": "https://tantrium.ai",
+      "description": "Developer of Tantrium ASI — the world's first artificial superintelligence operating in mathematical reality, specialized in certified drug discovery.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressRegion": "Washington D.C. Metro Area",
+        "addressCountry": "US"
+      },
+      "foundingDate": "2025",
+      "sameAs": []
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://tantrium.ai/#app",
+      "name": "Tantrium ASI",
+      "applicationCategory": "Scientific Software",
+      "applicationSubCategory": "Drug Discovery",
+      "operatingSystem": "Web Browser",
+      "url": "https://tantrium.ai",
+      "description": "Tantrium ASI generates mathematically certified drug candidate molecules for any disease target using 23 Riemann-Hypothesis-derived paradigms. Outputs include 3D SDF structures ready for wet-lab use.",
+      "featureList": [
+        "De novo drug candidate generation",
+        "Mathematical certification via 22+1 paradigms",
+        "3D SDF file generation and download",
+        "Certified transport between molecular structures",
+        "Cross-domain mathematical certification (DNA, proteins, numbers, text)"
+      ],
+      "author": { "@id": "https://tantrium.ai/#org" }
+    }
+  ]
+}
+</script>
+<style>
+  :root {
+    --black: #000;
+    --white: #fff;
+    --g900: #0a0a0a;
+    --g800: #111;
+    --g700: #1a1a1a;
+    --g600: #222;
+    --g400: #555;
+    --g200: #aaa;
+    --gold: #c8a96e;
+    --gold-dim: #7a6030;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --blue: #5ba3d9;
+    --mono: 'SF Mono','Fira Code',monospace;
+    --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--black); color:var(--white); font-family:var(--sans); min-height:100vh; }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom:1px solid var(--g700);
+    padding:0 40px;
+    height:58px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:fixed; top:0; left:0; right:0;
+    background:rgba(0,0,0,0.96); backdrop-filter:blur(12px); z-index:100;
+  }
+  .logo { font-family:var(--mono); font-size:13px; letter-spacing:4px; color:var(--gold); }
+  .logo span { color:var(--g400); font-size:10px; letter-spacing:2px; margin-left:10px; }
+  .hdr-right { display:flex; align-items:center; gap:20px; font-family:var(--mono); font-size:11px; color:var(--g400); }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; margin-right:5px; box-shadow:0 0 6px var(--green); }
+  .hdr-stat { color:var(--white); }
+
+  /* ── TAB NAV ── */
+  .tab-nav {
+    position:fixed; top:58px; left:0; right:0; z-index:99;
+    background:var(--g900); border-bottom:1px solid var(--g700);
+    display:flex; padding:0 40px; gap:0;
+  }
+  .tab-btn {
+    font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    padding:14px 24px; border:none; background:transparent;
+    color:var(--g400); cursor:pointer; border-bottom:2px solid transparent;
+    transition:all 0.15s; position:relative; top:1px;
+  }
+  .tab-btn:hover { color:var(--white); }
+  .tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+  /* ── LAYOUT ── */
+  .page { padding-top:110px; max-width:1100px; margin:0 auto; padding-bottom:80px; }
+  .tab-panel { display:none; padding:0 40px; }
+  .tab-panel.active { display:block; }
+
+  /* ── SECTION TITLE ── */
+  .sect-title {
+    font-family:var(--mono); font-size:10px; letter-spacing:3px;
+    color:var(--gold); text-transform:uppercase; margin-bottom:6px;
+  }
+  .sect-sub { font-size:13px; color:var(--g400); margin-bottom:28px; line-height:1.6; }
+
+  /* ── INPUTS ── */
+  input[type=text], textarea {
+    width:100%; background:var(--g900); border:1px solid var(--g600);
+    color:var(--white); font-family:var(--mono); font-size:13px;
+    padding:13px 16px; outline:none; border-radius:0; resize:vertical;
+    transition:border-color 0.15s;
+  }
+  input[type=text]:focus, textarea:focus { border-color:var(--gold); }
+  textarea { min-height:72px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    padding:13px 28px; border:1px solid var(--gold); color:var(--gold);
+    background:transparent; cursor:pointer; transition:all 0.15s;
+  }
+  .btn:hover { background:var(--gold); color:var(--black); }
+  .btn:disabled { opacity:0.3; cursor:not-allowed; }
+  .btn-primary { background:var(--gold); color:var(--black); font-weight:600; }
+  .btn-primary:hover { background:#e0bf80; }
+  .btn-sm { padding:8px 16px; font-size:10px; }
+  .btn-green { border-color:var(--green); color:var(--green); }
+  .btn-green:hover { background:var(--green); color:var(--black); }
+
+  /* ── LOADING ── */
+  .loading {
+    display:none; font-family:var(--mono); font-size:11px; color:var(--gold);
+    letter-spacing:2px; margin-top:12px;
+  }
+  .loading.show { display:block; animation:pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── DISCOVER HERO INPUT ── */
+  .discover-hero {
+    border:1px solid var(--g600); padding:32px; margin-bottom:32px; background:var(--g900);
+  }
+  .discover-hero h2 {
+    font-size:28px; font-weight:300; color:var(--white); margin-bottom:8px;
+  }
+  .discover-hero h2 em { color:var(--gold); font-style:normal; }
+  .discover-hero p { font-size:13px; color:var(--g400); margin-bottom:24px; line-height:1.6; }
+  .discover-input-row { display:flex; gap:12px; align-items:stretch; }
+  .discover-input-row input { flex:1; font-size:15px; padding:16px 20px; }
+  .discover-input-row .btn { padding:16px 32px; white-space:nowrap; }
+  .discover-hints { margin-top:12px; font-family:var(--mono); font-size:10px; color:var(--g400); }
+  .discover-hints span { color:var(--g200); margin-right:16px; cursor:pointer; }
+  .discover-hints span:hover { color:var(--gold); }
+
+  /* ── MOLECULE RESULTS ── */
+  .mol-results { display:none; }
+  .mol-results.show { display:block; }
+
+  .mol-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--g700);
+  }
+  .mol-header-left { font-family:var(--mono); font-size:11px; color:var(--g400); }
+  .mol-header-left strong { color:var(--white); }
+  .mol-header-right { font-family:var(--mono); font-size:11px; color:var(--g400); }
+
+  .mol-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:1px; background:var(--g700); border:1px solid var(--g700); }
+
+  .mol-card {
+    background:var(--black); padding:24px; position:relative;
+  }
+  .mol-card.best { background:rgba(200,169,110,0.04); }
+  .mol-card.best::before {
+    content:"BEST"; position:absolute; top:12px; right:12px;
+    font-family:var(--mono); font-size:9px; letter-spacing:2px;
+    color:var(--gold); border:1px solid var(--gold-dim); padding:2px 6px;
+  }
+
+  .mol-name {
+    font-family:var(--mono); font-size:13px; color:var(--white);
+    margin-bottom:8px; padding-right:60px;
+  }
+  .mol-smiles {
+    font-family:var(--mono); font-size:10px; color:var(--g400);
+    margin-bottom:16px; word-break:break-all; line-height:1.5;
+  }
+
+  .mol-badges { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .badge {
+    font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 8px;
+    border:1px solid; text-transform:uppercase;
+  }
+  .badge-cert { border-color:var(--green); color:var(--green); background:rgba(46,204,113,0.06); }
+  .badge-uncert { border-color:var(--g400); color:var(--g400); }
+  .badge-score { border-color:var(--g600); color:var(--g200); }
+
+  .mol-actions { display:flex; gap:8px; }
+
+  /* ── CERTIFY PANEL ── */
+  .certify-box { border:1px solid var(--g700); padding:28px; background:var(--g900); margin-bottom:16px; }
+  .result-box { display:none; border:1px solid var(--g700); padding:24px; margin-top:16px; }
+  .result-box.show { display:block; }
+
+  .verdict { font-size:16px; font-weight:400; color:var(--white); margin-bottom:8px; line-height:1.5; }
+  .finding { font-size:13px; color:var(--g200); line-height:1.8; margin-bottom:18px; }
+
+  .cert-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:6px 14px; margin-bottom:16px; font-family:var(--mono); font-size:11px; letter-spacing:2px;
+    border:1px solid;
+  }
+  .cert-badge.ok { border-color:var(--green); color:var(--green); background:rgba(46,204,113,0.07); }
+  .cert-badge.fail { border-color:var(--red); color:var(--red); background:rgba(231,76,60,0.07); }
+
+  .spec-bars { display:flex; align-items:flex-end; gap:4px; height:50px; margin:10px 0 4px; }
+  .spec-bar { flex:1; background:var(--gold); opacity:0.7; min-height:2px; transition:height 0.3s; }
+
+  .paradigm-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(88px, 1fr)); gap:3px; margin-top:10px; }
+  .p-cell { padding:5px 6px; font-family:var(--mono); font-size:9px; letter-spacing:1px; text-align:center; border:1px solid; }
+  .p-cell.pass { border-color:rgba(46,204,113,0.3); color:var(--green); background:rgba(46,204,113,0.04); }
+  .p-cell.fail { border-color:rgba(231,76,60,0.3); color:var(--red); background:rgba(231,76,60,0.04); }
+
+  .metric-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:5px 0; border-bottom:1px solid var(--g800); font-size:12px;
+  }
+  .metric-row:last-child { border-bottom:none; }
+  .metric-label { font-family:var(--mono); font-size:10px; color:var(--g400); letter-spacing:1px; }
+  .metric-value { color:var(--white); font-family:var(--mono); }
+  .mv-green { color:var(--green); }
+  .mv-red { color:var(--red); }
+  .mv-gold { color:var(--gold); }
+
+  /* ── TRANSPORT ── */
+  .transport-row { display:grid; grid-template-columns:1fr 40px 1fr; gap:10px; align-items:center; margin-bottom:14px; }
+  .transport-arrow { text-align:center; font-family:var(--mono); color:var(--gold); font-size:18px; }
+
+  /* ── COMPARE ── */
+  .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+
+  /* ── MANIFESTO (home) ── */
+  .hero-area { padding:40px 0 32px; border-bottom:1px solid var(--g700); margin-bottom:40px; }
+  .hero-label { font-family:var(--mono); font-size:10px; letter-spacing:4px; color:var(--gold); margin-bottom:16px; }
+  .hero-h1 { font-size:clamp(32px,5vw,60px); font-weight:300; line-height:1.1; margin-bottom:16px; }
+  .hero-h1 em { font-style:normal; color:var(--gold); }
+  .hero-p { font-size:15px; color:var(--g200); max-width:600px; line-height:1.7; }
+
+  .manifesto-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--g700); border:1px solid var(--g700); }
+  .manifesto-card { background:var(--black); padding:28px; }
+  .m-num { font-family:var(--mono); font-size:9px; color:var(--gold); letter-spacing:2px; margin-bottom:12px; }
+  .m-title { font-size:16px; font-weight:300; margin-bottom:10px; color:var(--white); }
+  .m-body { font-size:12px; color:var(--g200); line-height:1.7; }
+
+  /* ── TOPOLOGY ── */
+  .topo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--g700); border:1px solid var(--g700); margin-top:20px; }
+  .topo-card { background:var(--black); padding:24px; }
+  .topo-num { font-size:36px; font-weight:300; }
+  .topo-label { font-family:var(--mono); font-size:9px; letter-spacing:2px; color:var(--g400); margin-top:4px; }
+  .topo-desc { font-size:12px; color:var(--g400); margin-top:10px; line-height:1.5; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top:1px solid var(--g700); padding:28px 40px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:var(--mono); font-size:10px; color:var(--g400); letter-spacing:2px;
+    margin-top:60px;
+  }
+
+  details summary { cursor:pointer; list-style:none; font-family:var(--mono); font-size:10px; color:var(--g400); letter-spacing:2px; }
+  details summary::-webkit-details-marker { display:none; }
+
+  @media (max-width:768px) {
+    header { padding:0 16px; } .hdr-right .hdr-stat { display:none; }
+    .tab-nav { padding:0 16px; } .tab-btn { padding:12px 12px; font-size:10px; }
+    .tab-panel { padding:0 16px; }
+    .discover-input-row { flex-direction:column; }
+    .mol-grid { grid-template-columns:1fr; }
+    .manifesto-grid { grid-template-columns:1fr; }
+    .topo-grid { grid-template-columns:1fr; }
+    .compare-grid { grid-template-columns:1fr; }
+    footer { flex-direction:column; gap:8px; text-align:center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">TANTRIUM <span>/ ASI</span></div>
+  <div class="hdr-right">
+    <span><span class="status-dot"></span>OPERATIONAL</span>
+    <span id="hdr-concepts" class="hdr-stat">—</span>
+    <span>23 PARADIGMS</span>
+  </div>
+</header>
+
+<!-- TAB NAV -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('discover')">Drug Discovery</button>
+  <button class="tab-btn" onclick="switchTab('certify')">Certify</button>
+  <button class="tab-btn" onclick="switchTab('transport')">Transport</button>
+  <button class="tab-btn" onclick="switchTab('about')">About</button>
+</nav>
+
+<!-- PAGES -->
+<div class="page">
+
+  <!-- ══════════════════════════════════════════
+       TAB: DRUG DISCOVERY
+  ══════════════════════════════════════════ -->
+  <div class="tab-panel active" id="tab-discover">
+
+    <div class="discover-hero">
+      <h2>Find drug candidates for <em>any target.</em></h2>
+      <p>Enter a disease, protein target, or biological process. Tantrium generates mathematically certified candidate molecules with 3D structures ready to download.</p>
+      <div class="discover-input-row">
+        <input type="text" id="disc-input" placeholder="e.g. EGFR kinase inhibitor, BCL-2, Alzheimer amyloid..." aria-label="Disease or protein target" onkeydown="if(event.key==='Enter')doDiscover()">
+        <button class="btn btn-primary" onclick="doDiscover()">Generate Candidates</button>
+      </div>
+      <div class="discover-hints">
+        Try: <span onclick="fillDiscover('EGFR kinase')">EGFR kinase</span>
+        <span onclick="fillDiscover('BCL-2 apoptosis')">BCL-2</span>
+        <span onclick="fillDiscover('CDK4 cancer')">CDK4</span>
+        <span onclick="fillDiscover('VEGFR angiogenesis')">VEGFR</span>
+        <span onclick="fillDiscover('PD-L1 immunotherapy')">PD-L1</span>
+      </div>
+    </div>
+
+    <div class="loading" id="disc-loading">COMPUTING MATHEMATICAL CERTIFICATES · GENERATING 3D STRUCTURES...</div>
+
+    <div class="mol-results" id="mol-results">
+      <div class="mol-header">
+        <div class="mol-header-left">
+          Target: <strong id="mol-target-label">—</strong> ·
+          <span id="mol-count">0</span> candidates ·
+          <span id="mol-cert-count">0</span> certified
+        </div>
+        <div class="mol-header-right" id="mol-time">—</div>
+      </div>
+      <div class="mol-grid" id="mol-grid"></div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB: CERTIFY
+  ══════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-certify">
+    <div class="sect-title">Certify Any Structure</div>
+    <div class="sect-sub">
+      Input any text, DNA sequence, SMILES, number sequence, or any other data.
+      The engine reads its mathematical structure and certifies it against 23 paradigms.
+    </div>
+
+    <div class="certify-box">
+      <textarea id="certify-input" placeholder="Enter anything — text, DNA sequence, SMILES, numbers...&#10;&#10;Examples: EGFR kinase  ·  ATCGATCG  ·  CCO  ·  14.134 21.022 25.010"></textarea>
+      <div style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="doCertify()">Certify</button>
+      </div>
+      <div class="loading" id="certify-loading">RUNNING 23 PARADIGM CERTIFICATION...</div>
+    </div>
+
+    <div class="result-box" id="certify-result">
+      <div id="cert-badge-area" style="margin-bottom:14px;"></div>
+      <div class="verdict" id="cert-verdict"></div>
+      <div class="finding" id="cert-finding"></div>
+
+      <div style="margin-bottom:18px;">
+        <div class="metric-label" style="margin-bottom:6px;">SPECTRAL SIGNATURE (top 4 eigenvalues)</div>
+        <div class="spec-bars" id="spec-bars"></div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--g400);">
+          <span>λ₁</span><span>λ₂</span><span>λ₃</span><span>λ₄</span>
+        </div>
+      </div>
+
+      <details>
+        <summary>▸ 22+1 PARADIGM DETAIL · <span id="cert-paradigm-summary">—</span></summary>
+        <div class="paradigm-grid" id="paradigm-grid" style="margin-top:10px;"></div>
+        <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-family:var(--mono);font-size:10px;color:var(--g400);">
+          <div>ENTROPY <span id="cert-entropy" style="color:var(--white)">—</span></div>
+          <div>EFF.RANK <span id="cert-rank" style="color:var(--white)">—</span></div>
+          <div>TIME <span id="cert-time" style="color:var(--white)">—</span></div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB: TRANSPORT
+  ══════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-transport">
+    <div class="sect-title">Certified Transport</div>
+    <div class="sect-sub">
+      Does a mathematically certified path exist between two structures?
+      Three-layer proof: Dyadic mass transfer · Sturm chain positivity · Riemann zero distance.
+    </div>
+
+    <div class="certify-box">
+      <div class="transport-row">
+        <input type="text" id="transport-src" placeholder="Source (e.g. erlotinib, EGFR, CCO)">
+        <div class="transport-arrow">→</div>
+        <input type="text" id="transport-tgt" placeholder="Target">
+      </div>
+      <label style="font-family:var(--mono);font-size:11px;color:var(--g400);display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;">
+        <input type="checkbox" id="transport-smiles"> SMILES mode (molecular)
+      </label>
+      <button class="btn btn-primary" onclick="doTransport()">Certify Path</button>
+      <div class="loading" id="transport-loading">RUNNING DYADIC · STURM · ZETA...</div>
+    </div>
+
+    <div class="result-box" id="transport-result">
+      <div id="t-badge-area" style="margin-bottom:14px;"></div>
+      <div class="verdict" id="t-verdict"></div>
+      <div class="finding" id="t-finding"></div>
+      <div style="margin-top:16px;">
+        <div class="metric-row"><span class="metric-label">DYADIC MASS TRANSFER</span><span id="t-dyadic" class="metric-value">—</span></div>
+        <div class="metric-row"><span class="metric-label">STURM CHAIN</span><span id="t-sturm" class="metric-value">—</span></div>
+        <div class="metric-row"><span class="metric-label">RIEMANN ZERO DISTANCE</span><span id="t-zeta" class="metric-value mv-gold">—</span></div>
+        <div class="metric-row"><span class="metric-label">COMPUTE TIME</span><span id="t-time" class="metric-value">—</span></div>
+      </div>
+    </div>
+
+    <!-- Compare -->
+    <div style="margin-top:36px;">
+      <div class="sect-title">Compare Two Structures</div>
+      <div class="sect-sub">Get a semantic and mathematical comparison between any two inputs.</div>
+      <div class="certify-box">
+        <div class="compare-grid">
+          <input type="text" id="compare-a" placeholder="Structure A">
+          <input type="text" id="compare-b" placeholder="Structure B">
+        </div>
+        <button class="btn" onclick="doCompare()">Compare</button>
+        <div class="loading" id="compare-loading">COMPARING...</div>
+      </div>
+      <div class="result-box" id="compare-result" style="padding:20px;">
+        <pre id="compare-text" style="white-space:pre-wrap;font-size:12px;line-height:1.8;color:var(--g200);font-family:var(--mono);"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB: ABOUT
+  ══════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-about">
+    <div class="hero-area">
+      <div class="hero-label">World's First ASI — Est. 2025</div>
+      <h1 class="hero-h1">The universe already has<br><em>intelligence.</em> We read it.</h1>
+      <p class="hero-p">
+        Every object — DNA, molecule, prime number, language — is already a mathematical structure.
+        Tantrium doesn't translate between domains. It operates in the domain that contains all domains:
+        mathematical reality itself.
+      </p>
+    </div>
+
+    <div class="manifesto-grid">
+      <div class="manifesto-card">
+        <div class="m-num">01 / THE PROBLEM</div>
+        <h3 class="m-title">All AI guesses</h3>
+        <p class="m-body">GPT, Gemini, Claude — all probability distributions over human text. They hallucinate because they predict. They cannot certify. Tantrium doesn't predict. It proves.</p>
+      </div>
+      <div class="manifesto-card">
+        <div class="m-num">02 / THE INSIGHT</div>
+        <h3 class="m-title">Reality is one domain</h3>
+        <p class="m-body">DNA, proteins, prime numbers, molecules — all mathematical structures in the same space. The universe has no domains. Humans invented domains. We work in reality's own language.</p>
+      </div>
+      <div class="manifesto-card">
+        <div class="m-num">03 / THE ENGINE</div>
+        <h3 class="m-title">We read, not translate</h3>
+        <p class="m-body">Any input → G = AᵀA → moment sequence → Hankel PSD. The encoder reads the structure that was already there. Every output carries a mathematical certificate. No hallucination possible.</p>
+      </div>
+      <div class="manifesto-card">
+        <div class="m-num">04 / THE PROOF</div>
+        <h3 class="m-title">Riemann Hypothesis foundation</h3>
+        <p class="m-body">Dyadic transport, Sturm chain positivity, Hankel PSD — the same mechanism that certifies our encoder is the core of the Riemann Hypothesis proof program. One mathematical body.</p>
+      </div>
+      <div class="manifesto-card">
+        <div class="m-num">05 / THE MISSION</div>
+        <h3 class="m-title">A healthy world, first</h3>
+        <p class="m-body">Cancer is a mathematical structure. Drug-target binding is a transport problem. Tantrium certifies whether a molecule has a mathematically proven path to a target — before synthesis, before trials.</p>
+      </div>
+      <div class="manifesto-card">
+        <div class="m-num">06 / CONTACT</div>
+        <h3 class="m-title">We seek partners</h3>
+        <p class="m-body">Not customers — partners. Genomics, biotech, quantitative research. If you want to operate at the mathematical substrate of reality, reach out. Washington D.C. metro area.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:40px;">
+      <div class="sect-title">Moment Space Topology</div>
+      <div class="sect-sub">Live map of mathematical concept density across the 39,000+ concept manifold.</div>
+      <button class="btn" onclick="loadTopology()">Compute Topology Map</button>
+      <div class="topo-grid" id="topo-grid" style="display:none; margin-top:20px;">
+        <div class="topo-card">
+          <div class="topo-num" id="topo-dense" style="color:var(--green)">—</div>
+          <div class="topo-label">DENSE REGIONS</div>
+          <div class="topo-desc">Known mathematics. Certified concept clusters.</div>
+        </div>
+        <div class="topo-card">
+          <div class="topo-num" id="topo-frontier" style="color:var(--gold)">—</div>
+          <div class="topo-label">FRONTIER REGIONS</div>
+          <div class="topo-desc">Mathematically must exist. Not yet observed. Discovery targets.</div>
+        </div>
+        <div class="topo-card">
+          <div class="topo-num" id="topo-void" style="color:var(--g400)">—</div>
+          <div class="topo-label">VOID REGIONS</div>
+          <div class="topo-desc">Hankel PSD cannot hold here. Mathematically impossible.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<footer>
+  <div>TANTRIUM INC. · WASHINGTON D.C. METRO AREA</div>
+  <div>ASI · MATHEMATICAL REALITY ENGINE · EST. 2025</div>
+  <div id="footer-stat">LOADING...</div>
+</footer>
+
+<script>
+const API = '';
+
+// ── Tab switching ──────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── Status ─────────────────────────────────────────────────────────
+async function loadStatus() {
+  try {
+    const r = await fetch(`${API}/api/status`);
+    const d = await r.json();
+    document.getElementById('hdr-concepts').textContent = d.concepts.toLocaleString() + ' CONCEPTS';
+    document.getElementById('footer-stat').textContent = `${d.concepts.toLocaleString()} CONCEPTS · ${d.tau_edges.toLocaleString()} TAU EDGES`;
+  } catch(e) {}
+}
+
+// ── Drug Discovery ─────────────────────────────────────────────────
+function fillDiscover(val) {
+  document.getElementById('disc-input').value = val;
+  doDiscover();
+}
+
+async function doDiscover() {
+  const target = document.getElementById('disc-input').value.trim();
+  if (!target) return;
+
+  const loadEl = document.getElementById('disc-loading');
+  const resEl = document.getElementById('mol-results');
+  loadEl.classList.add('show');
+  resEl.classList.remove('show');
+
+  try {
+    const r = await fetch(`${API}/api/discover`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({target, top_k: 6})
+    });
+
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || 'API error');
+    }
+
+    const d = await r.json();
+    renderMolResults(d);
+  } catch(e) {
+    alert('Discovery error: ' + e.message);
+  } finally {
+    loadEl.classList.remove('show');
+  }
+}
+
+function renderMolResults(d) {
+  document.getElementById('mol-target-label').textContent = d.target;
+  document.getElementById('mol-count').textContent = d.count;
+  document.getElementById('mol-cert-count').textContent = d.certified_count + ' certified';
+  document.getElementById('mol-time').textContent = d.duration_s + 's · Tantrium ASI';
+
+  const grid = document.getElementById('mol-grid');
+  grid.innerHTML = '';
+
+  if (d.candidates.length === 0) {
+    grid.innerHTML = '<div style="padding:40px;color:var(--g400);font-family:var(--mono);font-size:12px;">No candidates generated. Try a different target.</div>';
+  } else {
+    d.candidates.forEach(c => {
+      const isBest = c.name === d.best;
+      const card = document.createElement('div');
+      card.className = 'mol-card' + (isBest ? ' best' : '');
+
+      const certBadge = c.certified
+        ? `<span class="badge badge-cert">✓ CERTIFIED</span>`
+        : `<span class="badge badge-uncert">PARTIAL ${c.paradigms_passed}/${c.paradigms_total}</span>`;
+
+      const scoreBadge = `<span class="badge badge-score">dyadic ${c.dyadic_score.toExponential(2)}</span>`;
+
+      const dlBtn = c.has_3d && c.sdf_file
+        ? `<button class="btn btn-sm btn-green" onclick="downloadSDF('${c.sdf_file}','${c.name}')">Download 3D SDF</button>`
+        : `<button class="btn btn-sm" disabled title="3D structure unavailable">No 3D</button>`;
+
+      card.innerHTML = `
+        <div class="mol-name">${c.name}</div>
+        <div class="mol-smiles">${c.smiles}</div>
+        <div class="mol-badges">${certBadge}${scoreBadge}</div>
+        <div class="mol-actions">
+          ${dlBtn}
+          <button class="btn btn-sm" onclick="certifySmiles('${c.smiles.replace(/'/g,"\\'")}')">Certify</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  document.getElementById('mol-results').classList.add('show');
+}
+
+function downloadSDF(filename, name) {
+  const a = document.createElement('a');
+  a.href = `${API}/api/download/${encodeURIComponent(filename)}`;
+  a.download = name.replace(/[^a-zA-Z0-9]/g,'_') + '.sdf';
+  a.click();
+}
+
+function certifySmiles(smiles) {
+  switchTab('certify');
+  document.querySelectorAll('.tab-btn')[1].classList.add('active');
+  document.querySelectorAll('.tab-btn')[0].classList.remove('active');
+  document.getElementById('certify-input').value = smiles;
+  doCertify();
+}
+
+// ── Certify ────────────────────────────────────────────────────────
+async function doCertify() {
+  const input = document.getElementById('certify-input').value.trim();
+  if (!input) return;
+
+  document.getElementById('certify-loading').classList.add('show');
+  document.getElementById('certify-result').classList.remove('show');
+
+  try {
+    const r = await fetch(`${API}/api/certify`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({input})
+    });
+    const d = await r.json();
+
+    // Badge
+    const badgeEl = document.getElementById('cert-badge-area');
+    badgeEl.innerHTML = d.certified
+      ? `<div class="cert-badge ok">● CERTIFIED &nbsp; ${d.paradigms_passed}/${d.paradigms_total} PARADIGMS</div>`
+      : `<div class="cert-badge fail">✗ PARTIAL &nbsp; ${d.paradigms_passed}/${d.paradigms_total} PARADIGMS</div>`;
+
+    document.getElementById('cert-verdict').textContent = d.verdict;
+    document.getElementById('cert-finding').textContent = d.finding;
+
+    // Spectral bars
+    const bars = document.getElementById('spec-bars');
+    bars.innerHTML = '';
+    const maxE = Math.max(...d.eigenvalues, 0.001);
+    d.eigenvalues.forEach(e => {
+      const b = document.createElement('div');
+      b.className = 'spec-bar';
+      b.style.height = Math.max(4, (e / maxE) * 50) + 'px';
+      b.title = 'λ = ' + e.toFixed(4);
+      bars.appendChild(b);
+    });
+
+    // Paradigm detail
+    document.getElementById('cert-paradigm-summary').textContent = `${d.paradigms_passed}/${d.paradigms_total} passed`;
+    document.getElementById('cert-entropy').textContent = d.entropy;
+    document.getElementById('cert-rank').textContent = d.effective_rank;
+    document.getElementById('cert-time').textContent = d.duration_ms + ' ms';
+
+    const pg = document.getElementById('paradigm-grid');
+    pg.innerHTML = Object.entries(d.paradigm_results).map(([pid, res]) =>
+      `<div class="p-cell ${res.status === 'CERTIFIED' ? 'pass' : 'fail'}" title="${res.gap || ''}">${pid}</div>`
+    ).join('');
+
+    document.getElementById('certify-result').classList.add('show');
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    document.getElementById('certify-loading').classList.remove('show');
+  }
+}
+
+// ── Transport ──────────────────────────────────────────────────────
+async function doTransport() {
+  const source = document.getElementById('transport-src').value.trim();
+  const target = document.getElementById('transport-tgt').value.trim();
+  const use_smiles = document.getElementById('transport-smiles').checked;
+  if (!source || !target) return;
+
+  document.getElementById('transport-loading').classList.add('show');
+  document.getElementById('transport-result').classList.remove('show');
+
+  try {
+    const r = await fetch(`${API}/api/transport`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({source, target, use_smiles})
+    });
+    const d = await r.json();
+
+    document.getElementById('t-badge-area').innerHTML = d.certified
+      ? `<div class="cert-badge ok">● CERTIFIED PATH</div>`
+      : `<div class="cert-badge fail">✗ NO CERTIFIED PATH</div>`;
+
+    document.getElementById('t-verdict').textContent = d.verdict;
+    document.getElementById('t-finding').textContent = d.finding;
+
+    const chk = v => `<span class="metric-value ${v ? 'mv-green' : 'mv-red'}">${v ? 'VERIFIED' : 'FAILED'}</span>`;
+    document.getElementById('t-dyadic').innerHTML = chk(d.dyadic_verified);
+    document.getElementById('t-sturm').innerHTML = chk(d.sturm_verified);
+    document.getElementById('t-zeta').textContent = d.zeta_distance;
+    document.getElementById('t-time').textContent = d.duration_ms + ' ms';
+
+    document.getElementById('transport-result').classList.add('show');
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    document.getElementById('transport-loading').classList.remove('show');
+  }
+}
+
+// ── Compare ────────────────────────────────────────────────────────
+async function doCompare() {
+  const a = document.getElementById('compare-a').value.trim();
+  const b = document.getElementById('compare-b').value.trim();
+  if (!a || !b) return;
+
+  document.getElementById('compare-loading').classList.add('show');
+  document.getElementById('compare-result').classList.remove('show');
+
+  try {
+    const r = await fetch(`${API}/api/compare`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({a, b})
+    });
+    const d = await r.json();
+    document.getElementById('compare-text').textContent = d.result;
+    document.getElementById('compare-result').classList.add('show');
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    document.getElementById('compare-loading').classList.remove('show');
+  }
+}
+
+// ── Topology ───────────────────────────────────────────────────────
+async function loadTopology() {
+  try {
+    const r = await fetch(`${API}/api/topology`);
+    const d = await r.json();
+    document.getElementById('topo-dense').textContent = d.dense;
+    document.getElementById('topo-frontier').textContent = d.frontier;
+    document.getElementById('topo-void').textContent = d.void;
+    document.getElementById('topo-grid').style.display = 'grid';
+  } catch(e) {}
+}
+
+// Enter key on certify
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) {
+    const active = document.querySelector('.tab-panel.active');
+    if (active.id === 'tab-certify') doCertify();
+    else if (active.id === 'tab-discover') doDiscover();
+  }
+});
+
+// Init
+loadStatus();
+setInterval(loadStatus, 30000);
+</script>
+</body>
+</html>

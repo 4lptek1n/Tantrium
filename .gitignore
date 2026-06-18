@@ -44,7 +44,30 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.tantrium/
+
+# Runtime outputs (not source code)
+results/agi/knowledge.jsonl
+results/agi/goals/
+results/agi/sessions/
+results/atlas/
+results/certificates/
+results/formalization/
+results/molecules/
+results/research_os/
+archive/
+infra/
+
 # Replit
 .cache/
 .local/
 replit.md
+
+# EEG / raw data files
+*.edf
+eeg_data/
