@@ -2558,6 +2558,79 @@ class AI:
         return {"topic": topic, "paraphrase": _narrate(topic, facts),
                 "n_relations": len(rels)}
 
+    def comprehend(self, text: str) -> dict:
+        """ANLAMA = GERİ-ÜRETİLEBİLİR SIKIŞTIRMA (kapalı + doğrulanmış döngü).
+
+        Bir cümleyi moment'e encode etmek bir PARMAK İZİdir — parmak izi de sıkıştırır
+        ama geri açamazsın, o yüzden anlama DEĞİLDİR. Gerçekten anladıysan sıkıştırılmış
+        formdan GERİ ÜRETEBİLİRSİN. Bu metot o döngüyü kapatır ve ÖLÇER:
+          1. ENCODE→ANLAM : cümleyi ilişkisel yapısına ayrıştır (anlam, yazılış değil)
+          2. GENERATE      : o yapıdan cümleyi geri üret
+          3. RECONSTRUCT   : geri-üretileni yeniden ayrıştır, orijinal anlamla kıyasla
+          4. SADAKAT       : korunan ilişki oranı = anlama ölçüsü (reconstruct.py'nin
+                             dil eşleniği: geri-kurulan momenti orijinalle kıyaslamak gibi)
+
+        İlişkiye ayrışmayan cümle → ENCODE_ONLY: "yalnız encode edebilirim, geri
+        üretemem = gerçekten anlamadım" (dürüst sınır, parmak-izi itirafı).
+        Döner: {understood, fidelity, meaning, regenerated, grounded, ungrounded,
+                verdict, answer}.
+        """
+        from collections import Counter
+        from tantrium.research.autonomous import _extract_relations
+        from tantrium.language.fluent import narrate as _narrate
+        src = str(text)
+        # 1) ENCODE → ANLAM
+        rels_in = _extract_relations(src)
+        if not rels_in:
+            return {"understood": False, "fidelity": 0.0, "meaning": [],
+                    "regenerated": "", "grounded": [], "ungrounded": [],
+                    "verdict": "ENCODE_ONLY",
+                    "answer": ("Bu cümleyi anlamı bir yapıya ayrıştıramadım — onu yalnızca "
+                               "encode edebilirim, geri üretemem. Yani gerçekten anlamadım, "
+                               "sadece parmak izini aldım.")}
+        topic = Counter(s for s, _r, _o in rels_in).most_common(1)[0][0]
+        facts: dict[str, list[str]] = {}
+        for s, r, o in rels_in:
+            if s == topic and o not in facts.get(r, []):
+                facts.setdefault(r, []).append(o)
+        # 2) GENERATE: sıkıştırılmış anlamdan cümleyi geri üret
+        regenerated = _narrate(topic, facts)
+        # 3) RECONSTRUCT-CHECK: geri-üretileni yeniden ayrıştır, orijinal anlamla kıyasla
+        in_set = {(s.lower(), r, o.lower()) for s, r, o in rels_in}
+        out_set = {(s.lower(), r, o.lower()) for s, r, o in _extract_relations(regenerated)}
+        preserved = in_set & out_set
+        fidelity = round(len(preserved) / len(in_set), 3) if in_set else 0.0
+        # 4) KÖKLÜLÜK: ayrıştırılan kavramlar manifoldda köklü mü (anlamlı mı, yalıtık mı)
+        concepts = {s for s, _, _ in rels_in} | {o for _, _, o in rels_in}
+        grounded, ungrounded = [], []
+        for c in sorted(concepts):
+            try:
+                v = getattr(self.grounding(c), "verdict", "")
+            except Exception:
+                v = ""
+            (grounded if v in ("GROUNDED", "WEAKLY_GROUNDED") else ungrounded).append(c)
+        # YARGI: sadakat (geri-üretebildim mi) + köklülük (anlamlı mı) birlikte
+        if fidelity >= 0.6 and grounded:
+            verdict = "COMPREHENDED"
+        elif fidelity >= 0.3 or grounded:
+            verdict = "PARTIAL"
+        else:
+            verdict = "ENCODE_ONLY"
+        meaning = [f"{s} {r} {o}" for s, r, o in rels_in]
+        if verdict == "COMPREHENDED":
+            ans = (f"Anladım: bu cümle '{topic}' hakkında {len(in_set)} ilişki taşıyor; "
+                   f"sıkıştırıp geri ürettim, anlamın %{int(fidelity*100)}'i korundu. "
+                   f"Yeniden ifadem: {regenerated}")
+        elif verdict == "PARTIAL":
+            ans = (f"Kısmen anladım: anlamı çıkardım ama geri-üretimde %{int(fidelity*100)}'i "
+                   f"korunabildi (kayıplı). Yeniden ifadem: {regenerated}")
+        else:
+            ans = ("Anlamı çıkardım ama geri üretemedim — bu, anladığımdan emin olamadığım "
+                   "anlamına gelir. Kavramlar manifoldda köklü değil.")
+        return {"understood": verdict == "COMPREHENDED", "fidelity": fidelity,
+                "meaning": meaning, "regenerated": regenerated, "grounded": grounded,
+                "ungrounded": ungrounded, "verdict": verdict, "answer": ans}
+
     # ════════════════════════ DALGA 2 — Anlama & Dönüşüm ════════════════════════
 
     # İlişki → İngilizce yüklem (çeviri + İngilizce çıktı için)
