@@ -2711,6 +2711,81 @@ class AI:
                 "neighbors": {w: [(x, round(s, 2)) for x, s in neighbors(E, vocab, idx, w, 5)]
                               for w in vocab[:6]}}
 
+    def absorb(self, text, *, neighbors_per: int = 4, min_sim: float = 0.45,
+               window: int = 5, dim: int = 40, min_count: int = 2,
+               max_concepts: int = 250, persist: bool = False) -> dict:
+        """UÇTAN UCA FİTSİZ ÖĞRENME — ham metni oku, gizli yapıyı keşfet, KAPIDAN geçir, diz.
+
+        Büyümenin tüm borusu, eğitimsiz:
+          ortak-geçiş → PPMI → SVD (KEŞFET: gizli yapı, özayrıştırma — fit yok)
+            → her kavramın top-N spektral komşusu (kNN ilişki grafı — KAPSAMA: hub'a kaçmaz)
+            → observe/evren-kapısı (truth+grounding+aleph; çelişki/çöp REDDEDİLİR)
+            → kapıyı geçen ilişki COOCCURS kenarı olarak grafa
+        Hiçbir gradyan, hiçbir eğitim, hiçbir örnekleme. Sertifika korunur (kapı sıkı).
+
+        persist=False → canlı manifoldu KİRLETMEZ. Döner:
+        {n_concepts, concepts_admitted, rejected, edges_added, sample}.
+        """
+        import re
+        import numpy as np
+        from tantrium.core.cooccurrence import discover
+        from tantrium.graph.knowledge_graph import KnowledgeEdge
+        from tantrium.research.autonomous import AutonomousObserver
+        sents = [s for s in re.split(r"(?<=[.!?])\s+", str(text)) if len(s.split()) >= 4]
+        if not sents:
+            sents = [str(text)]
+        E, vocab, idx, _C = discover(sents, window=window, dim=dim, min_count=min_count)
+        if len(vocab) < 2:
+            return {"n_concepts": len(vocab), "concepts_admitted": 0,
+                    "rejected": 0, "edges_added": 0, "sample": []}
+        En = E / (np.linalg.norm(E, axis=1, keepdims=True) + 1e-9)
+        S = En @ En.T
+        eng = self._engine
+        eng._ai = self
+        obs = AutonomousObserver(eng)
+        region: dict[str, str] = {}
+
+        def admit(c: str) -> str:
+            if c in region:
+                return region[c]
+            try:
+                o = obs.observe(c)
+                reg = getattr(o, "admitted_as", None) or getattr(o, "region", None) or ""
+            except Exception:
+                reg = ""
+            region[c] = reg
+            return reg
+
+        edges = 0
+        for i in range(min(len(vocab), max_concepts)):
+            a = vocab[i]
+            if admit(a) not in ("core", "frontier"):
+                continue
+            sims = sorted(((float(S[i, j]), j) for j in range(len(vocab)) if j != i),
+                          reverse=True)
+            added = 0
+            for sim, j in sims:
+                if sim < min_sim or added >= neighbors_per:
+                    break
+                b = vocab[j]
+                if admit(b) not in ("core", "frontier"):
+                    continue
+                dist = float(max(0.0, 1.0 - sim))
+                eng.tau.edges.setdefault(a, []).append(
+                    KnowledgeEdge(source=a, target=b, distance=dist, paradigm="COOCCURS"))
+                edges += 1
+                added += 1
+        if persist:
+            try:
+                eng.auto_persist()
+            except Exception:
+                pass
+        admitted = sum(1 for r in region.values() if r in ("core", "frontier"))
+        rejected = sum(1 for r in region.values() if r == "rejected")
+        return {"n_concepts": len(vocab), "concepts_admitted": admitted,
+                "rejected": rejected, "edges_added": edges,
+                "sample": [c for c in list(region)[:12]]}
+
     # ════════════════════════ DALGA 2 — Anlama & Dönüşüm ════════════════════════
 
     # İlişki → İngilizce yüklem (çeviri + İngilizce çıktı için)
