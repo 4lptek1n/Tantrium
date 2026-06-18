@@ -39,6 +39,22 @@ def test_absorb_connects_a_concept_from_the_text():
     assert total_edges("insulin") > 0
 
 
+def test_walk_stays_on_critical_line():
+    """Kritik-çizgi asal yürüyüşü (deep thinking): absorb sonrası Sturm-pozitif adımlarla yürür."""
+    ai = tantrium.AI()
+    ai.absorb(_DOC, neighbors_per=4, min_sim=0.3, min_count=1, dim=10, persist=False)
+    w = ai.walk("insulin", max_steps=8)
+    assert w["steps"] >= 1                        # en az bir kritik-hat adımı attı
+    assert w["on_critical_line"] is True
+    assert w["path"][0] == "insulin"
+
+
+def test_walk_unknown_start_is_honest():
+    ai = tantrium.AI()
+    w = ai.walk("zzqwxnonexistentconcept", max_steps=5)
+    assert w["steps"] == 0 and w["path"] == []
+
+
 def test_absorb_does_not_persist_by_default(monkeypatch):
     ai = tantrium.AI()
     called = {"n": 0}

@@ -2736,7 +2736,7 @@ class AI:
                window: int = 5, dim: int = 40, min_count: int = 2,
                max_concepts: int = 250, persist: bool = False,
                keep_all: bool = True, emergent_types: bool = True,
-               n_types: int = 6) -> dict:
+               n_types: int = 6, meaning_reencode: bool = True) -> dict:
         """UÇTAN UCA FİTSİZ ÖĞRENME — ham metni oku, gizli yapıyı keşfet, KAPIDAN geçir, diz.
 
         Büyümenin tüm borusu, eğitimsiz:
@@ -2801,10 +2801,29 @@ class AI:
             para = ["COOCCURS"] * len(cand)
         # 3) Kenarları grafa yaz (kapıyı geçen uçlar, emergent tiple)
         edges = 0
+        connected = set()
         for (a, b, dist, _o), p in zip(cand, para):
             eng.tau.edges.setdefault(a, []).append(
                 KnowledgeEdge(source=a, target=b, distance=dist, paradigm=p))
             edges += 1
+            connected.add(a)
+            connected.add(b)
+        # 4) ANLAM RE-ENCODE: kenarı olan kavramı GRAFTAN (ilişki spektrumu) yeniden kodla →
+        # RH kriterleri yazılıştan değil GRAFIN KENDİSİNDEN ölçülür; dyadic/Sturm yürüyüşü
+        # anlam-trajektoryasını kritik hatta sınar. (TopologyEncoder; komşu yetersizse atlar.)
+        reencoded = 0
+        if meaning_reencode:
+            for c in connected:
+                cc = eng.manifold.concepts.get(c)
+                if cc is None:
+                    continue
+                try:
+                    mo = self.meaning(c)
+                except Exception:
+                    mo = None
+                if mo is not None and getattr(mo, "moments", None):
+                    cc.moments = list(mo.moments)
+                    reencoded += 1
         if persist:
             try:
                 eng.auto_persist()
@@ -2815,7 +2834,60 @@ class AI:
         n_emergent = len({p for p in para}) if emergent_types else 0
         return {"n_concepts": len(vocab), "concepts_admitted": admitted,
                 "rejected": rejected, "edges_added": edges, "types": n_emergent,
-                "sample": [c for c in list(region)[:12]]}
+                "reencoded": reencoded, "sample": [c for c in list(region)[:12]]}
+
+    def walk(self, start, *, max_steps: int = 14, strict: bool = False) -> dict:
+        """KRİTİK-ÇİZGİ ASAL YÜRÜYÜŞÜ (deep thinking) — TAU grafında, her adımda kritik hatta
+        kalarak gidebildiği kadar yürür. Sapmadan adım kalmayınca durur. RH'nin literal hâli:
+        yörünge kritik hatta = anlamlı düşünce; saparsa = halüsinasyon, ve adım ATILMAZ.
+
+        Kritik-hat testi (transport.py tanımıyla): konveks yol (1-t)·src+t·tgt TÜM [0,1] boyunca
+        Hankel-PSD (Sturm) ≥ 0  ⟺  tüm sıfırlar kritik hatta Re(ρ)=½. Yani adım = hankel(geçerli
+        ölçü) + sturm(yol-pozitif). strict=True → ek olarak Newton-log-konkavlık (depth==3, daha
+        katı Jensen-hiperboliklik). En çok onward-seçeneği olan pozitif komşuya gider (sınırsıza
+        yürümeyi sürdür, çıkmaza sapma). Döner: {start, path, steps, on_critical_line, narrative}.
+        """
+        from tantrium.core.positivity_ladder import positivity_depth
+        eng = self._engine
+        m = eng.manifold
+        tau = eng.tau
+
+        def mom(c):
+            cc = m.concepts.get(c)
+            return [float(x) for x in cc.moments] if cc is not None else None
+
+        cur = str(start).lower()
+        if mom(cur) is None:
+            return {"start": cur, "path": [], "steps": 0,
+                    "on_critical_line": False, "narrative": "",
+                    "reason": "başlangıç kavramı manifoldda yok"}
+        path = [cur]
+        visited = {cur}
+        steps_ok = 0
+        for _ in range(max_steps):
+            cm = mom(cur)
+            best, best_key = None, None
+            for e in tau.edges.get(cur, []):
+                t = str(getattr(e, "target", "")).lower()
+                if not t or t in visited or mom(t) is None:
+                    continue
+                d, r = positivity_depth(cm, mom(t))
+                on_line = (d >= 3) if strict else (r["hankel"] and r["sturm"])
+                if not on_line:
+                    continue
+                onward = len(tau.edges.get(t, []))        # çıkmaza sapma: en çok devam seçeneği
+                key = (d, onward)
+                if best_key is None or key > best_key:
+                    best_key, best = key, t
+            if best is None:
+                break                                     # kritik hattan sapmadan adım yok → dur
+            path.append(best)
+            visited.add(best)
+            steps_ok += 1
+            cur = best
+        return {"start": path[0], "path": path, "steps": len(path) - 1,
+                "on_critical_line": steps_ok > 0,
+                "narrative": " → ".join(path)}
 
     # ════════════════════════ DALGA 2 — Anlama & Dönüşüm ════════════════════════
 
