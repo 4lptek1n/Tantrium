@@ -92,6 +92,15 @@ def feed(ai, dataset: str, *, config: str = "default", split: str = "train",
                 frontier += 1
             elif region == "rejected":
                 rejected += 1
+            # 3. BOYUT: kabul edilen kavramı çok-boyutlu çapala (molekül/protein/DNA → gerçek
+            # spektrum). Dil+kenar observe'den geldi; bu satır boyutu ekler → tam üç-eksen besleme.
+            if enrich and region in ("core", "frontier"):
+                nm = getattr(o, "name", None)
+                if nm and hasattr(ai, "enrich"):
+                    try:
+                        ai.enrich(nm)
+                    except Exception:
+                        pass
             if len(sample) < 8:
                 nm = getattr(o, "name", None) or text[:40]
                 sample.append(str(nm)[:48])
