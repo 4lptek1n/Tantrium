@@ -43,9 +43,20 @@ def main() -> None:
             ge.state.update(json.loads(GE_STATE.read_text()))
         except Exception:
             pass
+    # HEDEF-GÜDÜM (ASI Pilar B): cognition GoalPhase hedef yoksa NO-OP — sürekli hedef koy ki
+    # döngü goal-directed olsun (hedef→boşluk→araştır→öz-doğrula→eylem→ilerleme). Eksiksiz ASI.
+    GOALS = ["understand connections across all domains",
+             "discover hidden cross-domain structure",
+             "find the laws governing observed data"]
+    try:
+        for g in GOALS:
+            ai.set_goal(g)
+    except Exception as exc:
+        print(f"[{time.strftime('%H:%M:%S')}] set_goal hata: {str(exc)[:60]}", flush=True)
     t0 = time.time()
     dims = {"molecule": 0, "number": 0, "protein": 0, "text": 0, "law": 0, "rejected": 0}
-    asi = {"bridges": 0, "hypotheses": 0, "corrected": 0, "proofs": 0}
+    asi = {"bridges": 0, "hypotheses": 0, "corrected": 0, "proofs": 0,
+           "curiosity": 0, "relearn": 0}
     cyc = 0
     COGNITION_EVERY = 4   # ASI bilişi: gizli-bağlantı keşfi + hipotez + öz-düzeltme + ispat
     print(f"[{time.strftime('%H:%M:%S')}] çok-boyutlu büyüme — SONSUZ (STOP: {STOP})", flush=True)
@@ -115,6 +126,8 @@ def main() -> None:
                 asi["hypotheses"] += int(getattr(rep, "hypotheses_generated", 0) or 0)
                 asi["corrected"] += int(getattr(rep, "contradictions_resolved", 0) or 0)
                 asi["proofs"] += int(getattr(rep, "proofs_completed", 0) or 0)
+                asi["curiosity"] += int(getattr(rep, "curiosity_researched", 0) or 0)
+                asi["relearn"] += int(getattr(rep, "relearned", 0) or 0)
             except Exception as exc:
                 print(f"[{time.strftime('%H:%M:%S')}] cognition hata: {str(exc)[:60]}",
                       flush=True)
@@ -134,8 +147,9 @@ def main() -> None:
         print(f"[{time.strftime('%H:%M:%S')}] tur {cyc}: molekül={dims['molecule']} "
               f"sayı={dims['number']} yasa={dims['law']} protein={dims['protein']} "
               f"metin={dims['text']} red={dims['rejected']} | ASI köprü={asi['bridges']} "
-              f"hipotez={asi['hypotheses']} düzelt={asi['corrected']} ispat={asi['proofs']} "
-              f"| kavram {len(eng.manifold.concepts)} ({status['uptime_min']}dk)", flush=True)
+              f"hipotez={asi['hypotheses']} merak={asi['curiosity']} düzelt={asi['corrected']} "
+              f"ispat={asi['proofs']} | kavram {len(eng.manifold.concepts)} "
+              f"({status['uptime_min']}dk)", flush=True)
 
     print(f"[{time.strftime('%H:%M:%S')}] STOP — durduruldu (tur {cyc}).", flush=True)
     try:
