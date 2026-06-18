@@ -2711,9 +2711,32 @@ class AI:
                 "neighbors": {w: [(x, round(s, 2)) for x, s in neighbors(E, vocab, idx, w, 5)]
                               for w in vocab[:6]}}
 
+    def _lean_admit(self, name: str) -> str:
+        """DIŞARIDAN BİLGİ ALIMI — Aleph 'doğrulaması' YAPMAZ (kullanıcı: dış veriye Aleph
+        halüsinasyonu engellemez; Aleph her PSD'yi geçirir). Dış veri SERBEST girer (frontier =
+        kör-nokta bölgesi, atıl). HALÜSİNASYON GARDİYANI BURADA DEĞİL: akıl/üretim trajektoryası
+        kritik hatta (köklü) yürür (comprehend/attend/generate yalnız grounded kenarları gezer);
+        atıl frontier bilgisi çıktıda KULLANILMAZ. Manifold-geneli aramalar da atlanır (hız).
+        Döner: 'core'(bilinen) | 'frontier'(yeni, atıl) | 'rejected'(encode edilemedi)."""
+        from tantrium.core.semantic import Concept
+        eng = self._engine
+        if name in eng.manifold.concepts:
+            return "core"
+        try:
+            cobj = eng.encoder.encode(name, name)
+            c = Concept(name=cobj.name, moments=list(cobj.moments),
+                        domain="absorbed", source="absorb")
+            eng.manifold.add_unchecked(c)
+            eng.tau.add_node(c)
+        except Exception:
+            return "rejected"                     # yalnız encode edilemeyen düşer (yapısal değil)
+        return "frontier"
+
     def absorb(self, text, *, neighbors_per: int = 4, min_sim: float = 0.45,
                window: int = 5, dim: int = 40, min_count: int = 2,
-               max_concepts: int = 250, persist: bool = False) -> dict:
+               max_concepts: int = 250, persist: bool = False,
+               keep_all: bool = True, emergent_types: bool = True,
+               n_types: int = 6) -> dict:
         """UÇTAN UCA FİTSİZ ÖĞRENME — ham metni oku, gizli yapıyı keşfet, KAPIDAN geçir, diz.
 
         Büyümenin tüm borusu, eğitimsiz:
@@ -2730,33 +2753,30 @@ class AI:
         import numpy as np
         from tantrium.core.cooccurrence import discover
         from tantrium.graph.knowledge_graph import KnowledgeEdge
-        from tantrium.research.autonomous import AutonomousObserver
         sents = [s for s in re.split(r"(?<=[.!?])\s+", str(text)) if len(s.split()) >= 4]
         if not sents:
             sents = [str(text)]
-        E, vocab, idx, _C = discover(sents, window=window, dim=dim, min_count=min_count)
+        # keep_all: LLM-benzeri 'her şeyi tut' (noktalama dahil, stopword atma) — geometri
+        # neyin önemli olduğunu kendi söyler. False → temiz mod (stopword ayıkla).
+        E, vocab, idx, _C = discover(sents, window=window, dim=dim, min_count=min_count,
+                                     drop_stop=not keep_all, keep_punct=keep_all)
         if len(vocab) < 2:
-            return {"n_concepts": len(vocab), "concepts_admitted": 0,
-                    "rejected": 0, "edges_added": 0, "sample": []}
+            return {"n_concepts": len(vocab), "concepts_admitted": 0, "rejected": 0,
+                    "edges_added": 0, "sample": [], "types": 0}
         En = E / (np.linalg.norm(E, axis=1, keepdims=True) + 1e-9)
         S = En @ En.T
         eng = self._engine
-        eng._ai = self
-        obs = AutonomousObserver(eng)
         region: dict[str, str] = {}
 
         def admit(c: str) -> str:
             if c in region:
                 return region[c]
-            try:
-                o = obs.observe(c)
-                reg = getattr(o, "admitted_as", None) or getattr(o, "region", None) or ""
-            except Exception:
-                reg = ""
+            reg = self._lean_admit(c)             # hızlı: Aleph kapısı + manifold, arama yok
             region[c] = reg
             return reg
 
-        edges = 0
+        # 1) Kenar ADAYLARINI topla (offset = E[a]-E[b] = ilişki yönü; offset kümeleri = tip)
+        cand = []                                 # (a, b, dist, offset)
         for i in range(min(len(vocab), max_concepts)):
             a = vocab[i]
             if admit(a) not in ("core", "frontier"):
@@ -2770,11 +2790,21 @@ class AI:
                 b = vocab[j]
                 if admit(b) not in ("core", "frontier"):
                     continue
-                dist = float(max(0.0, 1.0 - sim))
-                eng.tau.edges.setdefault(a, []).append(
-                    KnowledgeEdge(source=a, target=b, distance=dist, paradigm="COOCCURS"))
-                edges += 1
+                cand.append((a, b, float(max(0.0, 1.0 - sim)), E[i] - E[j]))
                 added += 1
+        # 2) EMERGENT TİP: offset'leri kümele → isimsiz tip (REL_k); IS_A dayatma YOK
+        if emergent_types and len(cand) >= n_types:
+            from tantrium.core.cooccurrence import kmeans
+            labels, _cent = kmeans(np.array([o for *_r, o in cand]), n_types)
+            para = [f"REL_{int(l)}" for l in labels]
+        else:
+            para = ["COOCCURS"] * len(cand)
+        # 3) Kenarları grafa yaz (kapıyı geçen uçlar, emergent tiple)
+        edges = 0
+        for (a, b, dist, _o), p in zip(cand, para):
+            eng.tau.edges.setdefault(a, []).append(
+                KnowledgeEdge(source=a, target=b, distance=dist, paradigm=p))
+            edges += 1
         if persist:
             try:
                 eng.auto_persist()
@@ -2782,8 +2812,9 @@ class AI:
                 pass
         admitted = sum(1 for r in region.values() if r in ("core", "frontier"))
         rejected = sum(1 for r in region.values() if r == "rejected")
+        n_emergent = len({p for p in para}) if emergent_types else 0
         return {"n_concepts": len(vocab), "concepts_admitted": admitted,
-                "rejected": rejected, "edges_added": edges,
+                "rejected": rejected, "edges_added": edges, "types": n_emergent,
                 "sample": [c for c in list(region)[:12]]}
 
     # ════════════════════════ DALGA 2 — Anlama & Dönüşüm ════════════════════════

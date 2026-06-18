@@ -17,6 +17,9 @@ from collections import Counter
 import numpy as np
 
 _WORD = re.compile(r"[a-zàâäçéèêëîïôöùûüğışöç0-9]+")
+# "her şeyi tut" modu: kelimeler + noktalama ayrı token (LLM gibi — noktalar/virgüller dahil,
+# geometri neyin önemli olduğunu kendisi söyler; biz elle ayıklamayız).
+_WORD_PUNCT = re.compile(r"[a-zàâäçéèêëîïôöùûüğışöç0-9]+|[.,;:!?()\\-]")
 
 # İşlev-kelimeleri (stopwords): bağlam taşımaz, ortak-geçişi gürültüyle doldurur → keşfi seyreltir.
 _STOP = frozenset((
@@ -28,15 +31,16 @@ _STOP = frozenset((
 ).split())
 
 
-def tokenize(text: str, *, drop_stop: bool = False) -> list[str]:
-    toks = _WORD.findall(str(text).lower())
+def tokenize(text: str, *, drop_stop: bool = False, keep_punct: bool = False) -> list[str]:
+    pat = _WORD_PUNCT if keep_punct else _WORD
+    toks = pat.findall(str(text).lower())
     return [t for t in toks if t not in _STOP] if drop_stop else toks
 
 
 def build_cooccurrence(sentences, *, window: int = 4, min_count: int = 1,
-                       drop_stop: bool = False):
+                       drop_stop: bool = False, keep_punct: bool = False):
     """Pencere içi kelime-kelime ortak-geçiş sayım matrisi C + vocab."""
-    toks_list = [tokenize(s, drop_stop=drop_stop) for s in sentences]
+    toks_list = [tokenize(s, drop_stop=drop_stop, keep_punct=keep_punct) for s in sentences]
     counts: Counter = Counter()
     for toks in toks_list:
         counts.update(toks)
@@ -83,14 +87,39 @@ def spectral_embed(M: np.ndarray, *, dim: int = 16) -> np.ndarray:
     return U[:, :d] * np.sqrt(S[:d])
 
 
+def kmeans(X, k: int, *, iters: int = 25, seed: int = 0):
+    """Basit numpy k-means (sklearn/scipy YOK). Döner: (labels, centers). Emergent tip-kümeleme
+    için: ilişki = spektral offset (E[a]-E[b]); offset kümeleri = isimsiz emergent ilişki türleri."""
+    X = np.asarray(X, dtype=float)
+    n = len(X)
+    if n == 0:
+        return np.zeros(0, dtype=int), np.zeros((0, X.shape[1] if X.ndim > 1 else 0))
+    k = max(1, min(k, n))
+    rng = np.random.default_rng(seed)
+    centers = X[rng.choice(n, k, replace=False)].copy()
+    labels = np.zeros(n, dtype=int)
+    for _ in range(iters):
+        d = np.abs(X[:, None, :] - centers[None, :, :]).sum(axis=2)   # L1
+        new = d.argmin(axis=1)
+        if np.array_equal(new, labels):
+            break
+        labels = new
+        for c in range(k):
+            m = labels == c
+            if m.any():
+                centers[c] = X[m].mean(axis=0)
+    return labels, centers
+
+
 def discover(sentences, *, window: int = 4, dim: int = 16, min_count: int = 1,
-             drop_stop: bool = True):
+             drop_stop: bool = True, keep_punct: bool = False):
     """Ham metin → (embeddings E, vocab, idx, ham ortak-geçiş C). Fitsiz gizli-yapı keşfi.
 
     drop_stop=True (varsayılan): işlev-kelimeleri ayıklanır → bağlam sinyali keskinleşir.
+    keep_punct=True: noktalama da token (LLM-benzeri 'her şeyi tut'; PPMI/SVD downweight eder).
     """
-    C, vocab, idx, _counts = build_cooccurrence(sentences, window=window,
-                                                min_count=min_count, drop_stop=drop_stop)
+    C, vocab, idx, _counts = build_cooccurrence(sentences, window=window, min_count=min_count,
+                                                drop_stop=drop_stop, keep_punct=keep_punct)
     M = ppmi(C)
     E = spectral_embed(M, dim=dim)
     return E, vocab, idx, C
