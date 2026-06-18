@@ -2631,6 +2631,53 @@ class AI:
                 "meaning": meaning, "regenerated": regenerated, "grounded": grounded,
                 "ungrounded": ungrounded, "verdict": verdict, "answer": ans}
 
+    def attend(self, concepts, *, tau: float = 0.5, kernel: str = "relation",
+               layers: int = 1) -> dict:
+        """FİTSİZ ATTENTION — öğrenilen ağırlık YOK; transformer'ın 'dizen'i, ölçülü çekirdekle.
+
+        Tez (kullanıcı): geometriyi BİZ veriyoruz (imzalar/graf); attention sadece bağlamsal
+        diziyor; eğitim yok → istatistiksel halüsinasyon yok (çıktı köklü imzaların ağırlıklı
+        toplamı). QKᵀ yerine ÖLÇÜLEN çekirdek:
+          kernel="relation" → TAU graf-komşuluğu (ANLAMSAL; yolak kümelerini ayırır) [varsayılan]
+          kernel="moment"   → moment-imza mesafesi (YAPISAL benzerlik; hub↔hub)
+
+        Canlı doğrulandı: relation çekirdeğiyle {egfr,erlotinib,ras} ve {tp53,mdm2} sıfır
+        eğitimle ayrışır. Döner: {concepts, attention, links, contextualized, kernel}.
+        """
+        import numpy as np
+        from tantrium.core.attention import (attention_matrix, softmax_from_affinity,
+                                             relation_affinity)
+        if isinstance(concepts, str):
+            raw = [w.strip(".,!?;:'\"()").lower() for w in concepts.split()]
+            cs = [w for w in raw if len(w) >= 3 and w not in getattr(self, "_STOP_TR", set())]
+        else:
+            cs = [str(c).lower() for c in concepts]
+        cs = [c for c in dict.fromkeys(cs) if c]          # tekilleştir, sırayı koru
+        if len(cs) < 2:
+            return {"concepts": cs, "attention": [], "links": [], "kernel": kernel,
+                    "contextualized": []}
+        if kernel == "moment":
+            from tantrium.core.encoder import _text_to_signature_moments
+            sigs = []
+            for c in cs:
+                m = self.meaning(c)
+                vec = ([float(x) for x in m.moments] if m is not None
+                       else [float(x) for x in _text_to_signature_moments(c, 8)])
+                sigs.append(vec)
+            H, A = (np.asarray(sigs), attention_matrix(sigs, tau=tau if tau < 1 else 0.1))
+            for _ in range(max(0, layers - 1)):
+                A = attention_matrix(H, tau=tau if tau < 1 else 0.1)
+                H = A @ np.asarray(sigs)
+        else:
+            K = relation_affinity(self._engine, cs)
+            A = softmax_from_affinity(K, tau=tau)
+            H = A @ K
+        links = [(cs[i], cs[int(np.argmax(A[i]))], round(float(A[i].max()), 3))
+                 for i in range(len(cs))]
+        return {"concepts": cs, "attention": A.tolist(), "links": links,
+                "contextualized": (H.tolist() if hasattr(H, "tolist") else H),
+                "kernel": kernel}
+
     # ════════════════════════ DALGA 2 — Anlama & Dönüşüm ════════════════════════
 
     # İlişki → İngilizce yüklem (çeviri + İngilizce çıktı için)
