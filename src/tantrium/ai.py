@@ -1837,7 +1837,10 @@ class AI:
             return " ".join(cands[:4])
         if cands:
             return cands[0]
-        return last or ""
+        # Aday yok VE zamir yok → REFERANS yok: önceki konuya DÜŞME (anafora satır 1818'de
+        # zaten ele alındı). Köksüz/kısa sorgu önceki konuyu MİRAS ALIRSA güvenle-yanlış
+        # cevap doğar ("su nedir" → egfr). Doğrusu: boş dön → converse "anlamadım" desin.
+        return ""
 
     def _tau_facts(self, topic: str, max_per: int = 3) -> dict:
         """Konunun semantik TAU kenarlarını {paradigma: [hedef,...]} olarak topla."""
