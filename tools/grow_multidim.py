@@ -121,7 +121,9 @@ def main() -> None:
         # hipotez üretimi + öz-düzeltme (corrigibility) + ispat. Beslemenin üstüne ASI döngüsü.
         if cyc % COGNITION_EVERY == 0:
             try:
-                rep = ai.cognition(mode="batch", max_cycles=1, network=False)
+                # network=True: hedef-güdümlü merak/araştırma (GoalPhase eylem) ağ ister —
+                # kapalıyken hedef konulur ama EYLEME geçemez (merak=0). Eksiksiz döngü için açık.
+                rep = ai.cognition(mode="batch", max_cycles=1, network=True)
                 asi["bridges"] += int(getattr(rep, "bridges_discovered", 0) or 0)
                 asi["hypotheses"] += int(getattr(rep, "hypotheses_generated", 0) or 0)
                 asi["corrected"] += int(getattr(rep, "contradictions_resolved", 0) or 0)
