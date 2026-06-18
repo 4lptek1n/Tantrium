@@ -111,6 +111,31 @@ def kmeans(X, k: int, *, iters: int = 25, seed: int = 0):
     return labels, centers
 
 
+_COMMON_VERBS = frozenset((
+    "is are was were be been being has have had do does did make makes made cause causes caused "
+    "use uses used produce produces produced contain contains form forms formed carry carries "
+    "reduce reduces increase increases activate activates inhibit inhibits bind binds regulate "
+    "regulates control controls release releases include includes require requires create creates "
+    "become becomes became allow allows enable enables affect affects convert converts generate "
+    "generates provide provides support supports lead leads give gives take takes show shows "
+    "found founded developed developing built building won win wins served serves play plays "
+    "named involves represents describes defines means meant occurs occurred remains became"
+).split())
+
+
+def looks_verb(w: str) -> bool:
+    """Fitsiz fiil-şekli sezgisi (POS-model YOK, morfoloji): ortak fiil VEYA -ed/-ing eki VEYA
+    -s eki (kaba çoğul-dışlama). 'releases/produces/carries' geçer; 'photographic/obvious' düşer."""
+    w = str(w).lower()
+    if w in _COMMON_VERBS:
+        return True
+    if len(w) >= 5 and (w.endswith("ed") or w.endswith("ing")):
+        return True
+    if len(w) >= 5 and w.endswith("s") and not w.endswith(("ss", "us", "is", "as", "ous", "ics")):
+        return True
+    return False
+
+
 def is_noise(token: str) -> bool:
     """İşlev-kelime / noktalama / saf-sayı / tek-iki harf = düşük-bilgi GÜRÜLTÜ. Eğitimsiz
     grafta bunlar hub olup walk/generate'i kirletir → kenardan ve üretimden dışla."""

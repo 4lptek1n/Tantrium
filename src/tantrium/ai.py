@@ -2832,13 +2832,13 @@ class AI:
         # → generate/speak gerçek cümle kurar. Heuristik (gürültülü) ama yapıdan, dayatmadan.
         svo_n = 0
         if svo:
-            from tantrium.core.cooccurrence import tokenize as _tok
+            from tantrium.core.cooccurrence import tokenize as _tok, looks_verb
             for s in sents:
                 cw = [t for t in _tok(s) if not is_noise(t)]
                 for i in range(len(cw) - 2):
                     a, v, b = cw[i], cw[i + 1], cw[i + 2]
-                    if a == b or is_noise(v):
-                        continue
+                    if a == b or is_noise(v) or not looks_verb(v):
+                        continue                  # orta kelime fiil-şekilli değilse SVO değil
                     if admit(a) in ("core", "frontier") and admit(b) in ("core", "frontier"):
                         eng.tau.edges.setdefault(a, []).append(
                             KnowledgeEdge(source=a, target=b, distance=0.5,
