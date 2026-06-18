@@ -29,10 +29,13 @@ STOP_FILE = STATE_DIR / "STOP_AUTONOMY"
 STATUS_FILE = STATE_DIR / "autonomy_status.json"
 HYP_FILE = STATE_DIR / "autonomy_hypotheses.jsonl"
 
-COMMIT_EVERY = 3          # kaç turda bir git'e dayanıklılık commit'i
-CYCLES_PER_ROUND = 2      # tur başına cognition batch döngüsü (ağsız akıl/self)
-ROUND_BUDGET_S = 1200     # tur başına süre tavanı (sonsuz döngü, tur sınırlı)
-FOCUS = "oncology"        # ODAKLI büyüme: genişlik-spam yerine tek-domain UZMAN derinlik
+COMMIT_EVERY = 0          # 0 = runner git-commit KAPALI (kod-branch hijyeni; disk-persist resumable)
+COGNITION_EVERY = 5       # her 5 turda bir akıl/self/dedup (pahalı, N ile büyür → seyrek tut)
+CYCLES_PER_ROUND = 1      # cognition turunda batch döngü sayısı
+ROUND_BUDGET_S = 600      # tur başına süre tavanı (sonsuz döngü, tur sınırlı)
+FOCUS = None              # GENİŞ büyüme: tüm 10 kaynak (kimya+biyoloji+matematik+genel bilgi).
+                          # ÖLÇÜLDÜ: focus=None ~5 kavram/sn akar; onkoloji-odağı kaynakları
+                          # kurutup tur başına ~2 kavrama düşürüyordu. "Herşeyi anla" = genişlik.
 BRANCH = "claude/seninle-agi-yapacagiz-XwJRz"
 
 
@@ -69,37 +72,46 @@ def main() -> None:
     while not STOP_FILE.exists():
         round_n += 1
         t0 = time.time()
-        # FAZ 1 — ODAKLI VERİ: onkoloji-yoğun büyüme (yalnız onkoloji kaynakları +
-        # 8-boyut enrichment + corrigibility temizlik). Genişlik-spam'i yerine derinlik.
+        cog_round = (round_n % COGNITION_EVERY == 0)   # pahalı akıl/self yalnız periyodik
+        # FAZ 1 — GENİŞ VERİ (her tur): tüm kaynaklardan akış + 8-boyut enrichment +
+        # corrigibility temizlik. Throughput önce: cognition turunda biraz pay bırak.
         grow_added = 0
+        grow_budget = ROUND_BUDGET_S * (0.7 if cog_round else 1.0)
         try:
-            grp = ai.grow(focus=FOCUS, time_limit_s=ROUND_BUDGET_S * 0.6,
+            grp = ai.grow(focus=FOCUS, time_limit_s=grow_budget,
                           network=True, verbose=False)
             grow_added = int(getattr(grp, "concepts_end", 0) - getattr(grp, "concepts_start", 0))
         except Exception as exc:
             print(f"[{time.strftime('%H:%M:%S')}] tur {round_n} grow hata: {exc} — devam", flush=True)
 
-        # FAZ 2 — AĞSIZ AKIL/SELF: odaklı veri ÜSTÜNDE reasoning/self/hipotez
-        # (ağ=False → yeni odaksız spam çekmez; yalnız var olan onkoloji çekirdeğini işler).
-        try:
-            rep = ai.cognition(mode="batch", max_cycles=CYCLES_PER_ROUND,
-                               time_limit_s=ROUND_BUDGET_S * 0.4, network=False)
-        except Exception as exc:  # fail-open: bir tur çökse de SONSUZ döngü durmaz
-            print(f"[{time.strftime('%H:%M:%S')}] tur {round_n} cognition hata: {exc} — devam", flush=True)
-            time.sleep(5)
-            continue
+        # FAZ 2 — AĞSIZ AKIL/SELF (her COGNITION_EVERY turda): reasoning/self/hipotez/dedup.
+        # N ile pahalılaşır → seyrek; throughput'u boğmaz. Diğer turlarda boş rapor.
+        rep = None
+        if cog_round:
+            try:
+                rep = ai.cognition(mode="batch", max_cycles=CYCLES_PER_ROUND,
+                                   time_limit_s=ROUND_BUDGET_S * 0.3, network=False)
+            except Exception as exc:  # fail-open: bir tur çökse de SONSUZ döngü durmaz
+                print(f"[{time.strftime('%H:%M:%S')}] tur {round_n} cognition hata: {exc} — devam",
+                      flush=True)
 
         totals["concepts"] += grow_added
-        totals["concepts"] += rep.concepts_added
-        totals["edges"] += rep.edges_added
-        totals["hypotheses"] += rep.hypotheses_generated
-        totals["hyp_tested"] += rep.hypotheses_tested
-        totals["curiosity"] += rep.curiosity_researched
-        totals["relearn"] += rep.relearned
-        totals["bridges"] += rep.bridges_discovered
-        totals["reingest"] += rep.artifacts_reingested
-        totals["proofs"] += rep.proofs_completed
-        totals["contradictions"] += rep.contradictions_resolved
+        if rep is not None:
+            totals["concepts"] += rep.concepts_added
+            totals["edges"] += rep.edges_added
+            totals["hypotheses"] += rep.hypotheses_generated
+            totals["hyp_tested"] += rep.hypotheses_tested
+            totals["curiosity"] += rep.curiosity_researched
+            totals["relearn"] += rep.relearned
+            totals["bridges"] += rep.bridges_discovered
+            totals["reingest"] += rep.artifacts_reingested
+            totals["proofs"] += rep.proofs_completed
+            totals["contradictions"] += rep.contradictions_resolved
+        # büyümeyi her tur DİSKE yaz (ephemeral konteyner içinde resumable)
+        try:
+            e.auto_persist()
+        except Exception:
+            pass
 
         # YENİ sertifikalı hipotezleri kalıcı günlüğe (denetlenebilir bilim birikimi)
         new_h = 0
@@ -121,16 +133,19 @@ def main() -> None:
             "cumulative": totals,
             "new_hypotheses_this_round": new_h,
             "self_goals": goals[-5:],
-            "last_narration": (rep.narrations[-1][:240] if rep.narrations else ""),
+            "last_narration": (rep.narrations[-1][:240] if (rep and rep.narrations) else ""),
             "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
         }
         STATUS_FILE.write_text(json.dumps(status, ensure_ascii=False, indent=1), encoding="utf-8")
-        print(f"[{time.strftime('%H:%M:%S')}] tur {round_n}: +{rep.concepts_added} kavram, "
-              f"+{new_h} yeni hipotez, merak={rep.curiosity_researched}, hedef={goals[-1] if goals else '-'}, "
-              f"köprü={rep.bridges_discovered}, kanıt={rep.proofs_completed} "
-              f"(toplam kavram {len(e.manifold.concepts)}, uptime {status['uptime_min']}dk)", flush=True)
+        cog_str = (f"akıl: +{rep.concepts_added} kavram, +{new_h} hipotez, "
+                   f"köprü={rep.bridges_discovered}, kanıt={rep.proofs_completed}"
+                   if rep is not None else "akıl: — (ingestion turu)")
+        print(f"[{time.strftime('%H:%M:%S')}] tur {round_n}: +{grow_added} veri-kavram, {cog_str}, "
+              f"hedef={goals[-1] if goals else '-'} "
+              f"(toplam kavram {len(e.manifold.concepts)}, uptime {status['uptime_min']}dk, "
+              f"tur {status['round_s']}s)", flush=True)
 
-        if round_n % COMMIT_EVERY == 0:
+        if COMMIT_EVERY and round_n % COMMIT_EVERY == 0:
             _commit_growth(round_n, totals)
             print(f"[{time.strftime('%H:%M:%S')}] dayanıklılık commit'i (tur {round_n})", flush=True)
 
@@ -138,7 +153,12 @@ def main() -> None:
 
     print(f"[{time.strftime('%H:%M:%S')}] STOP dosyası bulundu — düzgün durduruldu (tur {round_n}).",
           flush=True)
-    _commit_growth(round_n, totals)
+    try:
+        e.auto_persist()
+    except Exception:
+        pass
+    if COMMIT_EVERY:
+        _commit_growth(round_n, totals)
 
 
 if __name__ == "__main__":
