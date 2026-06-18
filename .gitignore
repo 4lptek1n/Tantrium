@@ -71,3 +71,6 @@ replit.md
 # EEG / raw data files
 *.edf
 eeg_data/
+
+# Yeniden-üretilebilir önbellekler (runner üretir, kod değil)
+results/agi/*_cache.json
