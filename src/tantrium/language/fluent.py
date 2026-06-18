@@ -224,9 +224,9 @@ def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3,
         total = getattr(grounding, "_n_relations", None)
         conf = _confidence_lead(score, verdict)
         if verdict == "GROUNDED":
-            # Köklülük güvencesi DEĞİŞMEZ ama HER cevaba aynı damgayı vurmak robotik yapıyordu.
-            # teknik register → tam provenance; neutral → içerik-varyantlı KISA kapanış (komşular
-            # zaten değişir, _pick determinist seçer → tekrar hissi kalkar); basit → kuyruk YOK.
+            # İNSAN GİBİ: kendinden eminse düz anlatır — "eminim, X'e yakınım" diye EKLEMEZ.
+            # Komşu listesi/güven-damgası graf-içi bilgi, konuşmaya sızmaz. Provenance ayrı
+            # döner (c["sources"]). Yalnız teknik register açıkça köklülük notu ister.
             if register == "teknik":
                 c = f"{conf} çünkü {topic}, bilgi grafımda"
                 if total:
@@ -236,17 +236,7 @@ def narrate(topic: str, facts: dict, grounding=None, max_per: int = 3,
                     c += f"; {gen_join(near[:3])} gibi kavramlarla anlamsal olarak iç içe"
                 c += "."
                 s.append(c)
-            elif near[:3] and register != "basit":
-                # güven KORUNUR (kesinlik, hedge yok) ama VARYANTLI — her cevaba aynı kalıp değil.
-                tail = _pick([
-                    f"Bunu güvenle söylüyorum; {topic}, {gen_join(near[:3])} ile aynı "
-                    f"bilgi-bölgesinde duruyor.",
-                    f"Bundan eminim — {gen_join(near[:3])} ile anlamsal olarak iç içe.",
-                    f"Yakın çevresinde {gen_join(near[:2])} var; bunu güvenle veriyorum.",
-                    f"Bağlamı {gen_join(near[:2])} çevresinde şekilleniyor; bundan eminim.",
-                ], topic + str(total or "") + str(len(near)))
-                s.append(tail)
-            # basit register: yalın cevap — güven-kuyruğu eklenmez
+            # neutral/basit: kuyruk YOK — düz, doğal cevap (güven konuşma tarzında zaten)
         elif verdict == "WEAKLY_GROUNDED":
             # OLASILIK DEĞİL, dürüst eksiklik: araştırıp köklendirmeye çalıştım ama bu kavramı
             # henüz tam yerine oturtamadım (yerini koyamadığım sokak gibi) — uydurmuyorum.

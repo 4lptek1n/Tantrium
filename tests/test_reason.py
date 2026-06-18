@@ -123,10 +123,14 @@ def test_depth_control_and_confidence():
     full = ai.reason("erlotinib detaylı anlat")
     assert short["intent"] == "knowledge"           # 'kısaca' ÖZETLE değil
     assert len(short["answer"]) < len(full["answer"])  # kısa < detaylı
-    # güven kalibrasyonu doğal cümlede
+    # NORMAL sohbet ROBOTİK olmamalı: köklü cevap güven-damgası/komşu-listesi EKLEMEZ
+    # (insan kendinden eminse düz anlatır; "eminim, X'e yakınım" demez). Provenance ayrı döner.
     c = ai.converse("erlotinib nedir?")
-    assert any(w in c["answer"] for w in ("eminim", "olasılıkla", "emin değilim",
-                                          "güvenle"))
+    assert "yakın çevresinde" not in c["answer"]
+    assert "asla uydurmazdım" not in c["answer"]
+    # güven kalibrasyonu YALNIZ teknik register'da açık (isteyen alır, sohbeti kirletmez)
+    ct = ai.converse("erlotinib nedir?", register="teknik")
+    assert any(w in ct["answer"] for w in ("eminim", "köklü", "güvenle"))
 
 
 def test_provenance_sources():
