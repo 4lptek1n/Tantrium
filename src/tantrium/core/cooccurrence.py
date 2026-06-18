@@ -111,6 +111,21 @@ def kmeans(X, k: int, *, iters: int = 25, seed: int = 0):
     return labels, centers
 
 
+def is_noise(token: str) -> bool:
+    """İşlev-kelime / noktalama / saf-sayı / tek-iki harf = düşük-bilgi GÜRÜLTÜ. Eğitimsiz
+    grafta bunlar hub olup walk/generate'i kirletir → kenardan ve üretimden dışla."""
+    t = str(token).strip().lower()
+    if not t:
+        return True
+    if t in _STOP:
+        return True
+    if not any(c.isalpha() for c in t):       # saf noktalama / sayı
+        return True
+    if len(t) <= 2 and t.isalpha():            # tek/çift harf (i, ii→değil ama 'k','h')
+        return True
+    return False
+
+
 def discover(sentences, *, window: int = 4, dim: int = 16, min_count: int = 1,
              drop_stop: bool = True, keep_punct: bool = False):
     """Ham metin → (embeddings E, vocab, idx, ham ortak-geçiş C). Fitsiz gizli-yapı keşfi.

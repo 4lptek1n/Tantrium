@@ -2735,7 +2735,7 @@ class AI:
     def absorb(self, text, *, neighbors_per: int = 4, min_sim: float = 0.45,
                window: int = 5, dim: int = 40, min_count: int = 2,
                max_concepts: int = 250, persist: bool = False,
-               keep_all: bool = True, emergent_types: bool = True,
+               keep_all: bool = False, emergent_types: bool = True,
                n_types: int = 6, meaning_reencode: bool = True) -> dict:
         """UÇTAN UCA FİTSİZ ÖĞRENME — ham metni oku, gizli yapıyı keşfet, KAPIDAN geçir, diz.
 
@@ -2776,11 +2776,12 @@ class AI:
             return reg
 
         # 1) Kenar ADAYLARINI topla (offset = E[a]-E[b] = ilişki yönü; offset kümeleri = tip)
+        from tantrium.core.cooccurrence import is_noise
         cand = []                                 # (a, b, dist, offset)
         for i in range(min(len(vocab), max_concepts)):
             a = vocab[i]
-            if admit(a) not in ("core", "frontier"):
-                continue
+            if is_noise(a) or admit(a) not in ("core", "frontier"):
+                continue                          # işlev-kelime/noktalama kenar kaynağı olmaz
             sims = sorted(((float(S[i, j]), j) for j in range(len(vocab)) if j != i),
                           reverse=True)
             added = 0
@@ -2788,8 +2789,8 @@ class AI:
                 if sim < min_sim or added >= neighbors_per:
                     break
                 b = vocab[j]
-                if admit(b) not in ("core", "frontier"):
-                    continue
+                if is_noise(b) or admit(b) not in ("core", "frontier"):
+                    continue                      # gürültü hedef de olmaz (the/,/of hub'ı önlenir)
                 cand.append((a, b, float(max(0.0, 1.0 - sim)), E[i] - E[j]))
                 added += 1
         # 2) EMERGENT TİP: offset'leri kümele → isimsiz tip (REL_k); IS_A dayatma YOK
@@ -2836,6 +2837,31 @@ class AI:
                 "rejected": rejected, "edges_added": edges, "types": n_emergent,
                 "reencoded": reencoded, "sample": [c for c in list(region)[:12]]}
 
+    def prune_noise(self, *, persist: bool = False) -> dict:
+        """Mevcut manifoldda işlev-kelime/noktalama GÜRÜLTÜ kenarlarını temizle (keep_all
+        kirliliğini geri al). Kaynağı VEYA hedefi gürültü olan kenar atılır → walk/generate
+        artık 'the/,/of' hub'larına sapmaz. Döner: {edges_before, edges_after, removed}."""
+        from tantrium.core.cooccurrence import is_noise
+        tau = self._engine.tau
+        before = sum(len(v) for v in tau.edges.values())
+        removed = 0
+        for src in list(tau.edges.keys()):
+            if is_noise(src):
+                removed += len(tau.edges[src])
+                tau.edges[src] = []
+                continue
+            kept = [e for e in tau.edges[src]
+                    if not is_noise(str(getattr(e, "target", "")))]
+            removed += len(tau.edges[src]) - len(kept)
+            tau.edges[src] = kept
+        after = sum(len(v) for v in tau.edges.values())
+        if persist:
+            try:
+                self._engine.auto_persist()
+            except Exception:
+                pass
+        return {"edges_before": before, "edges_after": after, "removed": removed}
+
     def walk(self, start, *, max_steps: int = 14, strict: bool = False) -> dict:
         """KRİTİK-ÇİZGİ ASAL YÜRÜYÜŞÜ (deep thinking) — TAU grafında, her adımda kritik hatta
         kalarak gidebildiği kadar yürür. Sapmadan adım kalmayınca durur. RH'nin literal hâli:
@@ -2848,6 +2874,7 @@ class AI:
         yürümeyi sürdür, çıkmaza sapma). Döner: {start, path, steps, on_critical_line, narrative}.
         """
         from tantrium.core.positivity_ladder import positivity_depth
+        from tantrium.core.cooccurrence import is_noise
         eng = self._engine
         m = eng.manifold
         tau = eng.tau
@@ -2869,8 +2896,8 @@ class AI:
             best, best_key = None, None
             for e in tau.edges.get(cur, []):
                 t = str(getattr(e, "target", "")).lower()
-                if not t or t in visited or mom(t) is None:
-                    continue
+                if not t or t in visited or is_noise(t) or mom(t) is None:
+                    continue                      # gürültü düğüme sapma (the/,/of)
                 d, r = positivity_depth(cm, mom(t))
                 on_line = (d >= 3) if strict else (r["hankel"] and r["sturm"])
                 if not on_line:
