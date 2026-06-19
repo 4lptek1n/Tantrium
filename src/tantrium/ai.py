@@ -3192,6 +3192,82 @@ class AI:
         return {"prompt": prompt, "text": text,
                 "next_words": [w for w, _ in lm.next_words(prompt, k=6)], "n_tokens": n_tokens}
 
+    def generate_hybrid(self, prompt: str = "", *, n_tokens: int = 40, temperature: float = 0.7,
+                        top_k: int = 40, top_p: float = 0.95, topic_weight: float = 1.5,
+                        grounded: bool = True, seed: int = 0) -> dict:
+        """HİBRİT ÜRETİM — n-gram AKICILIK × gömme KONU-ÇAPASI × grounding KAPISI (tek yol).
+
+        Sorunlar ayrı çözülmüştü; bu üçünü birleştirir: (1) n-gram (NGramLM) yerel GRAMER verir;
+        (2) konu-çapası = promptun gömme-merkezi; her n-gram adayını konuya benzerliğiyle yeniden
+        tartar → KAYMAYI önler (n-gram'ın Markov sürüklenmesi); (3) grounding → topraksız İÇERİK
+        elenir → halüsinasyonsuz. Sonuç: akıcı + konuda kalan + köklü. Kerneli ELLEMEZ, fit YOK.
+        n-gram (.ngram.pkl) + gömme (.npy) gerekir. Döner: {prompt, text, content_grounded_ratio}."""
+        import numpy as np
+        from pathlib import Path
+        from tantrium.core.generation import NGramLM
+        from tantrium.core.cooccurrence import _STOP, tokenize
+        if not Path(".tantrium/fitless_lm.ngram.pkl").exists():
+            return {"prompt": prompt, "text": "", "reason": "n-gram model yok (tools/train_ngram.py)"}
+        ng = getattr(self, "_ngram_lm", None)
+        if ng is None:
+            ng = NGramLM.load(".tantrium/fitless_lm"); self._ngram_lm = ng
+        emb = getattr(self, "_embeddings", None) or self._load_embeddings()
+        E, eidx = (emb[0], emb[2]) if emb and emb[1] else (None, {})
+        # KONU-ÇAPASI: promptun içerik kelimelerinin gömme-merkezi
+        centroid = cn = None
+        if E is not None:
+            pc = [eidx[w] for w in tokenize(prompt, drop_stop=True) if w in eidx]
+            if pc:
+                centroid = E[pc].mean(0)
+                cn = float(np.linalg.norm(centroid)) or 1.0
+        # GROUNDING: in-derece (köklülük) tek geçiş, cache
+        tau = self._engine.tau; concepts = self._engine.manifold.concepts
+        indeg = getattr(self, "_compose_indeg", None)
+        if indeg is None:
+            indeg = {}
+            for es in tau.edges.values():
+                for e in es:
+                    t = str(getattr(e, "target", "")).lower()
+                    if t:
+                        indeg[t] = indeg.get(t, 0) + 1
+            self._compose_indeg = indeg
+        rng = np.random.default_rng(seed)
+        ctx = [ng.BOS] * (ng.order - 1) + ng._toks(prompt)
+        out = list(ng._toks(prompt))
+        for _ in range(n_tokens):
+            d = ng._dist(ctx)
+            if not d:
+                break
+            words = list(d.keys())
+            score = np.log(np.array([d[w] for w in words], dtype=np.float64))   # AKICILIK
+            for i, w in enumerate(words):
+                if centroid is not None and w in eidx:                          # KONU-ÇAPASI
+                    v = E[eidx[w]]; nv = float(np.linalg.norm(v))
+                    if nv:
+                        score[i] += topic_weight * float(v @ centroid / (nv * cn))
+                if grounded and w != ng.EOS and w not in _STOP and len(w) > 2:   # GROUNDING
+                    if not (w in concepts and (len(tau.edges.get(w, [])) + indeg.get(w, 0)) >= 3):
+                        score[i] -= 1e9                                          # topraksız içerik ele
+            logits = score / max(temperature, 1e-6)
+            logits -= logits.max()
+            p = np.exp(logits); p /= p.sum()
+            if len(words) > top_k:
+                idx = np.argsort(-p)[:top_k]
+                words = [words[i] for i in idx]; p = p[idx]; p /= p.sum()
+            order = np.argsort(-p)
+            csum = np.cumsum(p[order]); cut = int(np.searchsorted(csum, top_p)) + 1
+            keep = order[:max(1, cut)]; kw = [words[i] for i in keep]; kp = p[keep]; kp /= kp.sum()
+            w = kw[int(rng.choice(len(kw), p=kp))]
+            if w == ng.EOS:
+                out.append("."); ctx = [ng.BOS] * (ng.order - 1); continue
+            out.append(w); ctx.append(w)
+        text = " ".join(out)
+        content = [w for w in text.split() if w not in _STOP and len(w) > 2 and w != "."]
+        gr = sum(1 for w in content if w in concepts)
+        return {"prompt": prompt, "text": text, "grounded": grounded,
+                "content_grounded_ratio": round(gr / len(content), 3) if content else 0.0,
+                "n_tokens": n_tokens}
+
     def quantum_links(self, concept, *, top_k: int = 8):
         """ONTOLOJİ-KAPILI kuantum bağ — κ-yakın/klasik-uzak AMA yalnız PAYLAŞILAN ontolojik
         eksen (tip/boyut) üzerinden. Kullanıcı: 'kelimenin DNA'sı olmaz; elma↔fibonacci ikisi de

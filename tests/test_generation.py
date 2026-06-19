@@ -151,3 +151,33 @@ def test_ngram_save_load_roundtrip(tmp_path):
     lm2 = NGramLM.load(p)
     assert lm2.n_tokens == lm.n_tokens and lm2.order == lm.order
     assert lm2.generate("the cat", n_tokens=6, seed=1) == lm.generate("the cat", n_tokens=6, seed=1)
+
+
+def test_generate_hybrid_combines_ngram_and_topic(tmp_path, monkeypatch):
+    """HİBRİT: n-gram akıcılık × gömme konu-çapası (grounded=False ile izole). Enjekte edilen
+    küçük modellerle deterministik: üretim boş değil, n-gram vocab'ından, seed-deterministik."""
+    import numpy as np
+    import tantrium
+    from tantrium.core.generation import NGramLM
+    ai = tantrium.AI()
+    ng = NGramLM(order=3)
+    ng.update(["the cell is a small unit of life", "the cell has a membrane and a nucleus",
+               "a cell is the basic unit of living things"] * 25)
+    ng.prune(min_count=1)
+    ai._ngram_lm = ng
+    # küçük gömme enjekte et (konu-çapası yolu için)
+    vocab = sorted({w for s in ["the cell is a small unit of life membrane nucleus living basic"]
+                    for w in s.split()})
+    E = np.random.default_rng(0).standard_normal((len(vocab), 8))
+    ai._embeddings = (E, vocab, {w: i for i, w in enumerate(vocab)})
+    r1 = ai.generate_hybrid("the cell", n_tokens=8, grounded=False, seed=1)
+    r2 = ai.generate_hybrid("the cell", n_tokens=8, grounded=False, seed=1)
+    assert r1["text"] == r2["text"]                  # deterministik
+    toks = r1["text"].split()
+    assert len(toks) >= 3                             # boş değil
+    # üretilen kelimeler n-gram'ın gördüğü kelimelerden (+ '.') olmalı (uydurma yok)
+    seen = set()
+    for d in ng.tables[1].values():
+        seen.update(d.keys())
+    seen |= {".", ng.EOS}
+    assert all(w in seen for w in toks)
