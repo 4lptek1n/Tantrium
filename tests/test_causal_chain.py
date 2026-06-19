@@ -40,71 +40,44 @@ def test_normalize_unchanged_short():
 
 # ─── _extract_relations testleri ────────────────────────────────────────────
 
-def test_extract_inhibits():
-    from tantrium.research.autonomous import _extract_relations
-    rels = _extract_relations("Erlotinib inhibits EGFR kinase.")
-    assert any(r[0] == "erlotinib" and r[1] == "INHIBITS" and r[2] == "egfr" for r in rels)
-
-
-def test_extract_activates():
-    from tantrium.research.autonomous import _extract_relations
-    rels = _extract_relations("EGFR activates RAS pathway.")
-    assert any(r[0] == "egfr" and r[1] == "ACTIVATES" and r[2] == "ras" for r in rels)
-
-
-def test_extract_causes():
-    from tantrium.research.autonomous import _extract_relations
-    rels = _extract_relations("RAS causes tumor cell proliferation.")
-    assert any(r[0] == "ras" and r[1] == "CAUSES" and r[2] == "tumor cell" for r in rels)
-
-
-def test_extract_multi_sentence():
-    from tantrium.research.autonomous import _extract_relations
-    text = "Aspirin inhibits COX enzyme. COX causes inflammation."
-    rels = _extract_relations(text)
-    assert len(rels) >= 2
-
-
-def test_extract_and_split():
-    from tantrium.research.autonomous import _extract_relations
-    text = "Aspirin inhibits COX and ibuprofen activates inflammation."
-    rels = _extract_relations(text)
-    assert len(rels) >= 1  # en az 1 ilişki (kısa entity'ler filtrelenebilir)
-
-
 # ─── causal_chain testleri ──────────────────────────────────────────────────
 
 @pytest.fixture(scope="module")
 def ai_with_causal():
     import tantrium
+    from tests._seed import seed_relations
+    # İZOLE adlar (gerçek 107k manifoldla çakışmasın) — erlotinib/egfr gerçek düğümler,
+    # kendi gerçek kenarlarıyla BFS'i kirletirdi. Uydurma adlar yalnız tohumlanan zinciri verir.
     ai = tantrium.AI()
-    ai.learn(
-        "Erlotinib inhibits EGFR. EGFR activates RAS. "
-        "RAS causes MEK activation. MEK causes ERK activation. "
-        "ERK causes tumor cell proliferation."
-    )
+    seed_relations(ai, [
+        ("zdrugx", "INHIBITS", "zgenea"),
+        ("zgenea", "ACTIVATES", "zpathb"),
+        ("zpathb", "CAUSES", "zkinc"),
+        ("zkinc", "CAUSES", "zkind"),
+        ("zkind", "CAUSES", "zdiseasee"),
+        ("zaspirinx", "INHIBITS", "zcoxy"),
+    ])
     return ai
 
 
 def test_causal_chain_single_hop(ai_with_causal):
     ai = ai_with_causal
-    ai.learn("Aspirin inhibits COX enzyme.")
-    r = ai.causal_chain("COX", depth=4)
+    r = ai.causal_chain("zcoxy", depth=4)
     assert r["n_paths"] >= 1
-    assert any("aspirin" in str(a) for a in r["actionable"])
+    assert any("zaspirinx" in str(a) for a in r["actionable"])
 
 
 def test_causal_chain_multi_hop(ai_with_causal):
     """En az 1 çok-adımlı (depth>=3) zincir bulunmalı."""
-    r = ai_with_causal.causal_chain("tumor cell proliferation", depth=8)
+    r = ai_with_causal.causal_chain("zdiseasee", depth=8)
     assert r["n_paths"] >= 1
     # BFS en kısa zinciri önce döndürür; çok-adımlı zincir listede bir yerdedir
     assert any(ch["depth"] >= 3 for ch in r["chains"])
 
 
-def test_causal_chain_finds_erlotinib(ai_with_causal):
-    r = ai_with_causal.causal_chain("tumor cell proliferation", depth=8)
-    assert "erlotinib" in r["actionable"]
+def test_causal_chain_finds_root_intervention(ai_with_causal):
+    r = ai_with_causal.causal_chain("zdiseasee", depth=8)
+    assert "zdrugx" in r["actionable"]
 
 
 def test_causal_chain_empty_for_unknown(ai_with_causal):
@@ -113,29 +86,30 @@ def test_causal_chain_empty_for_unknown(ai_with_causal):
 
 
 def test_causal_chain_case_insensitive(ai_with_causal):
-    r1 = ai_with_causal.causal_chain("TUMOR CELL PROLIFERATION", depth=8)
-    r2 = ai_with_causal.causal_chain("tumor cell proliferation", depth=8)
+    r1 = ai_with_causal.causal_chain("ZDISEASEE", depth=8)
+    r2 = ai_with_causal.causal_chain("zdiseasee", depth=8)
     # Her ikisi de en az 1 yol bulmalı (case-normalized aynı hedef)
     assert r1["n_paths"] >= 1
     assert r2["n_paths"] >= 1
 
 
 def test_causal_chain_returns_dict_keys(ai_with_causal):
-    r = ai_with_causal.causal_chain("tumor cell", depth=4)
+    r = ai_with_causal.causal_chain("zkind", depth=4)
     assert set(["goal", "chains", "actionable", "n_paths", "note"]).issubset(set(r.keys()))
 
 
 def test_multiple_intervention_points():
     """Ayrı bir AI nesnesiyle izolasyon sağla."""
     import tantrium
+    from tests._seed import seed_relations
     ai = tantrium.AI()
-    ai.learn(
-        "DrugAlpha inhibits TargetX. TargetX activates TargetY. "
-        "TargetY causes DiseaseZ."
-    )
-    ai.learn(
-        "DrugBeta inhibits TargetW. TargetW causes TargetY."
-    )
-    r = ai.causal_chain("DiseaseZ", depth=8)
+    seed_relations(ai, [
+        ("drugalpha", "INHIBITS", "targetx"),
+        ("targetx", "ACTIVATES", "targety"),
+        ("targety", "CAUSES", "diseasez"),
+        ("drugbeta", "INHIBITS", "targetw"),
+        ("targetw", "CAUSES", "targety"),
+    ])
+    r = ai.causal_chain("diseasez", depth=8)
     # En az 2 müdahale noktası: DrugAlpha ve DrugBeta
     assert len(r["actionable"]) >= 2

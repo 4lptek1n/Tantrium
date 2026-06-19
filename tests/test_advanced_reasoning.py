@@ -8,15 +8,20 @@ import tantrium
 
 @pytest.fixture(scope="module")
 def ai_causal():
+    from tests._seed import seed_relations
     ai = tantrium.AI()
-    ai.learn(
-        "Erlotinib inhibits EGFR. EGFR activates RAS. "
-        "RAS causes MEK activation. MEK activates ERK. "
-        "ERK causes tumor cell proliferation. "
-        "Imatinib inhibits BCR-ABL. BCR-ABL causes leukemia. "
-        "Gefitinib inhibits EGFR. "
-        "Aspirin inhibits cyclooxygenase. Cyclooxygenase causes inflammation."
-    )
+    seed_relations(ai, [
+        ("erlotinib", "INHIBITS", "egfr"),
+        ("egfr", "ACTIVATES", "ras"),
+        ("ras", "CAUSES", "mek"),
+        ("mek", "ACTIVATES", "erk"),
+        ("erk", "CAUSES", "tumor cell"),
+        ("imatinib", "INHIBITS", "bcr-abl"),
+        ("bcr-abl", "CAUSES", "leukemia"),
+        ("gefitinib", "INHIBITS", "egfr"),
+        ("aspirin", "INHIBITS", "cyclooxygenase"),
+        ("cyclooxygenase", "CAUSES", "inflammation"),
+    ])
     return ai
 
 
@@ -133,24 +138,6 @@ def test_visualize_unknown_graceful():
     ai = tantrium.AI()
     result = ai.visualize_causal("unknownxyz999")
     assert isinstance(result, str)
-
-
-# ─── report ──────────────────────────────────────────────────────────────────
-
-def test_report_returns_string(ai_causal):
-    r = ai_causal.report("erlotinib")
-    assert isinstance(r, str) and len(r) > 50
-
-
-def test_report_has_sections(ai_causal):
-    r = ai_causal.report("erlotinib")
-    assert "Sertifikasyon" in r
-    assert "Topraklama" in r
-
-
-def test_report_topic_in_output(ai_causal):
-    r = ai_causal.report("erlotinib")
-    assert "erlotinib" in r.lower()
 
 
 # ─── benchmark ───────────────────────────────────────────────────────────────

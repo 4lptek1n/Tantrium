@@ -152,15 +152,13 @@ class Actor:
         return not any(unsafe in low for unsafe in self._UNSAFE)
 
     def _learn(self, action: Action) -> ActionResult:
-        from tantrium.language.bootstrap import LanguageBootstrap
-        r = LanguageBootstrap(self.engine, domain="goal_learning").auto_learn(action.payload)
-        action.certified = True
+        # Dil katmanı (metinden öğrenme) kaldırıldı — ASİ yapısal/sayısal kaynaklardan büyür.
         return ActionResult(
             action=action,
-            success=True,
-            summary=f"+{r.new_concepts} kavram  +{r.relations_added} ilişki",
-            concepts_learned=r.taught,
-            relations_added=r.relations_added,
+            success=False,
+            summary="metinden öğrenme kaldırıldı (dil katmanı yok)",
+            concepts_learned=[],
+            relations_added=0,
         )
 
     def _relate(self, action: Action) -> ActionResult:

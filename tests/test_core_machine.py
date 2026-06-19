@@ -31,23 +31,11 @@ def test_unified_certificate_has_all_fields(ai):
     assert len(result.moments) >= 8
 
 
-def test_ask_has_truth_and_confidence(ai):
-    """ask() geriye uyumlu certified + yeni truth/confidence alanları."""
-    r = ai.ask("DNA")
-    assert r.certified is True  # 23/23 paradigm
-    assert r.truth in ("CONSISTENT", "CONTESTED", "CONTRADICTORY")
-    assert 0.0 <= r.truth_score <= 1.0
-    assert 0.0 <= r.confidence <= 1.0
-    assert r.confidence_level in ("CERTAIN", "STRONG", "MODERATE", "WEAK", "UNCERTAIN")
-    assert isinstance(r.coherent, bool)
-
-
-def test_grounded_concept_is_coherent(ai):
-    """Köklü (GROUNDED) ve 23/23 olan kavram coherent olmalı."""
-    r = ai.ask("protein")
-    # protein manifolda mevcut ve köklü
-    if r.grounding == "GROUNDED" and r.paradigms_passed == 23:
-        assert r.coherent is True
+def test_certify_all_has_truth_and_confidence(ai):
+    """certify_all() 4 eksen — yapısal + truth + confidence + coherent."""
+    cert = ai.certify_all("DNA")
+    assert isinstance(cert.coherent, bool)
+    assert 0.0 <= cert.confidence <= 1.0
 
 
 def test_reconstruct_returns_measure():
@@ -101,11 +89,9 @@ def test_new_api_methods_exist(ai):
     assert hasattr(ai, "certify_all")
     assert hasattr(ai, "manifold_gaps")
     assert hasattr(ai, "destiny")
-    assert hasattr(ai, "genealogy")
     assert hasattr(ai, "signal")
     assert hasattr(ai, "dna")
     assert hasattr(ai, "crypto")
-    assert hasattr(ai, "inject_english")
 
 
 def test_engine_core_property(ai):
@@ -140,9 +126,8 @@ def test_grounding_cert_stashed_in_evidence(ai):
     assert isinstance(gcert.summary(), str)
 
 
-def test_ask_uses_single_grounding_pass(ai):
-    """F2b: ask() topraklama özetini evidence'tan alır, yeniden encode/certify etmez."""
-    result = ai.ask("EGFR")
-    # ask() çıktısı grounding satırını içermeli (gcert.summary evidence'tan geldi)
-    assert result.grounding in ("GROUNDED", "WEAKLY_GROUNDED", "UNGROUNDED")
-    assert result.answer  # boş değil
+def test_single_grounding_pass_via_core(ai):
+    """F2b: CoreMachine grounding'i tek geçişte hesaplar (evidence'a koyar)."""
+    cert = ai._engine.core.certify("EGFR")
+    assert cert.grounding in ("GROUNDED", "WEAKLY_GROUNDED", "UNGROUNDED")
+    assert cert.evidence.get("grounding_cert") is not None

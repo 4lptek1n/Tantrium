@@ -5,20 +5,21 @@ causal_chain() geriye doğru (kime neden olan?), what_if() ileriye doğru
 """
 import pytest
 import tantrium
+from tests._seed import seed_relations
 
 
 @pytest.fixture(scope="module")
 def ai_fwd():
-    """İleriye doğru zincirleri olan izole AI nesnesi."""
+    """İleriye doğru zincirleri olan izole AI nesnesi (yapısal tohum, dil yok)."""
     ai = tantrium.AI()
-    ai.learn(
-        "Erlotinib inhibits EGFR. "
-        "EGFR activates RAS. "
-        "RAS causes MEK activation. "
-        "MEK causes ERK activation. "
-        "ERK causes tumor cell proliferation. "
-        "Erlotinib inhibits tumor growth."
-    )
+    seed_relations(ai, [
+        ("erlotinib", "INHIBITS", "egfr"),
+        ("egfr", "ACTIVATES", "ras"),
+        ("ras", "CAUSES", "mek"),
+        ("mek", "CAUSES", "erk"),
+        ("erk", "CAUSES", "tumor cell"),
+        ("erlotinib", "INHIBITS", "tumor growth"),
+    ])
     return ai
 
 

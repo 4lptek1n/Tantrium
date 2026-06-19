@@ -12,3 +12,4 @@ def engine():
 @pytest.fixture(scope="session")
 def ai():
     return tantrium.AI()
+

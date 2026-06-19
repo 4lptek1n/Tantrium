@@ -30,8 +30,6 @@ from tantrium.research.goal import Goal, GoalManifold
 from tantrium.research.actor import Action, ActionResult
 from tantrium.research.ingest import IngestBatch, IngestReport, DataIngestor
 from tantrium.research.researcher import ResearchCycle, ResearchReport, AutonomousResearcher
-from tantrium.language.generator import GeneratedStep, GenerationResult, CertifiedGenerator
-from tantrium.language.speaker import CertifiedStatement, Speaker
 from tantrium.domains.spectral import SpectralMeasure, gram_spectrum, spectral_distance, dna_measure, moments_to_spectral
 from tantrium.meta.paradigm import MetaParadigm, UniversalRule, ParadigmMoment, SelfCertResult
 from tantrium.meta.topology import MomentTopology, MathRegion
@@ -132,12 +130,6 @@ __all__ = [
     "Plan",
     "PlanStep",
     "Planner",
-    # Language
-    "GeneratedStep",
-    "GenerationResult",
-    "CertifiedGenerator",
-    "CertifiedStatement",
-    "Speaker",
     # Spectral
     "SpectralMeasure",
     "gram_spectrum",

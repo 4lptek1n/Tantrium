@@ -20,7 +20,7 @@ def test_expected_routes_registered():
     """serve.py beklenen endpoint'leri kaydeder."""
     from tantrium.serve import app
     paths = {getattr(r, "path", None) for r in app.routes}
-    for p in ("/health", "/status", "/ask", "/grounding", "/learn"):
+    for p in ("/health", "/status", "/certify", "/grounding", "/causal_chain"):
         assert p in paths, f"'{p}' endpoint'i kayıtlı olmalı"
 
 
@@ -47,12 +47,11 @@ def test_health_handler():
     assert out["status"] == "ok"
 
 
-def test_ask_handler_wires_to_facade():
-    """/ask handler'ı AI.ask()'e bağlanır, 4-eksen JSON döndürür."""
+def test_certify_handler_wires_to_facade():
+    """/certify handler'ı AI.certify_all()'e bağlanır, 4-eksen JSON döndürür."""
     from tantrium.serve import app, TokenReq
-    handler = _handler(app, "/ask", "POST")
+    handler = _handler(app, "/certify", "POST")
     out = handler(TokenReq(token="EGFR"))
-    for key in ("query", "certified", "paradigms_passed", "grounding",
-                "truth", "confidence"):
-        assert key in out, f"/ask yanıtı '{key}' içermeli"
+    for key in ("query", "grounding", "truth", "confidence", "coherent"):
+        assert key in out, f"/certify yanıtı '{key}' içermeli"
     assert out["query"] == "EGFR"

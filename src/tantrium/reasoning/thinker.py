@@ -123,7 +123,9 @@ class Thinker:
         Soruyu önce kelimelere böler, manifold'da bulunanları alır.
         Bulunan kelimeler yoksa tüm soruyu encode eder (fallback).
         """
-        from tantrium.language.bootstrap import _tokenize
+        import re
+        def _tokenize(s):
+            return [w for w in re.findall(r"[a-zA-Z0-9]+", str(s).lower()) if w]
         result = ThinkingResult(question=question, depth=depth)
         engine = self.engine
 

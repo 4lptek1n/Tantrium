@@ -62,9 +62,14 @@ def test_unknown_meaningful_token_resonates(ai):
     manifoldda değilse UNGROUNDED kabul edilir — sistem öğrenmemişse bilmez.
     """
     import tantrium
+    from tests._seed import seed_relations
     ai2 = tantrium.AI()
-    # ATP'yi önce öğret, sonra test et
-    ai2.learn("ATP is adenosine triphosphate. ATP activates kinase. ATP provides energy.")
+    # ATP'yi önce yapısal tohumla (dil yok), sonra test et
+    seed_relations(ai2, [
+        ("atp", "ACTIVATES", "kinase"),
+        ("atp", "IS_A", "nucleotide"),
+        ("atp", "CAUSES", "energy release"),
+    ])
     cert = ai2.grounding("ATP")
     assert cert.verdict in ("GROUNDED", "WEAKLY_GROUNDED")
     assert cert.direct_edges >= 1
@@ -77,21 +82,6 @@ def test_grounded_score_exceeds_ungrounded(ai):
     grounded = ai.grounding("enzyme")
     ungrounded = ai.grounding("xkvbwqzplm")
     assert grounded.score > ungrounded.score
-
-
-# ─── ask() entegrasyonu ───────────────────────────────────────────────────────
-
-def test_ask_result_carries_grounding(ai):
-    """ai.ask() sonucu topraklama eksenini taşımalı."""
-    r = ai.ask("protein")
-    assert r.grounding == "GROUNDED"
-    assert r.grounding_score > 0.0
-
-
-def test_ask_garbage_grounding_low(ai):
-    """ai.ask() çöp için düşük topraklama raporlamalı."""
-    r = ai.ask("florbglomp")
-    assert r.grounding != "GROUNDED"
 
 
 # ─── Sertifika nesnesi ────────────────────────────────────────────────────────

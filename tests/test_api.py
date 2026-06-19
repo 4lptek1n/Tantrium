@@ -40,64 +40,6 @@ def test_status_contains_tantrium(ai):  # type: ignore[misc]
     assert "Tantrium" in s
 
 
-# ─── AI.ask() ─────────────────────────────────────────────────────────────────
-
-def test_ask_returns_ask_result(ai):  # type: ignore[misc]
-    r = ai.ask("DNA")
-    assert isinstance(r, AskResult)
-
-
-def test_ask_has_certified(ai):  # type: ignore[misc]
-    r = ai.ask("DNA")
-    assert hasattr(r, "certified")
-    assert isinstance(r.certified, bool)
-
-
-def test_ask_certified_is_true_for_valid_query(ai):  # type: ignore[misc]
-    r = ai.ask("protein")
-    assert r.certified is True
-
-
-def test_ask_has_paradigms_passed(ai):  # type: ignore[misc]
-    r = ai.ask("DNA")
-    assert hasattr(r, "paradigms_passed")
-    assert isinstance(r.paradigms_passed, int)
-
-
-def test_ask_paradigms_passed_is_23(ai):  # type: ignore[misc]
-    r = ai.ask("protein")
-    assert r.paradigms_passed == 23
-
-
-def test_ask_has_answer(ai):  # type: ignore[misc]
-    """AskResult.answer is the certified natural-language response."""
-    r = ai.ask("DNA")
-    assert hasattr(r, "answer")
-
-
-def test_ask_answer_is_non_empty_string(ai):  # type: ignore[misc]
-    r = ai.ask("DNA")
-    assert isinstance(r.answer, str)
-    assert len(r.answer) > 0
-
-
-def test_ask_rna_polymerase(ai):  # type: ignore[misc]
-    r = ai.ask("RNA polymerase")
-    assert r.certified is True
-    assert r.paradigms_passed == 23
-
-
-def test_ask_has_query_field(ai):  # type: ignore[misc]
-    r = ai.ask("protein folding")
-    assert r.query == "protein folding"
-
-
-def test_ask_has_paradigms_total(ai):  # type: ignore[misc]
-    r = ai.ask("protein folding")
-    assert hasattr(r, "paradigms_total")
-    assert r.paradigms_total == 23
-
-
 # ─── AI.paradigms() ───────────────────────────────────────────────────────────
 
 def test_paradigms_returns_dict(ai):
@@ -209,21 +151,6 @@ def test_bridge_distances_computed(ai):
     assert result.target_distance >= 0
 
 
-# ─── AI.compare() with resonance ─────────────────────────────────────────────
-
-def test_compare_returns_string(ai):
-    result = ai.compare("prime", "zeta")
-    assert isinstance(result, str)
-
-
-def test_compare_includes_l1_distance(ai):
-    result = ai.compare("riemann", "zeta")
-    assert "L1" in result
-
-
-def test_compare_includes_resonance(ai):
-    result = ai.compare("prime", "riemann")
-    assert "Harmonik" in result or "rezonans" in result.lower()
 
 
 # ─── Vision topology performance ──────────────────────────────────────────────
@@ -250,23 +177,6 @@ def test_energy_profile_exported_from_tantrium():
 
 
 
-def test_ask_has_nearest_list(ai):  # type: ignore[misc]
-    r = ai.ask("DNA")
-    assert hasattr(r, "nearest")
-    assert isinstance(r.nearest, list)
-
-
-def test_ask_has_gaps_list(ai):  # type: ignore[misc]
-    r = ai.ask("DNA")
-    assert hasattr(r, "gaps")
-    assert isinstance(r.gaps, list)
-
-
-def test_ask_gaps_empty_when_fully_certified(ai):  # type: ignore[misc]
-    """When all paradigms pass, gaps list must be empty."""
-    r = ai.ask("DNA")
-    if r.certified:
-        assert r.gaps == []
 
 
 # ─── AI.engine and AI.manifold properties ────────────────────────────────────

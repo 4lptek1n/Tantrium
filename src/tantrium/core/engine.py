@@ -89,8 +89,6 @@ class CertificationEngine:
         self._ensure_anchors()       # çapaları hem manifold'a hem TAU'ya ekler
         self._inject_math_kernel()   # Layer 0 → Layer 3 köprüsü
         self._load_spectral_cache()
-        from tantrium.language.speaker import Speaker
-        self.speaker = Speaker(manifold=self.manifold)
         # Topraklama ekseni: yapısal geçerlilik (23 paradigma) yanında
         # "bilinen referanslara bağlı mı?" sorusunu cevaplar.
         from tantrium.core.grounding import GroundingCertifier
@@ -163,8 +161,6 @@ class CertificationEngine:
         Unknown ≠ false. If the system has no certified knowledge about the
         question, it says so with a precise named gap.
         """
-        from tantrium.language.speaker import Speaker
-        speaker = Speaker(manifold=self.manifold)
         question_lower = question.lower()
 
         # Step 1: knowledge store search

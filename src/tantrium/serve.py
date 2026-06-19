@@ -113,25 +113,19 @@ if _FASTAPI_OK:
         ai = _get_ai()
         return ai.status()
 
-    @app.post("/ask")
-    def ask(req: TokenReq):
-        r = _get_ai().ask(req.token)
+    @app.post("/certify")
+    def certify(req: TokenReq):
+        c = _get_ai().certify_all(req.token)
         return {
-            "query": r.query,
-            "certified": r.certified,
-            "paradigms_passed": r.paradigms_passed,
-            "paradigms_total": r.paradigms_total,
-            "grounding": r.grounding,
-            "grounding_score": r.grounding_score,
-            "truth": r.truth,
-            "truth_score": r.truth_score,
-            "confidence": r.confidence,
-            "confidence_level": r.confidence_level,
+            "query": req.token,
+            "paradigms_passed": getattr(c, "paradigms_passed", None),
+            "grounding": c.grounding,
+            "grounding_score": c.grounding_score,
+            "truth": c.truth,
+            "truth_score": c.truth_score,
+            "confidence": c.confidence,
+            "coherent": c.coherent,
         }
-
-    @app.post("/learn")
-    def learn(req: LearnReq):
-        return _get_ai().learn(req.text)
 
     @app.post("/grounding")
     def grounding(req: TokenReq):
@@ -166,10 +160,6 @@ if _FASTAPI_OK:
     @app.post("/visualize", response_class=PlainTextResponse)
     def visualize(req: VisualizeReq):
         return _get_ai().visualize_causal(req.concept, depth=req.depth, mode=req.mode)
-
-    @app.post("/report", response_class=PlainTextResponse)
-    def report(req: ReportReq):
-        return _get_ai().report(req.topic, depth=req.depth)
 
     @app.post("/benchmark")
     def benchmark(req: BenchmarkReq):
@@ -215,21 +205,6 @@ if _FASTAPI_OK:
             "n_surface": cs.n_surface,
             "nearest": cs.nearest(n=5),
             "summary": str(cs),
-        }
-
-    @app.post("/generate")
-    def generate(req: GenerateReq):
-        result = _get_ai().generate(
-            req.seed,
-            steps=req.steps,
-            goal=req.goal,
-            lang=req.lang,
-            use_meaning=req.use_meaning,
-        )
-        return {
-            "seed": req.seed,
-            "text": result.text if hasattr(result, "text") else str(result),
-            "use_meaning": req.use_meaning,
         }
 
 
