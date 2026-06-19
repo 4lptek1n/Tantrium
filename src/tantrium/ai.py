@@ -3061,6 +3061,51 @@ class AI:
         return {"query": query, "related": out, "certified": certify,
                 "n_recalled": len(cands)}
 
+    def contextual_embed(self, sentence, target=None, *, k: int = 8, tau: float = 0.35,
+                         layers: int = 2):
+        """FİTSİZ DERİNLİK — statik gömme + L-katmanlı fitsiz attention → BAĞLAMSAL temsil.
+
+        Statik gömme kelime başına TEK vektör verir → polisemi çözemez ('bank'=tek nokta).
+        Transformer bunu DERİNLİK (attention katmanları) ile çözer: token bağlama göre kayar.
+        Biz AYNISINI eğitimsiz yaparız — cümle tokenları fitsiz attention'la (attention.py,
+        layers=derinlik) birbirine bakar; 'river bank' vs 'savings bank' → 'bank' FARKLI yöne
+        kayar. Gradient/öğrenilen-ağırlık YOK; katman = bağlamsallaştırma derinliği.
+
+        target verilirse o tokenın BAĞLAMSAL vektörüne en yakın statik kelimeler (anlam-çözümü
+        kanıtı) döner. Döner: {tokens, target, nearest:[(kelime,kosinüs)]} veya tüm vektörler."""
+        import numpy as np
+        from tantrium.core.attention import fitless_attention
+        from tantrium.core.cooccurrence import tokenize
+        emb = getattr(self, "_embeddings", None) or self._load_embeddings()
+        if not emb or not emb[1]:
+            return {"tokens": [], "nearest": [], "reason": "gömme yok — train_corpus/runner gerek"}
+        E, vocab, idx = emb
+        toks = [t for t in tokenize(str(sentence)) if t in idx]
+        if len(toks) < 2:
+            return {"tokens": toks, "nearest": [], "reason": "cümlede ≥2 bilinen token yok"}
+        X = np.stack([E[idx[t]] for t in toks])
+        H, _A = fitless_attention(X, tau=tau, layers=layers)   # L-katman = derinlik
+        if target is None:
+            return {"tokens": toks, "vectors": {t: H[i].tolist() for i, t in enumerate(toks)}}
+        tl = str(target).lower()
+        if tl not in toks:
+            return {"tokens": toks, "target": tl, "nearest": [],
+                    "reason": "hedef token cümlede/vocab'ta yok"}
+        h = H[toks.index(tl)]
+        nh = np.linalg.norm(h) or 1.0
+        norms = np.linalg.norm(E, axis=1)
+        norms[norms == 0] = 1.0
+        sims = (E @ h) / (norms * nh)
+        order = np.argsort(-sims)
+        out = []
+        for j in order:
+            w = vocab[j]
+            if w != tl:
+                out.append((w, round(float(sims[j]), 3)))
+            if len(out) >= k:
+                break
+        return {"tokens": toks, "target": tl, "nearest": out, "layers": layers}
+
     def prune_noise(self, *, persist: bool = False) -> dict:
         """Mevcut manifoldda işlev-kelime/noktalama GÜRÜLTÜ kenarlarını temizle (keep_all
         kirliliğini geri al). Kaynağı VEYA hedefi gürültü olan kenar atılır → walk/generate
