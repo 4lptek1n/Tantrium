@@ -3107,6 +3107,31 @@ class AI:
                 break
         return {"tokens": toks, "target": tl, "nearest": out, "layers": layers}
 
+    def generate_text(self, prompt: str = "", *, n_tokens: int = 30, temperature: float = 0.7,
+                      top_k: int = 40, top_p: float = 0.9, prior_weight: float = 0.25,
+                      seed: int = 0) -> dict:
+        """FİT'SİZ SERBEST ÜRETİM — autoregressive P(next|context)'in kapalı-form karşılığı
+        (FitlessLM: yönlü ortak-geçiş→SVD log-bilineer; gradient YOK). CertifiedGenerator
+        graf-YÜRÜYÜŞÜ köklü-türetim yapar; bu SERBEST yüzey üretimi (akıcılık). Önceden eğitilmiş
+        model gerekir (.tantrium/fitless_lm — tools/train_lm.py). DÜRÜST: sığ-LM kalitesi
+        (konusal + yerel yapı); akıcı sözdizimi DERİNLİK ister (contextual katman). Döner:
+        {prompt, text, next_words, n_tokens} veya yoksa dürüst gerekçe."""
+        from pathlib import Path
+        from tantrium.core.generation import FitlessLM
+        base = Path(".tantrium/fitless_lm")
+        if not (base.with_suffix(".npz")).exists():
+            return {"prompt": prompt, "text": "", "reason": "eğitilmiş LM yok — "
+                    "tools/train_lm.py ile .tantrium/fitless_lm üret"}
+        lm = getattr(self, "_fitless_lm", None)
+        if lm is None:
+            lm = FitlessLM.load(str(base))
+            self._fitless_lm = lm
+        text = lm.generate(prompt, n_tokens=n_tokens, temperature=temperature,
+                           top_k=top_k, top_p=top_p, prior_weight=prior_weight, seed=seed)
+        return {"prompt": prompt, "text": text,
+                "next_words": [w for w, _ in lm.next_words(prompt, k=6)],
+                "n_tokens": n_tokens}
+
     def quantum_links(self, concept, *, top_k: int = 8):
         """ONTOLOJİ-KAPILI kuantum bağ — κ-yakın/klasik-uzak AMA yalnız PAYLAŞILAN ontolojik
         eksen (tip/boyut) üzerinden. Kullanıcı: 'kelimenin DNA'sı olmaz; elma↔fibonacci ikisi de
