@@ -158,12 +158,15 @@ class FitlessLM:
         return logits
 
     def generate(self, prompt: str = "", *, n_tokens: int = 30, temperature: float = 0.7,
-                 top_k: int = 30, top_p: float = 0.9, rep_penalty: float = 1.3,
-                 prior_weight: float = 0.25, induction_strength: float = 3.0,
-                 seed: int = 0) -> str:
+                 top_k: int = 30, top_p: float = 0.9, rep_penalty: float = 1.8,
+                 prior_weight: float = 0.25, induction_strength: float = 0.6,
+                 bias=None, seed: int = 0) -> str:
         """Autoregressive üretim — ÜÇ mekanizma (log-bilineer + unigram-öncül + INDUCTION-HEAD) →
         tekrar-cezası → top-k/top-p süzme → sıcaklık → örnekle. Induction = in-context learning
-        (bağlamdaki örüntüyü sürdürür, eğitimsiz). Fit'siz P(next|context). seed → deterministik."""
+        (bağlamdaki örüntüyü sürdürür, eğitimsiz). Fit'siz P(next|context). seed → deterministik.
+
+        bias: kept-vocab boyutunda logit-ön-yargısı (np dizi) — KERNEL KAPISI için: topraksız
+        içerik tokenları -∞ ile bastırılır → halüsinasyonsuz içerik (işlev-kelimeler serbest)."""
         if self.A is None:
             return ""
         rng = np.random.default_rng(seed)
@@ -175,9 +178,12 @@ class FitlessLM:
         out = list(toks)
         V = len(kvocab)
         kk = max(1, min(top_k, V))
+        bias = None if bias is None else np.asarray(bias, dtype=np.float64)
         for _ in range(n_tokens):
             logits = self._context_logits(out, prior_weight=prior_weight,
                                           induction_strength=induction_strength)
+            if bias is not None:                     # KERNEL KAPISI: topraksız içeriği bastır
+                logits = logits + bias
             for tid in set(out[-2 * self.window:]):  # tekrar cezası (CTRL): >0 böl, <0 çarp
                 logits[tid] = logits[tid] / rep_penalty if logits[tid] > 0 else logits[tid] * rep_penalty
             top = np.argpartition(-logits, kk - 1)[:kk]   # top-k: kuyruk-çöpü ele

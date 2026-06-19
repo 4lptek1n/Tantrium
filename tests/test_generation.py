@@ -106,3 +106,17 @@ def test_induction_ngram_disambiguates_by_context():
     # tek-token AYIRAMAZ (ikisinde de aynı sonucu verir → bağlam-kör)
     assert (top1(lm._induction(out_cat, V, 1.0, prefix_len=1, fuzzy=False)) ==
             top1(lm._induction(out_dog, V, 1.0, prefix_len=1, fuzzy=False)))
+
+
+def test_kernel_gate_bias_suppresses_ungrounded_token():
+    """KERNEL KAPISI: bias=-∞ verilen token üretimde ASLA çıkmaz (topraksız içerik bastırma).
+    Halüsinasyonsuz-içerik mekanizmasının deterministik testi."""
+    import numpy as np
+    lm = FitlessLM(max_vocab=80, window=4)
+    lm.update(["the cat ate fish then slept", "the dog ate meat then ran"] * 25)
+    lm.fit(dim=8, min_count=2)
+    bias = np.zeros(len(lm._kvocab))
+    bias[lm._kidx["meat"]] = -1e9                    # 'meat'i bastır (topraksız simülasyonu)
+    for seed in range(4):
+        out = lm.generate("the dog ate", n_tokens=12, bias=bias, seed=seed).split()
+        assert "meat" not in out                      # kapı her seed'de bastırdı

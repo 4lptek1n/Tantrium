@@ -3107,17 +3107,49 @@ class AI:
                 break
         return {"tokens": toks, "target": tl, "nearest": out, "layers": layers}
 
+    def _grounded_bias(self, lm):
+        """KERNEL KAPISI ön-yargı vektörü (lm vocab'ı boyunca, bir kez hesap + cache):
+        işlev-kelime VEYA grounding-köklü kavram → 0 (serbest); topraksız İÇERİK → -∞ (bastır).
+        Böylece üretimin İÇERİK tokenları halüsinasyonsuz (köklü), işlev-kelimeler akıcı kalır."""
+        import numpy as np
+        from tantrium.core.cooccurrence import _STOP
+        cached = getattr(self, "_gbias_cache", None)
+        if cached is not None and cached[0] is lm:
+            return cached[1]
+        tau = self._engine.tau
+        concepts = self._engine.manifold.concepts
+        indeg: dict = {}                              # köklülük için in-derece (tek geçiş)
+        for es in tau.edges.values():
+            for e in es:
+                t = str(getattr(e, "target", "")).lower()
+                if t:
+                    indeg[t] = indeg.get(t, 0) + 1
+        bias = np.zeros(len(lm._kvocab), dtype=np.float64)
+        for j, w in enumerate(lm._kvocab):
+            if w in _STOP or len(w) <= 2:            # işlev-kelime/kısa → serbest (akıcılık)
+                continue
+            edges = len(tau.edges.get(w, [])) + indeg.get(w, 0)
+            grounded = (w in concepts) and edges >= 3
+            if not grounded:                          # topraksız İÇERİK → bastır (halüsinasyon kapısı)
+                bias[j] = -1e9
+        self._gbias_cache = (lm, bias)
+        return bias
+
     def generate_text(self, prompt: str = "", *, n_tokens: int = 30, temperature: float = 0.7,
                       top_k: int = 40, top_p: float = 0.9, prior_weight: float = 0.25,
-                      seed: int = 0) -> dict:
+                      grounded: bool = False, seed: int = 0) -> dict:
         """FİT'SİZ SERBEST ÜRETİM — autoregressive P(next|context)'in kapalı-form karşılığı
         (FitlessLM: yönlü ortak-geçiş→SVD log-bilineer; gradient YOK). CertifiedGenerator
         graf-YÜRÜYÜŞÜ köklü-türetim yapar; bu SERBEST yüzey üretimi (akıcılık). Önceden eğitilmiş
-        model gerekir (.tantrium/fitless_lm — tools/train_lm.py). DÜRÜST: sığ-LM kalitesi
-        (konusal + yerel yapı); akıcı sözdizimi DERİNLİK ister (contextual katman). Döner:
-        {prompt, text, next_words, n_tokens} veya yoksa dürüst gerekçe."""
+        model gerekir (.tantrium/fitless_lm — tools/train_lm.py).
+
+        grounded=True → KERNEL KAPISI: içerik tokenları grounding'den geçer (topraksız içerik
+        geometrik bastırılır → halüsinasyonsuz içerik; işlev-kelimeler serbest). DÜRÜST: bu
+        token-düzeyi köklülük (içerik gerçek kavram); iddia-düzeyi doğruluk (kritik-hat ilişki)
+        bir sonraki katman. Döner: {prompt, text, grounded, content_grounded_ratio, n_tokens}."""
         from pathlib import Path
         from tantrium.core.generation import FitlessLM
+        from tantrium.core.cooccurrence import _STOP
         base = Path(".tantrium/fitless_lm")
         if not (base.with_suffix(".npz")).exists():
             return {"prompt": prompt, "text": "", "reason": "eğitilmiş LM yok — "
@@ -3126,11 +3158,18 @@ class AI:
         if lm is None:
             lm = FitlessLM.load(str(base))
             self._fitless_lm = lm
-        text = lm.generate(prompt, n_tokens=n_tokens, temperature=temperature,
-                           top_k=top_k, top_p=top_p, prior_weight=prior_weight, seed=seed)
-        return {"prompt": prompt, "text": text,
+        bias = self._grounded_bias(lm) if grounded else None
+        text = lm.generate(prompt, n_tokens=n_tokens, temperature=temperature, top_k=top_k,
+                           top_p=top_p, prior_weight=prior_weight, bias=bias, seed=seed)
+        # içerik-tokenlarının köklülük oranı (kanıt ölçüsü)
+        tau = self._engine.tau
+        concepts = self._engine.manifold.concepts
+        content = [w for w in text.split() if w not in _STOP and len(w) > 2]
+        grounded_n = sum(1 for w in content if w in concepts)
+        ratio = round(grounded_n / len(content), 3) if content else 0.0
+        return {"prompt": prompt, "text": text, "grounded": grounded,
                 "next_words": [w for w, _ in lm.next_words(prompt, k=6)],
-                "n_tokens": n_tokens}
+                "content_grounded_ratio": ratio, "n_tokens": n_tokens}
 
     def quantum_links(self, concept, *, top_k: int = 8):
         """ONTOLOJİ-KAPILI kuantum bağ — κ-yakın/klasik-uzak AMA yalnız PAYLAŞILAN ontolojik
