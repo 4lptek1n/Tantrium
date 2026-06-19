@@ -3161,44 +3161,50 @@ class AI:
                         if noun is not None:
                             interps.append((_span_term(noun), rel, "out", vlemma, 1))
 
-        # SÖZCÜKSEL kurtarma — soru için sağlam kural: VARLIK = grafta-kavram olan token,
-        # İLİŞKİ = kavram-OLMAYAN içerik tokenı (fiil). Yardımcı (do/does) + soru-eki atılır.
-        # Yön = varlık fiilden ÖNCE (özne→out) mi SONRA (nesne→in) mı. spaCy yardımcı-fiilsiz
-        # soruda ismi fiil sanabildiğinden bu yorumu HER ZAMAN aday yap (cevap veren kazanır).
-        from tantrium.core.cooccurrence import is_noise
-        _AUX = {"do", "does", "did", "can", "could", "will", "would", "should"}
+        # SÖZCÜKSEL kurtarma — soru için sağlam kural. İLİŞKİ = fiil; şöyle bulunur:
+        #   (a) bilinen ilişki fiili (_LEMMA_REL) / 'is'→IS_A; yoksa
+        #   (b) KONUM: do-desteği varsa ("does X treat") fiil SON içerik tokenı, yoksa
+        #       ("what treats X") İLK içerik tokenı. (Büyük manifoldda 'treat'/'kill' KAVRAM
+        #       da olabildiğinden 'kavram-değil' kuralı kırılırdı — konum/fiil sağlam.)
+        # VARLIK = fiil-OLMAYAN, grafta-kavram token. Yön = varlık fiilden önce(out)/sonra(in);
+        # IS_A kopulada daima out (soru 'What is a X?' → X'in sınıfı). spaCy yanılsa da hep dene.
+        _AUXDO = {"do", "does", "did"}
         _BE = {"is", "are", "was", "were", "be", "been"}
         raw = [w.strip(".,;:!?'\"()").lower() for w in q.split()]
         content = [(i, w) for i, w in enumerate(raw)
-                   if w and w not in _WH and w not in _AUX]
-        ent_lex = ent_idx = None
-        for i, w in content:
-            if w not in _BE and _resolve(w) in concepts:
-                ent_lex, ent_idx = _resolve(w), i
-                break
+                   if w and w not in _WH and w not in _AUXDO
+                   and w not in {"can", "could", "will", "would", "should"}]
+        has_aux = any(w in _AUXDO for w in raw)
         rel_lex = vlex = rel_idx = None
-        for i, w in content:                  # önce BİLİNEN ilişki fiili / 'is'→IS_A
-            if i == ent_idx:
-                continue
+        for i, w in content:                  # (a) bilinen ilişki fiili / BE
             lm = _sing(w)
-            cand = _LEMMA_REL.get(lm) or _LEMMA_REL.get(w)
             if w in _BE:
                 rel_lex, vlex, rel_idx = "IS_A", "be", i
                 break
-            if cand:
-                rel_lex, vlex, rel_idx = cand, lm, i
+            c = _LEMMA_REL.get(lm) or _LEMMA_REL.get(w)
+            if c:
+                rel_lex, vlex, rel_idx = c, lm, i
                 break
-        if rel_lex is None:                   # sonra: kavram-olmayan içerik tokenı = açık-sözlük
-            for i, w in content:
-                if i == ent_idx or w in _BE:
-                    continue
-                if (w.isalpha() and len(w) >= 3 and not is_noise(w)
-                        and _resolve(w) not in concepts):
-                    rel_lex, vlex, rel_idx = _sing(w).upper(), _sing(w), i
-                    break
+        if rel_lex is None and content:        # (b) konum: aux→son, değilse→ilk içerik tokenı
+            i, w = content[-1] if has_aux else content[0]
+            lm = _sing(w)
+            if w in _BE:
+                rel_lex, vlex, rel_idx = "IS_A", "be", i
+            else:
+                rel_lex, vlex, rel_idx = (_LEMMA_REL.get(lm) or lm.upper()), lm, i
+        ent_lex = ent_idx = None
+        for i, w in content:                  # varlık = fiil-olmayan kavram tokenı
+            if i == rel_idx or w in _BE:
+                continue
+            if _resolve(w) in concepts:
+                ent_lex, ent_idx = _resolve(w), i
+                break
         if ent_lex and rel_lex is not None:
-            d = "out" if (ent_idx is not None and rel_idx is not None
-                          and ent_idx < rel_idx) else "in"
+            if rel_lex == "IS_A":
+                d = "out"
+            else:
+                d = "out" if (ent_idx is not None and rel_idx is not None
+                              and ent_idx < rel_idx) else "in"
             interps.append((ent_lex, rel_lex, d, vlex, 2))
 
         # adayları dene: önce yüksek-skor, CEVAP VEREN ilkini al

@@ -125,12 +125,22 @@ def enable_parser(on: bool = True) -> None:
 
 
 def _get_nlp():
-    """spaCy İngilizce parser (lazy, yerel, deterministik). Yoksa False → regex'e düş."""
+    """spaCy İngilizce parser (lazy, yerel, deterministik). TEMİZ ÇIKARIM için en iyi mevcut
+    modeli yükle: md (daha doğru POS/parse — 'Ribosomes'→NOUN/nsubj, 'light'→dobj, 'type 2
+    diabetes'→diabetes; sm bunları yanlış etiketliyordu) → sm → yoksa False (regex'e düş).
+    md, sm ile aynı hız sınıfı (CNN) — yalnız daha iyi vektör/istatistik, throughput'u bozmaz."""
     global _NLP
     if _NLP is None:
         try:
             import spacy
-            _NLP = spacy.load("en_core_web_sm")
+            for _mdl in ("en_core_web_md", "en_core_web_sm"):
+                try:
+                    _NLP = spacy.load(_mdl)
+                    break
+                except Exception:
+                    continue
+            if _NLP is None:
+                _NLP = False
         except Exception:
             _NLP = False
     return _NLP
@@ -148,6 +158,14 @@ def _span_term(tok) -> str:
         if c.dep_ == "compound" and (c.ent_type_ or c.text[:1].isupper()):
             return _normalize_entity(c.text.lower())
     return _normalize_entity(tok.lemma_.lower())
+
+
+# "X is PART of Y" → bütün-parça (COMPONENT_OF); "X is a KIND of Y" → gerçek hedef Y'ye IS_A.
+# Baş-isim ('part'/'kind') sınıf DEĞİL — 'of'tan sonraki nesne anlamı taşır.
+_PARTOF_HEAD = frozenset(("part", "component", "member", "piece", "constituent",
+                          "subset", "portion", "element", "section"))
+_KINDOF_HEAD = frozenset(("kind", "type", "form", "sort", "class", "category",
+                          "variety", "example", "subclass", "group", "genus"))
 
 
 def _doc_subjects(t):
@@ -168,14 +186,26 @@ def _relations_from_doc(doc) -> list[tuple[str, str, str]]:
     Koordinasyon/kontrol (conj/xcomp) özne taşır. 'is a' → IS_A. Gramer-genel."""
     out: list[tuple[str, str, str]] = []
     for tok in doc:
-        # IS_A: "X is a Y" (kopula)
+        # IS_A: "X is a Y" (kopula) — + "X is part of Y"→COMPONENT_OF, "X is a kind of Y"→IS_A Y
         if tok.lemma_ == "be":
             subs = _doc_subjects(tok)
             attrs = [c for c in tok.children if c.dep_ in ("attr", "acomp")]
             for s in subs:
                 for a in attrs:
-                    if a.pos_ in ("NOUN", "PROPN"):
-                        out.append((_span_term(s), "IS_A", _span_term(a)))
+                    if a.pos_ not in ("NOUN", "PROPN"):
+                        continue
+                    al = a.lemma_.lower()
+                    # "part/component/member of Y" → COMPONENT_OF; "kind/type/form of Y" → IS_A Y
+                    # (baş-isim 'part'/'kind' DEĞİL, 'of'tan sonraki gerçek hedef)
+                    if al in _PARTOF_HEAD or al in _KINDOF_HEAD:
+                        pobj = [g for c in a.children if c.dep_ == "prep" and c.lemma_ == "of"
+                                for g in c.children if g.dep_ == "pobj"
+                                and g.pos_ in ("NOUN", "PROPN")]
+                        if pobj:
+                            rel2 = "COMPONENT_OF" if al in _PARTOF_HEAD else "IS_A"
+                            out.append((_span_term(s), rel2, _span_term(pobj[0])))
+                            continue
+                    out.append((_span_term(s), "IS_A", _span_term(a)))
             continue
         if tok.pos_ != "VERB":
             continue
@@ -290,9 +320,13 @@ _NONCLASS_TAILS = ("pharma", "pharmaceuticals", "inc", "corp", "corporation", "l
 
 
 def _is_nonclass_obj(obj: str) -> bool:
-    """IS_A nesnesi GERÇEK sınıf mı? Üretici/şirket adı (astellas pharma) sınıf DEĞİLDİR."""
+    """IS_A nesnesi GERÇEK sınıf mı? Üretici/şirket adı (astellas pharma) VEYA meta-isim
+    ('kind/type/part/component' — 'X is a KIND of Y'de gerçek sınıf Y'dir, 'kind' değil)
+    sınıf DEĞİLDİR. Meta-isimler spaCy yolunda 'of'-hedefine çözülür; regex IS_A gürültüsü elenir."""
     o = obj.strip().lower()
     toks = o.split()
+    if o in _PARTOF_HEAD or o in _KINDOF_HEAD:
+        return True
     return o.endswith(_NONCLASS_TAILS) or (bool(toks) and toks[-1] in _NONCLASS_TAILS)
 
 

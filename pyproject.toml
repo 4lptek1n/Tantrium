@@ -31,9 +31,13 @@ vision = [
 ]
 # Gramatik parser (deep-research kapsamlı kavrama → spaCy dependency parsing: pasif/
 # appositive/koordinasyon/gömülü TEK genel mekanizma). Yoksa regex-kalıplara fail-open düşer.
-#   kurulum: pip install spacy && python -m spacy download en_core_web_sm
+# Model: en_core_web_md (TEMİZ çıkarım — sm'in terse-cümle POS hatalarını düzeltir:
+#   'Ribosomes'→NOUN/nsubj, 'light'→dobj, 'type 2 diabetes'→diabetes). md, sm ile aynı hız
+#   sınıfı (CNN). _get_nlp md→sm→regex fail-open sırasıyla yükler.
+#   elle kurulum: python -m spacy download en_core_web_md
 nlp = [
-  "spacy>=3.7"
+  "spacy>=3.7",
+  "en_core_web_md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl"
 ]
 
 [tool.pytest.ini_options]
