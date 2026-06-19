@@ -81,3 +81,28 @@ def test_generate_continues_in_context_pattern():
     cont = gen[7:]                                    # prompt sonrası devam
     assert cont                                       # üretim boş değil
     assert set(cont) & {"a", "b", "c"}                # örüntü vokabını sürdürdü (induction)
+
+
+def test_induction_ngram_disambiguates_by_context():
+    """2-katman (n-gram back-off) induction: aynı son-token, FARKLI bağlam → farklı doğru kopya.
+    'cat ate'→fish, 'dog ate'→meat (tek-token 'ate' ayıramaz). In-context learning'in özü."""
+    import numpy as np
+    corpus = ["the cat ate fish then slept", "the dog ate meat then ran",
+              "a cat ate fish today", "a dog ate meat today"] * 25
+    lm = FitlessLM(max_vocab=80, window=5)
+    lm.update(corpus)
+    lm.fit(dim=10, min_count=2)
+    kidx, kv, V = lm._kidx, lm._kvocab, len(lm._kvocab)
+
+    def top1(ind):
+        j = int(np.argmax(ind))
+        return kv[j] if ind[j] > 0 else None
+
+    base = "the cat ate fish then slept the dog ate meat then ran "
+    out_cat = [kidx[w] for w in (base + "the cat ate").split() if w in kidx]
+    out_dog = [kidx[w] for w in (base + "the dog ate").split() if w in kidx]
+    assert top1(lm._induction(out_cat, V, 1.0, prefix_len=3)) == "fish"
+    assert top1(lm._induction(out_dog, V, 1.0, prefix_len=3)) == "meat"
+    # tek-token AYIRAMAZ (ikisinde de aynı sonucu verir → bağlam-kör)
+    assert (top1(lm._induction(out_cat, V, 1.0, prefix_len=1, fuzzy=False)) ==
+            top1(lm._induction(out_dog, V, 1.0, prefix_len=1, fuzzy=False)))

@@ -100,28 +100,36 @@ class FitlessLM:
         self.B = (Vh * s).cpu().numpy()             # çıktı/sonraki-bağlam
         return len(self._kvocab)
 
-    def _induction(self, out, V: int, strength: float, *, fuzzy: bool = True) -> np.ndarray:
-        """Fit'siz INDUCTION HEAD (Olsson 2022 [A][B]…[A]→[B]) — in-context learning ÇEKİRDEĞİ.
-        Bağlamda son tokenın daha önce geçtiği yerleri bul, ARDINDAN GELEN tokenı KOPYALA
-        (recency-ağırlıklı). Eğitimsiz; BAĞLAMIN kendisinden örüntü-tamamlama (Hopfield çağrışım).
-        fuzzy: tam eşleşme yoksa A*≈A (gömme-benzeri önceki token) → onun sonrasını kopyala."""
+    def _induction(self, out, V: int, strength: float, *, prefix_len: int = 3,
+                   fuzzy: bool = True) -> np.ndarray:
+        """2-KATMAN INDUCTION CIRCUIT (Olsson 2022) — in-context learning ÇEKİRDEĞİ, kapalı-form.
+
+        TAM n-gram prefix eşleşmesi + BACK-OFF: önce en uzun prefix (en özgül) dene, eşleşme
+        yoksa kısalt (Kneser-Ney back-off mantığı). Eşleşen yerin ARDINDAN geleni KOPYALA.
+        Bağlam-DUYARLI: 'cat ate'→fish ama 'dog ate'→meat (tek-token 'ate' ikisini karıştırır;
+        gömme-bulanık da cat≈dog yüzünden karıştırır — TAM eşleşme AYIRT EDER). Öğrenme YOK.
+        fuzzy: TAM eşleşme hiç yoksa A*≈A gömme-benzeri tek-token → onun sonrasını kopyala."""
         ind = np.zeros(V, dtype=np.float64)
         n = len(out)
         if n < 2:
             return ind
-        cur = out[-1]
-        for i in range(n - 1):                       # tam prefix-eşleşme: cur'un önceki geçişleri
-            if out[i] == cur:
-                ind[out[i + 1]] += 0.6 ** ((n - 1 - i) / 6.0)   # yakın eşleşme daha güçlü
-        if fuzzy and self.A is not None and ind.max() <= 0:      # bulanık (A*≈A)
+        for L in range(min(prefix_len, n - 1), 0, -1):   # en uzun → kısa (back-off)
+            suffix = out[n - L:]
+            found = False
+            for i in range(L - 1, n - 1):                # i, uzunluk-L pencerenin sonu; i+1 var
+                if out[i - L + 1:i + 1] == suffix:        # TAM n-gram eşleşmesi
+                    ind[out[i + 1]] += L * (0.6 ** ((n - 1 - i) / 8.0))  # uzun eşleşme güçlü
+                    found = True
+            if found:                                     # en özgül eşleşen n-gram'da dur
+                break
+        if not found and fuzzy and self.A is not None:    # TAM eşleşme yok → bulanık tek-token
+            cur = out[-1]
             a = self.A[cur]; na = float(np.linalg.norm(a)) or 1.0
             best_i, best_s = -1, 0.4
             for i in range(n - 1):
                 v = self.A[out[i]]; nv = float(np.linalg.norm(v))
-                if nv:
-                    sim = float(a @ v / (na * nv))
-                    if sim > best_s:
-                        best_s, best_i = sim, i
+                if nv and (s := float(a @ v / (na * nv))) > best_s:
+                    best_s, best_i = s, i
             if best_i >= 0:
                 ind[out[best_i + 1]] += best_s
         mx = ind.max()
