@@ -44,9 +44,9 @@ TARGET_TOKENS = int(os.environ.get("ASI_TOKENS", "1000000000"))   # 1B vars. (5B
 MAX_VOCAB = int(os.environ.get("ASI_VOCAB", "30000"))
 DIM = 160
 ABSORB_DOCS = 20              # her absorb partisi (spaCy nlp.pipe — bilgi katmanı; throttle)
-ABSORB_SAMPLE = 50           # bilgi katmanı belgelerin ~1/SAMPLE'ını işler (gömmeyi YAVAŞLATMA;
-                             #   5B token gömmeyle gelir, spaCy 5B'yi işleyemez → örnekle büyür)
-COGNITION_EVERY_DOCS = 200000  # düşünme NADİR (98k manifoldda ağır/senkron; akışı kilitlemesin)
+ABSORB_SAMPLE = 250          # bilgi katmanı belgelerin ~1/SAMPLE'ını işler (HIZ: spaCy gömmeyi
+                             #   bloklamasın → döngü gömme-hızında ~150k tok/s koşar; manifold örnekle büyür)
+COGNITION_EVERY_DOCS = 800000  # düşünme ÇOK NADİR (98k+ manifoldda ağır/senkron; akışı kilitlemesin)
 CHECKPOINT_EVERY_TOK = 25_000_000
 SENT = re.compile(r"(?<=[.!?])\s+")
 PROBES = ("insulin", "gravity", "democracy", "neuron")
