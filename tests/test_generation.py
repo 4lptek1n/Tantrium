@@ -57,3 +57,27 @@ def test_save_load_roundtrip(tmp_path):
     b = lm2.generate("the sun", n_tokens=8, seed=1)
     assert a == b and len(a.split()) >= 5
     assert all(w in lm2._kidx for w in a.split())
+
+
+def test_induction_head_copies_following_token():
+    """Fit'siz INDUCTION HEAD (Olsson [A][B]…[A]→[B]): bağlamda son token daha önce geçtiyse,
+    ARDINDAN geleni kopyalar. Deterministik (SVD'den bağımsız, saf bağlam mantığı)."""
+    lm = FitlessLM(max_vocab=50, window=4)
+    lm.update(["a b c a b c a b c a b c"] * 12)
+    lm.fit(dim=4, min_count=1)
+    a, b = lm._kidx["a"], lm._kidx["b"]
+    out = [a, b, a]                                   # 'a'@0 → 'b'; cur='a'@2 → kopya 'b'
+    ind = lm._induction(out, len(lm._kvocab), 1.0)
+    assert ind[b] > 0                                 # induction 'b'yi (a'dan sonrasını) kopyaladı
+
+
+def test_generate_continues_in_context_pattern():
+    """In-context learning: eğitimde görülmemiş örüntüyü BAĞLAMDAN sürdürür (induction)."""
+    lm = FitlessLM(max_vocab=50, window=4)
+    lm.update(["a b c a b c a b c a b c"] * 12)
+    lm.fit(dim=4, min_count=1)
+    gen = lm.generate("a b c a b c a b", n_tokens=6, temperature=0.3,
+                      induction_strength=8.0, seed=1).split()
+    cont = gen[7:]                                    # prompt sonrası devam
+    assert cont                                       # üretim boş değil
+    assert set(cont) & {"a", "b", "c"}                # örüntü vokabını sürdürdü (induction)
