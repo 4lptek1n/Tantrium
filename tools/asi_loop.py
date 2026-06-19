@@ -43,8 +43,10 @@ COOC_CKPT = STATE / "asi_cooc.npz"
 TARGET_TOKENS = int(os.environ.get("ASI_TOKENS", "1000000000"))   # 1B vars. (5B'ye override)
 MAX_VOCAB = int(os.environ.get("ASI_VOCAB", "30000"))
 DIM = 160
-ABSORB_DOCS = 40              # her absorb partisi (spaCy nlp.pipe — bilgi katmanı; throttle)
-COGNITION_EVERY_DOCS = 2000   # düşünme adımı sıklığı
+ABSORB_DOCS = 20              # her absorb partisi (spaCy nlp.pipe — bilgi katmanı; throttle)
+ABSORB_SAMPLE = 50           # bilgi katmanı belgelerin ~1/SAMPLE'ını işler (gömmeyi YAVAŞLATMA;
+                             #   5B token gömmeyle gelir, spaCy 5B'yi işleyemez → örnekle büyür)
+COGNITION_EVERY_DOCS = 200000  # düşünme NADİR (98k manifoldda ağır/senkron; akışı kilitlemesin)
 CHECKPOINT_EVERY_TOK = 25_000_000
 SENT = re.compile(r"(?<=[.!?])\s+")
 PROBES = ("insulin", "gravity", "democracy", "neuron")
@@ -116,11 +118,15 @@ def main() -> None:
         if not text:
             continue
         sents = [s for s in SENT.split(text) if len(s.split()) >= 4]
-        # (1) DİL substratı — hızlı, token-scale
-        g.update(sents)
-        # (2) BİLGİ — manifold tipli kenar (throttle: ABSORB_DOCS partisi)
-        absorb_buf.append(text)
+        # (1) DİL substratı — TOPLU güncelle (4000 cümle/parti → ~3× hız; belge-başı değil)
+        sent_buf.extend(sents)
+        if len(sent_buf) >= 4000:
+            g.update(sent_buf)
+            sent_buf = []
         docs += 1
+        # (2) BİLGİ — manifold tipli kenar (ÖRNEKLE: ~1/SAMPLE belge; gömmeyi bloklamadan)
+        if docs % ABSORB_SAMPLE == 0:
+            absorb_buf.append(text)
         if len(absorb_buf) >= ABSORB_DOCS:
             try:
                 r = ai.absorb_corpus(absorb_buf, persist=False)
@@ -164,6 +170,8 @@ def main() -> None:
         if g.n_tokens >= TARGET_TOKENS:
             break
 
+    if sent_buf:
+        g.update(sent_buf)
     if absorb_buf:
         try:
             ai.absorb_corpus(absorb_buf, persist=False)
