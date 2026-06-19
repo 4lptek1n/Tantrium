@@ -120,3 +120,34 @@ def test_kernel_gate_bias_suppresses_ungrounded_token():
     for seed in range(4):
         out = lm.generate("the dog ate", n_tokens=12, bias=bias, seed=seed).split()
         assert "meat" not in out                      # kapı her seed'de bastırdı
+
+
+def test_ngram_lm_fluent_backoff_and_determinism():
+    """NGramLM (trigram, stupid-backoff) — YEREL AKICILIK kaldıracı. Korpus n-gram'ından üretir;
+    görülmemiş bağlam back-off ile kısalır; seed deterministik; üretim korpus-kelimelerinden."""
+    from tantrium.core.generation import NGramLM
+    corpus = ["the cat sat on the mat", "the dog ran in the park",
+              "the cat ran on the mat", "the dog sat in the park",
+              "a cat sat on a mat today", "a dog ran in a park today"] * 20
+    lm = NGramLM(order=3)
+    lm.update(corpus)
+    lm.prune(min_count=1)
+    nw = [w for w, _ in lm.next_words("the cat", k=4)]
+    assert nw                                          # 'the cat' → sat/ran (korpus devamı)
+    assert set(nw) & {"sat", "ran"}
+    g1 = lm.generate("the cat", n_tokens=8, seed=3)
+    g2 = lm.generate("the cat", n_tokens=8, seed=3)
+    assert g1 == g2 and len(g1.split()) >= 3          # deterministik + boş değil
+    vocab = set(w for s in corpus for w in s.split()) | {"."}
+    assert all(w in vocab for w in g1.split())         # uydurma yok (korpus kelimeleri)
+
+
+def test_ngram_save_load_roundtrip(tmp_path):
+    from tantrium.core.generation import NGramLM
+    lm = NGramLM(order=3)
+    lm.update(["the cat sat on the mat", "the dog ran in the park"] * 20)
+    p = str(tmp_path / "ng")
+    lm.save(p)
+    lm2 = NGramLM.load(p)
+    assert lm2.n_tokens == lm.n_tokens and lm2.order == lm.order
+    assert lm2.generate("the cat", n_tokens=6, seed=1) == lm.generate("the cat", n_tokens=6, seed=1)

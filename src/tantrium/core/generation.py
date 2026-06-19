@@ -242,3 +242,108 @@ class FitlessLM:
             if len(out) >= k:
                 break
         return out
+
+
+class NGramLM:
+    """KenLM-tarzı yüksek-mertebe n-gram LM (stupid-backoff) — YEREL AKICILIK kaldıracı.
+
+    FitlessLM (gömme log-bilineer) ölçekle KONU öğrenir ama gramer değil (sürekli-bigram doğası;
+    30/60/90M'de kanıtlandı). Klasik n-gram modeli (KenLM/SRILM) TAM önceki bağlamdan korpusta o
+    bağlamı GERÇEKTEN izleyen kelimeyi seçer → yerel sözdizimi akar. Sadece SAYIM (fit'siz, kapalı-
+    form), gradient yok. Stupid-backoff (Brants 2007): en uzun eşleşen bağlam dağılımını kullan,
+    yoksa kısalt. DÜRÜST sınır: Markov → yerel akıcı, küresel kayar (n-gram'ın doğası)."""
+
+    BOS, EOS = "<s>", "</s>"
+
+    def __init__(self, *, order: int = 3):
+        self.order = int(order)
+        self.tables = [dict() for _ in range(order)]   # tables[k]: ctx(len k) -> {next: count}
+        self.n_tokens = 0
+
+    def _toks(self, s):
+        return [t for t in tokenize(s, drop_stop=False) if any(c.isalpha() for c in t)]
+
+    def update(self, sentences) -> int:
+        added = 0
+        for s in sentences:
+            toks = self._toks(s)
+            if len(toks) < 2:
+                continue
+            seq = [self.BOS] * (self.order - 1) + toks + [self.EOS]
+            self.n_tokens += len(toks)
+            added += len(toks)
+            for i in range(self.order - 1, len(seq)):
+                nxt = seq[i]
+                for k in range(self.order):                 # bağlam uzunluğu 0..order-1
+                    ctx = tuple(seq[i - k:i])
+                    d = self.tables[k].setdefault(ctx, {})
+                    d[nxt] = d.get(nxt, 0) + 1
+        return added
+
+    def prune(self, *, min_count: int = 2) -> None:
+        for k in range(1, self.order):                       # unigram tam kalsın
+            self.tables[k] = {c: d for c, d in self.tables[k].items()
+                              if sum(d.values()) >= min_count}
+
+    def _dist(self, ctx):
+        for k in range(self.order - 1, -1, -1):              # stupid-backoff: en uzun bağlam
+            key = tuple(ctx[-k:]) if k > 0 else ()
+            d = self.tables[k].get(key)
+            if d:
+                return d
+        return None
+
+    def next_words(self, context: str, *, k: int = 8):
+        ctx = [self.BOS] * (self.order - 1) + self._toks(context)
+        d = self._dist(ctx)
+        if not d:
+            return []
+        tot = sum(d.values())
+        return [(w, round(c / tot, 3)) for w, c in
+                sorted(d.items(), key=lambda x: -x[1])[:k] if w != self.EOS]
+
+    def generate(self, prompt: str = "", *, n_tokens: int = 40, temperature: float = 0.7,
+                 top_k: int = 40, top_p: float = 0.95, seed: int = 0) -> str:
+        rng = np.random.default_rng(seed)
+        ctx = [self.BOS] * (self.order - 1) + self._toks(prompt)
+        out = list(self._toks(prompt))
+        for _ in range(n_tokens):
+            d = self._dist(ctx)
+            if not d:
+                break
+            words = list(d.keys())
+            cnt = np.array([d[w] for w in words], dtype=np.float64)
+            logp = np.log(cnt) / max(temperature, 1e-6)
+            logp -= logp.max()
+            p = np.exp(logp); p /= p.sum()
+            if len(words) > top_k:                            # top-k
+                idx = np.argsort(-p)[:top_k]
+                words = [words[i] for i in idx]; p = p[idx]; p /= p.sum()
+            order = np.argsort(-p)                            # top-p
+            csum = np.cumsum(p[order])
+            cut = int(np.searchsorted(csum, top_p)) + 1
+            keep = order[:max(1, cut)]
+            kw = [words[i] for i in keep]; kp = p[keep]; kp /= kp.sum()
+            w = kw[int(rng.choice(len(kw), p=kp))]
+            if w == self.EOS:                                  # cümle bitti → yeni cümle başlat
+                out.append(".")
+                ctx = [self.BOS] * (self.order - 1)
+                continue
+            out.append(w)
+            ctx.append(w)
+        return " ".join(out)
+
+    def save(self, path) -> None:
+        import pickle
+        from pathlib import Path
+        Path(str(path) + ".ngram.pkl").write_bytes(
+            pickle.dumps({"order": self.order, "tables": self.tables, "n_tokens": self.n_tokens}))
+
+    @classmethod
+    def load(cls, path) -> "NGramLM":
+        import pickle
+        from pathlib import Path
+        d = pickle.loads(Path(str(path) + ".ngram.pkl").read_bytes())
+        lm = cls(order=d["order"])
+        lm.tables = d["tables"]; lm.n_tokens = d["n_tokens"]
+        return lm
