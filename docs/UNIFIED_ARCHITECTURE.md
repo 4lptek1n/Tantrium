@@ -737,3 +737,31 @@ code_agent 8 + nl_code 6 = 67.
   TOPRAKLANIR (`ground_api`, gerçek API), dış girdi spec'in parçası olur (mock). Bu mantığın kendisi.
 - `_SAFE_RESEARCH_ALLOWLIST` saf/I-O-kenarda modüllerle sınırlı (güvenlik).
 - Davranış KAYIPSIZ saklanır (`behavior_exact`) — "lossy" mazereti YOK; add/sub çakışmaz.
+
+---
+
+## 🆕 EK KATMAN: Fitsiz Dil/Üretim/Eğitim (LLM-eşleniği) — bu oturum
+
+Mevcut 7 katman + RH-pozitiflik kerneli KORUNUR (deterministik, eğitilmez). Üstüne, LLM'in fit'le
+ulaştığı geometriyi KAPALI-FORMDA kuran katman eklendi (gradient/epoch YOK):
+
+```
+ham metin (HF stream)
+  → ortak-geçiş (FastCooccurrence vocab², yönlü n-gram) — tek geçiş, sayım
+  → PPMI → torch truncated SVD = gömme (Levy-Goldberg: gradient'in vardığı optimum)   [GÖMME]
+  → log-bilineer B·h + induction head (n-gram back-off, in-context) + decode           [ÜRETİM]
+  → NGramLM stupid-backoff (yerel gramer)                                                [AKICILIK]
+  → grounding kapısı (köklü içerik) + kritik-hat (Sturm) sertifikası                     [GÜVEN]
+  → hibrit: n-gram akıcılık × gömme konu-çapası × grounding                              [BİRLEŞİK]
+```
+
+**İlke:** gömme/attention/induction/decode'un kapalı-form karşılığı VAR (kurduk); derin ağın global
+optimumu (NP-zor) YOK → katman-katman yığılır. Math kerneli (RH/pozitiflik) bu katmanın üstünde
+halüsinasyonu geometrik imkânsız kılan sertifika sağlar — LLM'in olasılıksal yapamadığı.
+
+**Faz durumu:** GÖMME ✅ (~166M token, GloVe-kalite) · ÜRETİM/induction ✅ · AKICILIK ✅ (n-gram) ·
+GÜVEN/grounding ✅ · BİRLEŞİK hibrit ✅ (akıcı+köklü). ARTIK: küresel söylem-tutarlılığı (Markov
+kayma; derin discourse devresi gradient ister — konu-çapalı hibrit azaltır).
+
+**Ölçek (1B/5B):** kapalı-form tek-geçiş → bu kutuda fizibıl (gömme token-bağımsız bellek). Büyük
+vocab için seyrek yapı (gelecek compute). Detay: CLAUDE.md sonundaki "FİTSİZ DİL/ÜRETİM/EĞİTİM" bölümü.

@@ -1042,3 +1042,39 @@ Hiçbir gücü maskelemez — güçlendirir.
 ## Defter kuralı
 Hiçbir dosya, kendi içeriği ✅'ye yükseltilmeden birleştirme planına dahil edilmez.
 Birleştirme yalnız ✅ dosyalar arasında, doğrulanmış gerçek tekrarda yapılır.
+
+---
+
+## 🆕 BU-OTURUM YENİ DOSYALAR (fitsiz dil/üretim katmanı — hepsi GERÇEK, amaca-yönelik)
+
+> Granül tam-repo referansı: `docs/_understanding/01..15` (279 .py satır-seviyesinde betimsel).
+> Aşağıdakiler bu oturumda eklenen, FILE_LEDGER'ın 70-dosya envanterinde OLMAYAN gerçek dosyalar.
+
+- **`core/cooccurrence.py`** — fitsiz öğrenme çekirdeği. `tokenize`/`ppmi`/`spectral_embed`;
+  `GlobalCooccurrence` (sözlük biriktirici, küçük); `FastCooccurrence` (YOĞUN vocab² matris,
+  np.add.at vektörize, torch svd_lowrank). PMI-SVD = gradyansız "eğitilmiş" gömme (Levy-Goldberg).
+  GERÇEK: LLM gömme-katmanının kapalı-form eşleniği; başka hiçbir dosyada yok.
+- **`core/generation.py`** — fitsiz ÜRETİM. `FitlessLM` (yönlü co-occ→SVD log-bilineer + induction
+  head + decode) + `NGramLM` (KenLM stupid-backoff, yerel gramer). GERÇEK: CertifiedGenerator
+  (graf-yürüyüş, `language/generator.py`) ile TAMAMLAYICI — o köklü-türetim, bu serbest-yüzey.
+  SAHTE TEKRAR DEĞİL (farklı mekanizma: yürüyüş vs P(next|context)).
+- **`core/attention.py`** — fitsiz attention (softmax(−D/τ)·X, öğrenilen ağırlık yok; L-katman
+  derinlik). GERÇEK: Hopfield/kernel-attention kapalı-form (Ramsauer 2020).
+- **`core/diversity.py`** — LGV/DPP Gram-determinant çeşitlilik sertifikası (aday havuzu kesişmezlik).
+- **`core/meaning_pipeline.py`** + **`core/meaning_cache.py`** — tek ölçüm yolu (yüzey+topoloji+
+  RH-cascade) + kalıcı meaning-imza cache (canonical 8-momentten AYRI).
+- **`core/enrichment.py`** — tip-farkında çok-boyut grounding registry (PubChem/UniProt/NCBI fetch).
+- **`core/structure.py`** — domain-kör ham-veri→yapı (Kronecker/Prony Hankel-rank, AR, Koopman/EDMD).
+- **`core/primitive_invention.py`** — seeded generative ailede atomik primitif icadı (taste+truth).
+- **`core/code_meta.py`** — kod-şema meta-sentez (code adapter, certify_generalization kapılı).
+- **`meta/self_model.py`** — `SelfModel.reflect` 4-eksen öz-tanı (yapısal/sabit-nokta/topraklama/öz-atıf).
+- **`research/corrigibility.py`** — paylaşılan corrigibility (detect_and_correct + encoder_health +
+  external_verify); growth + cognition + benchmark üçü delege eder.
+- **`research/text_source.py`** + **`research/hf_source.py`** — Wikipedia/HF stream fetch + absorb.
+- **`research/goal.py`** + **`research/actor.py`** — ASİ Pilar B (Goal/GoalManifold/Planner/Actor).
+- **`reasoning/causal_rules.py`** + **`reasoning/generalization.py`** + **`reasoning/planner.py`** —
+  transitif kural tablosu (tek-gerçek) + genelleme + planlama.
+
+**NOT (tam-okumadan):** `tantrium/research_os/*` (~58 dosya, RH-ispat/otonom-matematik Research OS),
+`tools/*` (23 runner), `tests/*` (84), `web/*` — FILE_LEDGER 70-dosya kapsamı DIŞINDAYDI; şimdi
+`docs/_understanding/08,11,12,13,14,15`'te betimlendi. Research OS subprocess-erişimli (saf import değil).

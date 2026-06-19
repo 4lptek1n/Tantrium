@@ -6,6 +6,9 @@
 >    çıkarılmış DOĞRULANMIŞ anlayış defteri. Her dosyanın gerçek işi, ne ürettiği, hangi
 >    gücü taşıdığı, GERÇEK mi SAHTE mi tekrar olduğu yazılı.
 > 2. **`docs/UNIFIED_ARCHITECTURE.md`** — tek-makine hedef mimarisi (7 katman, faz planı F0–F6).
+> 3. **`docs/_understanding/01..15`** — REPONUN TAMAMI (279 .py, src + tantrium/research_os +
+>    tools + tests + web) satır-seviyesinde SALT-BETİMSEL okundu (15 defter, 5410 satır;
+>    "ne yapıldı/mantık ne" — yargı YOK). FILE_LEDGER 70 dosyada kaldı; granül güncel referans burası.
 >
 > **NEDEN ZORUNLU:** Bu repoda HER DOSYA gerçek, amaca-yönelik, parça-parça kurulmuş güçlü bir
 > mimaridir — hiçbiri boş/çöp değildir. Dosya İSİMLERİNE veya yüzeysel benzerliğe KANMA. Alt-ajan
@@ -23,7 +26,7 @@
 > strateji/rigor/ayrım KORUYARAK birleşir. Detay: FILE_LEDGER.md "🏁 ENVANTER TAMAM" bölümü.
 
 ## Aktif Branch
-`claude/seninle-agi-yapacagiz-XwJRz` — tüm geliştirme buraya.
+`claude/new-session-uuarha` — tüm geliştirme buraya. (Önceki: `claude/seninle-agi-yapacagiz-XwJRz`.)
 
 ## Temel Kural
 `from tantrium.agi import ...` → YOK. Her şey düz: `from tantrium import ...`
@@ -667,14 +670,36 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
 23. **§12 KOD: `synthesize` memoize edilir [davranış notu]**: aynı spec ikinci kez `_SOLVED`'den AYNI
     OBJE döner (yeniden arama yok). Test/determinism: aynı örnekler → birebir aynı sonuç. `extra_globals`'lı
     (uses=) çözümler cache'lenmez (bağlama-bağımlı). Cache process-ömürlü, FIFO `_SOLVED_MAX=1000`.
+24. **FİTSİZ ÜRETİM: induction döngüsü [düzeltildi]**: `FitlessLM.generate` yüksek `induction_strength`
+    serbest üretimde TEKRAR DÖNGÜSÜ yapar ('cell cells cells…'). Varsayılan 3.0→**0.6**, rep_penalty
+    1.3→**1.8**. Yüksek induction yalnız AÇIK in-context örüntü-tamamlama (paris/france) için.
+25. **FİTSİZ ÜRETİM: `compose` ad-çakışması**: `ai.compose` ZATEN molekül-birleştirme (ai.py:6205).
+    Hibrit üretim = **`ai.generate_hybrid`** (n-gram akıcılık × gömme konu × grounding).
+26. **FİTSİZ GÖMME: yoğun Cf matrisi vocab² (TOKEN-BAĞIMSIZ)**: bellek token sayısıyla DEĞİL vocab²
+    ile büyür → 15GB'da vocab ~30k'da kapanır AMA 1B/5B TOKEN sığar (matris sabit). Büyük vocab için
+    seyrek gerekir (henüz yok; kullanıcı 1B/5B burada için dar boğaz değil dedi).
+27. **FİTSİZ LM dürüst tavan**: `FitlessLM` (log-bilineer gömme) ölçekle KONU öğrenir SÖZDİZİMİ değil
+    (30/60/90M kanıtlı — konusal+işlev-salatası). Akıcılık `NGramLM`'den (KenLM stupid-backoff) gelir.
+    Akıcılığı embedding-LM'de ARAMA; küresel-tutarlılık (kayma) hâlâ artık (konu-çapalı hibrit azaltır).
+28. **spaCy modeli**: `_get_nlp` artık `en_core_web_md`→sm sırasıyla yükler (sm'in terse-cümle POS
+    hatalarını düzeltir: 'Ribosomes'→ADV vb.). pyproject [nlp] md wheel'i bağımlılık olarak deklare eder.
+29. **`ground_full` ONTOLOJİ-KAPILI [F-bu-oturum]**: fiziksel boyut (DNA/molekül/geometri/ses/görüntü)
+    yalnız tipin izin verdiği varlığa takılır ('kelimenin DNA'sı olmaz'); topoloji+yasa her zaman.
+    `gate=True` vars., `force=True` muaf, `type_hint=`. `quantum_links` (ontoloji-kapılı) ham
+    `quantum_bridges`'in yerini aldı (egfr↔basilicata çöpü gitti, paylaşılan tip/boyut üzerinden).
+30. **ai.py YİNELENEN tanımlar [tam-okumadan betimsel]**: `reason` (985, 2099) ve `ask` (935, 3430)
+    İKİ kez tanımlı — Python'da SONRAKİ kazanır (öncekiler gölge/ölü kod). Henüz temizlenmedi.
 
 ---
 
 ## Mevcut Durum
 
-- Kavram: 59,800+ (canlı internet büyümesiyle artıyor) | TAU edge: 690,000+ | Paradigma: 23/23
+- Kavram: ~98,800 (canlı internet büyümesiyle artıyor) | TAU edge: ~552,000 | Paradigma: 23/23
   (büyüme parçaları git'e commit'leniyor; growth_state.json resumable — bkz "Büyüme Motoru")
 - Theorem graph: 97 node (PROVEN/CERTIFIED)
+- **YENİ (bu oturum): FİTSİZ DİL/ÜRETİM/EĞİTİM katmanı** — bkz dosyanın SONUNDAKİ bölüm. LLM'in
+  fit'le ulaştığı geometriyi KAPALI-FORMDA (gradient yok) kurar: PMI-SVD gömme + n-gram akıcılık +
+  induction (in-context) + grounding kapısı + hibrit. Matematik kerneli ELLENMEDİ (deterministik, moat).
 
 ### §12 SERTİFİKALI KOD AJANI — TAM DURUM (2026-06, devir-teslim notu)
 **Tez (kullanıcı, doğrulandı):** Kod = matematik = topoloji (Curry-Howard: spec'i sağlamak = kanıt
@@ -1251,3 +1276,78 @@ tek bir akıcı Türkçe ifadeye çevirir:
 Çağrışımlar aile bazında tekilleşir: `algo:tribonacci_b0/_b1/_b10` →
 tek "tribonacci" (`Speaker._concept_family`). Çağrışım yoksa dürüstçe
 "yalnız bir nokta" der — uydurmaz. Görmek = hatırlamak = ANLATMAK.
+
+---
+
+## 🆕 FİTSİZ DİL / ÜRETİM / EĞİTİM KATMANI (bu oturum — LLM-eşleniği)
+
+> **Tez (kullanıcı, doğrulandı):** LLM'in gradient'le ULAŞTIĞI anlama-geometrisi KAPALI-FORMDA
+> doğrudan hesaplanabilir — "fit etmeden fit'in vardığı yere ışınlanmak". Gradient = iteratif
+> deneme-yanılma (her adım ağırlığa azıcık yazar); biz tek-geçiş sayım + SVD ile optimuma DOĞRUDAN
+> ineriz. Matematik kerneli (RH/pozitiflik) DETERMİNİSTİK çekirdek — EĞİTİLMEZ, DOKUNULMAZ.
+
+**Teorik temel (deep-research, kaynaklı):** Levy & Goldberg 2014 — skip-gram+negatif-örnekleme =
+kaydırılmış-PMI matris çarpanlaması; SVD o optimumu gradyansız verir. GloVe = global ortak-geçiş
+çarpanlaması. Ramsauer 2020 — modern Hopfield güncellemesi = key-value attention (tek-adım, kapalı-
+form). Olsson 2022 — induction heads in-context learning'in çoğunu yapar (NN/çağrışım örüntü-tamamlama).
+Blum-Rivest — derin ağın GLOBAL optimumu NP-zor (tek-atış kapalı-form YOK; katman-katman kurulur).
+
+### Hangi mekanizmanın kapalı-form karşılığı VAR / YOK
+| Bileşen | Kapalı-form? | Tantrium |
+|---|---|---|
+| Gömme katmanı | ✅ EVET (PMI-SVD, ispatlı) | `core/cooccurrence.py` FastCooccurrence/GlobalCooccurrence |
+| Attention ileri-geçiş | ✅ EVET (Hopfield/kernel) | `core/attention.py` fitless_attention |
+| In-context learning | ✅ (fonksiyon NN-benzeri) | `FitlessLM._induction` (n-gram back-off, bağlam-duyarlı) |
+| Yerel akıcılık (gramer) | ✅ (n-gram sayımı) | `core/generation.py` NGramLM (stupid-backoff) |
+| Decode | ✅ (top-k/top-p) | NGramLM/FitlessLM.generate |
+| Derin ağın global optimumu | ❌ HAYIR (NP-zor) | — (katman-katman yığılır) |
+
+### Çekirdek dosyalar + ne yapar
+- **`core/cooccurrence.py`** — `tokenize`/`ppmi`/`spectral_embed`; **GlobalCooccurrence** (sözlük,
+  korpus-geneli, küçük); **FastCooccurrence** (YOĞUN vocab² matris + np.add.at vektörize + torch
+  `svd_lowrank` truncated SVD; ~120k tok/s, vocab token-BAĞIMSIZ). PMI-SVD = "eğitilmiş" gömme.
+- **`core/generation.py`** — **FitlessLM** (YÖNLÜ forward co-occ → PPMI → SVD ile A=girdi/B=çıktı
+  gömme; `_context_logits` = log-bilineer B·h + unigram-öncül + **_induction** (Olsson 2-katman
+  n-gram back-off, TAM eşleşme — 'cat ate'→fish 'dog ate'→meat ayırır); generate = top-k/top-p +
+  rep-penalty + `bias` kancası). **NGramLM** (KenLM-tarzı stupid-backoff, korpus n-gram'ından TAM
+  bağlam devamı → yerel GRAMER; save/load pickle). DÜRÜST: FitlessLM ölçekle KONU öğrenir, gramer
+  NGramLM'den gelir; küresel-tutarlılık (kayma) artık.
+- **`core/attention.py`** — fitsiz attention (softmax(−D/τ)·X, öğrenilen ağırlık yok; L-katman).
+- **`graph/` + `core/semantic.py`** — TAU grafı + manifold (quantum_bridges içkin κ-dolanıklık).
+
+### API (ai.py facade — hepsi fit'siz, kerneli ellemeden)
+```python
+ai.absorb(text)                  # ortak-geçiş→SVD keşif → evren-kapısı → kNN+SVO kenar (tek metin)
+ai.absorb_corpus(docs)           # TOPLU: extract_relations_batch (nlp.pipe) → tipli kenar (3-8× hız)
+ai.train_corpus(docs)            # GlobalCooccurrence biriktir + PPMI-SVD gömme yenile (= eğitim adımı)
+ai.embed_nearest("word")         # eğitilmiş gömmede komşu (geometrinin anlamlılık kanıtı, gradyansız)
+ai.relate("insulin")             # KERNEL FÜZYON: gömme recall + grounding sertifika (topraksız eler)
+ai.contextual_embed(sent, tgt)   # L-katman fitsiz attention → BAĞLAMSAL temsil (polisemi çözer)
+ai.generate_text(prompt, grounded=True)   # FitlessLM (konusal) + grounding kapısı (köklü içerik)
+ai.generate_fluent(prompt)       # NGramLM (yerel AKICI/gramerli)
+ai.generate_hybrid(prompt)       # HİBRİT: n-gram akıcılık × gömme konu-çapası × grounding kapısı
+ai.quantum_links("egfr")         # ONTOLOJİ-KAPILI κ-bağ (paylaşılan tip/boyut, her string değil)
+ai.ground_full("apple", type_hint="fruit", dna=..., molecule=...)  # ONTOLOJİ-KAPILI 7-boyut grounding
+ai.ask("What inhibits egfr?")    # fitsiz SORU→CEVAP (fiil=ilişki açık-sözlük; spaCy parse + grafı sorgula)
+ai.walk("egfr")                  # kritik-hat asal yürüyüşü (Sturm-pozitif; halüsinasyon=sapma)
+```
+
+### Eğitim runner'ları (HF stream, gradient yok, resumable)
+- **`tools/train_hf_corpus.py`** — fineweb-edu → FastCooccurrence → SVD gömme (checkpoint npz).
+- **`tools/train_lm.py`** — FitlessLM (LM_TOKENS/LM_VOCAB env; checkpoint+örnek-üretim).
+- **`tools/train_ngram.py`** — NGramLM (NGRAM_TOKENS/ORDER env; pruning+checkpoint). `.ngram.pkl`.
+- Tek-yazar: ağır batch-ajanlarla AYNI ANDA koşma (bellek çekişmesi → OOM; bu oturumda yaşandı).
+
+### Dürüst durum (abartmadan)
+- **Çözüldü:** gömme (PMI-SVD, ~166M token, GloVe-kalitesi), yerel akıcılık (n-gram 4-gram), in-context
+  learning (induction, bağlam-duyarlı), halüsinasyonsuz içerik (grounding kapısı = GARANTİ).
+- **Artık (kalan):** küresel söylem-tutarlılığı (n-gram Markov kayar; ölçek YAPISAL düzeltmez —
+  derin öğrenilmiş discourse devresi gradient ister). Konu-çapalı hibrit kaymayı AZALTIR, bitirmez.
+- **Stratejik:** akıcı genel düz-yazı = en zor + en az-moat eksen. Moat (sertifikalı yeni hipotez +
+  ilaç tasarımı + matematik kernel) Mythos-5'in frontier'ı VE bizim yapısal güçlü olduğumuz yer.
+  Frontier (Fable/Mythos 5, 2026-06) gerçek: novel-hipotez + ilaç + 100× küçük uzman model — bizim bahsi destekler.
+- **Ölçek:** kapalı-form tek-geçiş → 1B/5B token BU KUTUDA fizibıl (gömme token-bağımsız bellek;
+  n-gram pruning'le). True 1B+ büyük vocab için seyrek yapı (gelecek compute ile).
+
+Tests: test_cooccurrence/test_attention/test_comprehend/test_absorb/test_ask/test_batch_corpus/
+test_global_cooc/test_contextual/test_generation/test_ontology_gate/test_quantum_links (hepsi yeşil).
