@@ -3106,6 +3106,63 @@ class AI:
                 break
         return {"tokens": toks, "target": tl, "nearest": out, "layers": layers}
 
+    def quantum_links(self, concept, *, top_k: int = 8):
+        """ONTOLOJİ-KAPILI kuantum bağ — κ-yakın/klasik-uzak AMA yalnız PAYLAŞILAN ontolojik
+        eksen (tip/boyut) üzerinden. Kullanıcı: 'kelimenin DNA'sı olmaz; elma↔fibonacci ikisi de
+        geometri/yasa BOYUTUNU paylaştığı için bağlanır, her string değil.'
+
+        Eski quantum_bridges TÜM kavramlara κ-yakınlık arıyordu → 'egfr↔basilicata' çöpü (ortak
+        ontoloji yok). Bu kapı: aday (1) ⟨bridge⟩ artifaktı DEĞİL, (2) ontolojik köklü (IS_A tipi
+        VEYA grounding-boyut paradigması var), (3) kaynakla PAYLAŞILAN tip/boyut var. Sonra κ-yakın
+        olanlar = GERÇEK gizli bağ. Boyut-paylaşan (klasik-uzak) = sürpriz çapraz-alan bağ; tip-
+        paylaşan = aynı-aile analojisi. Döner: {concept, links:[{concept,kappa_dist,shared,via}], ...}."""
+        eng = self._engine
+        m = eng.manifold
+        tau = eng.tau
+        c = str(concept).lower()
+        if c not in m.concepts:
+            return {"concept": c, "links": [], "reason": "manifoldda yok"}
+        _DIM = {"HAS_DNA", "HAS_COMPOUND", "HAS_GEOMETRY", "HAS_TOPOLOGY",
+                "IS_GOVERNED_BY", "HAS_SIGNAL", "HAS_IMAGE"}
+
+        def isa_of(x):
+            return {str(getattr(e, "target", "")).lower() for e in tau.edges.get(x, [])
+                    if str(getattr(e, "paradigm", "")) == "IS_A"}
+
+        def dims_of(x):
+            return {str(getattr(e, "paradigm", "")) for e in tau.edges.get(x, [])} & _DIM
+
+        src_isa, src_dims = isa_of(c), dims_of(c)
+        if not src_isa and not src_dims:
+            return {"concept": c, "links": [],
+                    "reason": "kaynak ONTOLOJİK köklü değil (IS_A tipi/boyutu yok) — "
+                              "ontoloji-kapısı bağ kuramaz (doğru: tipsiz string bağlanmamalı)"}
+        # ONTOLOJİ KAPISI ÖNCE: yalnız paylaşılan tip/boyut adaylarını topla (tek O(E) geçiş)
+        cand: dict = {}
+        for src, el in tau.edges.items():
+            srcl = str(src).lower()
+            if srcl == c or srcl.startswith("⟨bridge") or srcl not in m.concepts:
+                continue
+            shared_type = isa_of(srcl) & src_isa
+            shared_dim = dims_of(srcl) & src_dims
+            if shared_type or shared_dim:
+                cand[srcl] = ("boyut" if shared_dim else "tip",
+                              sorted(shared_dim | shared_type))
+        sig = m._get_quantum_sig(c)
+        if sig is None:
+            return {"concept": c, "links": [], "reason": "κ-imza yok"}
+        links = []
+        for name, (via, shared) in cand.items():
+            sc = m._get_quantum_sig(name)
+            if sc is None:
+                continue
+            if sig.is_entangled_with(sc):          # klasik-uzak + κ-yakın = gizli bağ
+                links.append({"concept": name, "kappa_dist": round(float(sig.quantum_distance(sc)), 4),
+                              "shared": shared, "via": via})
+        links.sort(key=lambda d: d["kappa_dist"])
+        return {"concept": c, "n_candidates": len(cand), "links": links[:top_k],
+                "principle": "bağ ontoloji üzerinden (paylaşılan tip/boyut), her kelimeyle değil"}
+
     def prune_noise(self, *, persist: bool = False) -> dict:
         """Mevcut manifoldda işlev-kelime/noktalama GÜRÜLTÜ kenarlarını temizle (keep_all
         kirliliğini geri al). Kaynağı VEYA hedefi gürültü olan kenar atılır → walk/generate
