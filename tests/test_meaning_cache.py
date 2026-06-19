@@ -107,18 +107,3 @@ def test_load_missing_returns_empty():
 
 
 # ── Cognition phase ──
-def test_meaning_cache_phase_registered():
-    """MeaningCachePhase varsayılan batch döngüde + DiscoverPhase'den sonra."""
-    from tantrium.research.cognition import _DEFAULT_BATCH_PHASES
-    names = [p.name for p in _DEFAULT_BATCH_PHASES]
-    assert "meaning_cache" in names
-    assert names.index("meaning_cache") > names.index("discover")
-
-
-def test_meaning_cache_phase_gated_without_autonomy():
-    """_autonomy YOKKEN no-op (batch-test yavaşlamaz/çökmez)."""
-    from tantrium.research.cognition import MeaningCachePhase, CognitionState
-    eng = _grounded_engine()                             # _autonomy yok
-    st = CognitionState()
-    out = MeaningCachePhase().execute(eng, st)
-    assert out is st and st.meaning_cached == 0

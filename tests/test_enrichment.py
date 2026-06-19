@@ -177,26 +177,6 @@ def _growth_like(ai, edges):
     return obj
 
 
-def test_multidim_binds_chemical_skips_noise():
-    ai = _AI()
-    g = _growth_like(ai, {
-        "caffeine": [_E("IS_A", "stimulant")],   # bilinen → molekül bağlanır
-        "postal": [_E("IS_A", "service")],        # bilinmeyen → boyut yok
-        "⟨bridge:x⟩": [_E("IS_A", "y")],          # sentetik → alfabetik değil, atlanır
-    })
-    rep = type("R", (), {"dimensions_bound": 0})()
-    g._enrich_multidim(["caffeine", "postal", "⟨bridge:x⟩"], lambda *_: None, rep)
-    assert rep.dimensions_bound >= 1              # caffeine en az 1 boyut
-
-
-def test_multidim_idempotent_skips_bound():
-    ai = _AI()
-    g = _growth_like(ai, {"caffeine": [_E("HAS_COMPOUND", "⟨percept:caffeine:molecule⟩")]})
-    rep = type("R", (), {"dimensions_bound": 0})()
-    g._enrich_multidim(["caffeine"], lambda *_: None, rep)
-    assert rep.dimensions_bound == 0             # zaten molekül-bağlı → atlanır
-
-
 def test_properties_matrix_is_psd():
     """Fiziksel özellik → PSD geometri matrisi (dış-çarpım, eigenvalue ≥ 0)."""
     from tantrium.core.enrichment import _bind_properties

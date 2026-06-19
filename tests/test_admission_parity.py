@@ -146,29 +146,3 @@ def ai():
     import tantrium
     return tantrium.AI()
 
-
-def test_universe_gate_rejects_contradictory_or_admits(ai):
-    """Evren kapısı CONTRADICTORY'yi reddeder; geçerli veriyi core/frontier alır.
-
-    Gated yol kabul için manifold.admit(policy='trusted')'a iner — bu testin
-    amacı: gated sınıflandırmanın (core/frontier/rejected) davranışını sabitlemek.
-    """
-    from tantrium.research.autonomous import AutonomousObserver
-    obs = AutonomousObserver(ai._engine)
-    # Gerçek, köklü bir kavram (protein) — reddedilmemeli
-    mu = [float(m) for m in ai._engine.encoder.encode("protein").moments]
-    tv, gv, admitted = obs._universe_gate("protein", mu)
-    assert admitted in ("core", "frontier", "rejected")
-    # protein bilinen biyokimya — CONTRADICTORY olmamalı
-    assert admitted != "rejected" or tv == "CONTRADICTORY"
-
-
-def test_universe_gate_returns_triple(ai):
-    """_universe_gate (truth, grounding, admitted_as) üçlüsü döndürür."""
-    from tantrium.research.autonomous import AutonomousObserver
-    obs = AutonomousObserver(ai._engine)
-    mu = [float(m) for m in ai._engine.encoder.encode("ATP").moments]
-    result = obs._universe_gate("ATP", mu)
-    assert isinstance(result, tuple) and len(result) == 3
-    _, _, admitted = result
-    assert admitted in ("core", "frontier", "rejected")

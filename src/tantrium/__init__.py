@@ -23,13 +23,9 @@ from tantrium.reasoning.gap_finder import Gap, GapFinder
 from tantrium.reasoning.wonder import WonderScore, WonderScorer
 from tantrium.reasoning.reasoner import ChainStep, ReasoningResult, GraphReasoner
 from tantrium.reasoning.planner import Plan, PlanStep, Planner
-from tantrium.research.autonomous import Observation, AutonomousObserver
-from tantrium.research.growth import GrowthEngine, GrowthReport
 from tantrium.research.explorer import ExplorationObjective, ExplorationResult
 from tantrium.research.goal import Goal, GoalManifold
 from tantrium.research.actor import Action, ActionResult
-from tantrium.research.ingest import IngestBatch, IngestReport, DataIngestor
-from tantrium.research.researcher import ResearchCycle, ResearchReport, AutonomousResearcher
 from tantrium.domains.spectral import SpectralMeasure, gram_spectrum, spectral_distance, dna_measure, moments_to_spectral
 from tantrium.meta.paradigm import MetaParadigm, UniversalRule, ParadigmMoment, SelfCertResult
 from tantrium.meta.topology import MomentTopology, MathRegion
@@ -96,22 +92,12 @@ __all__ = [
     "ProofLoop",
     "LoopReport",
     "LoopCycle",
-    "Observation",
-    "AutonomousObserver",
-    "GrowthEngine",
-    "GrowthReport",
     "ExplorationObjective",
     "ExplorationResult",
     "Goal",
     "GoalManifold",
     "Action",
     "ActionResult",
-    "IngestBatch",
-    "IngestReport",
-    "DataIngestor",
-    "ResearchCycle",
-    "ResearchReport",
-    "AutonomousResearcher",
     # Reasoning
     "ThinkingResult",
     "ThinkingLevel",

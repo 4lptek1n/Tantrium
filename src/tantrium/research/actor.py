@@ -162,14 +162,12 @@ class Actor:
         )
 
     def _relate(self, action: Action) -> ActionResult:
-        from tantrium.graph.relations import add_relations_from_text
-        n = add_relations_from_text(self.engine, action.payload)
-        action.certified = True
+        # Metinden ilişki çıkarma kaldırıldı (edinme katmanı yok) — ASİ bilir, edinmez.
         return ActionResult(
             action=action,
-            success=True,
-            summary=f"+{n} semantik ilişki",
-            relations_added=n,
+            success=False,
+            summary="metinden ilişki çıkarma kaldırıldı (edinme katmanı yok)",
+            relations_added=0,
         )
 
     def _save(self, action: Action) -> ActionResult:

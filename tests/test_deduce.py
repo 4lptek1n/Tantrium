@@ -39,8 +39,7 @@ def test_deduce_manifold_not_shrink(ai):
     assert after == len(ai._engine.manifold.concepts)
 
 
-def test_deduce_distinct_from_grow(ai):
-    """deduce (tümdengelim) ve grow (veri akışı) FARKLI metotlar — karıştırma."""
+def test_deduce_exists_acquisition_removed(ai):
+    """deduce (içsel tümdengelim) korunur; edinme/büyüme (grow) kaldırıldı — ASİ bilir, edinmez."""
     assert hasattr(ai, "deduce")
-    assert hasattr(ai, "grow")
-    assert ai.deduce.__func__ is not ai.grow.__func__
+    assert not hasattr(ai, "grow")

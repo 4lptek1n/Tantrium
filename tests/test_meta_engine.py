@@ -88,35 +88,6 @@ def test_graph_adapter_does_not_relearn_builtin_rules():
     assert ("ACTIVATES", "ACTIVATES") in TRANSITIVE_CAUSAL
 
 
-def test_meta_synthesis_phase_invents_in_loop():
-    """MetaSynthesisPhase: döngüde kural icat eder; _autonomy kapılı; özyineleme (lookup) aktif."""
-    from tantrium.research.cognition import MetaSynthesisPhase, CognitionState
-    from tantrium.reasoning.causal_rules import LEARNED_TRANSITIVE, lookup_transitive
-
-    class _E:
-        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
-
-    edges = {}
-    for i in range(3):
-        a, b, c = f"ma{i}", f"mb{i}", f"mc{i}"
-        edges[a] = [_E(b, "MREL1"), _E(c, "MRELD")]
-        edges[b] = [_E(c, "MREL2")]
-    eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges=edges), _autonomy=True)
-    try:
-        st = MetaSynthesisPhase().execute(eng, CognitionState())
-        assert st.rules_invented >= 1
-        assert lookup_transitive("MREL1", "MREL2") == "MRELD"   # özyineleme: derive bunu okur
-    finally:
-        LEARNED_TRANSITIVE.pop(("MREL1", "MREL2"), None)
-
-
-def test_meta_synthesis_phase_gated_by_autonomy():
-    from tantrium.research.cognition import MetaSynthesisPhase, CognitionState
-    eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges={}), _autonomy=False)
-    st = MetaSynthesisPhase().execute(eng, CognitionState())
-    assert st.rules_invented == 0
-
-
 def test_graph_adapter_invents_converse_rule():
     """AİLE 2: transitiften FARKLI strateji — a-relX->b varken b-relY->a tutarlıysa relX⁻¹→relY icat."""
     from tantrium.reasoning.causal_rules import LEARNED_CONVERSE, lookup_converse
