@@ -2832,17 +2832,19 @@ class AI:
         # → generate/speak gerçek cümle kurar. Heuristik (gürültülü) ama yapıdan, dayatmadan.
         svo_n = 0
         if svo:
-            from tantrium.core.cooccurrence import tokenize as _tok, looks_verb
+            # AÇIK-SÖZLÜK + GRAMMATICAL: spaCy dependency-parse ile (özne, fiil=ilişki, nesne).
+            # Gürültülü ardışık-üçlü heuristiği yerine gerçek gramer; bilinmeyen fiil KENDİ tipi
+            # (treats→TREAT) → sabit ontolojinin atladığı TÜM tipler otomatik. spaCy açılır.
+            from tantrium.research.autonomous import _extract_relations, enable_parser
+            enable_parser(True)
             for s in sents:
-                cw = [t for t in _tok(s) if not is_noise(t)]
-                for i in range(len(cw) - 2):
-                    a, v, b = cw[i], cw[i + 1], cw[i + 2]
-                    if a == b or is_noise(v) or not looks_verb(v):
-                        continue                  # orta kelime fiil-şekilli değilse SVO değil
-                    if admit(a) in ("core", "frontier") and admit(b) in ("core", "frontier"):
-                        eng.tau.edges.setdefault(a, []).append(
-                            KnowledgeEdge(source=a, target=b, distance=0.5,
-                                          paradigm=f"SVO:{v}"))
+                for subj, rel, obj in _extract_relations(s):
+                    subj, obj = subj.lower(), obj.lower()
+                    if subj == obj or not rel:
+                        continue
+                    if admit(subj) in ("core", "frontier") and admit(obj) in ("core", "frontier"):
+                        eng.tau.edges.setdefault(subj, []).append(
+                            KnowledgeEdge(source=subj, target=obj, distance=0.3, paradigm=rel))
                         svo_n += 1
         if persist:
             try:
