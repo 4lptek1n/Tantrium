@@ -3171,6 +3171,27 @@ class AI:
                 "next_words": [w for w, _ in lm.next_words(prompt, k=6)],
                 "content_grounded_ratio": ratio, "n_tokens": n_tokens}
 
+    def generate_fluent(self, prompt: str = "", *, n_tokens: int = 40, temperature: float = 0.7,
+                        top_k: int = 40, top_p: float = 0.95, seed: int = 0) -> dict:
+        """AKICI ÜRETİM — NGramLM (KenLM-tarzı stupid-backoff): TAM önceki bağlamdan korpusta o
+        bağlamı GERÇEKTEN izleyen kelime → yerel GRAMER akar (FitlessLM konu öğrenir, gramer değil).
+        Sadece sayım, gradient YOK. tools/train_ngram.py ile .tantrium/fitless_lm.ngram.pkl üret.
+        DÜRÜST: Markov → yerel akıcı, küresel kayar. Döner: {prompt, text, next_words}."""
+        from pathlib import Path
+        from tantrium.core.generation import NGramLM
+        base = Path(".tantrium/fitless_lm.ngram.pkl")
+        if not base.exists():
+            return {"prompt": prompt, "text": "", "reason": "n-gram model yok — "
+                    "tools/train_ngram.py ile .tantrium/fitless_lm.ngram.pkl üret"}
+        lm = getattr(self, "_ngram_lm", None)
+        if lm is None:
+            lm = NGramLM.load(".tantrium/fitless_lm")
+            self._ngram_lm = lm
+        text = lm.generate(prompt, n_tokens=n_tokens, temperature=temperature,
+                           top_k=top_k, top_p=top_p, seed=seed)
+        return {"prompt": prompt, "text": text,
+                "next_words": [w for w, _ in lm.next_words(prompt, k=6)], "n_tokens": n_tokens}
+
     def quantum_links(self, concept, *, top_k: int = 8):
         """ONTOLOJİ-KAPILI kuantum bağ — κ-yakın/klasik-uzak AMA yalnız PAYLAŞILAN ontolojik
         eksen (tip/boyut) üzerinden. Kullanıcı: 'kelimenin DNA'sı olmaz; elma↔fibonacci ikisi de
