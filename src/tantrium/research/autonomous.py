@@ -168,8 +168,10 @@ def _spacy_extract(text: str) -> list[tuple[str, str, str]]:
         # öznesi yoksa conj zincirinden taşı (koordinasyon: "X binds Y and activates Z")
         def _subjects(t):
             s = [c for c in t.children if c.dep_ in ("nsubj", "nsubjpass")]
+            # ÖZNESİZ fiilin öznesini BAŞTAN taşı: koordinasyon (conj) + KONTROL/mastar
+            # (xcomp/ccomp/advcl) — "aspirin is used to treat Y" → treat'in öznesi=aspirin.
             h = t
-            while not s and h.dep_ == "conj":
+            while not s and h.dep_ in ("conj", "xcomp", "ccomp", "advcl", "acomp", "relcl"):
                 h = h.head
                 s = [c for c in h.children if c.dep_ in ("nsubj", "nsubjpass")]
             return s
@@ -192,9 +194,10 @@ def _spacy_extract(text: str) -> list[tuple[str, str, str]]:
             if lemma in _OPEN_VERB_STOP or len(lemma) < 3 or not lemma.isalpha():
                 continue
             rel = lemma.upper()
+        direct = [c for c in tok.children if c.dep_ in ("nsubj", "nsubjpass")]
         subs = _subjects(tok)
-        pass_subs = [c for c in subs if c.dep_ == "nsubjpass"]
-        act_subs = [c for c in subs if c.dep_ == "nsubj"]
+        climbed = (not direct) and bool(subs)     # özne kontrol/koordinasyondan taşındı
+        pass_subs = [c for c in direct if c.dep_ == "nsubjpass"]
         dobjs = [c for c in tok.children if c.dep_ in ("dobj", "dative", "attr")]
         agents = [g for c in tok.children if c.dep_ == "agent"
                   for g in c.children if g.dep_ == "pobj"]
@@ -202,8 +205,9 @@ def _spacy_extract(text: str) -> list[tuple[str, str, str]]:
             for a in agents:
                 for p in pass_subs:
                     out.append((_span_term(a), rel, _span_term(p)))
-        else:                              # ETKEN
-            for s in act_subs:
+        else:                              # ETKEN — doğrudan nsubj VEYA taşınan kontrol-öznesi
+            logical = [c for c in direct if c.dep_ == "nsubj"] or (subs if climbed else [])
+            for s in logical:
                 for o in dobjs:
                     out.append((_span_term(s), rel, _span_term(o)))
     return out

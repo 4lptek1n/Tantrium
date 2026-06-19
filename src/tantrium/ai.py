@@ -2855,8 +2855,9 @@ class AI:
         rejected = sum(1 for r in region.values() if r == "rejected")
         n_emergent = len({p for p in para}) if emergent_types else 0
         return {"n_concepts": len(vocab), "concepts_admitted": admitted,
-                "rejected": rejected, "edges_added": edges, "types": n_emergent,
-                "reencoded": reencoded, "sample": [c for c in list(region)[:12]]}
+                "rejected": rejected, "edges_added": edges, "svo_edges": svo_n,
+                "types": n_emergent, "reencoded": reencoded,
+                "sample": [c for c in list(region)[:12]]}
 
     def prune_noise(self, *, persist: bool = False) -> dict:
         """Mevcut manifoldda işlev-kelime/noktalama GÜRÜLTÜ kenarlarını temizle (keep_all
@@ -2959,6 +2960,133 @@ class AI:
         return {"start": path[0], "path": path, "steps": len(path) - 1,
                 "on_critical_line": steps_ok > 0,
                 "narrative": " → ".join(path)}
+
+    def ask(self, question, *, top_k: int = 8) -> dict:
+        """FİTSİZ SORU→CEVAP — soruyu gramatik parse et, FİİLİ ilişkiye çevir (açık-sözlük:
+        treat→TREAT), VARLIĞI + YÖNÜ bul, grafı sorgula. Örnek-öğrenmeye gerek YOK: absorb
+        kenarı hangi fiille kurduysa (lemma→tip) soru AYNI fiille o tipi geri okur — simetri.
+
+        Yön: soru-varlığı öznE (nsubj) ise İLERİ ('X ne baskılar?' → X--REL-->?); nesnE (dobj)
+        ise GERİ ('ne X'i baskılar?' → ?--REL-->X). 'is a' → IS_A. spaCy yoksa kaba yedek.
+        Döner: {question, relation, entity, direction, answers, n, sentence}."""
+        from tantrium.research.autonomous import (
+            _get_nlp, enable_parser, _span_term, _normalize_entity, _LEMMA_REL)
+        eng = self._engine
+        tau = eng.tau
+        q = str(question).strip()
+        enable_parser(True)
+        nlp = _get_nlp()
+        _WH = {"what", "which", "who", "whom", "whose", "where", "ne", "neyi",
+               "kim", "kimi", "hangi", "nedir"}
+
+        def _rel_of(lemma: str) -> str:
+            if lemma == "be":
+                return "IS_A"
+            return _LEMMA_REL.get(lemma) or lemma.upper()
+
+        relation = entity = None
+        verb_lemma = None
+        direction = "out"
+        if nlp:
+            try:
+                doc = nlp(q)
+            except Exception:
+                doc = None
+            if doc is not None:
+                root = next((t for t in doc if t.dep_ == "ROOT"), None)
+                verb = root if (root is not None and
+                                (root.pos_ == "VERB" or root.lemma_ == "be")) else None
+                if verb is None:
+                    verb = next((t for t in doc if t.pos_ == "VERB"), None)
+                if verb is None:
+                    verb = next((t for t in doc if t.lemma_ == "be"), None)
+                if verb is not None:
+                    verb_lemma = verb.lemma_.lower()
+                    relation = _rel_of(verb_lemma)
+
+                    def _is_wh(t):
+                        return t.lower_ in _WH
+
+                    subs = [c for c in verb.children
+                            if c.dep_ in ("nsubj", "nsubjpass") and not _is_wh(c)]
+                    # nesne: doğrudan nesne/öznitelik + HATALI etiketlenen içerik çocuğu
+                    # (kısa 'What inhibits egfr?'te egfr ADV/advmod tag'lenir) + edat-nesnesi.
+                    _OBJ_DEP = ("dobj", "dative", "attr", "acomp", "oprd",
+                                "advmod", "npadvmod", "nmod")
+                    objs = [c for c in verb.children
+                            if c.dep_ in _OBJ_DEP and not _is_wh(c)
+                            and c.pos_ in ("NOUN", "PROPN", "ADV", "ADJ", "X", "NUM", "PRON")]
+                    for c in verb.children:           # 'used for nailing' → edat-nesnesi
+                        if c.dep_ == "prep":
+                            objs += [g for g in c.children
+                                     if g.dep_ == "pobj" and not _is_wh(g)]
+                    if subs:
+                        entity, direction = _span_term(subs[0]), "out"
+                    elif objs:
+                        entity, direction = _span_term(objs[0]), "in"
+                    else:
+                        noun = next((t for t in doc if t.pos_ in ("NOUN", "PROPN")
+                                     and not _is_wh(t)), None)
+                        if noun is not None:
+                            entity, direction = _span_term(noun), "out"
+        if entity is None:
+            # YEDEK (spaCy yok / parse boş): bir manifold kavramı + bilinen fiil ara
+            toks = [w.strip(".,;:!?'\"()").lower() for w in q.split()]
+            for w in toks:
+                lm = w[:-1] if w.endswith("s") and len(w) > 3 else w
+                if lm in _LEMMA_REL or w in _LEMMA_REL:
+                    relation = _rel_of(_LEMMA_REL.get(lm) and lm or lm)
+                    verb_lemma = lm
+                    break
+            for w in toks:
+                if w not in _WH and w in eng.manifold.concepts:
+                    entity = w
+                    break
+            if relation is None and any(w in ("is", "are", "nedir") for w in toks):
+                relation = "IS_A"
+
+        if not entity or not relation:
+            return {"question": q, "relation": relation, "entity": entity,
+                    "direction": direction, "answers": [], "n": 0, "sentence": "",
+                    "reason": "soru anlaşılamadı (fiil/varlık bulunamadı)"}
+        entity = _normalize_entity(str(entity).lower())
+
+        def _match(p) -> bool:
+            ps = str(p)
+            if ps.upper() == relation:
+                return True
+            if ps.startswith("SVO:") and verb_lemma and ps[4:].lower() == verb_lemma:
+                return True
+            return False
+
+        answers: list[str] = []
+        if direction == "out":
+            for e in tau.edges.get(entity, []):
+                if _match(getattr(e, "paradigm", "")):
+                    t = str(getattr(e, "target", "")).lower()
+                    if t and t != entity and t not in answers:
+                        answers.append(t)
+        else:
+            for src, es in tau.edges.items():
+                for e in es:
+                    if (str(getattr(e, "target", "")).lower() == entity
+                            and _match(getattr(e, "paradigm", ""))):
+                        s = str(src).lower()
+                        if s and s != entity and s not in answers:
+                            answers.append(s)
+                            break
+        answers = answers[:top_k]
+        if answers:
+            if direction == "out":
+                sent = f"{entity} {verb_lemma or relation.lower()} " + ", ".join(answers)
+            else:
+                sent = ", ".join(answers) + f" {verb_lemma or relation.lower()} {entity}"
+            sent = sent[:1].upper() + sent[1:] + "."
+        else:
+            sent = ""
+        return {"question": q, "relation": relation, "entity": entity,
+                "direction": direction, "answers": answers, "n": len(answers),
+                "sentence": sent}
 
     # ════════════════════════ DALGA 2 — Anlama & Dönüşüm ════════════════════════
 
