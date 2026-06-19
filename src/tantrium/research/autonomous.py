@@ -150,34 +150,27 @@ def _span_term(tok) -> str:
     return _normalize_entity(tok.lemma_.lower())
 
 
-def _spacy_extract(text: str) -> list[tuple[str, str, str]]:
-    """Dependency-parsing ile ilişki çıkar — pasif/appositive/koordinasyon/gömülü TEK mekanizma.
+def _doc_subjects(t):
+    """Öznesiz fiilin öznesini BAŞTAN taşı: koordinasyon (conj) + KONTROL/mastar
+    (xcomp/ccomp/advcl) — 'aspirin is used to treat Y' → treat'in öznesi=aspirin."""
+    s = [c for c in t.children if c.dep_ in ("nsubj", "nsubjpass")]
+    h = t
+    while not s and h.dep_ in ("conj", "xcomp", "ccomp", "advcl", "acomp", "relcl"):
+        h = h.head
+        s = [c for c in h.children if c.dep_ in ("nsubj", "nsubjpass")]
+    return s
 
-    nsubj/nsubjpass + dobj/attr + agent bağımlılıkları → (özne, ilişki, nesne). Pasifte
-    agent=özne. Koordinasyonda (conj fiil) özne taşınır. 'is a' → IS_A. Gramer-genel,
-    kalıp-kalıp değil → yeni cümle yapısı kodlamadan çözülür."""
-    nlp = _get_nlp()
-    if not nlp:
-        return []
+
+def _relations_from_doc(doc) -> list[tuple[str, str, str]]:
+    """Tek spaCy Doc'tan (özne, ilişki, nesne) üçlüleri — nlp() VEYA nlp.pipe ile paylaşılır.
+
+    nsubj/nsubjpass + dobj/attr + agent → (özne, ilişki, nesne). Pasifte agent=özne.
+    Koordinasyon/kontrol (conj/xcomp) özne taşır. 'is a' → IS_A. Gramer-genel."""
     out: list[tuple[str, str, str]] = []
-    try:
-        doc = nlp(text[:2000])    # tanım-zengin lead; hız için sınırlı (regex full-text'i tarar)
-    except Exception:
-        return []
     for tok in doc:
-        # öznesi yoksa conj zincirinden taşı (koordinasyon: "X binds Y and activates Z")
-        def _subjects(t):
-            s = [c for c in t.children if c.dep_ in ("nsubj", "nsubjpass")]
-            # ÖZNESİZ fiilin öznesini BAŞTAN taşı: koordinasyon (conj) + KONTROL/mastar
-            # (xcomp/ccomp/advcl) — "aspirin is used to treat Y" → treat'in öznesi=aspirin.
-            h = t
-            while not s and h.dep_ in ("conj", "xcomp", "ccomp", "advcl", "acomp", "relcl"):
-                h = h.head
-                s = [c for c in h.children if c.dep_ in ("nsubj", "nsubjpass")]
-            return s
         # IS_A: "X is a Y" (kopula)
         if tok.lemma_ == "be":
-            subs = _subjects(tok)
+            subs = _doc_subjects(tok)
             attrs = [c for c in tok.children if c.dep_ in ("attr", "acomp")]
             for s in subs:
                 for a in attrs:
@@ -195,7 +188,7 @@ def _spacy_extract(text: str) -> list[tuple[str, str, str]]:
                 continue
             rel = lemma.upper()
         direct = [c for c in tok.children if c.dep_ in ("nsubj", "nsubjpass")]
-        subs = _subjects(tok)
+        subs = _doc_subjects(tok)
         climbed = (not direct) and bool(subs)     # özne kontrol/koordinasyondan taşındı
         pass_subs = [c for c in direct if c.dep_ == "nsubjpass"]
         dobjs = [c for c in tok.children if c.dep_ in ("dobj", "dative", "attr")]
@@ -211,6 +204,18 @@ def _spacy_extract(text: str) -> list[tuple[str, str, str]]:
                 for o in dobjs:
                     out.append((_span_term(s), rel, _span_term(o)))
     return out
+
+
+def _spacy_extract(text: str) -> list[tuple[str, str, str]]:
+    """Dependency-parsing ile ilişki çıkar (tek metin) — `_relations_from_doc` sarmalayıcısı."""
+    nlp = _get_nlp()
+    if not nlp:
+        return []
+    try:
+        doc = nlp(text[:2000])    # tanım-zengin lead; hız için sınırlı (regex full-text'i tarar)
+    except Exception:
+        return []
+    return _relations_from_doc(doc)
 
 # ── TÜRKÇE ilişki çıkarımı (SOV: özne nesne+ek YÜKLEM) — Dalga 2/3 omurgası ──
 # Türkçe dil-yüzeyi (check_claim/translate/extract) için: İngilizce pattern Türkçeyi görmez.
@@ -350,12 +355,27 @@ def _clean_term(words: list[str], take_last: bool = False) -> str:
     return _normalize_entity(head)
 
 
-def _extract_relations(text: str) -> list[tuple[str, str, str]]:
-    """Metinden (özne, ilişki_türü, nesne) üçlülerini çıkar.
+def _accept_spacy(s: str, rel: str, o: str) -> bool:
+    """spaCy üçlüsü kabul süzgeci — `_extract_relations` ve batch yolu PAYLAŞIR (birebir aynı)."""
+    return (2 < len(s) < 50 and 2 < len(o) < 50 and s != o
+            and o not in _STOPWORDS and o not in _BOUNDARY and o not in _NONCONTENT
+            and s not in _BOUNDARY and not (rel == "IS_A" and _is_nonclass_obj(o)))
 
-    Basit örüntü: "X [fiil] Y" — NLP gerektirmez, anahtar kelime eşleme.
-    Sonuç: TAU'ya CAUSES/INHIBITS/ACTIVATES kenarları olarak eklenir.
-    """
+
+def _dedup(relations):
+    """Sırayı koruyarak tekilleştir (regex+spaCy yollarının ortak son adımı)."""
+    seen: set = set()
+    uniq: list[tuple[str, str, str]] = []
+    for r in relations:
+        if r not in seen:
+            seen.add(r)
+            uniq.append(r)
+    return uniq
+
+
+def _regex_relations(text: str) -> list[tuple[str, str, str]]:
+    """REGEX-yalnız çıkarım (IS_A + pasif + fiil-kalıbı + Türkçe) — NLP gerektirmez, hızlı.
+    `_extract_relations`'ın spaCy-öncesi tüm pass'leri; batch yolu spaCy'yi nlp.pipe ile ekler."""
     relations: list[tuple[str, str, str]] = []
     # Parantez içi açıklamaları at (özneyi yüklemden ayırıp kalıbı kırıyor:
     # "X (pl. ...) is a Y" → "X  is a Y").
@@ -426,25 +446,47 @@ def _extract_relations(text: str) -> list[tuple[str, str, str]]:
                 if (2 < len(subj) < 40 and 2 < len(obj) < 40 and subj != obj
                         and subj not in _STOPWORDS and obj not in _STOPWORDS):
                     relations.append((subj, rel_type, obj))
-    # GRAMATİK PARSER (spaCy) pass — yalnız OPT-IN (kalite-yolu: converse/research). Growth/test
-    # KAPALI (regex hızlı). Açıkken kapsamlı genel çıkarım (regex'i AUGMENTE eder; Türkçe korunur).
+    return relations
+
+
+def _extract_relations(text: str) -> list[tuple[str, str, str]]:
+    """Metinden (özne, ilişki_türü, nesne) üçlüleri — regex pass'leri + (opt-in) spaCy pass.
+
+    REGEX hızlı (NLP'siz); _PARSER_ENABLED ise gramatik parser AUGMENTE eder (Türkçe korunur).
+    Çok-belge için `extract_relations_batch` aynı sonucu nlp.pipe ile toplu/HIZLI üretir.
+    """
+    relations = list(_regex_relations(text))
     if _PARSER_ENABLED:
         try:
             for s, rel, o in _spacy_extract(text):
-                if (2 < len(s) < 50 and 2 < len(o) < 50 and s != o
-                        and o not in _STOPWORDS and o not in _BOUNDARY and o not in _NONCONTENT
-                        and s not in _BOUNDARY and not (rel == "IS_A" and _is_nonclass_obj(o))):
+                if _accept_spacy(s, rel, o):
                     relations.append((s, rel, o))
         except Exception:
             pass
-    # tekilleştir (sıra korunur)
-    _seen: set = set()
-    _uniq: list[tuple[str, str, str]] = []
-    for r in relations:
-        if r not in _seen:
-            _seen.add(r)
-            _uniq.append(r)
-    return _uniq
+    return _dedup(relations)
+
+
+def extract_relations_batch(texts, *, batch_size: int = 64,
+                            char_limit: int = 2000) -> list[list[tuple[str, str, str]]]:
+    """ÇOK-BELGE ilişki çıkarımı — regex (belge-başı, ucuz) + spaCy nlp.pipe (TOPLU, hızlı).
+
+    Dar boğaz spaCy: `nlp(text)` belge-başı çağrısı yerine `nlp.pipe` tüm belgeleri tek
+    akışta işler (tok2vec/parser GPU/vektör yığını) → batch corpus'ta 3-8× hız. Sonuç
+    `_extract_relations`'la BİREBİR aynı (aynı _regex_relations + _relations_from_doc +
+    _accept_spacy + _dedup). _PARSER_ENABLED kapalıysa yalnız regex (yine toplu döner)."""
+    texts = [str(t) for t in texts]
+    out = [list(_regex_relations(t)) for t in texts]
+    nlp = _get_nlp() if _PARSER_ENABLED else None
+    if nlp:
+        try:
+            stream = nlp.pipe([t[:char_limit] for t in texts], batch_size=batch_size)
+            for i, doc in enumerate(stream):
+                for s, rel, o in _relations_from_doc(doc):
+                    if _accept_spacy(s, rel, o):
+                        out[i].append((s, rel, o))
+        except Exception:
+            pass
+    return [_dedup(r) for r in out]
 
 
 # ─── Gözlem sonucu ────────────────────────────────────────────────────────────

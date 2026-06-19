@@ -54,6 +54,33 @@ def fetch_random_titles(n: int = 5, *, timeout: int = 25) -> list[str]:
         return []
 
 
+def fetch_random_articles(n: int = 20, *, timeout: int = 30,
+                          min_chars: int = 300) -> list[tuple[str, str]]:
+    """TOPLU çekim: rastgele makalelerin DÜZ METNİNİ TEK HTTP çağrısında al (generator=random
+    + prop=extracts). Eski yol başlık-başına ayrı istek + uyku istiyordu; bu, batch corpus için
+    N round-trip'i 1'e indirir (ana hız darboğazı = ağ değil işlem olur). Döner: [(başlık, metin)]."""
+    # exintro=1: lead bölümü → exlimit=max ile TEK çağrıda ≤20 makale (tam-metin exlimit=1'e
+    # düşer). Lead = ansiklopedik tanım (IS_A/kausal en yoğun) → tipli çıkarım için ideal.
+    q = urllib.parse.urlencode({
+        "action": "query", "generator": "random", "grnnamespace": "0",
+        "grnlimit": str(min(max(1, n), 20)), "prop": "extracts",
+        "explaintext": "1", "exintro": "1", "exlimit": "max",
+        "format": "json", "redirects": "1",
+    })
+    try:
+        req = urllib.request.Request(f"{_WIKI_API}?{q}", headers=_UA)
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.load(r)
+    except Exception:
+        return []
+    out: list[tuple[str, str]] = []
+    for p in data.get("query", {}).get("pages", {}).values():
+        ext = p.get("extract")
+        if isinstance(ext, str) and len(ext) >= min_chars:
+            out.append((p.get("title", ""), ext))
+    return out
+
+
 def absorb_topics(ai, topics, *, persist: bool = False, fetch=fetch_wikipedia,
                   **absorb_kw) -> dict:
     """Konu listesini çek + absorb et (fitsiz öğrenme). Döner: birikimli rapor.

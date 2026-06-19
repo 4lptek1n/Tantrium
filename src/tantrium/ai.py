@@ -2859,6 +2859,79 @@ class AI:
                 "types": n_emergent, "reencoded": reencoded,
                 "sample": [c for c in list(region)[:12]]}
 
+    def absorb_corpus(self, docs, *, persist: bool = True, batch_size: int = 64,
+                      max_sentences: int | None = None, progress=None) -> dict:
+        """TOPLU CORPUS ÖĞRENME — çok belgeyi tek akışta, FİTSİZ + HIZLI. Fix #3 (ölçek).
+
+        absorb belge-başı spaCy `nlp(text)` çağırır (yavaş). absorb_corpus TÜM belgelerin
+        cümlelerini TEK `nlp.pipe` akışında işler (extract_relations_batch) → batch corpus'ta
+        3-8× hız (ağ değil, parser darboğazı kalkar). Sonuç tipli kenarlar (fiil=ilişki, açık-
+        sözlük) — ask/reason'ın okuduğu omurga. Co-occurrence SVD gürültü-kenarı YOK (typed-only;
+        ölçekte temizlik > nicelik). Evren-kapısı korunur: subj/obj admit (Aleph), kenar yazılır.
+
+        docs: str listesi (her biri bir belge/makale). persist=True: sonda TEK disk-yazımı.
+        Döner: {n_docs, n_sentences, relations, edges_added, concepts_admitted, elapsed_s,
+        docs_per_s, sample}.
+        """
+        import re
+        import time
+        from tantrium.research.autonomous import extract_relations_batch, enable_parser
+        from tantrium.graph.knowledge_graph import KnowledgeEdge
+        enable_parser(True)                       # gramatik açık-sözlük çıkarım (kalite)
+        eng = self._engine
+        t0 = time.time()
+        docs = [str(d) for d in docs if d and str(d).strip()]
+        # 1) TÜM belgelerin cümlelerini düzleştir (≥4 kelime), belge-indeksini koru
+        sents: list[str] = []
+        for d in docs:
+            for s in re.split(r"(?<=[.!?])\s+", d):
+                if len(s.split()) >= 4:
+                    sents.append(s)
+                    if max_sentences and len(sents) >= max_sentences:
+                        break
+            if max_sentences and len(sents) >= max_sentences:
+                break
+        # 2) TOPLU çıkarım — tek nlp.pipe akışı (ANA HIZ KAZANCI)
+        rel_lists = extract_relations_batch(sents, batch_size=batch_size)
+        # 3) Evren-kapısı + tipli kenar yazımı (admit önbellekli — tekrar arama yok)
+        region: dict[str, str] = {}
+
+        def admit(c: str) -> str:
+            if c not in region:
+                region[c] = self._lean_admit(c)
+            return region[c]
+
+        edges = 0
+        n_rel = 0
+        for rels in rel_lists:
+            for subj, rel, obj in rels:
+                n_rel += 1
+                subj, obj = subj.lower(), obj.lower()
+                if subj == obj or not rel:
+                    continue
+                if admit(subj) in ("core", "frontier") and admit(obj) in ("core", "frontier"):
+                    eng.tau.edges.setdefault(subj, []).append(
+                        KnowledgeEdge(source=subj, target=obj, distance=0.3, paradigm=rel))
+                    edges += 1
+            if progress:
+                try:
+                    progress(edges)
+                except Exception:
+                    pass
+        if persist:
+            try:
+                eng.auto_persist()
+            except Exception:
+                pass
+        admitted = sum(1 for r in region.values() if r in ("core", "frontier"))
+        rejected = sum(1 for r in region.values() if r == "rejected")
+        elapsed = time.time() - t0
+        return {"n_docs": len(docs), "n_sentences": len(sents), "relations": n_rel,
+                "edges_added": edges, "concepts_admitted": admitted, "rejected": rejected,
+                "elapsed_s": round(elapsed, 2),
+                "docs_per_s": round(len(docs) / elapsed, 1) if elapsed > 0 else 0.0,
+                "sample": [c for c in list(region)[:12]]}
+
     def prune_noise(self, *, persist: bool = False) -> dict:
         """Mevcut manifoldda işlev-kelime/noktalama GÜRÜLTÜ kenarlarını temizle (keep_all
         kirliliğini geri al). Kaynağı VEYA hedefi gürültü olan kenar atılır → walk/generate
