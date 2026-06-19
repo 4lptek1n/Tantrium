@@ -2932,6 +2932,97 @@ class AI:
                 "docs_per_s": round(len(docs) / elapsed, 1) if elapsed > 0 else 0.0,
                 "sample": [c for c in list(region)[:12]]}
 
+    # ════════════ FİT'SİZ EĞİTİM — global ortak-geçiş → PPMI → SVD = gömme ════════════
+    def _embed_dir(self):
+        from pathlib import Path
+        p = Path(".tantrium")
+        p.mkdir(exist_ok=True)
+        return p
+
+    def _get_global_cooc(self):
+        """Korpus-geneli ortak-geçiş biriktirici (lazy, diskten resumable)."""
+        if getattr(self, "_global_cooc", None) is None:
+            import json
+            from tantrium.core.cooccurrence import GlobalCooccurrence
+            f = self._embed_dir() / "global_cooc.json"
+            if f.exists():
+                try:
+                    self._global_cooc = GlobalCooccurrence.from_dict(json.loads(f.read_text()))
+                except Exception:
+                    self._global_cooc = GlobalCooccurrence()
+            else:
+                self._global_cooc = GlobalCooccurrence()
+        return self._global_cooc
+
+    def train_corpus(self, docs, *, refresh: bool = True, dim: int = 64, min_count: int = 5,
+                     max_vocab: int = 20000, persist: bool = True) -> dict:
+        """FİT'SİZ EĞİTİM — korpusu GLOBAL ortak-geçişe biriktir + (refresh) PPMI-SVD gömme yenile.
+
+        Modern LLM eğitiminin kapalı-form muadili (Levy-Goldberg): gradient'in yakınsadığı
+        PMI geometrisini DOĞRUDAN hesaplarız. Eski absorb belge-başı SVD yapıp atıyordu;
+        burada istatistik ÇAPRAZ-BELGE birikir (öğrenme sinyali bu) → tek global SVD = eğitilmiş
+        gömme. Gradient/epoch/backprop YOK. embed_nearest ile geometrinin anlamlılığı görülür.
+        Döner: {docs, sentences, vocab, pairs, tokens, embed_vocab, dim, elapsed_s}."""
+        import re
+        import time
+        t0 = time.time()
+        g = self._get_global_cooc()
+        sents = [s for d in docs for s in re.split(r"(?<=[.!?])\s+", str(d))
+                 if len(s.split()) >= 4]
+        g.update(sents)
+        g.prune()
+        out = {"docs": len(list(docs)) if hasattr(docs, "__len__") else None,
+               "sentences": len(sents), "vocab": len(g.vocab),
+               "pairs": len(g.pairs), "tokens": g.n_tokens}
+        if refresh:
+            E, vocab, idx = g.embed(dim=dim, min_count=min_count, max_vocab=max_vocab)
+            self._embeddings = (E, vocab, idx)
+            out["embed_vocab"] = len(vocab)
+            out["dim"] = int(E.shape[1]) if getattr(E, "size", 0) else 0
+            if persist:
+                self._save_embeddings()
+        if persist:
+            self._save_global_cooc()
+        out["elapsed_s"] = round(time.time() - t0, 2)
+        return out
+
+    def _save_global_cooc(self):
+        import json
+        (self._embed_dir() / "global_cooc.json").write_text(
+            json.dumps(self._get_global_cooc().to_dict()), encoding="utf-8")
+
+    def _save_embeddings(self):
+        import json
+        import numpy as np
+        E, vocab, _idx = self._embeddings
+        p = self._embed_dir()
+        np.save(p / "embeddings.npy", E)
+        (p / "embed_vocab.json").write_text(json.dumps(vocab), encoding="utf-8")
+
+    def _load_embeddings(self):
+        import json
+        import numpy as np
+        p = self._embed_dir()
+        f = p / "embeddings.npy"
+        if f.exists():
+            try:
+                E = np.load(f)
+                vocab = json.loads((p / "embed_vocab.json").read_text())
+                self._embeddings = (E, vocab, {w: i for i, w in enumerate(vocab)})
+            except Exception:
+                return getattr(self, "_embeddings", None)
+        return getattr(self, "_embeddings", None)
+
+    def embed_nearest(self, word, *, k: int = 10):
+        """Eğitilmiş gömme uzayında en yakın kelimeler — geometrinin ANLAMLI olduğunun
+        kanıtı (ilişkili kelimeler kümelenir), GRADIENT/EĞİTİM OLMADAN. Döner: [(kelime, kosinüs)]."""
+        from tantrium.core.cooccurrence import neighbors
+        emb = getattr(self, "_embeddings", None) or self._load_embeddings()
+        if not emb or not emb[1]:
+            return []
+        E, vocab, idx = emb
+        return neighbors(E, vocab, idx, str(word).lower(), k=k)
+
     def prune_noise(self, *, persist: bool = False) -> dict:
         """Mevcut manifoldda işlev-kelime/noktalama GÜRÜLTÜ kenarlarını temizle (keep_all
         kirliliğini geri al). Kaynağı VEYA hedefi gürültü olan kenar atılır → walk/generate

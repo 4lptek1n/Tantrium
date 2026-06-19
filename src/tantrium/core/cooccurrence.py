@@ -191,3 +191,90 @@ def neighbors(E: np.ndarray, vocab, idx, word: str, k: int = 5):
         sims.append((w, (u @ v / (nu * nv)) if nv else 0.0))
     sims.sort(key=lambda t: t[1], reverse=True)
     return sims[:k]
+
+
+class GlobalCooccurrence:
+    """KORPUS-GENELİ ortak-geçiş biriktirici — FİT'SİZ EĞİTİMİN ÇEKİRDEĞİ.
+
+    Modern LLM eğitimi ham özünde şudur: tüm korpus üzerinde bağlam→hedef istatistiği
+    biriktirilir; gradient inişi bu istatistiğin (kaydırılmış) PMI geometrisine YAKINSAR
+    (Levy & Goldberg 2014: skip-gram + negatif örnekleme = PMI matris çarpanlaması). Biz o
+    yakınsama-hedefini DOĞRUDAN kapalı-formda hesaplarız:
+
+        akış → GLOBAL ortak-geçiş C (artımlı birikir) → PPMI → SVD = 'eğitilmiş' gömme E.
+
+    KRİTİK FARK (eski absorb hatası): `discover()` her belgede AYRI SVD yapıp matrisi atıyordu
+    → yalnız belge-içi istatistik. Oysa öğrenme sinyali ÇAPRAZ-BELGE birikimde. Bu sınıf C'yi
+    KALICI biriktirir; SVD periyodik yenilenir (= eğitim adımı). Gradient yok, fit yok, EPOCH
+    yok — kapalı-form. Seyrek (Counter), artımlı, budanabilir (ölçek)."""
+
+    def __init__(self, *, window: int = 5, drop_stop: bool = True):
+        self.window = int(window)
+        self.drop_stop = bool(drop_stop)
+        self.pairs: Counter = Counter()      # (w_i, w_j) -> birlikte-geçiş sayısı (yönlü)
+        self.vocab: Counter = Counter()      # w -> toplam frekans
+        self.n_tokens = 0
+
+    def update(self, sentences) -> int:
+        """Cümle akışını biriktir (artımlı). Döner: işlenen token sayısı."""
+        added = 0
+        for s in sentences:
+            toks = tokenize(s, drop_stop=self.drop_stop)
+            toks = [t for t in toks if not is_noise(t)]
+            L = len(toks)
+            if L < 2:
+                continue
+            self.vocab.update(toks)
+            self.n_tokens += L
+            added += L
+            for i, w in enumerate(toks):
+                lo, hi = max(0, i - self.window), min(L, i + self.window + 1)
+                for j in range(lo, hi):
+                    if j != i:
+                        self.pairs[(w, toks[j])] += 1
+        return added
+
+    def prune(self, *, min_pair: int = 2, max_pairs: int = 4_000_000) -> None:
+        """Ölçek koruması: nadir çiftleri (1 kez görülen) ele; tavanı aşarsa en sıkları tut.
+        Budama, biriken istatistiği BOZMAZ (gürültü kuyruğunu atar — subsampling muadili)."""
+        if len(self.pairs) > max_pairs:
+            self.pairs = Counter(dict(self.pairs.most_common(max_pairs)))
+        elif min_pair > 1:
+            self.pairs = Counter({k: c for k, c in self.pairs.items() if c >= min_pair})
+
+    def embed(self, *, dim: int = 64, min_count: int = 5, max_vocab: int = 20000):
+        """Biriken GLOBAL C → PPMI → SVD = eğitilmiş gömme. Döner: (E, vocab, idx).
+        max_vocab: en sık kelimeler (LLM'in token bütçesi muadili). min_count: nadir-kelime eşiği."""
+        vocab = [w for w, c in self.vocab.most_common(max_vocab) if c >= min_count]
+        idx = {w: i for i, w in enumerate(vocab)}
+        n = len(vocab)
+        if n < 2:
+            return np.zeros((0, 0)), [], {}
+        C = np.zeros((n, n), dtype=float)
+        for (a, b), c in self.pairs.items():
+            ia, ib = idx.get(a), idx.get(b)
+            if ia is not None and ib is not None:
+                C[ia, ib] += c
+        E = spectral_embed(ppmi(C), dim=dim)
+        return E, vocab, idx
+
+    def to_dict(self) -> dict:
+        """Kalıcılaştırma (json-uyumlu). pairs '\\t'-birleşik anahtar."""
+        return {
+            "window": self.window, "drop_stop": self.drop_stop, "n_tokens": self.n_tokens,
+            "vocab": dict(self.vocab),
+            "pairs": {f"{a}\t{b}": c for (a, b), c in self.pairs.items()},
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "GlobalCooccurrence":
+        g = cls(window=int(d.get("window", 5)), drop_stop=bool(d.get("drop_stop", True)))
+        g.n_tokens = int(d.get("n_tokens", 0))
+        g.vocab = Counter(d.get("vocab", {}))
+        pairs = Counter()
+        for k, c in d.get("pairs", {}).items():
+            a, _, b = k.partition("\t")
+            if b:
+                pairs[(a, b)] = c
+        g.pairs = pairs
+        return g
