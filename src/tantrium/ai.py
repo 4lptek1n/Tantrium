@@ -240,6 +240,7 @@ class GroundingSignature:
     bound: dict   # paradigm → percept_name
     kappa_moments: list   # κ_total birleşik serbest kümülant momenti
     quantum_connections: list  # [(kavram, klasik_mesafe, kuantum_mesafe)]
+    rejected: "list | None" = None  # ontoloji-kapısının REDDETTİĞİ boyutlar (tip izin vermedi)
 
     def __str__(self) -> str:
         dims = list(self.bound.keys())
@@ -5019,10 +5020,81 @@ class AI:
         return enrich_concept(self, name, smiles=smiles, protein=protein, dna=dna,
                               properties=properties, network=network, dims=dims)
 
+    # ── ONTOLOJİ → BOYUT izin haritası (kullanıcı: 'kelimenin DNA'sı olmaz; boyut tipten doğar') ──
+    # Fiziksel boyutlar (DNA/molekül/geometri/ses/görüntü) yalnız o tip varlığa takılır;
+    # HAS_TOPOLOGY (semantik) + IS_GOVERNED_BY (yasa) HER kavram için meşru (her şey ilişki taşır,
+    # her şey bir yasayla yönetilebilir). Tip kelimeleri TAM token eşleşir (substring değil →
+    # 'general'≠'gene', 'station'≠'ion' yanlış-pozitifi yok). Domain de token sayılır.
+    _ONTO_CATS = [
+        (frozenset(("organism organisms animal animals plant plants cell cells gene genes "
+                    "protein proteins enzyme enzymes hormone hormones virus viruses bacteria "
+                    "bacterium species fruit fruits vegetable vegetables fungus fungi tissue "
+                    "tissues organ organs peptide antibody receptor receptors kinase kinases "
+                    "microbe mammal mammals fish bird birds insect insects flower flowers seed "
+                    "seeds leaf dna rna nucleotide metabolite metabolites life biology "
+                    "biological").split()),
+         frozenset(("HAS_DNA HAS_COMPOUND HAS_GEOMETRY HAS_SIGNAL HAS_IMAGE").split())),
+        (frozenset(("molecule molecules compound compounds drug drugs chemical chemicals acid "
+                    "acids element elements mineral minerals polymer polymers solvent reagent "
+                    "oxide alcohol ester chemistry").split()),
+         frozenset(("HAS_COMPOUND HAS_GEOMETRY HAS_IMAGE").split())),
+        (frozenset(("object objects device devices material materials structure body tool tools "
+                    "machine instrument vehicle building particle star planet planets rock "
+                    "crystal fiber substance physics physical").split()),
+         frozenset(("HAS_GEOMETRY HAS_IMAGE").split())),
+        (frozenset(("number numbers sequence sequences series integer integers function "
+                    "functions ratio constant equation matrix vector prime primes math "
+                    "mathematics mathematical").split()),
+         frozenset(("HAS_GEOMETRY",))),
+        (frozenset(("sound sounds music signal signals wave waves tone frequency audio acoustic "
+                    "note song").split()),
+         frozenset(("HAS_SIGNAL",))),
+        (frozenset(("image images picture pictures color colour pattern photograph visual shape "
+                    "shapes figure").split()),
+         frozenset(("HAS_IMAGE HAS_GEOMETRY").split())),
+    ]
+
+    def _permitted_dims(self, concept_name: str, type_hint: "str | None" = None) -> set:
+        """Bir kavramın ONTOLOJİSİNE (IS_A tipi + domain + type_hint) göre meşru grounding
+        boyutları. Fiziksel boyut tipe-bağlı; topoloji+yasa her zaman. Tip yoksa → yalnız
+        {HAS_TOPOLOGY, IS_GOVERNED_BY} (soyut/kelime: DNA/molekül YOK — kullanıcının kuralı)."""
+        permitted = {"HAS_TOPOLOGY", "IS_GOVERNED_BY"}
+        tau = self._engine.tau
+        m = self._engine.manifold
+        tokens: set = set()
+        if type_hint:
+            tokens.update(str(type_hint).lower().replace("-", " ").split())
+        c = m.concepts.get(concept_name)
+        if c is not None and getattr(c, "domain", None):
+            tokens.add(str(c.domain).lower())
+        # IS_A atalarını topla (≤3 hop) → tip kelimeleri
+        seen = {concept_name.lower()}
+        frontier = [concept_name.lower()]
+        for _hop in range(3):
+            nxt = []
+            for x in frontier:
+                for e in tau.edges.get(x, []):
+                    if str(getattr(e, "paradigm", "")) == "IS_A":
+                        t = str(getattr(e, "target", "")).lower()
+                        tokens.update(t.replace("-", " ").split())
+                        if t not in seen:
+                            seen.add(t)
+                            nxt.append(t)
+            frontier = nxt
+            if not frontier:
+                break
+        for keys, dims in self._ONTO_CATS:
+            if tokens & keys:                       # TAM token kesişimi (yanlış-pozitif yok)
+                permitted |= dims
+        return permitted
+
     def ground_full(
         self,
         concept_name: str,
         *,
+        type_hint: "str | None" = None,
+        gate: bool = True,
+        force: bool = False,
         dna: "str | None" = None,
         molecule: "str | None" = None,
         geometry=None,
@@ -5050,6 +5122,27 @@ class AI:
         """
         from functools import reduce
         from tantrium.core.quantum_moments import FreeCumulants
+
+        # ONTOLOJİ KAPISI: boyut, kavramın TİPİ izin veriyorsa takılır ('kelimenin DNA'sı olmaz').
+        # force=True veya gate=False → kapı atlanır (güvenilir/sertifikalı kaynak; KAPI-MUAF deseni).
+        permitted = None if (force or not gate) else self._permitted_dims(concept_name, type_hint)
+        rejected: list[str] = []
+
+        def _gate(val, paradigm):
+            if val is None:
+                return None
+            if permitted is None or paradigm in permitted:
+                return val
+            rejected.append(paradigm)               # tip izin vermedi → reddet (sessizce atma)
+            return None
+
+        dna = _gate(dna, "HAS_DNA")
+        molecule = _gate(molecule, "HAS_COMPOUND")
+        geometry = _gate(geometry, "HAS_GEOMETRY")
+        law = _gate(law, "IS_GOVERNED_BY")
+        sound = _gate(sound, "HAS_SIGNAL")
+        image = _gate(image, "HAS_IMAGE")
+        topology = _gate(topology, "HAS_TOPOLOGY")
 
         bound: dict[str, str] = {}
         all_kappas: list[FreeCumulants] = []
@@ -5151,15 +5244,14 @@ class AI:
         else:
             kappa_moments = []
 
-        # quantum_connections: κ_total'den manifoldda gizli köprüler
+        # quantum_connections: ONTOLOJİ-KAPILI köprüler (paylaşılan tip/boyut — her kelime değil).
+        # Eski quantum_bridges kapısız 'egfr↔basilicata' çöpü veriyordu; quantum_links onu eler.
         quantum_connections: list = []
         if kappa_moments:
             try:
-                bridges = self._engine.manifold.quantum_bridges(
-                    concept_name, top_k=8
-                )
+                ql = self.quantum_links(concept_name, top_k=8)
                 quantum_connections = [
-                    (b[0], 0.0, float(b[1])) for b in bridges
+                    (l["concept"], 0.0, float(l["kappa_dist"])) for l in ql.get("links", [])
                 ]
             except Exception:
                 pass
@@ -5169,6 +5261,7 @@ class AI:
             bound=bound,
             kappa_moments=kappa_moments,
             quantum_connections=quantum_connections,
+            rejected=rejected,
         )
 
     def witness(

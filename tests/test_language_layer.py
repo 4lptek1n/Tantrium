@@ -194,21 +194,21 @@ def test_ground_full_returns_signature(ai):
 def test_ground_full_sound_creates_tau_edge(ai):
     rng = np.random.default_rng(123)
     sound = rng.standard_normal(800)
-    sig = ai.ground_full("apple", sound=sound)
+    sig = ai.ground_full("apple", type_hint="fruit", sound=sound)
     edges = ai._engine.tau.edges.get("apple", [])
     has_signal = [e for e in edges if e.paradigm == "HAS_SIGNAL"]
     assert len(has_signal) >= 1
 
 
 def test_ground_full_dna_creates_tau_edge(ai):
-    sig = ai.ground_full("apple", dna="ATCGATCGATCG")
+    sig = ai.ground_full("apple", type_hint="fruit", dna="ATCGATCGATCG")
     edges = ai._engine.tau.edges.get("apple", [])
     has_dna = [e for e in edges if e.paradigm == "HAS_DNA"]
     assert len(has_dna) >= 1
 
 
 def test_ground_full_molecule_creates_tau_edge(ai):
-    sig = ai.ground_full("apple", molecule="CC(O)C")
+    sig = ai.ground_full("apple", type_hint="fruit", molecule="CC(O)C")
     edges = ai._engine.tau.edges.get("apple", [])
     has_cmp = [e for e in edges if e.paradigm == "HAS_COMPOUND"]
     assert len(has_cmp) >= 1
@@ -225,6 +225,7 @@ def test_ground_full_multi_dim_bound(ai):
     rng = np.random.default_rng(77)
     sig = ai.ground_full(
         "apple",
+        type_hint="fruit",
         dna="GCTAGCTAGCTA",
         sound=rng.standard_normal(600),
         law="natural selection",
@@ -236,7 +237,7 @@ def test_ground_full_multi_dim_bound(ai):
 
 def test_ground_full_kappa_moments_nonempty(ai):
     rng = np.random.default_rng(55)
-    sig = ai.ground_full("apple", sound=rng.standard_normal(500))
+    sig = ai.ground_full("apple", type_hint="fruit", sound=rng.standard_normal(500))
     assert len(sig.kappa_moments) >= 2
 
 
@@ -249,7 +250,7 @@ def test_ground_full_str(ai):
 
 def test_ground_full_summary(ai):
     rng = np.random.default_rng(88)
-    sig = ai.ground_full("apple", sound=rng.standard_normal(400), law="gravity")
+    sig = ai.ground_full("apple", type_hint="fruit", sound=rng.standard_normal(400), law="gravity")
     summary = sig.summary()
     assert "apple" in summary
     assert "Grounding" in summary
