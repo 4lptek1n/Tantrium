@@ -3023,6 +3023,44 @@ class AI:
         E, vocab, idx = emb
         return neighbors(E, vocab, idx, str(word).lower(), k=k)
 
+    def relate(self, query, *, k: int = 10, certify: bool = True, min_edges: int = 3) -> dict:
+        """KERNEL-SERTİFİKALI ANLAMSAL ÇAĞRIŞIM — fit'siz gömme + math kernel füzyonu.
+
+        İKİ KATMAN (kullanıcı: 'güç math kernelde; dilde frontier'dan güçlü olmalıyız'):
+          1. RECALL  = fit'siz gömme (LLM'in gradient'le öğrendiği geometri, bizde kapalı-form)
+                       → geniş anlamsal aday (akıcılık/genişlik).
+          2. CERTIFY = math kernel TOPRAKLAMA → topraksız aday (TAU'da köksüz = 'karmaşık sıfır')
+                       GEOMETRİK ELENİR. LLM en yakın komşuyu döndürür ve UYDURABİLİR; biz
+                       sertifikasız çağrışımı imkânsız kılarız (olasılıksal değil, yapısal).
+
+        Fark CANLI görünür: gömme 'insulin→prey' gibi gürültü çağrışımı da getirir (recall);
+        kernel onu (köksüz) eler, 'insulin→glucose' (köklü) kalır. Akıcı AMA halüsinasyonsuz.
+        Döner: {query, related:[{concept,similarity,grounded,edges}], certified, n_recalled}."""
+        cands = self.embed_nearest(query, k=max(k * 4, 24))
+        if not cands:
+            return {"query": query, "related": [], "certified": certify, "n_recalled": 0,
+                    "reason": "gömme yok — önce train_corpus çalıştır"}
+        eng = self._engine
+        # in-derece haritası (tek geçiş; aday-başı O(E) taramayı önler)
+        indeg: dict = {}
+        for es in eng.tau.edges.values():
+            for e in es:
+                t = str(getattr(e, "target", "")).lower()
+                if t:
+                    indeg[t] = indeg.get(t, 0) + 1
+        out = []
+        for w, sim in cands:
+            wl = str(w).lower()
+            edges = len(eng.tau.edges.get(wl, [])) + indeg.get(wl, 0)
+            rooted = (wl in eng.manifold.concepts) and edges >= min_edges  # kernel köklülük
+            if (not certify) or rooted:
+                out.append({"concept": wl, "similarity": round(float(sim), 3),
+                            "grounded": bool(rooted), "edges": edges})
+            if len(out) >= k:
+                break
+        return {"query": query, "related": out, "certified": certify,
+                "n_recalled": len(cands)}
+
     def prune_noise(self, *, persist: bool = False) -> dict:
         """Mevcut manifoldda işlev-kelime/noktalama GÜRÜLTÜ kenarlarını temizle (keep_all
         kirliliğini geri al). Kaynağı VEYA hedefi gürültü olan kenar atılır → walk/generate

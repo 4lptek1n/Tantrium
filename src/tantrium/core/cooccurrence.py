@@ -193,6 +193,97 @@ def neighbors(E: np.ndarray, vocab, idx, word: str, k: int = 5):
     return sims[:k]
 
 
+class FastCooccurrence:
+    """ÖLÇEKLİ fit'siz eğitim — vektörize (numpy) ortak-geçiş + torch truncated-SVD gömme.
+
+    Saf-Python sözlük-biriktirici (GlobalCooccurrence) GB ölçeğinde çok yavaş (GloVe bu yüzden
+    C kullanır). Bu sınıf GloVe deseni: SABİT vocab (en sık max_vocab token; üstü OOV) + YOĞUN
+    ortak-geçiş matrisi C[V,V] (np.add.at ile chunk-başı vektörize birikim) + torch.svd_lowrank
+    (büyük matriste randomized truncated SVD; full SVD infeasible). Gradient/epoch YOK — kapalı-form.
+
+    Bellek: max_vocab² float32 (20k → 1.6GB). torch CPU çok-iş parçacıklı. id atama ilk-görüşte
+    (sık kelimeler erken gelir → vocab'ı doldurur)."""
+
+    def __init__(self, *, max_vocab: int = 20000, window: int = 5, drop_stop: bool = True):
+        self.max_vocab = int(max_vocab)
+        self.window = int(window)
+        self.drop_stop = bool(drop_stop)
+        self.tok2id: dict = {}
+        self.id2tok: list = []
+        self.freq = np.zeros(self.max_vocab, dtype=np.int64)
+        self.C = np.zeros((self.max_vocab, self.max_vocab), dtype=np.float32)
+        self.n_tokens = 0
+
+    def _id(self, w: str) -> int:
+        i = self.tok2id.get(w)
+        if i is None:
+            if len(self.id2tok) >= self.max_vocab:
+                return -1                          # vocab tavanı dolu → OOV (atla)
+            i = len(self.id2tok)
+            self.tok2id[w] = i
+            self.id2tok.append(w)
+        return i
+
+    def update(self, sentences) -> int:
+        win = self.window
+        rows: list = []
+        cols: list = []
+        added = 0
+        for s in sentences:
+            toks = [t for t in tokenize(s, drop_stop=self.drop_stop) if not is_noise(t)]
+            ids = [i for i in (self._id(t) for t in toks) if i >= 0]
+            L = len(ids)
+            if L < 2:
+                continue
+            self.n_tokens += L
+            added += L
+            arr = np.asarray(ids, dtype=np.int64)
+            np.add.at(self.freq, arr, 1)
+            for off in range(1, win + 1):
+                if off >= L:
+                    break
+                rows.append(arr[:-off]); cols.append(arr[off:])
+                rows.append(arr[off:]); cols.append(arr[:-off])   # simetrik
+        if rows:                                   # chunk-başı TEK vektörize birikim
+            a = np.concatenate(rows); b = np.concatenate(cols)
+            np.add.at(self.C, (a, b), np.float32(1.0))
+        return added
+
+    def embed(self, *, dim: int = 96, min_count: int = 8):
+        """PPMI(C) → torch truncated SVD = eğitilmiş gömme. Döner (E, vocab, idx)."""
+        import torch
+        V = len(self.id2tok)
+        if V < 2:
+            return np.zeros((0, 0)), [], {}
+        keep = np.where(self.freq[:V] >= min_count)[0]
+        if len(keep) < 2:
+            keep = np.arange(V)
+        sub = self.C[np.ix_(keep, keep)]
+        M = ppmi(sub)
+        T = torch.from_numpy(np.ascontiguousarray(M, dtype=np.float32))
+        q = int(min(dim, min(M.shape) - 1))
+        U, S, _V = torch.svd_lowrank(T, q=max(2, q))
+        E = (U * S.sqrt()).cpu().numpy()
+        vocab = [self.id2tok[i] for i in keep]
+        idx = {w: j for j, w in enumerate(vocab)}
+        return E, vocab, idx
+
+    def state(self) -> dict:
+        return {"max_vocab": self.max_vocab, "window": self.window,
+                "drop_stop": self.drop_stop, "n_tokens": self.n_tokens,
+                "tok2id": self.tok2id, "id2tok": self.id2tok,
+                "freq": self.freq, "C": self.C}
+
+    @classmethod
+    def restore(cls, st: dict) -> "FastCooccurrence":
+        g = cls(max_vocab=int(st["max_vocab"]), window=int(st["window"]),
+                drop_stop=bool(st["drop_stop"]))
+        g.n_tokens = int(st["n_tokens"])
+        g.tok2id = st["tok2id"]; g.id2tok = st["id2tok"]
+        g.freq = st["freq"]; g.C = st["C"]
+        return g
+
+
 class GlobalCooccurrence:
     """KORPUS-GENELİ ortak-geçiş biriktirici — FİT'SİZ EĞİTİMİN ÇEKİRDEĞİ.
 
