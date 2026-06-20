@@ -474,8 +474,14 @@ class ProductionEngine:
         inject: bool = True,
         epsilon: float = 0.5,
         top_k: int = 10,
+        pure_denovo: bool = False,
     ) -> ProductionCertificate:  # noqa: F821
         """Tek giriş: çok-stratejili üret → evren-kapat → sertifikala.
+
+        pure_denovo=True → HAFIZA AKTARIMI YOK: yalnız saf-matematik genesis + reconstruction;
+        kütüphane/scaffold/morph/bilinen-ligand atlanır. Hedefin gerçek matematiğinden HİÇ
+        OLMAYAN molekül kurulur (bilinen ilaç geri çekilmez). inject de zorla kapatılır
+        (üretileni manifolda 'öğrenme' geri-sızması olmasın).
 
         target:
           • SMILES / protein / hastalık-adı (str) — bilinen hedefe tasarım
@@ -554,7 +560,11 @@ class ProductionEngine:
         kappa_thr = self._kappa_threshold(profiles)
 
         # ── 1. Çok-stratejili havuz ─────────────────────────────────────
-        pool = self._build_pool(target_str, mu_req, profiles, max_steps, beam_width)
+        if pure_denovo:
+            inject = False  # üretileni manifolda 'öğrenme' geri-sızması olmasın
+        pool = self._build_pool(
+            target_str, mu_req, profiles, max_steps, beam_width, pure_denovo=pure_denovo
+        )
 
         # ── 2. Yargı + sırala ──────────────────────────────────────────
         # proven-first: kanıtlanmış stratejilerden (1-5) gelen aday, de-novo yedeğinden
@@ -594,6 +604,7 @@ class ProductionEngine:
                     "pivot_min": round(proof.pivot_min, 4),
                     "sturm_ok": proof.sturm_ok,
                 }
+                c["_closure_proof"] = proof  # tam denetim alanları (depth/baseline/rungs)
             # öne al: kapananlar önce (proven-first korunur, χ tiebreaker)
             scored.sort(
                 key=lambda r: (
@@ -643,6 +654,7 @@ class ProductionEngine:
                             "pivot_min": round(proof.pivot_min, 4),
                             "sturm_ok": proof.sturm_ok,
                         }
+                        c["_closure_proof"] = proof  # tam denetim alanları
                         if proof.universe_closes:
                             closes_count += 1
                     scored.append(c)
@@ -838,8 +850,9 @@ class ProductionEngine:
         # ── 10. Sertifika ─────────────────────────────────────────────
         from tantrium.core.production_judge import ClosureProof
 
-        closure_obj = None
-        if "closure" in best:
+        closure_obj = best.get("_closure_proof")  # tam alanlı proof (depth/baseline/rungs)
+        if closure_obj is None and "closure" in best:
+            # yedek (ör. kombinasyon yolu): özet dict'ten yeniden kur
             cl = best["closure"]
             closure_obj = ClosureProof(
                 applicable=cl.get("applicable", False),
@@ -1095,9 +1108,16 @@ class ProductionEngine:
         profiles: list[list[float]],
         max_steps: int,
         beam_width: int,
+        pure_denovo: bool = False,
     ) -> list[str]:
         """Stratejilerden aday havuzu: genesis · scaffold · inverse · morph · doğrudan ·
-        de-novo-reconstruction (özdeğer-spektrumundan inşa) · kuantum-köprü scaffold."""
+        de-novo-reconstruction (özdeğer-spektrumundan inşa) · kuantum-köprü scaffold.
+
+        pure_denovo=True → YALNIZ saf-matematik stratejileri (1 genesis + 6 reconstruction):
+        kütüphane/scaffold/morph/doğrudan-ligand/kuantum-köprü (HAFIZA AKTARIMI) atlanır.
+        Hiç olmayan molekülü sıfırdan (CH/CC primitif → hedef ölçüye Sturm-geçitli büyüme)
+        kurar; bilinen ilacı geri ÇEKMEZ. 'ASİ bilir, öğrenmez' ilaç tarafında: üretir, hatırlamaz.
+        """
         seen: set[str] = set()
         pool: list[str] = []
 
@@ -1121,46 +1141,47 @@ class ProductionEngine:
         except Exception:
             pass
 
-        # 2. Scaffold-hybrid (kinaz kütüphanesi)
-        try:
-            from tantrium.domains.generator import MoleculeGenerator
+        if not pure_denovo:
+            # 2. Scaffold-hybrid (kinaz kütüphanesi)
+            try:
+                from tantrium.domains.generator import MoleculeGenerator
 
-            gen = MoleculeGenerator(self.engine)
-            for smi in gen.generate(target, n=beam_width * 2):
-                _add(smi if isinstance(smi, str) else getattr(smi, "smiles", ""))
-        except Exception:
-            pass
+                gen = MoleculeGenerator(self.engine)
+                for smi in gen.generate(target, n=beam_width * 2):
+                    _add(smi if isinstance(smi, str) else getattr(smi, "smiles", ""))
+            except Exception:
+                pass
 
-        # 3. Inverse-transport (fragment mutasyonu)
-        try:
-            from tantrium.core.inverse import InverseTransport
+            # 3. Inverse-transport (fragment mutasyonu)
+            try:
+                from tantrium.core.inverse import InverseTransport
 
-            inv = InverseTransport(self.engine)
-            cands = inv.design(target, top_k=beam_width)
-            for c in cands if isinstance(cands, list) else getattr(cands, "candidates", []):
-                _add(c if isinstance(c, str) else getattr(c, "smiles", ""))
-        except Exception:
-            pass
+                inv = InverseTransport(self.engine)
+                cands = inv.design(target, top_k=beam_width)
+                for c in cands if isinstance(cands, list) else getattr(cands, "candidates", []):
+                    _add(c if isinstance(c, str) else getattr(c, "smiles", ""))
+            except Exception:
+                pass
 
-        # 4. Morph (ilaç kütüphanesi arası ara noktalar)
-        try:
-            from tantrium.core.molecular_space import DRUG_LIBRARY, MolecularSpace
+            # 4. Morph (ilaç kütüphanesi arası ara noktalar)
+            try:
+                from tantrium.core.molecular_space import DRUG_LIBRARY, MolecularSpace
 
-            ms = MolecularSpace(self.engine)
-            seeds_mol = [smi for _, smi, _ in DRUG_LIBRARY[:4]]
-            for src in seeds_mol[:2]:
-                for tgt in seeds_mol[2:4]:
-                    path = ms.morph(src, tgt, steps=4)
-                    for pt in getattr(path, "path", []):
-                        _add(getattr(pt, "smiles", ""))
-        except Exception:
-            pass
+                ms = MolecularSpace(self.engine)
+                seeds_mol = [smi for _, smi, _ in DRUG_LIBRARY[:4]]
+                for src in seeds_mol[:2]:
+                    for tgt in seeds_mol[2:4]:
+                        path = ms.morph(src, tgt, steps=4)
+                        for pt in getattr(path, "path", []):
+                            _add(getattr(pt, "smiles", ""))
+            except Exception:
+                pass
 
-        # 5. Doğrudan: SMILES hedefin kendi ligandları
-        if self._is_smiles(target):
-            _add(target)
-        for _, smi in self._reference_ligands(target)[:4]:
-            _add(smi)
+            # 5. Doğrudan: SMILES hedefin kendi ligandları
+            if self._is_smiles(target):
+                _add(target)
+            for _, smi in self._reference_ligands(target)[:4]:
+                _add(smi)
 
         # Stages 6-7 = DE-NOVO yedek hattı (kanıtlanmış 1-5 yetmezse). Her zaman havuza
         # girer ama AYRI işaretlenir: sıralamada kanıtlanmış aday ÖNCE gelir (proven-first),
@@ -1202,7 +1223,7 @@ class ProductionEngine:
         #    kavramların molekülleri. Gizli matematiksel bağ → naif benzerliğin
         #    göremediği yeni iskele. (F8 "elma-DNA × Fibonacci" ilkesi üretimde.)
         try:
-            mani = getattr(self.engine, "manifold", None)
+            mani = None if pure_denovo else getattr(self.engine, "manifold", None)
             if mani is not None and hasattr(mani, "quantum_bridges"):
                 for bname, _qd in mani.quantum_bridges(target, top_k=6):
                     if bname.startswith("⟨"):  # genesis yapay köprüsü — atla
