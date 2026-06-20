@@ -85,6 +85,11 @@ _SPECTRAL_FIT_WEIGHT = 0.5
 # κ-mesafe + spektral W2'den FARKLI mercek (düzensizlik); küçük tutulur (yardımcı yön).
 _FREE_ENTROPY_WEIGHT = 0.15
 
+# Refine/kombinasyon wall-clock bütçesi (saniye) — DURMA GARANTİSİ. Kapanan aday yoksa
+# molecular-genesis beam araması dakikalarca sürebilir; bütçe dolunca durup elindeki en iyi
+# SIRALI adayı bildirir (sıralama ayrımı zaten taşır). Üretimin sonsuza takılmasını engeller.
+_REFINE_BUDGET_S = 20.0
+
 _PRIMITIVES = [
     "c1ccccc1",  # benzen
     "c1ccncc1",  # piridin
@@ -601,10 +606,17 @@ class ProductionEngine:
             )
 
         # ── 4. Refine (kapatan yoksa) ───────────────────────────────────
+        # DURMA GARANTİSİ: refine/kombinasyon, molecular-genesis beam araması koşturur
+        # (kapanan aday yoksa). Bu, kapanış sıkı olduğunda (ör. de-novo adaylar eşiği
+        # geçemediğinde) dakikalarca sürebilir → wall-clock bütçesi. Bütçe dolunca durur ve
+        # ELİNDEKİ en iyi SIRALI adayı dürüstçe bildirir (sıralama zaten ayrımı taşır).
+        import time as _time
+
+        _refine_deadline = _time.time() + _REFINE_BUDGET_S
         closes_count = sum(1 for c in scored if c.get("closure", {}).get("universe_closes", False))
         refine_used = 0
         for _rnd in range(min(refine_rounds, 3)):
-            if closes_count >= 1:
+            if closes_count >= 1 or _time.time() > _refine_deadline:
                 break
             new_smi = self._refine(scored, mu_req, profiles, max_steps, beam_width)
             for smi in new_smi:
@@ -645,9 +657,15 @@ class ProductionEngine:
             )
         )
 
-        # ── 5. Kombinasyon (hâlâ kapanmıyorsa) ────────────────────────
+        # ── 5. Kombinasyon (hâlâ kapanmıyorsa, bütçe varsa) ───────────
         combo_pairs: list[tuple[str, str]] = []
-        if combination and closes_count == 0 and kd is not None and kh is not None:
+        if (
+            combination
+            and closes_count == 0
+            and kd is not None
+            and kh is not None
+            and _time.time() <= _refine_deadline
+        ):
             combo_pairs = self._decompose_combination(mu_req, profiles, max_steps, beam_width)
             for s1, s2 in combo_pairs[:3]:
                 from tantrium.core.quantum_moments import FreeCumulants

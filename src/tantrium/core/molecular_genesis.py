@@ -42,6 +42,9 @@ _ATOMS = [
 # Bağ tipleri denenecek
 _BONDS = ["SINGLE", "DOUBLE", "AROMATIC"]
 
+# simulate() beam araması wall-clock bütçesi (saniye) — DURMA GARANTİSİ (bkz simulate döngüsü).
+_SIMULATE_BUDGET_S = 12.0
+
 
 @dataclass
 class GenesisCandidate:
@@ -361,6 +364,11 @@ class MolecularGenesis:
         total_steps = 0
 
         for _ in range(max_steps):
+            # DURMA GARANTİSİ: her adım beam×16 uzantı × sertifikasyon (eigendecomp+Sturm)
+            # koşturur; patolojik tohum/derin aramada dakikalara çıkabilir. Wall-clock bütçesi
+            # dolunca o ana kadarki en iyi sertifikalı ucu döner (kısmî ama gerçek sonuç).
+            if time.time() - t0 > _SIMULATE_BUDGET_S:
+                break
             cands: list[SimStep] = []
             for base in beam:
                 base_obj = _enc(base.smiles)

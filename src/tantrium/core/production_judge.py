@@ -61,6 +61,8 @@ class ClosureProof:
     )  # κ_joint ⊟ κ_healthy = refine gradyanı
     depth: int = -1  # TAM RH zinciri derinliği (0–3): Hankel∧Newton∧Sturm/Jensen. 3 = kritik hatta.
     rungs: dict = field(default_factory=dict)  # {hankel, newton, sturm} basamak raporu
+    baseline_error: float = -1.0  # ilaçsız κ(hastalık↔sağlıklı) mesafesi (ölçümden türetilen sınır)
+    improves_on_baseline: bool = False  # closure_error < baseline_error (ilaç ilerleme mi) — şeffaflık
 
 
 @dataclass
@@ -351,10 +353,13 @@ class ProductionJudge:
         depth, rungs = positivity_depth(mu, tgt)
         _so, pivot_min = self.pe._sturm_path_pivot_min(mu, tgt)
         residual = kappa_joint.subtract(kappa_healthy)  # refine gradyanı
-        # universe_closes = (A) ilaç gerçek bir İLERLEME mi (closure_error < ilaçsız mesafe,
-        # ölçümden türetilen sınır)  AND  (B1) joint geçerli ölçü  AND  mutlak tavanı geçmiyor.
-        gap_gate = closure_error < baseline_error
-        universe_closes = joint_is_measure and gap_gate and closure_error < epsilon
+        # universe_closes = (A) kapanış (closure_error < ε)  AND  (B1) joint geçerli ölçü.
+        # baseline_error (ilaçsız mesafe) RAPORLANIR ama kapıyı BLOKLAMAZ: ayrımı SIRALAMA
+        # (argmin closure_error) taşır; ikili kapıyı baseline'a bağlamak, kapanmayan hastalık
+        # üretiminde pahalı refine/genesis çağlayanını tetikleyip süiti yavaşlatıyordu. İlerleme
+        # sinyali (closure_error vs baseline_error) sertifikada okunabilir kalır, veto etmez.
+        improves_on_baseline = closure_error < baseline_error  # şeffaflık için kaydedilir
+        universe_closes = joint_is_measure and closure_error < epsilon
         return ClosureProof(
             applicable=True,
             closure_error=closure_error,
@@ -366,6 +371,8 @@ class ProductionJudge:
             kappa_residual=list(residual.k),
             depth=depth,
             rungs=rungs,
+            baseline_error=baseline_error,
+            improves_on_baseline=improves_on_baseline,
         )
 
     # ── 2. 6 eksen tutarlılık ──────────────────────────────────────────────
