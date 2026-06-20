@@ -300,7 +300,9 @@ class ProductionJudge:
                 sturm_ok=False,
                 universe_closes=False,
             )
-        mu = self.pe._encode(smiles)
+        # ÖLÇEK-TUTARLI molekül momenti: κ_disease/κ_healthy ile AYNI normalize [0,1] rejimi
+        # (yoksa serbest-additivite patlayan κ_M ile bozulur → su/etanol kazanır). Bkz _mol_mu.
+        mu = self.pe._mol_mu(smiles)
         if not mu:
             return ClosureProof(
                 applicable=True,
@@ -327,7 +329,7 @@ class ProductionJudge:
         # arasındaki Hankel yolu konveks-koni gereği DAİMA ≥0 (Sturm yolu boş kontrol). Bu yüzden
         # zincir, çift-yaklaşık κ-rekonstrüksiyonu yerine GERÇEK aday momentleri (geçerli ölçü)
         # ile ölçülür; kapı (A) kapanış + (B) joint'in gerçeklenebilir ölçü olmasıyla açılır.
-        from tantrium.core.positivity_ladder import _hankel_min_eig, _EPS, positivity_depth
+        from tantrium.core.positivity_ladder import _EPS, _hankel_min_eig, positivity_depth
 
         mu_joint = kappa_joint.to_moments_approx()
         # (B1) tedavi sonucu (joint) gerçeklenebilir bir ölçü mü (Hankel ⪰ 0)?

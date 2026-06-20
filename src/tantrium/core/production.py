@@ -442,7 +442,9 @@ class ProductionEngine:
         kd = FreeCumulants([0.0] * 6)
         used = 0
         for f in findings:
-            mu = self._encode(str(f))
+            # ÖLÇEK-TUTARLI: moleküler bulgu normalize [0,1] graf yolundan (κ_healthy ile aynı
+            # rejim) → kapanış serbest-additivitesi anlamlı (bkz _mol_mu kök neden notu).
+            mu = self._mol_mu(str(f))
             if mu:
                 kd = kd.add(FreeCumulants.from_moments(mu))
                 used += 1
@@ -1411,6 +1413,27 @@ class ProductionEngine:
     def _encode(self, x: str) -> list[float]:
         """İmzanın momentleri (geriye-uyum). TEK imza cache'ine delege — re-encode yok."""
         return self._signature(x).mu
+
+    def _mol_mu(self, x: str) -> list[float]:
+        """EVREN-KAPANIŞI için ÖLÇEK-TUTARLI molekül momenti — normalize [0,1] graf yolu.
+
+        KÖK NEDEN (ampirik): serbest-additivite κ(hastalık ⊞ M) = κ(sağlıklı) ancak üç κ
+        AYNI ölçekteyse anlamlıdır. Sağlıklı (ζ çapası) ve protein/hastalık-adı momentleri
+        eigenvalue-normalize [0,1]; ama SMILES `_encode` (bigram → `_spectral_moments`,
+        normalize-EDİLMEMİŞ) molekül momentini PATLATIR (erlotinib μ₇≈3000). Patlayan κ_M
+        eklenince kapanış "hiçbir şey yapmayan" molekülü (su/etanol) ödüllendirir — gerçek
+        ilaç hep aşırı-sapar. Normalize graf yolu (`_smiles_to_graph_moments`, μ_k∈[0,1])
+        üç tarafı AYNI rejime koyar → kapanış GERÇEK inhibitörü ayırır (erlotinib/gefitinib
+        < kafein/aspirin < etanol; su = encode-edilemez, ilaç değil). Forward eksen
+        yargısı (`_signature`) DOKUNULMAZ — yalnız κ-additivite kapanışı ölçek-tutarlı olur.
+        """
+        if self._is_smiles(x):
+            from tantrium.core.encoder import _smiles_to_graph_moments
+
+            gm = _smiles_to_graph_moments(x, 8)
+            if gm is not None:
+                return [float(m) for m in gm]
+        return self._encode(x)
 
     @staticmethod
     def _is_smiles(s: str) -> bool:
