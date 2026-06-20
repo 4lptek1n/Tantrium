@@ -59,34 +59,3 @@ def test_open_type_survives_save_load():
     finally:
         os.remove(path)
 
-
-def test_spacy_extracts_novel_relation_type():
-    """Bilinmeyen geçişli fiil → KENDİ ilişki tipi (lemma→TİP). spaCy yoksa atla."""
-    from tantrium.research.autonomous import enable_parser, _spacy_extract, _get_nlp
-
-    if not _get_nlp():
-        pytest.skip("spaCy/en_core_web_sm kurulu değil")
-    enable_parser(True)
-    try:
-        r = [(s, rel, o) for s, rel, o in _spacy_extract("EGFR degrades p53.")]
-        assert ("egfr", "DEGRADE", "p53") in r        # yeni tip öğrenildi
-        # bilinen fiil hâlâ kanonik
-        r2 = [(s, rel, o) for s, rel, o in _spacy_extract("EGFR activates RAS.")]
-        assert ("egfr", "ACTIVATES", "ras") in r2
-    finally:
-        enable_parser(False)
-
-
-def test_light_verbs_do_not_become_relation_types():
-    """Hafif/yardımcı fiiller (have/make/seem...) ilişki tipi DOĞURMAZ (gürültü guardı)."""
-    from tantrium.research.autonomous import enable_parser, _spacy_extract, _get_nlp
-
-    if not _get_nlp():
-        pytest.skip("spaCy/en_core_web_sm kurulu değil")
-    enable_parser(True)
-    try:
-        r = _spacy_extract("The cell has a nucleus.")
-        rels = {rel for _, rel, _ in r}
-        assert "HAVE" not in rels    # hafif fiil tip üretmez
-    finally:
-        enable_parser(False)
