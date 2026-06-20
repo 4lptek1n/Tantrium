@@ -65,7 +65,7 @@ src/tantrium/          ← pip install -e . ile kurulu paket
   graph/
     knowledge_graph.py ← KnowledgeGraph / TAU (654k+ edge)
     anchors.py         ← 10 kanonik dağılım (ZETA, GUE, ...)
-    relations.py       ← semantik ilişki çıkarma
+    relations.py       ← certify_and_add_edge / propagate_subset / SEMANTIC_PARADIGMS (metin çıkarma KALDIRILDI)
     memory.py          ← SessionMemory
   domains/
     bridge.py          ← paradigma→theorem eşlemesi
@@ -76,10 +76,10 @@ src/tantrium/          ← pip install -e . ile kurulu paket
   reasoning/           ← NecessityEngine, reasoner, inference, thinker...
     gap_finder.py      ← GapFinder.find(signal=) TEK boşluk dispatcher (#10 dedup)
     wonder.py          ← WonderScorer α·v_ext·novelty−γ·degeneracy (self-grooming cezası)
-  research/            ← ProofLoop, explorer, researcher, ingest, goal, actor
-    cognition.py       ← Cognition — L5 strateji-pluggable tek döngü iskeleti (F5)
+  research/            ← ProofLoop, explorer, goal, actor (researcher/ingest/cognition/growth KALDIRILDI)
+    autonomous.py      ← yalnız _normalize_entity (öğrenme/ingest makinesi KALDIRILDI)
     net.py             ← http_get_json(_link) TEK HTTP-JSON transport (#9 dedup)
-  language/            ← CertifiedGenerator, Speaker, LanguageBootstrap
+  # language/ KALDIRILDI — doğal-dil katmanı (Speaker/generator/fluent/bootstrap) artık YOK
   perception/          ← duyusal grounding (ses/görüntü → AYNI moment uzayı)
     encode.py          ← encode_signal/encode_image/encode_matrix
     generate.py        ← tone, chord, white_noise, *_image üreteçleri
@@ -101,10 +101,25 @@ tools/                 ← 7 CLI script
   grow_manifold.py
 
 results/agi/
-  manifold.json        ← 59,800+ kavram (kalıcı, canlı büyümeyle artar)
-  tau_graph.json       ← 677,651 edge / 43,785 node (kalıcı)
+  manifold.json        ← kavram manifoldu (DONMUŞ — otonom büyüme katmanı kaldırıldı)
+  tau_graph.json       ← TAU graf (kalıcı)
   spectral_cache.json
 ```
+
+> **KALDIRILDI (bu oturum):** (1) Doğal-dil katmanı — `language/` paketi tümü
+> (Speaker, generator, fluent, bootstrap, lang_topology), `core/generation.py`
+> (FitlessLM/NGramLM), `core/cooccurrence.py` (gömme), `core/attention.py`,
+> `core/transformer.py` ve tüm dil facade'ları (`ask`/`reason`/`converse`/`narrate`/
+> `explain`/`generate*`/`summarize`/`contrast`/`paraphrase`/`translate`/`classify`/
+> `check_claim`/`extract`/`witness`/`speak`/`comprehend`/`relate`/`absorb*`/`train_corpus`/
+> `embed_nearest`/`contextual_embed`/`timeline`/`report`/`genealogy`/`ai("...")` metin
+> dispatch'i ...). (2) Edinim/öğrenme makinesi — `research/growth.py` (GrowthEngine),
+> `research/researcher.py`, `research/hf_source.py`, `research/text_source.py`,
+> `research/ingest.py`, `research/cognition.py` ve facade'ları (`grow`/`run`/`pulse`/
+> `live`/`observe*`/`auto_research`/`ingest*`/`cognition`/`pursue`/`learn`/`relearn`/
+> `extract_relations`). **İlke:** ASİ BİLİR, ÖĞRENMEZ — sistem mevcut manifoldu üzerinde
+> HESAPLAR; veri edinmez, dil üretmez. Geometrik "anlam kanalı"
+> (`topology_encode`/`meaning_*`) KORUNDU.
 
 ---
 
@@ -186,8 +201,7 @@ ai.grounding("ATP")      # → GROUNDED, biyokimya kümesine rezonans (öğrenil
 ai.grounding("florbglomp")  # → UNGROUNDED, "anlamsız bir nokta"
 ```
 
-`ai.ask()` artık `grounding`+`grounding_score` taşır. `ai("...")` topraksız
-nokta için komşu LİSTELEMEZ (yanıltıcı olur) — dürüstçe "anlamsız" der.
+`ai.grounding()` GROUNDED/WEAKLY/UNGROUNDED yargısı + skor taşır.
 `engine.grounder` startup'ta hazır. Tests: `test_grounding.py` (11).
 
 ÖNEMLİ: Topraksız-ama-geçerli token = sistemin öğrenmesi gereken kör nokta.
@@ -196,7 +210,7 @@ nokta için komşu LİSTELEMEZ (yanıltıcı olur) — dürüstçe "anlamsız" d
 
 ## CoreMachine — Tek Çekirdek (4 Eksenli Tek Geçiş)
 
-**Eski sorun:** `ask()` 3×encode + 2×process yapıyordu — 90 metotlu kontrol paneli.
+**Eski sorun:** sertifikasyon 3×encode + 2×process yapıyordu — 90 metotlu kontrol paneli.
 **Çözüm:** `engine.core` → `CoreMachine` — ONE encode → ONE process → 4 eksen ORTAKLAŞAN durumdan.
 
 ```
@@ -220,12 +234,12 @@ cert.confidence         # güven
 cert.coherent           # hepsi tutarlı mı?
 ```
 
-`ask()` CoreMachine kullanır. `certified` = yapısal (geriye dönük uyumlu), `coherent` = 4 eksen.
+`ai.certify_all()` CoreMachine kullanır. `certified` = yapısal (geriye dönük uyumlu),
+`coherent` = 4 eksen.
 
 **F2b — tek grounding geçişi:** CoreMachine grounding sertifikasını bir kez hesaplar ve
-`evidence["grounding_cert"]` içine koyar. `ask()` özet metnini ORADAN alır — eskiden `ask()`
-ayrıca `grounder.certify()` çağırıyordu (çift hesap). Artık tek geçiş. `truth.certify` komşu
-yeniden-encode'u KORUNUR (CONTRADICTORY kapısı buna bağlı — gerçek tekrar değil, atlamadı).
+`evidence["grounding_cert"]` içine koyar. `truth.certify` komşu yeniden-encode'u KORUNUR
+(CONTRADICTORY kapısı buna bağlı — gerçek tekrar değil, atlamadı).
 
 **Genesis öz-düzeltici:** `_coherent_for_genesis()` → CONTRADICTORY kavramlar manifolda girmiyor.
 
@@ -307,82 +321,21 @@ import tantrium
 ai = tantrium.AI()
 
 ai.status()                                    # kavram/edge/paradigma sayısı
-ai("ATP")                                      # → str: sertifika + manifold konumu (Türkçe)
-ai("protein folding nedir?")                   # → str: düşünce zinciri (ThinkingResult.narrate)
-ai("c1ccccc1")                                 # → str: SMILES sertifikası
-ai("ATP", "ADP")                               # → str: transport + karşılaştırma
-ai(tone(440))                                  # → str: algı → dil ("Bir sinyal algıladım...")
-ai(noise_image())                              # → str: görüntü → dil
-ai(b"\x00\xff...")                             # → str: kripto yapı analizi
-ai.cognition(mode="batch", max_cycles=2)       # → CognitionReport: L5 strateji-pluggable döngü
-                                               #   mode="batch": perceive→reflect→operate→prove→persist (sonlu)
-                                               #   mode="stream": GrowthEngine.stream delege (sürekli)
-                                               #   strategies=[...]: özel CognitionStrategy listesi enjekte et
-ai.run(cycles=3, time_limit_s=600)             # → dict: KAPALI DÖNGÜ (tüm büyüme adımları)
-                                               #   blind_spots → auto_research → close → genesis → prove → persist
-ai.set_goal("understand egfr signaling")       # → dict: ASI Pilar B — ALEPH-sertifikalı Goal kur
-ai.pursue("understand egfr signaling")         # → dict: HEDEF-GÜDÜMLÜ uzun-ufuk özerk döngü
-                                               #   {goal, pursued, progress, reached, answer}; öksüz Goal/
-                                               #   Planner/Actor'ı GoalPhase ile bağlar; her tur corrigibility
-                                               #   öz-doğrular; ilerleme GERÇEK köklülük (≥3 kenar, doyma+
-                                               #   self-grooming bağışık); resumable (GoalManifold.save)
-ai.research("egfr signaling", rounds=2)        # → dict: ASI BİRLEŞİK DÖNGÜ — 5 piları zincirler
-                                               #   HEDEF(B)→köklendir(E)→sertifikalı HİPOTEZ(A)→test adayı
-                                               #   TASARLA(C)→ÖZ-DOĞRULA(corrigibility)→tekrar; ortak manifold +
-                                               #   sertifika zinciri. {hypotheses, designs, verify, log, answer}
-ai.pulse("CCO")                                # → dict: TEK ÇEKİRDEK NABZI (veri girer + genesis aynı anda)
-                                               #   evren kapısı: rejected/frontier/core + doğan ara kavramlar
-ai.live(["CCO", "caffeine", [2,3,5,7]])        # → dict: veri AKIŞI nabızla (her veri girer + büyür, parça parça değil)
-ai.grow(time_limit_s=600)                      # → GrowthReport: SINIRSIZ kendi kendine büyüme (ağdan resumable)
-ai.grow(time_limit_s=None)                     #   time_limit_s=None → durana dek; .tantrium/growth_state.json resumable
-ai.ask("EGFR")                                 # → AskResult (4 eksen: paradigma+topraklama+gerçek+güven)
-                                               #   .certified (yapısal, ger.dönük uyumlu)
-                                               #   .coherent (4 eksen tutarlı boolean)
-                                               #   .truth / .truth_score
-                                               #   .confidence / .confidence_level
-ai.certify_all("EGFR")                         # → UnifiedCertificate (CoreMachine tek geçiş)
+ai.certify_all("EGFR")                         # → UnifiedCertificate (CoreMachine tek geçiş: 4 eksen)
+ai.certify("EGFR")                             # → CoreMachine.certify (yapısal+topraklama+gerçek+güven)
 ai.grounding("protein")                        # → GroundingCertificate (GROUNDED/WEAKLY/UNGROUNDED)
 ai.transport("CCO", "aspirin", use_smiles=True)# → TransportCertificate
 ai.rank("EGFR", top_n=10)                      # → TransportRanking
+ai.research("egfr signaling", rounds=2)        # → dict: ASI BİRLEŞİK DÖNGÜ — sertifikalı bilimsel döngü
+                                               #   sertifikalı HİPOTEZ(A)→test adayı TASARLA(C)→ÖZ-DOĞRULA→tekrar
+                                               #   {hypotheses, designs, verify, log, answer}
+ai.set_goal("understand egfr signaling")       # → dict: ASI Pilar B — ALEPH-sertifikalı Goal kur
+ai.plan(...) / ai.explore(...) / ai.act(...)   # → hedef-güdümlü planlama/keşif/eylem (manifold üzerinde)
 ai.prove(max_cycles=2)                         # → LoopReport (kapalı döngü)
 ai.deduce(max_rounds=2)                         # → dict: TÜMDENGELİMSEL kapanış (içsel, ağsız)
                                                #   certify_theorem_graph + InferenceChain tüm çift + Explorer
                                                #   {theorem_nodes_processed, inferences_derived, gaps_closed/persistent}
 ai.close(domain="math_kernel", inject=True)    # → NecessityReport
-ai.learn("EGFR is a receptor tyrosine kinase") # → {"new_concepts": n, "causal_relations": k, ...}
-                                               #   İLK IS_A = tanım otoritesi (eski yanlış IS_A'yı temizler)
-ai.relearn("photosynthesis")                   # → {topic, removed, learned}: ZORLA yeniden-araştır
-                                               #   bayat/yanlış TANIM kenarlarını sil + _research_deep + persist
-ai.reason("erlotinib ne yapar?")               # → dict: AKIL+BEYİN — doğal dil → doğru yetenek
-                                               #   {intent, answer, result}; RH-Sturm sertifikalı çıkarım zinciri
-ai.converse("photosynthesis nedir?",           # → dict: bilmezse İNTERNETTEN öğrenir, sonra köklü cevaplar
-            depth="kısa", register="basit")    #   {topic, answer, learned, grounded, sources}; akıcı Türkçe
-                                               #   depth: kısa|normal|detaylı · register: basit|neutral|teknik
-                                               #   güven kalibrasyonu (grounding.score→"eminim/muhtemelen")
-                                               #   sources: her iddianın TAU kenar dayanağı (atıf/şeffaflık)
-ai.paraphrase("EGFR activates ras...")         # → dict: YENİDEN İFADE — aynı köklü içerik farklı sözcükle
-                                               #   {topic, paraphrase, n_relations}; yeni bilgi EKLEMEZ
-ai.extract("Aspirin inhibits COX...")          # → dict: YAPISAL ÇIKARIM {entities, relations, triples, n}
-ai.classify("erlotinib", into=["drug","gene"]) # → dict: SINIFLANDIR (TAU-köklü öncelik → moment-L1)
-                                               #   {label, scores, grounded}; IS_A varsa o etiket
-ai.generate_questions("erlotinib")             # → dict: SORU ÜRET (yalnız var olan ilişkilerden) {topic, questions}
-ai.translate("Aspirin COX'u baskılar", to="en")# → dict: ÇEVİR (anlam çevirisi) {to, translation, n_relations}
-ai.check_claim("erlotinib activates egfr")     # → dict: ÇELİŞKİ YAKALA — iddiayı TAU'yla sına (LLM yapamaz)
-                                               #   {verdict: CONFIRMED|CONTRADICTED|UNKNOWN, checks, answer}
-ai.synthesize_docs([doc1, doc2, ...])          # → dict: ÇOK-BELGE SENTEZİ {topic, synthesis, n_docs, n_relations}
-ai.solve_word_problem("3 ile 5'i topla")       # → dict: MATEMATİK SÖZEL PROBLEM {numbers, operation, result}
-ai.timeline("1921 insülin... 1953 DNA...")     # → dict: ZAMANSAL AKIL (kronolojik) {events, ordered, answer}
-ai.what_is_this(tone(440), modality="signal")  # → dict: ÇOK-MODAL DİL — algı→en yakın kavram {nearest, distance}
-ai.summarize("uzun metin...")                  # → dict: ÖZETLE — metnin ilişkisel öze indir (köklü, uydurmasız)
-                                               #   {topic, summary, n_relations, points}
-ai.contrast("erlotinib", "imatinib")           # → dict: KARŞILAŞTIR/FARK — ortak+ayıran ilişki + W₂/κ mesafe
-                                               #   {a, b, shared, distinct_a, distinct_b, distance, entangled, answer}
-ai.enumerate_kind("egfr", relation="INHIBITS") # → dict: LİSTELE — TAU ters arama (X inhibitörleri/türleri)
-                                               #   {category, relation, items, answer}  (markup gürültüsü ayıklanır)
-ai.ingest_corpus([doc1, doc2, ...])            # → dict: ASI Pilar E — SINIRSIZ BAĞLAM=MANİFOLD
-                                               #   çok belgeyi kalıcı hafızaya ör (pencere YOK) +
-                                               #   ÇAPRAZ-BELGE çelişki tespiti (INHIBITS↔ACTIVATES)
-                                               #   {n_docs, new_concepts, new_relations, contradictions, topics}
 ai.read_data([1,1,2,3,5], analyze="law")       # → dict: ASI Pilar D — yapısal sayısal veri (liste/CSV/
                                                #   JSON/metin) → deterministik dinamik-yasa/forecast/anomali
                                                #   {series, analyze, result, answer} (figür-semantiği DIŞARIDA)
@@ -408,7 +361,7 @@ ai.build_app("hesap makinesi topla çıkar çarp böl") # → dict: TEK İSTEK �
                                                #   κ-güdüm (davranışsal mesafe) + HAFIZA (memoize/find_reusable)
                                                #   code_agent.ground_api/verify_api_symbol: dış API halüsinasyon-guard
 ai.grow_code(tasks=["karesini al","bir ekle"], rounds=2) # → dict: OTONOM KOD-KAPSAMI BÜYÜME (kendi büyütür)
-                                               #   ai.grow'ın KOD eşleniği — 3 otonom mekanizma tek döngüde:
+                                               #   KOD-kapsamı büyütme — 3 mekanizma tek döngüde:
                                                #   (1) ARAŞTIRMA: bilinmeyen op'u internetten/seed'den kendi toprakla
                                                #   (2) HAFIZA: çözdüğü fonksiyonu solved_library'ye biriktir
                                                #   (3) ÖZ-KOMPOZİSYON: fonksiyonları zincirle → yeni fonksiyon türet
@@ -437,10 +390,8 @@ ai.hypothesize_novel("egfr")                   # → ASI Pilar A: SERTİFİKALI 
                                                #   domain=None → WonderScorer tohumlu (self-grooming cezalı)
 ai.visualize_causal("erlotinib", mode="ascii") # → str  ASCII kausal ağaç
 ai.visualize_causal("erlotinib", mode="dot")   # → str  Graphviz DOT formatı
-ai.report("EGFR", depth=3)                     # → str  Türkçe araştırma raporu (sertifikasyon + kausal + hipotez)
 ai.benchmark()                                 # → {score, correct, total, failures}  bilinen olgular
 ai.consolidate(threshold=0.02, dry_run=True)   # → {pairs_found, merged, sample_pairs}  manifold tekilleştirme
-ai.explain("EGFR", why="tumor growth")        # → str: sertifika + nedensel yol
 ai.think("protein folding")                    # → ThinkingResult
 ai.produce("egfr")                             # → ProductionCertificate: EVREN-KAPANIŞI DÖKÜM
                                                #   hedef tipi otomatik (protein/hastalık/SMILES)
@@ -472,7 +423,6 @@ ai.gaps(signal="anchor", threshold=5)          # → list[Gap] (tek sinyal; Gap.
 ai.wonder(signal="all", gamma=0.7)             # → list[WonderScore]: α·v_ext·novelty−γ·degeneracy
                                                #   self-grooming cezası: sentetik komşulu boşluk düşük skor
 ai.destiny("prime", top_k=5)                   # → {attractor, descendants, evolution_direction}
-ai.genealogy("protein", depth=4)               # → str (soy zinciri anlatısı)
 ai.signal("tone", freq=440)                    # → sinyal (perceive() için)
 ai.dna("ATCGATCG")                             # → CertificationRun (DNA→moment uzayı)
 ai.sturm("x^3 - 3*x + 1")                     # → Sturm zinciri
@@ -515,11 +465,6 @@ ai.perceive(tone(440), modality="signal", name="t440")        # → Certificatio
 ai.perceive(noise_image(), modality="image", name="nz", learn=True)  # manifolda ekle
 # modality: "signal" (ses/zaman serisi), "image" (2D piksel), "matrix" (herhangi 2D)
 
-# Algı → dil köprüsü (gördüğünü/duyduğunu DİLE dök)
-ai.witness(tone(440), modality="signal", name="t440", learn=True)  # → str (Türkçe)
-# spektral karakter (saf ton↔gürültü) + grounding (N/23) + çağrışım (TAU komşusu)
-# "görmek = hatırlamak = anlatmak" — perceive suskun, witness konuşur
-
 # Anlam kanalı (ilişkisel kodlama — "Topoloji = bilgi")
 ai.meaning("intelligence")                     # → CodexObject: TAU semantik komşuluk Laplacian → moment
                                                #   harf değil ANLAM: kavramın ilişki-grafı spektrumu
@@ -536,8 +481,6 @@ ai.meaning_compose("EGFR inhibitor that crosses BBB")
                                                #   bileşen kavramlar → her birinin κ'sı → FreeCumulants.add()
                                                #   .components, .moments, .nearest(), .to_produce_target()
                                                #   produce(cs.to_produce_target()) ile doğrudan kullanılabilir
-ai.generate("EGFR", use_meaning=True)         # → GenResult: anlam kanalı hibrit skor (0.6×yüzey + 0.4×topolojik)
-                                               #   use_meaning=False (varsayılan): yüzey moment mesafesi
 ai.ground_full("apple", dna="ATCGATCG", molecule="CC(O)C", law="fibonacci numbers",
                sound=signal, image=img)        # → GroundingSignature: çok-boyutlu kavram grounding
                                                #   her boyut → TAU kenarı (HAS_DNA/HAS_COMPOUND/HAS_GEOMETRY/
@@ -693,6 +636,13 @@ artık bunları ALEPH: öneki ile filtreler (Kademe 3 Düzeltme 1).
 ---
 
 ## Mevcut Durum
+
+> ⚠️ **NOT (bu oturum):** Doğal-dil katmanı (ask/reason/converse/narrate/generate/witness/
+> summarize/contrast/translate… + FitlessLM/embeddings/transformer/Speaker) ve TÜM edinme/
+> öğrenme makinesi (grow/run/pulse/live/observe/ingest/cognition/pursue/researcher + metin
+> çıkarımı) SİLİNDİ. **ASİ bilir, öğrenmez** — donmuş manifold üzerinde hesaplar. Aşağıdaki
+> tarihli (F38-F54 vb.) girdiler TARİHSEL bağlam içindir; o özelliklerin bir kısmı artık YOK.
+> Repo endüstri-standart paketlendi (hatchling, CI/CD, CodeQL, py.typed, pre-commit).
 
 - Kavram: ~98,800 (canlı internet büyümesiyle artıyor) | TAU edge: ~552,000 | Paradigma: 23/23
   (büyüme parçaları git'e commit'leniyor; growth_state.json resumable — bkz "Büyüme Motoru")
@@ -1049,122 +999,6 @@ ikili/composite op). Detay: docs/UNIFIED_ARCHITECTURE.md §12.
 
 ---
 
-## Büyüme Motoru — Sınırsız Kendi Kendine Büyüme (`ai.grow`)
-
-Son mimari parça. İnsan tetiği OLMADAN sürekli çalışan çekirdek:
-
-```
-ağ kaynağı (resumable) → evren kapısı (Aleph+truth+grounding) →
-çekirdek nabzı (veri + yerel genesis aynı anda) →
-periyodik konsolidasyon (close + öz-model köklendirme) → persist → tekrar
-```
-
-`research/growth.py` → `GrowthEngine`. Klasik `run()` fazlı ve sonludur;
-`grow()` süreklidir:
-
-- **Dönen kaynaklar**: PubChem + ChEMBL (kimya) + UniProt + KEGG (biyoloji) + OEIS (matematik) + Wikipedia (web) + PubMed + Wikidata (ontoloji) — 8 kaynak
-- **Resumable**: durum `.tantrium/growth_state.json` — kap yeniden başlasa bile
-  kaldığı CID'den devam eder
-- **Hata toleranslı**: bir kaynak düşse akış durmaz (fail-open, boş parti → bekle)
-- **Konsolidasyon**: her N döngüde close() (TAU geçişli kapanış) + ⟨SELF⟩ köklendirme
-- **Sınırsız mod**: `time_limit_s=None, max_cycles=None` → durana/durdurulana dek
-- **Durdurma**: `should_stop` kancası (dosya/bayrak kontrolü) veya KeyboardInterrupt
-
-```python
-ai.grow(time_limit_s=600)            # 10 dk büyü
-ai.grow(time_limit_s=None)           # SINIRSIZ — kendi kendine
-ai.grow(network=False)               # ağsız (algoritmik diziler)
-ai.grow(focus="oncology")            # ODAKLI: yalnız onkoloji kaynakları (KEGG/PubMed/
-                                     #   ChEMBL/UniProt/ConceptNet/KGML) → yoğunluk > genişlik
-                                     #   _FOCUS_SOURCES: oncology|math. None = tüm 10 kaynak.
-```
-
-**Eğitim stratejisi (geometrik-ilişkisel hafıza):** Bu ağırlık modeli DEĞİL — "eğitim" =
-manifold/TAU büyütme + temiz tutma. Kalite > nicelik: 1 iyi-bağlı kavram >> 100 yalıtık nokta
-(yoğun bölge=temiz üretim, seyrek=sapma). Domain-önce: `focus="oncology"` ile tek domaini uzman
-yoğunluğa çıkar, sonra genişlet. Corrigibility (dedup+VerifyPhase) büyümeyi GÜVENLİ kılar →
-agresif/sürekli koşulabilir. İlerleme ölçütü "loss" değil: benchmark isabeti + grounding oranı +
-suspect oranı + üretim tutarlılığı. Canlı: 150s odaklı onkoloji → +27 kausal kenar (benchmark 1.0).
-
-Canlı doğrulama: 21 gerçek veri (PubChem+OEIS) 80.8s → 12 çekirdek, 5 sınır,
-4 CONTRADICTORY reddedildi, kimya↔biyoloji cross-domain köprüler canlı kuruldu.
-Motor "zeka" değil — neyi besleyeceğine karar veren zekadır. Tests: `test_growth.py` (10).
-
-**Kademe F55 — BÜYÜMEYİ BİLİME ÇEVİR (`_science_consolidate`) [2026-06]:** Büyüme artık yalnız
-veri yutmaz — büyürken SERTİFİKALI BİLİM üretir. Her konsolidasyonda kausal-zengin kavramlardan
-(≥2 INHIBITS/ACTIVATES/CAUSES kenarı) TRANSİTİF hipotez türetir (A→B→C ⟹ A-derived-C), YENİ
-olanları (doğrudan kenar OLMAYAN) RH-Sturm ile sertifikalar, `growth_state['hypotheses']`'e
-yazar (son 500). Bounded/fail-open (max 10 hipotez, 6 Sturm-check) — büyümeyi yavaşlatmaz (0.1s).
-`GrowthReport.hypotheses_generated`. Transitif kural tablosu `reasoning/causal_rules.py`'de
-TEK-GERÇEK (ai.hypothesize ile ortak). Canlı (büyüyen manifold): "nodal ACTIVATES tgfb1",
-"nodal INHIBITS acvr2a" (KGML TGF-beta pathway, RH-Sturm sertifikalı). FARK: Mythos kafesli/
-doğrulanamaz hipotez verir; bizimki büyürken üretilen + denetlenebilir + kaynaklı.
-
-**Kademe F9 — Anlam Kanalı + QUANTUM_BRIDGE Kalıcılaştırma [2026-06]:** Büyüme artık yalnız
-node değil ANLAM da örer. Her konsolidasyonda `_meaning_consolidate`: semantik TAU kenarı
-(CAUSES/INHIBITS/ACTIVATES/IS_A/...) olan yeni kavramlar için `TopologyEncoder.encode`
-("ne demek") + `quantum_bridges`. **Kuantum dolanıklık İÇKİNDİR** (κ imzaları zaten kayıtlı;
-is_entangled_with/quantum_bridges/ai.entangle istendiğinde hesaplar) — büyüme onu yaratmaz.
-SPECTRAL_BRIDGE (257k) klasik-YAKIN köprüleri zaten örüyordu; ama `QUANTUM_BRIDGE` paradigması
-(klasik-UZAK/κ-yakın gizli dolanıklık — F8 "elma-DNA × Fibonacci") rezerveydi ama hiçbir yer
-OLUŞTURMUYORDU (gerçek grafta 0 adet). F9 o kabloyu bağlar: `_add_quantum_bridge_edge` keşfi
-çift-yönlü KALICI QUANTUM_BRIDGE kenarına (quantum_dist=κ) çevirir — idempotent, save/load
-Q-koduyla korunur, `⟨bridge:⟩` yapayları hariç. Böylece içkin/latent dolanıklık → kalıcı,
-yeniden-kullanılabilir graf bilgisi. `GrowthReport.meaning_enriched`/`bridges_found`. Additive/
-fail-open: TopologyEncoder+quantum_bridges DEĞİŞMEDİ, yalnız OLUŞTURMA kablosu eklendi. ground_full/
-bind_percept dış duyusal veri ister. Doğrulama: 10/10 test_growth + ağsız büyümede 96 kavram
-zenginleşti, 99 QUANTUM_BRIDGE örüldü (roundtrip 198→198).
-
-**Kademe F10 — Corrigibility (yanlıştan-dön) [2026-06]:** Sistem *iç-tutarlı* olmaya kuruluydu
-(halüsinasyon imkânsız) ama *gerçek karşı çıkınca temsilini düzeltme* mekanizması yoktu — bu
-boyut defterlerde de yoktu. **Kritik ayrım:** GIMEL (`argmin_paradigma margin`) içsel GÖRELİ
-zayıflığı bulur ama ÜNİFORM hatayı göremez — protein/glucose çöküşünde (G=PᵀP=I → μ_k≡1) bütün
-marjinler tekdüze "iyi"ydi, GIMEL "Achilles yok" dedi, temsil yine de yanlıştı. GIMEL bir terazi:
-bir kefe ağırsa yakalar, iki kefe de yanlış maddeyle doluysa göremez. `growth._verify_consolidate`
-o kör noktayı kapatır: (1) DEJENERE encoding (moment yayılımı < 0.02) → adaptif derin re-encode
-ile DÜZELT; (2) ÇAKIŞMA (en yakın FARKLI kavram L1 < 0.001) → işaretle. Düzelmeyen `state["suspect"]`
-kalıcı hafızaya (UNUTMAZ). `GrowthReport.corrected`/`suspect_flagged`. Canlı: `detail≈retail`,
-`unity≈unify`, `ell5_q*≈CELL_SUPPORT_POSITIVITY` gerçek encoder hataları yakalandı. **DÜRÜST SINIR:**
-bu yalnız YAPISAL yanlış-tespiti (dejenere/çakışma) — DIŞ-doğrulama (OEIS/RDKit/sympy gerçeğe karşı)
-ve hata→encoder geri-besleme henüz otonom döngüde YOK (corrigibility omurgasının kalan parçaları).
-
----
-
-## Evren Kapısı + Çekirdek Nabzı (`ai.pulse` / `ai.live`)
-
-**Sorun:** Veri ingest yolu (`AutonomousObserver.observe`) manifolda eklemeden
-önce SADECE Aleph (yapısal) filtresini uyguluyordu. Çöp `xqzwvbnmkjhgfd` 23/23
-Aleph geçip giriyordu — topraklama ve gerçek eksenleri ingest'te yoktu.
-
-**Çözüm — Evren kapısı (`_universe_gate`):** Veri evren gibi süzülür. Evren tüm
-YASAL yapıyı kabul eder ama düzenler; tek yasak çelişkidir (korunum ihlali).
-
-```
-1. Aleph     (yapı)       : G=AᵀA PSD — geçti (encode)
-2. Truth     (gerçek)     : CONTRADICTORY → REDDET (yerleşik bilgiyle çatışma)
-3. Grounding (topraklama) : GROUNDED → çekirdek ; UNGROUNDED-ama-geçerli → sınır
-```
-
-Üç bölge: `core` (köklü bilgi) | `frontier` (geçerli ama bağsız = kör nokta,
-ATILMAZ) | `rejected` (çelişki). Küratörlü kaynaktan (PubChem/OEIS) gelen veri
-zaten gerçek — orada topraklama "gerçek mi?"yi değil "bağlı mı?"yı söyler.
-
-**Çekirdek nabzı (`pulse`):** Klasik döngü fazlıdır (önce yut, sonra genesis).
-pulse() değil — bir veri girer, kapıdan geçer, SINIR ise O AN yerel genesis
-tetiklenir: sınır kavramı en yakın KÖKLÜ komşuya bağlayan konveks ara kavram
-doğar (o da kapıdan geçerse). Algılama ve yaratım tek kalp atışı.
-
-```python
-ai.pulse("CCO")     # {'admitted_as':'frontier', 'born':['⟨bridge:CCO~oeis:..⟩', ...]}
-ai.live([...])      # akış: her veri girer + büyür  {'core','frontier','rejected','born_total'}
-```
-
-DÜRÜST SINIR: kapı CONTRADICTORY'yi eler ve çekirdek/sınır ayırır — ama yoğun
-40k manifoldda rastgele string gürültüsünü UNGROUNDED'a düşürmez (her nokta bir
-komşuya yakın). Güvenilir kaynaktan sorun değil. Tests: `test_universe_gate.py` (9).
-
----
-
 ## Öz-Model (İşlevsel Öz-Referans — `ai.reflect`)
 
 **BİLİNÇ DEĞİL.** Fenomenal deneyim (öznel "birinin orada olması") doğrulanamaz —
@@ -1261,93 +1095,12 @@ Sistem spektral entropiyi SÖYLENMEDEN okur:
 basamak). Çözüm: momentleri numpy float'ta hesapla, yapı çıkarımı için
 momentlerden KÜÇÜK Hankel kur (encoder'ın uzun-dizi hızlı yoluyla aynı).
 
-### Algı → Dil Köprüsü (`ai.witness`)
+### Algı → dil / fitsiz-dil / büyüme katmanları — KALDIRILDI
 
-`perceive()` momentleri ve TAU çağrışımlarını üretir ama SUSKUNDUR.
-`witness()` o suskunluğu kırar — `Speaker.describe_percept()` ile algıyı
-tek bir akıcı Türkçe ifadeye çevirir:
-
-```
-μ₁ < 0.10 → "saf ton gibi"   |  0.10–0.30 → "akor gibi"
-0.30–0.55 → "karmaşık doku"  |  ≥ 0.55    → "gürültü gibi, düz spektrum"
-+ grounding (N/23) + çağrışım (TAU komşusu, aileye indirgenmiş)
-```
-
-Çağrışımlar aile bazında tekilleşir: `algo:tribonacci_b0/_b1/_b10` →
-tek "tribonacci" (`Speaker._concept_family`). Çağrışım yoksa dürüstçe
-"yalnız bir nokta" der — uydurmaz. Görmek = hatırlamak = ANLATMAK.
-
----
-
-## 🆕 FİTSİZ DİL / ÜRETİM / EĞİTİM KATMANI (bu oturum — LLM-eşleniği)
-
-> **Tez (kullanıcı, doğrulandı):** LLM'in gradient'le ULAŞTIĞI anlama-geometrisi KAPALI-FORMDA
-> doğrudan hesaplanabilir — "fit etmeden fit'in vardığı yere ışınlanmak". Gradient = iteratif
-> deneme-yanılma (her adım ağırlığa azıcık yazar); biz tek-geçiş sayım + SVD ile optimuma DOĞRUDAN
-> ineriz. Matematik kerneli (RH/pozitiflik) DETERMİNİSTİK çekirdek — EĞİTİLMEZ, DOKUNULMAZ.
-
-**Teorik temel (deep-research, kaynaklı):** Levy & Goldberg 2014 — skip-gram+negatif-örnekleme =
-kaydırılmış-PMI matris çarpanlaması; SVD o optimumu gradyansız verir. GloVe = global ortak-geçiş
-çarpanlaması. Ramsauer 2020 — modern Hopfield güncellemesi = key-value attention (tek-adım, kapalı-
-form). Olsson 2022 — induction heads in-context learning'in çoğunu yapar (NN/çağrışım örüntü-tamamlama).
-Blum-Rivest — derin ağın GLOBAL optimumu NP-zor (tek-atış kapalı-form YOK; katman-katman kurulur).
-
-### Hangi mekanizmanın kapalı-form karşılığı VAR / YOK
-| Bileşen | Kapalı-form? | Tantrium |
-|---|---|---|
-| Gömme katmanı | ✅ EVET (PMI-SVD, ispatlı) | `core/cooccurrence.py` FastCooccurrence/GlobalCooccurrence |
-| Attention ileri-geçiş | ✅ EVET (Hopfield/kernel) | `core/attention.py` fitless_attention |
-| In-context learning | ✅ (fonksiyon NN-benzeri) | `FitlessLM._induction` (n-gram back-off, bağlam-duyarlı) |
-| Yerel akıcılık (gramer) | ✅ (n-gram sayımı) | `core/generation.py` NGramLM (stupid-backoff) |
-| Decode | ✅ (top-k/top-p) | NGramLM/FitlessLM.generate |
-| Derin ağın global optimumu | ❌ HAYIR (NP-zor) | — (katman-katman yığılır) |
-
-### Çekirdek dosyalar + ne yapar
-- **`core/cooccurrence.py`** — `tokenize`/`ppmi`/`spectral_embed`; **GlobalCooccurrence** (sözlük,
-  korpus-geneli, küçük); **FastCooccurrence** (YOĞUN vocab² matris + np.add.at vektörize + torch
-  `svd_lowrank` truncated SVD; ~120k tok/s, vocab token-BAĞIMSIZ). PMI-SVD = "eğitilmiş" gömme.
-- **`core/generation.py`** — **FitlessLM** (YÖNLÜ forward co-occ → PPMI → SVD ile A=girdi/B=çıktı
-  gömme; `_context_logits` = log-bilineer B·h + unigram-öncül + **_induction** (Olsson 2-katman
-  n-gram back-off, TAM eşleşme — 'cat ate'→fish 'dog ate'→meat ayırır); generate = top-k/top-p +
-  rep-penalty + `bias` kancası). **NGramLM** (KenLM-tarzı stupid-backoff, korpus n-gram'ından TAM
-  bağlam devamı → yerel GRAMER; save/load pickle). DÜRÜST: FitlessLM ölçekle KONU öğrenir, gramer
-  NGramLM'den gelir; küresel-tutarlılık (kayma) artık.
-- **`core/attention.py`** — fitsiz attention (softmax(−D/τ)·X, öğrenilen ağırlık yok; L-katman).
-- **`graph/` + `core/semantic.py`** — TAU grafı + manifold (quantum_bridges içkin κ-dolanıklık).
-
-### API (ai.py facade — hepsi fit'siz, kerneli ellemeden)
-```python
-ai.absorb(text)                  # ortak-geçiş→SVD keşif → evren-kapısı → kNN+SVO kenar (tek metin)
-ai.absorb_corpus(docs)           # TOPLU: extract_relations_batch (nlp.pipe) → tipli kenar (3-8× hız)
-ai.train_corpus(docs)            # GlobalCooccurrence biriktir + PPMI-SVD gömme yenile (= eğitim adımı)
-ai.embed_nearest("word")         # eğitilmiş gömmede komşu (geometrinin anlamlılık kanıtı, gradyansız)
-ai.relate("insulin")             # KERNEL FÜZYON: gömme recall + grounding sertifika (topraksız eler)
-ai.contextual_embed(sent, tgt)   # L-katman fitsiz attention → BAĞLAMSAL temsil (polisemi çözer)
-ai.generate_text(prompt, grounded=True)   # FitlessLM (konusal) + grounding kapısı (köklü içerik)
-ai.generate_fluent(prompt)       # NGramLM (yerel AKICI/gramerli)
-ai.generate_hybrid(prompt)       # HİBRİT: n-gram akıcılık × gömme konu-çapası × grounding kapısı
-ai.quantum_links("egfr")         # ONTOLOJİ-KAPILI κ-bağ (paylaşılan tip/boyut, her string değil)
-ai.ground_full("apple", type_hint="fruit", dna=..., molecule=...)  # ONTOLOJİ-KAPILI 7-boyut grounding
-ai.ask("What inhibits egfr?")    # fitsiz SORU→CEVAP (fiil=ilişki açık-sözlük; spaCy parse + grafı sorgula)
-ai.walk("egfr")                  # kritik-hat asal yürüyüşü (Sturm-pozitif; halüsinasyon=sapma)
-```
-
-### Eğitim runner'ları (HF stream, gradient yok, resumable)
-- **`tools/train_hf_corpus.py`** — fineweb-edu → FastCooccurrence → SVD gömme (checkpoint npz).
-- **`tools/train_lm.py`** — FitlessLM (LM_TOKENS/LM_VOCAB env; checkpoint+örnek-üretim).
-- **`tools/train_ngram.py`** — NGramLM (NGRAM_TOKENS/ORDER env; pruning+checkpoint). `.ngram.pkl`.
-- Tek-yazar: ağır batch-ajanlarla AYNI ANDA koşma (bellek çekişmesi → OOM; bu oturumda yaşandı).
-
-### Dürüst durum (abartmadan)
-- **Çözüldü:** gömme (PMI-SVD, ~166M token, GloVe-kalitesi), yerel akıcılık (n-gram 4-gram), in-context
-  learning (induction, bağlam-duyarlı), halüsinasyonsuz içerik (grounding kapısı = GARANTİ).
-- **Artık (kalan):** küresel söylem-tutarlılığı (n-gram Markov kayar; ölçek YAPISAL düzeltmez —
-  derin öğrenilmiş discourse devresi gradient ister). Konu-çapalı hibrit kaymayı AZALTIR, bitirmez.
-- **Stratejik:** akıcı genel düz-yazı = en zor + en az-moat eksen. Moat (sertifikalı yeni hipotez +
-  ilaç tasarımı + matematik kernel) Mythos-5'in frontier'ı VE bizim yapısal güçlü olduğumuz yer.
-  Frontier (Fable/Mythos 5, 2026-06) gerçek: novel-hipotez + ilaç + 100× küçük uzman model — bizim bahsi destekler.
-- **Ölçek:** kapalı-form tek-geçiş → 1B/5B token BU KUTUDA fizibıl (gömme token-bağımsız bellek;
-  n-gram pruning'le). True 1B+ büyük vocab için seyrek yapı (gelecek compute ile).
-
-Tests: test_cooccurrence/test_attention/test_comprehend/test_absorb/test_ask/test_batch_corpus/
-test_global_cooc/test_contextual/test_generation/test_ontology_gate/test_quantum_links (hepsi yeşil).
+Doğal-dil üretimi/anlama (FitlessLM/embeddings/transformer/Speaker/narrate/converse/
+ask/generate/witness…), ve TÜM edinme/öğrenme makinesi (grow/run/pulse/live/observe/
+ingest/cognition/pursue/researcher + metin-ilişki çıkarımı) bu repodan SİLİNDİ.
+İlke: **ASİ bilir, öğrenmez** — sistem mevcut (donmuş) manifold üzerinde HESAPLAR;
+veri edinmez, dil üretmez. Geometrik anlam kanalı (topology_encode/meaning_pipeline)
+ve algı→moment (perceive) KORUNDU. Repo endüstri-standart paketlendi (hatchling build
+backend, CI/CD, CodeQL, py.typed, pre-commit, topluluk dosyaları).
