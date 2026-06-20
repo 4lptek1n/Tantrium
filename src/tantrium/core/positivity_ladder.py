@@ -37,13 +37,19 @@ def _hankel_min_eig(mu: list[float], size: int | None = None) -> float:
     return float(np.linalg.eigvalsh(H).min())
 
 
-def _newton_log_concave(mu: list[float], tol: float = 1e-6) -> bool:
-    """Newton/log-konkavlık: iç indekslerde μ_k² ≥ μ_{k-1}·μ_{k+1} (hiperbolik dizi şekli)."""
+def _moment_log_convex(mu: list[float], tol: float = 1e-9) -> bool:
+    """Gerçek-ölçü moment ŞEKLİ: log-KONVEKSLİK μ_k² ≤ μ_{k-1}·μ_{k+1} (Cauchy-Schwarz).
+
+    DÜZELTME: pozitif ölçünün momentleri log-KONVEKSTİR (Cauchy-Schwarz), log-konkav DEĞİL.
+    Newton eşitsizlikleri (log-konkavlık) gerçek-köklü polinomun KATSAYILARINA uygulanır,
+    MOMENTLERE değil. Eski `_newton_log_concave` momentte ters yön arıyordu → geçerli ölçüde
+    bile hep kırılıyordu (depth 1'de takılma). Bu, Hankel-PSD'nin 2×2 minörü (μ_{k-1}μ_{k+1}−μ_k²≥0)
+    — geçerli moment dizisinin gerçek şekli."""
     n = min(len(mu), 8)
     if n < 3:
         return True
     for k in range(1, n - 1):
-        if mu[k] * mu[k] + tol < mu[k - 1] * mu[k + 1]:
+        if mu[k] * mu[k] > mu[k - 1] * mu[k + 1] + tol:
             return False
     return True
 
@@ -81,7 +87,7 @@ def positivity_depth(src: list[float], tgt: list[float], *, eps: float = _EPS) -
         if not tgt:
             return 0, rungs
         rungs["hankel"] = _hankel_min_eig(tgt) >= eps
-        rungs["newton"] = _newton_log_concave(tgt)
+        rungs["newton"] = _moment_log_convex(tgt)
         if src:
             rungs["sturm"] = _path_hankel_min_eig(src, tgt) >= eps
     except Exception:

@@ -313,35 +313,43 @@ class ProductionJudge:
         kc = FreeCumulants.from_moments(mu)
         kappa_joint = kappa_disease.add(kc)  # serbest additivite (tam)
         closure_error = self._bounded_kappa_error(kappa_joint, kappa_healthy)
-        # ── TAM RH POZİTİFLİK ZİNCİRİ (yakınlık/grounding/TAU DEĞİL) ──
-        # İlaç üretimi = RH çözüm zincirini TERSTEN koşturmak. Tedavi edilmiş durum
-        # (hastalık ⊞ M) eksiksiz "kritik hatta" mı? `positivity_depth` tam zinciri ölçer:
-        #   1. Hankel-PSD (D-pozitiflik)  — joint geçerli bir ölçü mü (H ⪰ 0)
-        #   2. Newton log-konkavlık       — μ_k² ≥ μ_{k-1}μ_{k+1} (hiperbolik şekil)
-        #   3. tüm konveks yol sağlıklı→joint Sturm-pozitif (Jensen hiperbolisitesi)
-        # depth==3 ⟺ tüm pozitiflik zinciri GERİ KURULDU. Tek pivot kontrolü DEĞİL —
-        # eksiksiz kriter (kullanıcı: "RH kriterleri eksiksiz alınmalı, çözüm yollarından geçmeli").
-        from tantrium.core.positivity_ladder import positivity_depth
+        # ── RH POZİTİFLİK ZİNCİRİ — GERÇEK ÖLÇÜLER üzerinde (yakınlık/grounding/TAU DEĞİL) ──
+        # İlaç üretimi = RH çözüm zincirini TERSTEN koşturmak. İki bağımsız, MATEMATİKSEL
+        # kriter (eksiksiz, çözüm yollarından geçen):
+        #   (A) EVREN KAPANIŞI: serbest-additivite κ(hastalık ⊞ M) = κ(sağlıklı) ⟺ M, gerekli
+        #       açığı (κ_required) taşır → closure_error < ε. Determinizmin kalbi.
+        #   (B) GERÇEKLENEBİLİRLİK / kritik-hat: tedavi sonucu GERÇEK bir ölçü mü, ve adayın
+        #       GERÇEK momentlerinden gerekli açığa konveks yol pozitif mi (Jensen).
+        #
+        # DÜRÜST DÜZELTME (kök neden, ampirik): eski kapı depth>=3'ü κ_joint.to_moments_approx()
+        # üzerinde ölçüyordu — κ→μ TERS dönüşümü JOINT'te DAİMA log-konveksliği (newton) kırar →
+        # kapı HİÇ açılmaz (hastalıkta produce() asla "İŞE YARAR" demez). Ayrıca iki valid ölçü
+        # arasındaki Hankel yolu konveks-koni gereği DAİMA ≥0 (Sturm yolu boş kontrol). Bu yüzden
+        # zincir, çift-yaklaşık κ-rekonstrüksiyonu yerine GERÇEK aday momentleri (geçerli ölçü)
+        # ile ölçülür; kapı (A) kapanış + (B) joint'in gerçeklenebilir ölçü olmasıyla açılır.
+        from tantrium.core.positivity_ladder import _hankel_min_eig, _EPS, positivity_depth
 
         mu_joint = kappa_joint.to_moments_approx()
-        mu_healthy = kappa_healthy.to_moments_approx()
-        depth, rungs = positivity_depth(mu_healthy, mu_joint)
-        full_chain_ok = depth >= 3
-        # pivot raporu (en küçük yol özdeğeri — denetlenebilirlik için)
+        # (B1) tedavi sonucu (joint) gerçeklenebilir bir ölçü mü (Hankel ⪰ 0)?
+        joint_is_measure = _hankel_min_eig(mu_joint) >= _EPS
+        # (B2) audit: adayın GERÇEK momentlerinden gerekli açığa tam pozitiflik zinciri
         tgt = (
             mu_required
             if mu_required
             else kappa_healthy.subtract(kappa_disease).to_moments_approx()
         )
+        depth, rungs = positivity_depth(mu, tgt)
         _so, pivot_min = self.pe._sturm_path_pivot_min(mu, tgt)
         residual = kappa_joint.subtract(kappa_healthy)  # refine gradyanı
+        # universe_closes = (A) kapanış  AND  (B1) joint geçerli ölçü
+        universe_closes = joint_is_measure and closure_error < epsilon
         return ClosureProof(
             applicable=True,
             closure_error=closure_error,
             epsilon=epsilon,
             pivot_min=pivot_min,
-            sturm_ok=full_chain_ok,
-            universe_closes=(full_chain_ok and closure_error < epsilon),
+            sturm_ok=joint_is_measure,
+            universe_closes=universe_closes,
             kappa_joint=list(kappa_joint.k),
             kappa_residual=list(residual.k),
             depth=depth,
