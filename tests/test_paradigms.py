@@ -1,20 +1,18 @@
 """Tests for paradigm definitions in tantrium.core.codex."""
-import pytest
 
 from tantrium.core.codex import (
-    PARADIGMS,
     PARADIGM_BY_ID,
-    CertifiableObject,
+    PARADIGMS,
+    ConsistencyParadigm,
+    FixedPointParadigm,
     ParadigmResult,
     PositivityParadigm,
     SpectralParadigm,
-    FixedPointParadigm,
-    ConsistencyParadigm,
 )
 from tantrium.core.encoder import encode
 
-
 # ─── PARADIGMS list ───────────────────────────────────────────────────────────
+
 
 def test_paradigms_list_has_23_items():
     assert len(PARADIGMS) == 23
@@ -31,6 +29,7 @@ def test_paradigm_by_id_keys_match_list_ids():
 
 
 # ─── Paradigm object attributes ──────────────────────────────────────────────
+
 
 def test_each_paradigm_has_id():
     for p in PARADIGMS:
@@ -65,6 +64,7 @@ def test_known_paradigm_ids_present():
 
 # ─── ParadigmResult ───────────────────────────────────────────────────────────
 
+
 def test_paradigm_result_has_status():
     obj = encode("test")
     p = PositivityParadigm("ALEPH", "Positivity", "D >= 0", [])
@@ -95,6 +95,7 @@ def test_paradigm_result_is_paradigm_result_instance():
 
 # ─── PositivityParadigm.verify ────────────────────────────────────────────────
 
+
 def test_positivity_certifies_encoded_text():
     """A CertifiableObject from encode() must pass the ALEPH positivity test."""
     obj = encode("test")
@@ -112,6 +113,7 @@ def test_positivity_certifies_real_word():
 
 def test_positivity_certifies_smiles():
     from tantrium.core.encoder import encode_smiles
+
     obj = encode_smiles("CCO")
     p = PositivityParadigm("ALEPH", "Positivity", "D >= 0", [])
     result = p.verify(obj)
@@ -119,6 +121,7 @@ def test_positivity_certifies_smiles():
 
 
 # ─── Other paradigm smoke tests ───────────────────────────────────────────────
+
 
 def test_spectral_paradigm_certifies_encoded_text():
     obj = encode("test")

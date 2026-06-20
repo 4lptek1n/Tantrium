@@ -1,15 +1,18 @@
 """Emanasyon testleri — Kabbalistik 23 sefirot → Malkuth cascade."""
+
 import pytest
 
 
 @pytest.fixture(scope="module")
 def ai():
     import tantrium
+
     return tantrium.AI()
 
 
 def test_emanate_returns_emanation_result(ai):
     from tantrium.meta.synthesis import EmanationResult
+
     result = ai.emanate("protein")
     assert isinstance(result, EmanationResult)
 
@@ -63,6 +66,7 @@ def test_emanate_summary_contains_name(ai):
 def test_emanate_manifested_in_manifold(ai):
     from tantrium.core.engine import CertificationEngine
     from tantrium.meta.synthesis import ConceptSynthesizer
+
     engine = CertificationEngine()
     synth = ConceptSynthesizer(engine)
     result = synth.emanate("test_emanate_unique_9876")
@@ -83,6 +87,7 @@ def test_genesis_discover_mode(ai):
 
 def test_ai_emanate_api_exists():
     import tantrium
+
     ai = tantrium.AI()
     assert hasattr(ai, "emanate")
     assert callable(ai.emanate)

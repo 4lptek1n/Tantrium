@@ -4,13 +4,16 @@
 (X degrades Y → DEGRADE). Üç eksen kilitlenir: (1) anlam testi açık-sözlük (blacklist),
 (2) yeni tip kalıcılaşır (save/load), (3) parser yeni tipi çıkarır.
 """
+
 import os
 import tempfile
 
-import pytest
-
 from tantrium.graph.knowledge_graph import (
-    KnowledgeGraph, KnowledgeNode, KnowledgeEdge, is_semantic, SEMANTIC_PARADIGMS,
+    SEMANTIC_PARADIGMS,
+    KnowledgeEdge,
+    KnowledgeGraph,
+    KnowledgeNode,
+    is_semantic,
 )
 
 
@@ -43,9 +46,9 @@ def test_open_type_survives_save_load():
     for n in ("a", "b", "c"):
         g.nodes[n] = KnowledgeNode(name=n)
     g.edges["a"] = [
-        KnowledgeEdge("a", "b", 0.1, "DEGRADE"),   # öğrenilen açık tip
-        KnowledgeEdge("a", "c", 0.2, "IS_A"),      # bilinen tip
-        KnowledgeEdge("a", "b", 0.3, "ALEPH"),     # geometrik (budanır ama kalır <=10)
+        KnowledgeEdge("a", "b", 0.1, "DEGRADE"),  # öğrenilen açık tip
+        KnowledgeEdge("a", "c", 0.2, "IS_A"),  # bilinen tip
+        KnowledgeEdge("a", "b", 0.3, "ALEPH"),  # geometrik (budanır ama kalır <=10)
     ]
     fd, path = tempfile.mkstemp(suffix=".json")
     os.close(fd)
@@ -53,9 +56,8 @@ def test_open_type_survives_save_load():
         g.save(path)
         g2 = KnowledgeGraph.load(path)
         pars = {e.paradigm for e in g2.edges["a"]}
-        assert "DEGRADE" in pars      # AÇIK tip kaybolmadı (eskiden ALEPH'e çökerdi)
+        assert "DEGRADE" in pars  # AÇIK tip kaybolmadı (eskiden ALEPH'e çökerdi)
         assert "IS_A" in pars
         assert "ALEPH" in pars
     finally:
         os.remove(path)
-

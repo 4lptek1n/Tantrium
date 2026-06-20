@@ -8,6 +8,7 @@ Kapalı döngü:
   manifold boşlukları → ispat kampanyaları → yeni teoremler
   → inject_math_kernel → NecessityEngine yeniden hesapla → döngü
 """
+
 from __future__ import annotations
 
 import json
@@ -29,71 +30,88 @@ _RESEARCH_OS_TOOL = _REPO_ROOT / "tools" / "tantrium_research_os.py"
 
 # Manifold boşluğu → teorem kampanyası eşlemesi
 _GAP_TO_CAMPAIGN: dict[str, str] = {
-    "GATE_A_PERTURBATION":    "subresultant_recurrence",
-    "DYADIC_TRANSPORT":       "subresultant_recurrence",
-    "POSITIVITY_COEFF":       "coefficient_frontier",
-    "GOLDBACH":               "goldbach_minor_arc",
-    "RH":                     "rh_formalization",
+    "GATE_A_PERTURBATION": "subresultant_recurrence",
+    "DYADIC_TRANSPORT": "subresultant_recurrence",
+    "POSITIVITY_COEFF": "coefficient_frontier",
+    "GOLDBACH": "goldbach_minor_arc",
+    "RH": "rh_formalization",
 }
 
 # Manifold boşluğu tanımında geçen anahtar kelime → kampanya eşlemesi
 _KEYWORD_TO_CAMPAIGN: dict[str, str] = {
-    "gate":        "subresultant_recurrence",
-    "lgv":         "subresultant_recurrence",
-    "dyadic":      "subresultant_recurrence",
-    "transport":   "subresultant_recurrence",
-    "positivity":  "coefficient_frontier",
+    "gate": "subresultant_recurrence",
+    "lgv": "subresultant_recurrence",
+    "dyadic": "subresultant_recurrence",
+    "transport": "subresultant_recurrence",
+    "positivity": "coefficient_frontier",
     "coefficient": "coefficient_frontier",
-    "goldbach":    "goldbach_minor_arc",
-    "recurrence":  "subresultant_recurrence",
+    "goldbach": "goldbach_minor_arc",
+    "recurrence": "subresultant_recurrence",
 }
 
 # Kampanya başarı durumu → theorem_graph'ta hangi node'ları sertifikala
 _CAMPAIGN_CERTIFIES: dict[str, list[str]] = {
     "subresultant_recurrence": [
-        "qjr_degree_j_shift", "qjr_degree_r_step",
+        "qjr_degree_j_shift",
+        "qjr_degree_r_step",
         "RESEARCH_OS_LAH_GATE_AB",  # lah bağımlısı
     ],
-    "lah_gate_ab":          ["RESEARCH_OS_LAH_GATE_AB"],
+    "lah_gate_ab": ["RESEARCH_OS_LAH_GATE_AB"],
     "coefficient_frontier": ["global_coefficient_positivity", "RESEARCH_OS_COEFFICIENT_FRONTIER"],
-    "goldbach_minor_arc":   ["RESEARCH_OS_GOLDBACH_MINOR_ARC"],
-    "rh_formalization":     [],
+    "goldbach_minor_arc": ["RESEARCH_OS_GOLDBACH_MINOR_ARC"],
+    "rh_formalization": [],
 }
 
 # Theorem graph'taki açık node → kampanya eşlemesi (doğrudan)
 # LAH_GATE_AB'nin subgap'ı "MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR"
 # → önce subresultant_recurrence çalıştır (RECURRENCE_VERIFIED_FINITE döndürür)
 _OPEN_NODE_TO_CAMPAIGN: dict[str, str] = {
-    "RESEARCH_OS_LAH_GATE_AB":          "subresultant_recurrence",
+    "RESEARCH_OS_LAH_GATE_AB": "subresultant_recurrence",
     "RESEARCH_OS_COEFFICIENT_FRONTIER": "coefficient_frontier",
-    "RESEARCH_OS_GOLDBACH_MINOR_ARC":   "goldbach_minor_arc",
+    "RESEARCH_OS_GOLDBACH_MINOR_ARC": "goldbach_minor_arc",
 }
 
 # Hangi theorem graph statüsleri "açık" sayılır (kampanya gerektirir)
-_OPEN_STATUSES: frozenset[str] = frozenset({
-    "REFINED_SUBGAP", "conjectural", "open", "OPEN", "MISSING_PROOF",
-})
+_OPEN_STATUSES: frozenset[str] = frozenset(
+    {
+        "REFINED_SUBGAP",
+        "conjectural",
+        "open",
+        "OPEN",
+        "MISSING_PROOF",
+    }
+)
 
 # Hangi kampanya statüsleri gerçek sertifikasyon sayılır
-_PROOF_LOOP_CERTIFIABLE: frozenset[str] = frozenset({
-    "RECURRENCE_VERIFIED_FINITE",
-    "FORMALIZATION_BOOTSTRAP_READY",
-    "NO_STRUCTURAL_GAP",
-    "PROVEN_BY_CERTIFICATE",
-    "COMPLETED",
-})
+_PROOF_LOOP_CERTIFIABLE: frozenset[str] = frozenset(
+    {
+        "RECURRENCE_VERIFIED_FINITE",
+        "FORMALIZATION_BOOTSTRAP_READY",
+        "NO_STRUCTURAL_GAP",
+        "PROVEN_BY_CERTIFICATE",
+        "COMPLETED",
+    }
+)
 
 # inject_math_kernel ile aynı küme — bağımlılık-tabanlı auto-certify için
-_INJECTED_STATUSES: frozenset[str] = frozenset({
-    "PROVEN_BY_CERTIFICATE", "VERIFIED_FINITE", "verified_finite",
-    "CERTIFIED_SCHEMA", "certified_local", "NO_STRUCTURAL_GAP",
-    "proven", "RECURRENCE_VERIFIED_FINITE",
-})
+_INJECTED_STATUSES: frozenset[str] = frozenset(
+    {
+        "PROVEN_BY_CERTIFICATE",
+        "VERIFIED_FINITE",
+        "verified_finite",
+        "CERTIFIED_SCHEMA",
+        "certified_local",
+        "NO_STRUCTURAL_GAP",
+        "proven",
+        "RECURRENCE_VERIFIED_FINITE",
+    }
+)
 
 
 @dataclass
 class LoopCycle:
     """Bir proof_loop döngüsünün özeti."""
+
     gaps_found: int
     campaigns_launched: list[str]
     campaign_statuses: dict[str, str]
@@ -117,6 +135,7 @@ class LoopCycle:
 @dataclass
 class LoopReport:
     """Tüm proof_loop çalışmasının özeti."""
+
     cycles: list[LoopCycle] = field(default_factory=list)
     total_new_concepts: int = 0
     total_new_edges: int = 0
@@ -139,7 +158,7 @@ class ProofLoop:
 
     def __init__(
         self,
-        engine: "CertificationEngine",
+        engine: CertificationEngine,
         theorem_graph_path: Path | str | None = None,
     ) -> None:
         self.engine = engine
@@ -153,6 +172,7 @@ class ProofLoop:
         domain="theorem" → NecessityEngine'in "math_kernel" modu (theorem: prefix)
         """
         from tantrium.reasoning.necessity import NecessityEngine
+
         ne_domain = "math_kernel" if domain in ("theorem", "math_kernel") else domain
         ne = NecessityEngine(self.engine)
         report = ne.run(domain=ne_domain, inject=True, find_gaps=True)
@@ -263,6 +283,7 @@ class ProofLoop:
                 pass
             try:
                 from tantrium.domains.math_kernel import inject_math_kernel
+
                 inject_math_kernel(self.engine)
             except Exception:
                 pass
@@ -293,7 +314,11 @@ class ProofLoop:
         for campaign, status in statuses.items():
             if status not in _PROOF_LOOP_CERTIFIABLE:
                 continue
-            cert_status = "RECURRENCE_VERIFIED_FINITE" if status == "RECURRENCE_VERIFIED_FINITE" else "certified_local"
+            cert_status = (
+                "RECURRENCE_VERIFIED_FINITE"
+                if status == "RECURRENCE_VERIFIED_FINITE"
+                else "certified_local"
+            )
             for node_id in _CAMPAIGN_CERTIFIES.get(campaign, []):
                 if node_id in nodes and nodes[node_id].get("status") not in _INJECTED_STATUSES:
                     nodes[node_id]["status"] = cert_status
@@ -337,10 +362,15 @@ class ProofLoop:
         inject_math_kernel idempotent olduğundan zaten manifoldda olanları atlar.
         Döner: manifolda eklenen YENİ kavram sayısı.
         """
-        from tantrium.domains.math_kernel import inject_math_kernel, _CERTIFIED_STATUSES, _GRAPH_PATH, _GRAPH_PATH_ALT
+
         from tantrium.core.semantic import Concept
+        from tantrium.domains.math_kernel import (
+            _CERTIFIED_STATUSES,
+            _GRAPH_PATH,
+            _GRAPH_PATH_ALT,
+            inject_math_kernel,
+        )
         from tantrium.graph.knowledge_graph import KnowledgeNode
-        import pathlib
 
         # Standart inject_math_kernel'i çalıştır
         before = len(self.engine.manifold.concepts)
@@ -356,6 +386,7 @@ class ProofLoop:
             path = _GRAPH_PATH if _GRAPH_PATH.exists() else _GRAPH_PATH_ALT
             if path.exists():
                 import json
+
                 with open(path) as f:
                     graph = json.load(f)
                 for node_id, node in graph.get("nodes", {}).items():
@@ -423,6 +454,7 @@ class ProofLoop:
                 text = conclusion or cid.replace("_", " ")
                 try:
                     from tantrium.core.semantic import Concept
+
                     raw = self.engine.encoder.encode(text, name=concept_name)
                     concept = Concept(
                         name=concept_name,
@@ -513,21 +545,24 @@ class ProofLoop:
         t0 = time.monotonic()
         report = LoopReport()
 
-        for i in range(max_cycles):
+        for _i in range(max_cycles):
             if time.monotonic() - t0 >= time_limit_s:
                 break
             cycle = self.run_cycle()
             report.cycles.append(cycle)
             report.total_new_concepts += cycle.new_concepts
             report.total_new_edges += cycle.new_tau_edges
-            if cycle.new_concepts == 0 and not cycle.campaigns_launched and not self.scan_theorem_graph():
+            if (
+                cycle.new_concepts == 0
+                and not cycle.campaigns_launched
+                and not self.scan_theorem_graph()
+            ):
                 break  # Daha öğrenecek bir şey yok
 
         # Kalan boşluklar
         gaps = self.scan_gaps(domain="math_kernel")
         report.remaining_gaps = [
-            gap.description if hasattr(gap, "description") else str(gap)
-            for gap in gaps
+            gap.description if hasattr(gap, "description") else str(gap) for gap in gaps
         ]
         report.duration_s = time.monotonic() - t0
         return report

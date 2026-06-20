@@ -7,7 +7,7 @@ transition case study.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cache
 from typing import Any
 
 import sympy as sp
@@ -62,7 +62,7 @@ def truncated_exp(expr: Any, var: Any, degree: int) -> Any:
     return sp.expand(total)
 
 
-@lru_cache(maxsize=None)
+@cache
 def transition_polynomial(d: int) -> Any:
     """Compute P_{lambda,d}(z) from the EGF.
 
@@ -84,9 +84,7 @@ def scaled_epsilon_exponent(w: Any, v: Any, eps: Any) -> Any:
 
         v*w/(1-v) + eps*v^2*(v^2+10*v-12)/(48*(1-v)^2).
     """
-    return v * w / (1 - v) + eps * v**2 * (v**2 + 10 * v - 12) / (
-        48 * (1 - v) ** 2
-    )
+    return v * w / (1 - v) + eps * v**2 * (v**2 + 10 * v - 12) / (48 * (1 - v) ** 2)
 
 
 def lah_number(d: int, k: int) -> Any:

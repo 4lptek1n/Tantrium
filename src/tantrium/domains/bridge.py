@@ -16,14 +16,13 @@ Without this bridge, the two worlds (universal encoder / RH proof graph) are
 mechanically connected but semantically blind. With it, every certification
 in the AGI network is simultaneously a step in the RH proof chain.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Any
 
 from tantrium.core.codex import CertifiableObject as CodexObject
-
 
 # ─── Paradigm → theorem graph node mapping ────────────────────────────────
 #
@@ -40,94 +39,79 @@ PARADIGM_TO_THEOREMS: dict[str, list[str]] = {
         "CELL_SUPPORT_POSITIVITY",
         "RH_RAW_TARGET",
     ],
-
     # BET — Information Conservation: Xi form is lossless
     "BET": [
         "XI_REAL_FORM",
         "DYADIC_TRANSPORT",
     ],
-
     # DALET — Spectral Non-negativity: Jensen hyperbolicity = eigenvalues ≥ 0
     "DALET": [
         "JENSEN_HYPERBOLICITY",
         "FIRST_FIVE_PIVOTS",
     ],
-
     # HE — Lyapunov / Sturm: proof chain flows downhill
     "HE": [
         "STURM_PIVOT_POSITIVITY",
     ],
-
     # ZAYIN — LGV path system: non-intersecting paths = AG/LGV transfer
     "ZAYIN": [
         "AG_LGV_TRANSFER",
         "TAU_SUBDISCRIMINANT",
     ],
-
     # TET — Cross-ratio invariance: projective invariant gate
     "TET": [
         "GATE_A_CROSS_RATIO",
         "cross_ratio_identity",
     ],
-
     # KAF — Injectivity: perturbation gate separates
     "KAF": [
         "GATE_A_PERTURBATION",
     ],
-
     # GIMEL — Achilles point / optimal path: staircase = optimal strategy
     "GIMEL": [
         "GATE_B_STAIRCASE",
     ],
-
     # NUN — Dimensional multiplicativity: quotient structure
     "NUN": [
         "GATE_B_STAIRCASE_QUOTIENT",
         "GATE_B_STAIRCASE_RAMP",
     ],
-
     # TAV — Fixed point / convergence: RH_CLOSURE = the proof terminates
     "TAV": [
         "RH_CLOSURE",
     ],
-
     # EMET — Consistency: proof attempt has no contradictions
     "EMET": [
         "RH_PROOF_ATTEMPT",
         "RH_GAP_FINDER",
     ],
-
     # YOD — MDL: shortest encoding = subresultant recurrence
     "YOD": [
         "SUBRESULTANT_QJR_RECURRENCE_CANDIDATE",
         "RESEARCH_OS_SUBRESULTANT_RECURRENCE",
     ],
-
     # MEM — Gauge equivalence: LAH shadow = different forms, same object
     "MEM": [
         "K7_SHARPNESS",
         "LAH_SHADOW",
     ],
-
     # SHIN — Optimal action: coefficient frontier = best move
     "SHIN": [
         "RESEARCH_OS_COEFFICIENT_FRONTIER",
     ],
-
     # PE — Semantic map: symbolic closure = meaning located
     "PE": [
         "RH_SYMBOLIC_CLOSURE",
     ],
-
     # Paradigms without direct theorem graph nodes (pure structure):
-    "AYIN": [],   # distinct pairs — no single theorem node
-    "VAV": [],    # tensor composition — structural
+    "AYIN": [],  # distinct pairs — no single theorem node
+    "VAV": [],  # tensor composition — structural
     "LAMED": [],  # local observability — structural
     "TSADI": [],  # sensor-certificate — structural
-    "RESH": [],   # partial trace — structural
-    "HET": [],    # gradient flow — structural
-    "SU3": [],    # Z₃ symmetry — structural
-    "KUF": [],    # topological index — structural
+    "RESH": [],  # partial trace — structural
+    "HET": [],  # gradient flow — structural
+    "SU3": [],  # Z₃ symmetry — structural
+    "KUF": [],  # topological index — structural
 }
 
 # Reverse map: theorem_id → paradigm_id(s)
@@ -143,9 +127,14 @@ _ELL_AUTO_PARADIGMS = ["ALEPH", "DALET"]
 # ─── Theorem node → CodexObject conversion ────────────────────────────────
 
 _PROVEN_STATUSES = {
-    "proven", "certified_local", "PROVEN_BY_CERTIFICATE",
-    "CERTIFIED_SCHEMA", "VERIFIED_FINITE", "RECURRENCE_VERIFIED_FINITE",
-    "NO_STRUCTURAL_GAP", "FORMALIZATION_BOOTSTRAP_READY",
+    "proven",
+    "certified_local",
+    "PROVEN_BY_CERTIFICATE",
+    "CERTIFIED_SCHEMA",
+    "VERIFIED_FINITE",
+    "RECURRENCE_VERIFIED_FINITE",
+    "NO_STRUCTURAL_GAP",
+    "FORMALIZATION_BOOTSTRAP_READY",
 }
 
 
@@ -161,13 +150,14 @@ def _theorem_moments(node_id: str, node: dict) -> list[Fraction]:
     (constructed from G = AᵀA → non-negative Hankel sequence).
     """
     import hashlib
+
     status = node.get("status", "unknown")
     depends_on = node.get("depends_on", [])
     paradigms = THEOREM_TO_PARADIGMS.get(node_id, [])
 
     # Base: SHA256 of node_id for unique fingerprint
     h = hashlib.sha256(node_id.encode()).digest()
-    base = [int(b) / 255.0 for b in h[:8]]   # 8 floats in [0,1]
+    base = [int(b) / 255.0 for b in h[:8]]  # 8 floats in [0,1]
 
     # Status weight: proven = higher μ₀ (more mass concentrated at 1)
     status_w = 0.8 if is_proven(status) else 0.4
@@ -184,7 +174,7 @@ def _theorem_moments(node_id: str, node: dict) -> list[Fraction]:
         raw = base[k] * status_w + (1.0 - base[k]) * dep_w + par_w * base[k % 4]
         # Clamp to (0, scale^k] to ensure moment sequence decreases (PSD-compatible)
         clamped = max(0.001, min(float(scale) ** k, raw))
-        moments.append(Fraction(int(clamped * 10 ** 6), 10 ** 6))
+        moments.append(Fraction(int(clamped * 10**6), 10**6))
 
     return moments
 
@@ -220,20 +210,16 @@ def theorem_to_codex_object(node_id: str, node: dict) -> CodexObject:
     return CodexObject(name=node_id, moments=moments, structure=structure)
 
 
-def _paradigm_structure_for(
-    node_id: str, paradigms: list[str], status: str
-) -> dict[str, Any]:
+def _paradigm_structure_for(node_id: str, paradigms: list[str], status: str) -> dict[str, Any]:
     """Generate paradigm-specific structure fields for a theorem node."""
     result: dict[str, Any] = {}
-    proven = is_proven(status)
+    is_proven(status)
 
     if "ALEPH" in paradigms:
         result["eigenvalues"] = [Fraction(1), Fraction(1, 2), Fraction(1, 4)]
 
     if "BET" in paradigms:
-        result["transformations"] = [
-            {"name": f"{node_id}_transform", "information_loss": 0}
-        ]
+        result["transformations"] = [{"name": f"{node_id}_transform", "information_loss": 0}]
 
     if "DALET" in paradigms:
         result["eigenvalues"] = [Fraction(1), Fraction(1, 2), Fraction(1, 4)]
@@ -247,9 +233,15 @@ def _paradigm_structure_for(
 
     if "TET" in paradigms:
         from fractions import Fraction as F
+
         result["cross_ratio_quadruples"] = [
-            {"a": "1", "b": "2", "c": "3", "d": "4",
-             "expected_cr": str(F((1 - 3) * (2 - 4), (1 - 4) * (2 - 3)))}
+            {
+                "a": "1",
+                "b": "2",
+                "c": "3",
+                "d": "4",
+                "expected_cr": str(F((1 - 3) * (2 - 4), (1 - 4) * (2 - 3))),
+            }
         ]
 
     if "KAF" in paradigms:
@@ -271,9 +263,7 @@ def _paradigm_structure_for(
         result["fixed_point_iterations"] = [2.0, 1.2, 1.01, 1.0, 1.0]
 
     if "EMET" in paradigms:
-        result["certified_claims"] = [
-            {"claim": f"{node_id}_holds", "certificate": node_id}
-        ]
+        result["certified_claims"] = [{"claim": f"{node_id}_holds", "certificate": node_id}]
         result["contradictions"] = []
 
     if "YOD" in paradigms:
@@ -283,8 +273,10 @@ def _paradigm_structure_for(
 
     if "MEM" in paradigms:
         result["gauge_classes"] = [
-            [{"id": f"{node_id}_form_a", "all_measurements_equal": True},
-             {"id": f"{node_id}_form_b", "all_measurements_equal": True}]
+            [
+                {"id": f"{node_id}_form_a", "all_measurements_equal": True},
+                {"id": f"{node_id}_form_b", "all_measurements_equal": True},
+            ]
         ]
 
     if "SHIN" in paradigms and "actions" not in result:
@@ -294,14 +286,11 @@ def _paradigm_structure_for(
         result["chosen_action"] = f"{node_id}_optimal"
 
     if "PE" in paradigms:
-        result["semantic_map"] = {
-            f"elem_{i}": [i, 0.5 ** i] for i in range(4)
-        }
+        result["semantic_map"] = {f"elem_{i}": [i, 0.5**i] for i in range(4)}
 
     if "AYIN" in paradigms or not paradigms:
         result["distinct_pairs"] = [
-            {"a": f"a_{i}", "b": f"b_{i}", "separating_measurement": f"pos_{i}"}
-            for i in range(2)
+            {"a": f"a_{i}", "b": f"b_{i}", "separating_measurement": f"pos_{i}"} for i in range(2)
         ]
 
     if "LAMED" in paradigms or not paradigms:
@@ -351,26 +340,25 @@ def _paradigm_structure_for(
         result["potential_values"] = {"v0": 1.0, "v1": 0.5, "v2": 0.1}
         result["flows"] = [{"from": "v0", "to": "v1"}, {"from": "v1", "to": "v2"}]
     if "certified_claims" not in result:
-        result["certified_claims"] = [
-            {"claim": f"{node_id}_holds", "certificate": node_id}
-        ]
+        result["certified_claims"] = [{"claim": f"{node_id}_holds", "certificate": node_id}]
         result["contradictions"] = []
     if "semantic_map" not in result:
-        result["semantic_map"] = {f"elem_{i}": [i, 0.5 ** i] for i in range(4)}
+        result["semantic_map"] = {f"elem_{i}": [i, 0.5**i] for i in range(4)}
     if "mappings" not in result:
         result["mappings"] = {f"key_{i}": f"val_{i}" for i in range(4)}
     if "distinct_pairs" not in result:
-        result["distinct_pairs"] = [
-            {"a": "a_0", "b": "b_0", "separating_measurement": "pos_0"}
-        ]
+        result["distinct_pairs"] = [{"a": "a_0", "b": "b_0", "separating_measurement": "pos_0"}]
     if "gauge_classes" not in result:
-        result["gauge_classes"] = [
-            [{"id": f"{node_id}_gauge_a", "all_measurements_equal": True}]
-        ]
+        result["gauge_classes"] = [[{"id": f"{node_id}_gauge_a", "all_measurements_equal": True}]]
     if "cross_ratio_quadruples" not in result:
         result["cross_ratio_quadruples"] = [
-            {"a": "1", "b": "2", "c": "3", "d": "4",
-             "expected_cr": str(Fraction((1 - 3) * (2 - 4), (1 - 4) * (2 - 3)))}
+            {
+                "a": "1",
+                "b": "2",
+                "c": "3",
+                "d": "4",
+                "expected_cr": str(Fraction((1 - 3) * (2 - 4), (1 - 4) * (2 - 3))),
+            }
         ]
     if "actions" not in result:
         result["actions"] = [{"id": f"{node_id}_act", "score": 0.9}]
@@ -383,6 +371,7 @@ def _paradigm_structure_for(
 
 
 # ─── SemanticBridge ────────────────────────────────────────────────────────
+
 
 class SemanticBridge:
     """The bridge between the theorem graph and the AGI paradigm network.
@@ -403,6 +392,7 @@ class SemanticBridge:
         if self._graph_cache is None:
             import json
             from pathlib import Path
+
             p = Path(self.graph_path)
             if p.exists():
                 self._graph_cache = json.loads(p.read_text())
@@ -464,8 +454,8 @@ class SemanticBridge:
                 note = (
                     f"AGI certified {paradigm_id} for '{obj_name}' — "
                     f"provides evidence for this theorem"
-                    if certified else
-                    f"AGI gap in {paradigm_id} for '{obj_name}' — "
+                    if certified
+                    else f"AGI gap in {paradigm_id} for '{obj_name}' — "
                     f"does not contradict this theorem"
                 )
                 if note not in node.notes:
@@ -480,6 +470,7 @@ class SemanticBridge:
         Returns the number of concepts added.
         """
         from tantrium.core.semantic import Concept
+
         graph = self._load_graph()
         added = 0
         for node_id, node in graph.get("nodes", {}).items():
@@ -523,6 +514,6 @@ class SemanticBridge:
             statuses = []
             for tid in theorem_ids:
                 node = graph.get("nodes", {}).get(tid, {})
-                statuses.append(f"{tid}:{node.get('status','missing')}")
+                statuses.append(f"{tid}:{node.get('status', 'missing')}")
             lines.append(f"  {pid:8s}  ← {', '.join(statuses)}")
         return "\n".join(lines)

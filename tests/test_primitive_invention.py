@@ -4,10 +4,13 @@ Taban havuzun çözemediği spec için sistem yeni atomik operatör (örn. ({c})
 leave-one-out genelleşmeyle (TRUTH) + wonder ile (TASTE) seçer, kaydeder → taban gelecekte
 kullanır. Genelleşmeyen/dejenere aday REDDEDİLİR (uydurma yok).
 """
+
+from tantrium.core.code_synthesis import _primitive_pool, synthesize
 from tantrium.core.primitive_invention import (
-    invent_primitive, invented_primitives, _INVENTED_NUM,
+    _INVENTED_NUM,
+    invent_primitive,
+    invented_primitives,
 )
-from tantrium.core.code_synthesis import synthesize, _primitive_pool
 
 
 def _clear():
@@ -17,14 +20,14 @@ def _clear():
 def test_invents_modular_primitive_base_cannot_solve():
     """f(x)=x%7 — taban havuzda yalnız %2 var → icat: ({c})%7, genelleşir + kaydedilir."""
     _clear()
-    ex = [(8, 1), (15, 1), (10, 3), (3, 3), (17, 3)]   # x % 7
+    ex = [(8, 1), (15, 1), (10, 3), (3, 3), (17, 3)]  # x % 7
     base = synthesize(ex)
-    assert not base.verified                            # taban ÇÖZEMEZ (gerçek boşluk)
+    assert not base.verified  # taban ÇÖZEMEZ (gerçek boşluk)
     prim = invent_primitive(ex)
     assert prim is not None and prim.family == "modular"
     assert all(prim.predict(x) == y for x, y in ex)
     assert "% 7" in prim.prim_str
-    assert prim.prim_str in invented_primitives()       # KAYDEDİLDİ
+    assert prim.prim_str in invented_primitives()  # KAYDEDİLDİ
     _clear()
 
 
@@ -41,7 +44,7 @@ def test_invents_power_primitive():
 def test_rejects_when_no_generalizing_primitive():
     """Hiçbir üretken aile genelleşmezse None (DÜRÜST başarısızlık — uydurma ilkel yok)."""
     _clear()
-    ex = [(1, 5), (2, 99), (3, 1), (4, 42)]            # yapısız → hiçbir aile fit etmez
+    ex = [(1, 5), (2, 99), (3, 1), (4, 42)]  # yapısız → hiçbir aile fit etmez
     assert invent_primitive(ex) is None
     assert invented_primitives() == []
     _clear()
@@ -53,7 +56,7 @@ def test_invented_primitive_becomes_reusable():
     ex = [(8, 1), (15, 1), (10, 3), (3, 3), (17, 3)]
     invent_primitive(ex)
     pool = _primitive_pool(ex, ["x"])
-    assert any("% 7" in p for p in pool)               # icat ilkel havuzda
+    assert any("% 7" in p for p in pool)  # icat ilkel havuzda
     _clear()
 
 

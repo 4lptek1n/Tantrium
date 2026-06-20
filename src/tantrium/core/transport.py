@@ -16,6 +16,7 @@ The distinction from nearest-neighbor:
   Molecule B is slightly farther but its path is entirely real → CERTIFIED.
   Molecule B is the certified drug candidate.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -38,6 +39,7 @@ class TransportCertificate:
                          λ_1 > 0 ↔ all zeros on critical line Re(ρ)=1/2
     L0.5 zeta_distance: L1 distance from target moments to ζ-zeros spectral family
     """
+
     certified: bool
     dyadic_verified: bool
     sturm_verified: bool
@@ -62,6 +64,7 @@ class TransportCertificate:
 @dataclass
 class TransportRanking:
     """Ranked drug candidates from certified transport."""
+
     target_name: str
     candidates: list[tuple[str, TransportCertificate]] = field(default_factory=list)
 
@@ -88,7 +91,7 @@ class CertifiedTransport:
     Only certified paths produce valid drug candidates.
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
         self._zeta_moments: list[float] | None = None
 
@@ -114,7 +117,7 @@ class CertifiedTransport:
         spectrum (pipeline L2.5 output), not raw moments. This makes transport
         sensitive to the actual spectral structure of each object.
         """
-        from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
+        from tantrium.proof.dyadic_flow import FlowPolicy, solve_greedy
 
         src_cells = self._obj_to_cells(source, "src")
         tgt_cells = self._obj_to_cells(target, "tgt")
@@ -196,10 +199,11 @@ class CertifiedTransport:
 
         # Encode target as CodexObject to get eigenvalue structure
         from tantrium.core.encoder import encode as _enc
+
         target_obj = _enc(list(target_c.moments), name=target_name)
 
         results: list[tuple[str, TransportCertificate]] = []
-        for name in candidate_names[:top_n * 3]:
+        for name in candidate_names[: top_n * 3]:
             cand_c = self.engine.manifold.concepts.get(name)
             if cand_c is None:
                 continue
@@ -242,7 +246,11 @@ class CertifiedTransport:
 
         if not eigenvalues:
             # Fallback: use moments (for Concept objects from manifold)
-            moments = list(obj.moments) if hasattr(obj, "moments") else (obj if isinstance(obj, list) else [])
+            moments = (
+                list(obj.moments)
+                if hasattr(obj, "moments")
+                else (obj if isinstance(obj, list) else [])
+            )
             return self._moments_to_cells(moments, prefix)
 
         lam_max = eigenvalues[0]  # already sorted descending by pipeline
@@ -256,17 +264,19 @@ class CertifiedTransport:
             quant[0] = max(0, quant[0] + residual)
 
         cells = []
-        for k, (mass_q, lam) in enumerate(zip(quant, eigenvalues[:7])):
+        for k, (mass_q, lam) in enumerate(zip(quant, eigenvalues[:7], strict=False)):
             if mass_q <= 0:
                 continue
             diff = max(0, min(10, int(lam / lam_max * 10)))
-            cells.append(Cell.make(
-                f"{prefix}_mode_{k}",
-                Fraction(mass_q, 1000),
-                diff=diff,
-                p=k + 1,
-                q=1,
-            ))
+            cells.append(
+                Cell.make(
+                    f"{prefix}_mode_{k}",
+                    Fraction(mass_q, 1000),
+                    diff=diff,
+                    p=k + 1,
+                    q=1,
+                )
+            )
         return cells
 
     def _moments_to_cells(self, moments: list, prefix: str) -> list:
@@ -297,17 +307,19 @@ class CertifiedTransport:
         quant[0] = max(0, quant[0] + residual)
 
         cells = []
-        for k, (mass_q, m_k) in enumerate(zip(quant, raw)):
+        for k, (mass_q, m_k) in enumerate(zip(quant, raw, strict=False)):
             if mass_q <= 0:
                 continue
             diff_coord = max(0, min(10, int(m_k / total * 10)))
-            cells.append(Cell.make(
-                f"{prefix}_atom_{k}",
-                Fraction(mass_q, 1000),
-                diff=diff_coord,
-                p=k + 1,
-                q=1,
-            ))
+            cells.append(
+                Cell.make(
+                    f"{prefix}_atom_{k}",
+                    Fraction(mass_q, 1000),
+                    diff=diff_coord,
+                    p=k + 1,
+                    q=1,
+                )
+            )
         return cells
 
     # ── Sturm path verification ──────────────────────────────────────────────
@@ -330,6 +342,7 @@ class CertifiedTransport:
         """
         try:
             import sympy as sp
+
             from tantrium.algebra.sturm import normalized_sturm_pivots
         except ImportError:
             # sympy unavailable — fall back to numpy PSD check
@@ -342,11 +355,15 @@ class CertifiedTransport:
         x = sp.Symbol("x")
 
         def hankel_poly(m: list):
-            H = sp.Matrix([
-                [sp.Rational(m[i + j]).limit_denominator(10**6) if i + j < n else 0
-                 for j in range(size)]
-                for i in range(size)
-            ])
+            H = sp.Matrix(
+                [
+                    [
+                        sp.Rational(m[i + j]).limit_denominator(10**6) if i + j < n else 0
+                        for j in range(size)
+                    ]
+                    for i in range(size)
+                ]
+            )
             return sp.det(x * sp.eye(size) - H)
 
         for step in range(steps + 1):
@@ -370,7 +387,9 @@ class CertifiedTransport:
         for step in range(steps + 1):
             t = step / steps
             interp = [(1 - t) * src[i] + t * tgt[i] for i in range(n)]
-            H = np.array([[interp[i+j] if i+j < n else 0.0 for j in range(size)] for i in range(size)])
+            H = np.array(
+                [[interp[i + j] if i + j < n else 0.0 for j in range(size)] for i in range(size)]
+            )
             if np.linalg.eigvalsh(H).min() < -1e-9:
                 return False
         return True
@@ -379,10 +398,26 @@ class CertifiedTransport:
 
     # First 20 non-trivial Riemann zeros γ_n (imaginary parts, known exact)
     _RIEMANN_ZEROS_GAMMA = [
-        14.134725, 21.022040, 25.010858, 30.424876, 32.935062,
-        37.586178, 40.918720, 43.327073, 48.005151, 49.773832,
-        52.970321, 56.446248, 59.347044, 60.831779, 65.112544,
-        67.079811, 69.546402, 72.067158, 75.704691, 77.144840,
+        14.134725,
+        21.022040,
+        25.010858,
+        30.424876,
+        32.935062,
+        37.586178,
+        40.918720,
+        43.327073,
+        48.005151,
+        49.773832,
+        52.970321,
+        56.446248,
+        59.347044,
+        60.831779,
+        65.112544,
+        67.079811,
+        69.546402,
+        72.067158,
+        75.704691,
+        77.144840,
     ]
 
     def _li_coefficient(self, n: int = 1) -> float:
@@ -395,13 +430,13 @@ class CertifiedTransport:
         li = 0.0
         for gamma in self._RIEMANN_ZEROS_GAMMA:
             rho_re, rho_im = 0.5, gamma
-            rho_mod_sq = rho_re ** 2 + rho_im ** 2
+            rho_mod_sq = rho_re**2 + rho_im**2
             one_minus_inv_re = 1.0 - rho_re / rho_mod_sq
             one_minus_inv_im = rho_im / rho_mod_sq
             # (1 - 1/ρ)^n via De Moivre
-            r = (one_minus_inv_re ** 2 + one_minus_inv_im ** 2) ** 0.5
+            r = (one_minus_inv_re**2 + one_minus_inv_im**2) ** 0.5
             theta = float(np.arctan2(one_minus_inv_im, one_minus_inv_re))
-            term_re = (r ** n) * float(np.cos(n * theta))
+            term_re = (r**n) * float(np.cos(n * theta))
             li += 1.0 - term_re
         return li
 
@@ -424,6 +459,4 @@ class CertifiedTransport:
             return float("inf")
 
         k = min(len(moments), len(self._zeta_moments))
-        return sum(
-            abs(float(moments[i]) - self._zeta_moments[i]) for i in range(k)
-        )
+        return sum(abs(float(moments[i]) - self._zeta_moments[i]) for i in range(k))

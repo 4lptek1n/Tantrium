@@ -1,9 +1,12 @@
 """Moleküler Genesis — beam search ve W2 yakınsama testleri."""
+
 import time
+
 import pytest
 
 try:
     from rdkit import Chem
+
     HAS_RDKIT = True
 except ImportError:
     HAS_RDKIT = False
@@ -14,18 +17,21 @@ pytestmark = pytest.mark.skipif(not HAS_RDKIT, reason="RDKit gerekli")
 @pytest.fixture(scope="module")
 def engine():
     from tantrium.core.engine import CertificationEngine
+
     return CertificationEngine()
 
 
 @pytest.fixture(scope="module")
 def genesis(engine):
     from tantrium.core.molecular_genesis import MolecularGenesis
+
     return MolecularGenesis(engine)
 
 
 def test_generate_returns_report(genesis):
     r = genesis.generate("CCCO", top_k=3, max_atoms=6, beam_width=2)
     from tantrium.core.molecular_genesis import GenesisReport
+
     assert isinstance(r, GenesisReport)
 
 
@@ -38,8 +44,9 @@ def test_best_w2_small_for_propanol(genesis):
     r = genesis.generate("CCCO", top_k=4, max_atoms=6, beam_width=3)
     assert r.best is not None
     # Quantum skor = 0.75×W2 + 0.25×κ_mesafe (blended); CCCO hedef CCCO bulmalı
-    assert r.best.smiles == "CCCO" or r.best.w2 < 0.15, \
+    assert r.best.smiles == "CCCO" or r.best.w2 < 0.15, (
         f"En iyi: {r.best.smiles}, W2={r.best.w2:.4f}"
+    )
 
 
 def test_all_smiles_valid(genesis):
@@ -75,8 +82,9 @@ def test_atom_count_within_limit(genesis):
     for c in r.candidates:
         mol = Chem.MolFromSmiles(c.smiles)
         if mol:
-            assert mol.GetNumAtoms() <= max_a + 2, \
+            assert mol.GetNumAtoms() <= max_a + 2, (
                 f"{c.smiles} — {mol.GetNumAtoms()} atom > {max_a}+2"
+            )
 
 
 def test_total_steps_positive(genesis):

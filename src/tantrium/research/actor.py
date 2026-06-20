@@ -12,6 +12,7 @@ Güvenlik sınırı — yalnızca manifold-güvenli eylemler:
 YASAK: dosya yazma, shell komutu, eval/exec, subprocess, ağ erişimi.
 Her eylem Aleph filtreden geçer; başarısız eylemler manifold'a dokunmaz.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -32,10 +33,11 @@ def _now() -> str:
 
 # ─── Data model ───────────────────────────────────────────────────────────────
 
+
 @dataclass
 class Action:
     action_type: ActionType
-    payload: str       # learn/relate/think için metin; save/progress için boş
+    payload: str  # learn/relate/think için metin; save/progress için boş
     goal_name: str = ""
     certified: bool = False
     timestamp: str = field(default_factory=_now)
@@ -53,6 +55,7 @@ class ActionResult:
 
 # ─── Actor ────────────────────────────────────────────────────────────────────
 
+
 class Actor:
     """Sınırlı eylem döngüsü.
 
@@ -62,20 +65,36 @@ class Actor:
     """
 
     # Payload içinde bu kalıplar varsa eylem reddedilir
-    _UNSAFE = frozenset([
-        "import os", "import sys", "subprocess", "eval(", "exec(",
-        "__import__", "open(", ".write(", "os.remove", "os.unlink",
-        "shutil", "rm -", "/bin/", "/usr/", "sudo ", "bash ", "shell(",
-    ])
+    _UNSAFE = frozenset(
+        [
+            "import os",
+            "import sys",
+            "subprocess",
+            "eval(",
+            "exec(",
+            "__import__",
+            "open(",
+            ".write(",
+            "os.remove",
+            "os.unlink",
+            "shutil",
+            "rm -",
+            "/bin/",
+            "/usr/",
+            "sudo ",
+            "bash ",
+            "shell(",
+        ]
+    )
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     # ─── Plan ─────────────────────────────────────────────────────────────────
 
     def plan(
         self,
-        goal: "Goal",
+        goal: Goal,
         candidates: list[tuple[str, float, str]],
     ) -> list[Action]:
         """Aday kavramlardan eylem planı üret.
@@ -112,7 +131,7 @@ class Actor:
 
     # ─── Execute ──────────────────────────────────────────────────────────────
 
-    def execute(self, action: Action, goal: "Goal | None" = None) -> ActionResult:
+    def execute(self, action: Action, goal: Goal | None = None) -> ActionResult:
         """Tek eylemi güvenli şekilde uygula."""
         if not self._is_safe(action):
             return ActionResult(
@@ -182,33 +201,34 @@ class Actor:
     def _think(self, action: Action) -> ActionResult:
         result = self.engine.think(action.payload, depth=2)
         action.certified = result.fixed_point_found
-        summary = (
-            f"Düşünüldü: {result.total_certified} sertifika, {result.total_gaps} gap"
-            + (" | TAV ✓" if result.fixed_point_found else "")
+        summary = f"Düşünüldü: {result.total_certified} sertifika, {result.total_gaps} gap" + (
+            " | TAV ✓" if result.fixed_point_found else ""
         )
         # Derin düşünce kavramlarını session'a ekle
         session = getattr(self.engine, "session", None)
         if session is not None:
             from tantrium.graph.memory import Turn
+
             thought_concepts = [
-                c
-                for lv in result.levels
-                for c in lv.concepts
-                if c in self.engine.manifold.concepts
+                c for lv in result.levels for c in lv.concepts if c in self.engine.manifold.concepts
             ]
             if thought_concepts:
-                session.add_turn(Turn(
-                    user_input=f"[think:{action.payload[:40]}]",
-                    certified_concepts=thought_concepts,
-                    new_concepts=[],
-                ))
+                session.add_turn(
+                    Turn(
+                        user_input=f"[think:{action.payload[:40]}]",
+                        certified_concepts=thought_concepts,
+                        new_concepts=[],
+                    )
+                )
         return ActionResult(action=action, success=True, summary=summary)
 
-    def _progress(self, action: Action, goal: "Goal | None") -> ActionResult:
+    def _progress(self, action: Action, goal: Goal | None) -> ActionResult:
         if goal is None:
             return ActionResult(
-                action=action, success=False,
-                summary="Hedef sağlanmadı", error="NO_GOAL",
+                action=action,
+                success=False,
+                summary="Hedef sağlanmadı",
+                error="NO_GOAL",
             )
         session = getattr(self.engine, "session", None)
         recent: list[str] = []
@@ -221,7 +241,8 @@ class Actor:
         new_p = goal.update_progress(recent, self.engine)
         action.certified = True
         return ActionResult(
-            action=action, success=True,
+            action=action,
+            success=True,
             summary=f"İlerleme güncellendi: {new_p:.0%}",
         )
 
@@ -229,8 +250,8 @@ class Actor:
 
     def pursue_goal(
         self,
-        goal: "Goal",
-        goal_manifold: "GoalManifold",
+        goal: Goal,
+        goal_manifold: GoalManifold,
     ) -> list[ActionResult]:
         """Hedefe yönelik tam döngü: TAU walk → plan → execute → progress.
 

@@ -224,9 +224,7 @@ def diverse_select(vectors, k: int, gamma: float = 4.0, prefilter=None) -> list:
             sub = K[np.ix_(idx, idx)]
             ld = _logdet(sub)
             # eşitlikte küçük indeksi tercih et (deterministiklik)
-            if ld > best_logdet or (
-                ld == best_logdet and (best_idx is None or cand < best_idx)
-            ):
+            if ld > best_logdet or (ld == best_logdet and (best_idx is None or cand < best_idx)):
                 best_logdet = ld
                 best_idx = cand
         if best_idx is None:

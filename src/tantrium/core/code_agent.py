@@ -11,6 +11,7 @@
 FARK: LLM hayali API çağırır (sen yakala); biz `check_grounded` ile var olmayan sembolü REDDEDERİZ
 + `run_tests` ile GERÇEKTEN çalıştığını kanıtlarız. Garanti, tahmin değil.
 """
+
 from __future__ import annotations
 
 import ast
@@ -21,9 +22,36 @@ import tempfile
 
 # Python yerleşikleri (köklü kabul edilir)
 _BUILTINS = set(dir(__builtins__)) if isinstance(__builtins__, dict) is False else set(__builtins__)
-_BUILTINS |= {"self", "cls", "True", "False", "None", "print", "len", "range", "enumerate",
-              "zip", "map", "filter", "sum", "min", "max", "sorted", "abs", "list", "dict",
-              "set", "tuple", "str", "int", "float", "bool", "type", "isinstance", "super"}
+_BUILTINS |= {
+    "self",
+    "cls",
+    "True",
+    "False",
+    "None",
+    "print",
+    "len",
+    "range",
+    "enumerate",
+    "zip",
+    "map",
+    "filter",
+    "sum",
+    "min",
+    "max",
+    "sorted",
+    "abs",
+    "list",
+    "dict",
+    "set",
+    "tuple",
+    "str",
+    "int",
+    "float",
+    "bool",
+    "type",
+    "isinstance",
+    "super",
+}
 
 
 def ground_codebase(files: dict) -> dict:
@@ -102,15 +130,18 @@ def check_grounded(code: str, ground: dict | None = None) -> dict:
     except SyntaxError as e:
         return {"grounded": False, "ungrounded": [], "syntax_ok": False, "error": str(e)}
     ground = ground or {}
-    known = (_local_names(tree) | _BUILTINS
-             | set(ground.get("symbols", set())) | set(ground.get("imports", set())))
+    known = (
+        _local_names(tree)
+        | _BUILTINS
+        | set(ground.get("symbols", set()))
+        | set(ground.get("imports", set()))
+    )
     ungrounded: set = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
             if node.id not in known:
                 ungrounded.add(node.id)
-    return {"grounded": len(ungrounded) == 0, "ungrounded": sorted(ungrounded),
-            "syntax_ok": True}
+    return {"grounded": len(ungrounded) == 0, "ungrounded": sorted(ungrounded), "syntax_ok": True}
 
 
 def verify_api_symbol(dotted: str) -> bool:
@@ -120,6 +151,7 @@ def verify_api_symbol(dotted: str) -> bool:
     if len(parts) < 2:
         return False
     import importlib
+
     try:
         obj = importlib.import_module(parts[0])
     except Exception:
@@ -140,6 +172,7 @@ def ground_api(module_name: str, hint: str = "", *, allowlist=None) -> dict | No
     import importlib
     import inspect
     import re
+
     try:
         mod = importlib.import_module(module_name)
     except Exception:
@@ -154,7 +187,9 @@ def ground_api(module_name: str, hint: str = "", *, allowlist=None) -> dict | No
         if not callable(fn):
             continue
         doc = (inspect.getdoc(fn) or "").lower()
-        score = (3 if name.lower() in words else 0) + len(words & set(re.findall(r"[a-z]{3,}", doc)))
+        score = (3 if name.lower() in words else 0) + len(
+            words & set(re.findall(r"[a-z]{3,}", doc))
+        )
         if score > best_score:
             best_score, best = score, name
     if best is None or best_score <= 0:
@@ -164,8 +199,14 @@ def ground_api(module_name: str, hint: str = "", *, allowlist=None) -> dict | No
         sig = str(inspect.signature(getattr(mod, best)))
     except (TypeError, ValueError):
         sig = "(...)"
-    return {"module": module_name, "symbol": best, "qualname": qual, "signature": sig,
-            "call": f"{qual}{sig}", "exists": verify_api_symbol(qual)}
+    return {
+        "module": module_name,
+        "symbol": best,
+        "qualname": qual,
+        "signature": sig,
+        "call": f"{qual}{sig}",
+        "exists": verify_api_symbol(qual),
+    }
 
 
 def run_tests(code: str, test_code: str, *, timeout: float = 15.0) -> dict:
@@ -182,7 +223,10 @@ def run_tests(code: str, test_code: str, *, timeout: float = 15.0) -> dict:
                 f.write("from solution import *\n\n" + test_code)
             r = subprocess.run(
                 [sys.executable, "-m", "pytest", "-q", "test_solution.py"],
-                cwd=d, capture_output=True, text=True, timeout=timeout,
+                cwd=d,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
             )
             return {"passed": r.returncode == 0, "output": (r.stdout + r.stderr)[-600:]}
     except subprocess.TimeoutExpired:

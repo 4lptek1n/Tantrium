@@ -1,13 +1,12 @@
 """Tests for the UniversalEncoder in tantrium.core.encoder."""
+
 from fractions import Fraction
 
-import pytest
-
-from tantrium.core.encoder import encode, encode_smiles
 from tantrium.core.codex import CertifiableObject
-
+from tantrium.core.encoder import encode, encode_smiles
 
 # ─── encode() ────────────────────────────────────────────────────────────────
+
 
 def test_encode_text_returns_certifiable_object():
     obj = encode("hello world")
@@ -56,6 +55,7 @@ def test_encode_text_structure_has_fixed_point():
 
 # ─── encode_smiles() ─────────────────────────────────────────────────────────
 
+
 def test_encode_smiles_ethanol_returns_object():
     obj = encode_smiles("CCO")
     assert isinstance(obj, CertifiableObject)
@@ -99,6 +99,7 @@ def test_ethanol_benzene_have_different_fixed_points():
 
 # ─── Edge cases ───────────────────────────────────────────────────────────────
 
+
 def test_encode_empty_string_returns_valid_object():
     """Empty string must not raise and must return a valid CertifiableObject."""
     obj = encode("")
@@ -120,10 +121,11 @@ def test_encode_smiles_name_propagates():
 
 # ─── Encoder collision KÖK çözüm (F1/F5: pozisyon+codepoint imza) ────────────
 
+
 def _l1(a: str, b: str) -> float:
     ma = [float(m) for m in encode(a).moments]
     mb = [float(m) for m in encode(b).moments]
-    return sum(abs(x - y) for x, y in zip(ma, mb))
+    return sum(abs(x - y) for x, y in zip(ma, mb, strict=False))
 
 
 def test_collision_all_unique_chars_separated():
@@ -156,26 +158,29 @@ def test_short_text_certifies():
     """Kısa kelimeler (DNA/ATP, az karakter) regülarizasyonla ALEPH-PSD geçer."""
     for w in ("DNA", "ATP", "RNA", "cat"):
         obj = encode(w)
-        H = obj.hankel(4)
+        obj.hankel(4)
         # Sylvester: lider asal minörler ≥ 0 (PSD)
         assert obj.is_moment_sequence(), f"{w} geçerli moment dizisi (Hankel PSD) olmalı"
 
 
 # ───────────── ASI §12 P1: Kod modalitesi (kod = AST grafı = topoloji) ─────────────
 
+
 def test_code_strict_detection():
     """STRICT: gerçek kod True; kelime/cümle/molekül/SMILES kod DEĞİL (regresyon)."""
     from tantrium.core.encoder import _is_code_snippet
+
     assert _is_code_snippet("def add(a, b): return a + b")
     assert _is_code_snippet("for i in range(10):\n    total += i")
     assert not _is_code_snippet("protein")
     assert not _is_code_snippet("the cat sat on the mat")
-    assert not _is_code_snippet("CC(=O)Oc1ccccc1C(=O)O")   # aspirin SMILES
+    assert not _is_code_snippet("CC(=O)Oc1ccccc1C(=O)O")  # aspirin SMILES
 
 
 def test_code_moments_valid_hausdorff():
     """Kod momentleri [0,1] Hausdorff dizisi (SMILES rejimi)."""
     from tantrium.core.encoder import _code_to_graph_moments
+
     m = _code_to_graph_moments("def f(x):\n    return x * 2 + 1")
     assert m is not None and m[0] == 1
     assert all(0.0 <= float(x) <= 1.0001 for x in m)
@@ -185,17 +190,21 @@ def test_code_structure_name_invariant():
     """Kod YAPISAL topolojiyle girer: isim-değişmez (refactor denkliği), yapı-duyarlı."""
     from tantrium.core.encoder import _code_to_graph_moments
     from tantrium.core.metric import l1_distance
+
     f = [float(x) for x in _code_to_graph_moments("def f(x):\n    return x + 1")]
     g = [float(x) for x in _code_to_graph_moments("def g(y):\n    return y + 2")]
-    loop = [float(x) for x in _code_to_graph_moments(
-        "for i in range(10):\n    total += i\n    print(total)")]
-    assert l1_distance(f, g) < 1e-6           # aynı yapı, farklı isim → AYNI moment
-    assert l1_distance(f, loop) > l1_distance(f, g)   # farklı yapı → uzak
+    loop = [
+        float(x)
+        for x in _code_to_graph_moments("for i in range(10):\n    total += i\n    print(total)")
+    ]
+    assert l1_distance(f, g) < 1e-6  # aynı yapı, farklı isim → AYNI moment
+    assert l1_distance(f, loop) > l1_distance(f, g)  # farklı yapı → uzak
 
 
 def test_code_routes_through_encode():
     """encode() kod parçasını AST-graf yoluna yönlendirir (bigram metin değil)."""
     from tantrium.core.encoder import UniversalEncoder
+
     obj = UniversalEncoder().encode("def f(x):\n    return x * 2")
     assert obj.structure.get("moment_path") == "code_ast_graph"
     # kelime hâlâ metin yolunda

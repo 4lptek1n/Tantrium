@@ -16,6 +16,7 @@ kavram-geçişine dürüstçe haritalanmaz → UYDURULMAZ (merdivene dahil edilm
 Merdiven KÜMÜLATİF: geçerli ölçü olmadan Jensen-hiperbolik olmak anlamsız → derinlik
 alttan yukarı en yüksek KESİNTİSİZ basamak (0–3). 3 = tam kritik hatta.
 """
+
 from __future__ import annotations
 
 _EPS = -1e-6
@@ -24,13 +25,15 @@ _EPS = -1e-6
 def _hankel_min_eig(mu: list[float], size: int | None = None) -> float:
     """Momentlerden Hankel matrisi kurup en küçük özdeğerini döner (PSD ⟺ ≥ 0)."""
     import numpy as np
+
     n = min(len(mu), 8)
     if n < 2:
         return float("-inf")
     if size is None:
         size = max(n // 2, 2)
-    H = np.array([[mu[i + j] if i + j < n else 0.0
-                   for j in range(size)] for i in range(size)], dtype=float)
+    H = np.array(
+        [[mu[i + j] if i + j < n else 0.0 for j in range(size)] for i in range(size)], dtype=float
+    )
     return float(np.linalg.eigvalsh(H).min())
 
 
@@ -48,6 +51,7 @@ def _newton_log_concave(mu: list[float], tol: float = 1e-6) -> bool:
 def _path_hankel_min_eig(src: list[float], tgt: list[float], steps: int = 8) -> float:
     """Konveks yol (1-t)·src + t·tgt boyunca en küçük Hankel özdeğeri (Sturm pivot vekili)."""
     import numpy as np
+
     n = min(len(src), len(tgt), 8)
     if n < 2:
         return float("-inf")
@@ -58,8 +62,10 @@ def _path_hankel_min_eig(src: list[float], tgt: list[float], steps: int = 8) -> 
     for step in range(steps + 1):
         t = step / steps
         interp = [(1 - t) * a[i] + t * b[i] for i in range(n)]
-        H = np.array([[interp[i + j] if i + j < n else 0.0
-                       for j in range(size)] for i in range(size)], dtype=float)
+        H = np.array(
+            [[interp[i + j] if i + j < n else 0.0 for j in range(size)] for i in range(size)],
+            dtype=float,
+        )
         worst = min(worst, float(np.linalg.eigvalsh(H).min()))
     return worst
 
@@ -74,10 +80,10 @@ def positivity_depth(src: list[float], tgt: list[float], *, eps: float = _EPS) -
     try:
         if not tgt:
             return 0, rungs
-        rungs["hankel"] = (_hankel_min_eig(tgt) >= eps)
+        rungs["hankel"] = _hankel_min_eig(tgt) >= eps
         rungs["newton"] = _newton_log_concave(tgt)
         if src:
-            rungs["sturm"] = (_path_hankel_min_eig(src, tgt) >= eps)
+            rungs["sturm"] = _path_hankel_min_eig(src, tgt) >= eps
     except Exception:
         return 0, rungs
     depth = 0

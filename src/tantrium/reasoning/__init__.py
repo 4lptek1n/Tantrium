@@ -1,5 +1,10 @@
+from tantrium.reasoning.necessity import (
+    ManifoldGap,
+    NecessaryEdge,
+    NecessityEngine,
+    NecessityReport,
+)
 from tantrium.reasoning.reasoner import GraphReasoner
-from tantrium.reasoning.necessity import NecessityEngine, NecessityReport, NecessaryEdge, ManifoldGap
 
 __all__ = [
     "GraphReasoner",

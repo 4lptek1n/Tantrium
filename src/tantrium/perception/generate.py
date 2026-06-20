@@ -4,6 +4,7 @@ Bunlar sentetik değil "yapay-gerçek": fiziksel olarak tutarlı dalga formları
 ve görüntüler. Bir 440 Hz sinüs dalgası, gerçek bir 440 Hz tonun örneklenmiş
 halidir. Sistem bunların yapısını okur — biz etiketini söylemeyiz.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -33,6 +34,7 @@ def white_noise(duration_s: float = 0.25, sr: int = SAMPLE_RATE, seed: int = 0) 
 
 
 # ─── Görüntüler ──────────────────────────────────────────────────────────────
+
 
 def solid_image(size: int = 32, value: float = 0.5) -> np.ndarray:
     """Düz renk — rank 1, minimum yapısal bilgi."""

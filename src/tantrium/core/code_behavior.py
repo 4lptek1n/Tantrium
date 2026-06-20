@@ -14,6 +14,7 @@ DÜRÜST SINIR (ölçülmüş): spektral moment KAYIPLI — add ile sub davranı
 kesin ayrım için örnek (Curry-Howard kanıtı) irreducible. Örnek = şablon DEĞİL, ÖLÇÜdür (kodu
 moment uzayına koyan fiziksel ölçü — molekülün spektrumu gibi).
 """
+
 from __future__ import annotations
 
 from fractions import Fraction
@@ -27,7 +28,7 @@ def _exact(value):
     if isinstance(value, int):
         return Fraction(value)
     if isinstance(value, float):
-        return Fraction(value).limit_denominator(10 ** 12)
+        return Fraction(value).limit_denominator(10**12)
     if isinstance(value, Fraction):
         return value
     if isinstance(value, str):
@@ -57,18 +58,19 @@ def behavior_fingerprint_of(fn, *, nargs: int | None = None, basis=None) -> tupl
     İki farklı davranış (add vs sub) ASLA çakışmaz — moment sıkıştırması değil, tam truth-table."""
     try:
         import inspect
+
         if nargs is None:
             try:
                 nargs = len(inspect.signature(fn).parameters)
             except (TypeError, ValueError):
                 nargs = 1
         rows: list = []
-        for inp in (basis if basis is not None else _canonical_basis(nargs)):
+        for inp in basis if basis is not None else _canonical_basis(nargs):
             args = inp if isinstance(inp, tuple) else (inp,)
             try:
                 rows.append((_exact(inp), _exact(fn(*args))))
             except Exception:
-                rows.append((_exact(inp), "⊥"))      # tanımsız nokta da kimliğin parçası (kayıpsız)
+                rows.append((_exact(inp), "⊥"))  # tanımsız nokta da kimliğin parçası (kayıpsız)
         return tuple(rows)
     except Exception:
         return None
@@ -118,6 +120,7 @@ def behavior_signature(examples, num_moments: int = 8) -> list[Fraction] | None:
     """
     try:
         import numpy as np
+
         rows: list = []
         for inp, out in examples:
             inv = inp if isinstance(inp, tuple) else (inp,)
@@ -132,15 +135,15 @@ def behavior_signature(examples, num_moments: int = 8) -> list[Fraction] | None:
         A = np.zeros((len(rows), width))
         for i, r in enumerate(rows):
             A[i, : len(r)] = r
-        A = A - A.mean(axis=0, keepdims=True)        # merkezle (DC çıkar)
+        A = A - A.mean(axis=0, keepdims=True)  # merkezle (DC çıkar)
         G = A.T @ A
         eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
         max_eig = eigs.max() or 1.0
         vals = sorted(eigs / max_eig)
         moments: list[Fraction] = [Fraction(1)]
         for k in range(1, num_moments):
-            mk = sum(d ** k for d in vals) / len(vals)
-            moments.append(Fraction(mk).limit_denominator(10 ** 9))
+            mk = sum(d**k for d in vals) / len(vals)
+            moments.append(Fraction(mk).limit_denominator(10**9))
         return moments
     except Exception:
         return None
@@ -152,6 +155,7 @@ def behavior_signature_of(fn, canonical_inputs=None, num_moments: int = 8) -> li
     çalıştırma = spektrum ölçümü."""
     try:
         import inspect
+
         if canonical_inputs is None:
             try:
                 nargs = len(inspect.signature(fn).parameters)

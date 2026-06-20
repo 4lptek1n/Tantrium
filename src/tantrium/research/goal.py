@@ -8,6 +8,7 @@ Tav döngüsü: goal encode → TAU walk → action candidates → execute → p
 Aleph garantisi: Goal.to_concept() Hankel PSD filtreden geçer.
 Kısıt: Goal sahte metin kabul eder ama encode sonrası certify edilmelidir.
 """
+
 from __future__ import annotations
 
 import json
@@ -36,18 +37,18 @@ from tantrium.graph.knowledge_graph import SEMANTIC_PARADIGMS as _SEMANTIC_PARAD
 class Goal:
     """Bir hedef — manifold'da sertifikalı kavram olarak temsil edilir."""
 
-    name: str                          # "diffusion modellerini öğren" vb.
-    moments: list[float]               # canonical byte encoding → 8 spectral moment
-    priority: float = 1.0              # 0.0–1.0
+    name: str  # "diffusion modellerini öğren" vb.
+    moments: list[float]  # canonical byte encoding → 8 spectral moment
+    priority: float = 1.0  # 0.0–1.0
     active: bool = True
-    progress: float = 0.0             # 0.0 = başlamadı, 1.0 = tamamlandı
+    progress: float = 0.0  # 0.0 = başlamadı, 1.0 = tamamlandı
     action_trace: list[str] = field(default_factory=list)
     created: str = field(default_factory=_now)
 
     def to_concept(self) -> Concept:
         return Concept(
             name=f"goal:{self.name}",
-            moments=[Fraction(m).limit_denominator(10 ** 9) for m in self.moments],
+            moments=[Fraction(m).limit_denominator(10**9) for m in self.moments],
             domain="goal",
             source="goal_manifold",
         )
@@ -56,13 +57,14 @@ class Goal:
         k = min(len(self.moments), len(concept_moments))
         return sum(abs(self.moments[i] - float(concept_moments[i])) for i in range(k))
 
-    def update_progress(self, concept_names: list[str], engine: "CertificationEngine") -> float:
+    def update_progress(self, concept_names: list[str], engine: CertificationEngine) -> float:
         """Bilinen kavramların hedefe manifold uzaklığına göre progress güncelle.
 
         Mesafe ölçeği: manifold moment_distance (~30-60 arası tipik değer).
         progress = max(0, 1 - min_dist / scale)  scale=35 (ortanca mesafe).
         """
         from tantrium.core.semantic import moment_distance
+
         goal_c = self.to_concept()
         distances = []
         for name in concept_names:
@@ -111,7 +113,7 @@ class GoalManifold:
     def pursue(
         self,
         goal: Goal,
-        engine: "CertificationEngine",
+        engine: CertificationEngine,
         top_n: int = 6,
     ) -> list[tuple[str, float, str]]:
         """Hedefe en yakın kavramları bul: manifold walk + semantic edge bonus.
@@ -134,6 +136,7 @@ class GoalManifold:
         # yazılış değil ANLAM mesafesiyle ölçülür; değilse moment (eski davranış). dist_fn
         # no-anchor'da otomatik momente düşer → fail-open, math-hedef güvenli.
         from tantrium.core.meaning_pipeline import goal_distance_function
+
         dist_fn = goal_distance_function(engine, goal.name, goal_concept)
 
         # L1: SEED havuzu. Çapa köklüyse çapanın GRAF komşuları (anlam-havuzu); değilse
@@ -141,7 +144,7 @@ class GoalManifold:
         nearest = self._seed_candidates(goal, goal_concept, engine, top_n)
         result: dict[str, tuple[float, str]] = {}
 
-        for seed_name, seed_dist in nearest:
+        for seed_name, _seed_dist in nearest:
             d = dist_fn(seed_name)
             if d != float("inf") and (seed_name not in result or d < result[seed_name][0]):
                 result[seed_name] = (d, "ALEPH")
@@ -169,7 +172,8 @@ class GoalManifold:
         Çapa-grafından çekmek 'understand egfr signaling' için egfr'nin gerçek komşularını
         (akt3/kdr/grb2) verir; harf-nearest cümlenin yazılışına benzer jenerik çöp verirdi."""
         try:
-            from tantrium.core.meaning_pipeline import resolve_goal_anchors, nearest_meaning
+            from tantrium.core.meaning_pipeline import nearest_meaning, resolve_goal_anchors
+
             anchors = resolve_goal_anchors(engine, goal.name)
             if anchors:
                 seen: dict[str, float] = {}
@@ -207,7 +211,7 @@ class GoalManifold:
         return str(path)
 
     @classmethod
-    def load(cls, directory: str = _GOAL_DIR) -> "GoalManifold":
+    def load(cls, directory: str = _GOAL_DIR) -> GoalManifold:
         path = Path(directory) / "goals.json"
         if not path.exists():
             return cls()
@@ -235,9 +239,7 @@ class GoalManifold:
         lines = [f"Aktif hedefler ({len(active)}):"]
         for g in sorted(active, key=lambda x: -x.priority):
             bar = "█" * int(g.progress * 10) + "░" * (10 - int(g.progress * 10))
-            lines.append(
-                f"  [{bar}] {g.progress:.0%}  '{g.name}'  (öncelik: {g.priority:.1f})"
-            )
+            lines.append(f"  [{bar}] {g.progress:.0%}  '{g.name}'  (öncelik: {g.priority:.1f})")
             if g.action_trace:
                 lines.append(f"    öğrenildi: {', '.join(g.action_trace[-4:])}")
         return "\n".join(lines)
@@ -245,7 +247,8 @@ class GoalManifold:
 
 # ─── Helper ───────────────────────────────────────────────────────────────────
 
-def encode_goal(engine: "CertificationEngine", description: str) -> Goal | None:
+
+def encode_goal(engine: CertificationEngine, description: str) -> Goal | None:
     """Hedefi canonical byte encoding ile encode et; Aleph certify.
 
     Döner: Goal (certified) ya da None (Aleph filtresi geçemedi).

@@ -101,7 +101,7 @@ extend-exclude = ["web", "lib", "scripts", "artifacts", "docs", "tantrium", "too
 select = ["E", "F", "I", "UP", "B", "C4", "W"]
 # Mevcut kod tabanına saygı: satır-uzunluğu (E501) ve bazı stilistik kurallar
 # kademeli benimsenir; bunları başlangıçta yumuşatıyoruz (CI'yi kilitlememek için).
-ignore = ["E501", "B008", "C401", "C408"]
+ignore = ["E501", "B008", "C401", "C408", "E741", "E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["tantrium"]

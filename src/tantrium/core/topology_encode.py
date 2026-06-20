@@ -14,6 +14,7 @@ jenerik-hub kavramlarda zayıf. IDF (ters-derece) ağırlık jenerik hub'ları
 (consciousness/knowledge gibi herkesin bağlandığı) bastırır ama gürültüyü
 tamamen elemez. Darboğaz matematik DEĞİL, graf yoğunluğu — büyüdükçe keskinleşir.
 """
+
 from __future__ import annotations
 
 import math
@@ -33,8 +34,8 @@ from tantrium.core.encoder import (
 # tek-gerçek üyelik testi knowledge_graph.is_semantic (blacklist: ALEPH/SPECTRAL/QUANTUM).
 from tantrium.graph.knowledge_graph import SEMANTIC_PARADIGMS as _SEMANTIC_PARADIGMS
 
-_MAX_NEIGHBORS = 24       # alt-graf kenarı ≤ 25 → eigvalsh O(n³) hızlı
-_MIN_NEIGHBORS = 2        # bunun altında topraksız — None (caller yüzeye düşer)
+_MAX_NEIGHBORS = 24  # alt-graf kenarı ≤ 25 → eigvalsh O(n³) hızlı
+_MIN_NEIGHBORS = 2  # bunun altında topraksız — None (caller yüzeye düşer)
 
 
 class TopologyEncoder:
@@ -67,8 +68,9 @@ class TopologyEncoder:
         d = self._semantic_indegree().get(target, 1)
         return 1.0 / math.log(d + 1.5)
 
-    def neighborhood(self, name: str, max_neighbors: int = _MAX_NEIGHBORS
-                     ) -> list[tuple[str, float]]:
+    def neighborhood(
+        self, name: str, max_neighbors: int = _MAX_NEIGHBORS
+    ) -> list[tuple[str, float]]:
         """En ayırt-edici (en yüksek IDF) tipli komşular — top-K."""
         weighted: dict[str, float] = {}
         for e in self.engine.tau.edges.get(name, []):
@@ -96,8 +98,7 @@ class TopologyEncoder:
         # Komşu-içi bağlantılar (kümenin şekli)
         for t in neigh:
             for e in self.engine.tau.edges.get(t, []):
-                if (e.paradigm in _SEMANTIC_PARADIGMS
-                        and e.target in nset and e.target != t):
+                if e.paradigm in _SEMANTIC_PARADIGMS and e.target in nset and e.target != t:
                     w = self._idf(e.target)
                     i, j = idx[t], idx[e.target]
                     if w > A[i][j]:
@@ -105,8 +106,7 @@ class TopologyEncoder:
                         A[j][i] = w
         return A
 
-    def encode(self, name: str, *, max_neighbors: int = _MAX_NEIGHBORS
-               ) -> CodexObject | None:
+    def encode(self, name: str, *, max_neighbors: int = _MAX_NEIGHBORS) -> CodexObject | None:
         """Kavram → ilişkisel CodexObject. Yetersiz komşulukta None.
 
         Momentler [0,1] Hausdorff (SMILES/algı/yüzey ile aynı rejim) → manifold
@@ -126,6 +126,7 @@ class TopologyEncoder:
 
 # ─── Transducer çekirdeği (perception/encode.py deseniyle birebir) ────────────
 
+
 def _hausdorff_moments(A: np.ndarray, num_moments: int):
     """G=AᵀA eigenvalue'larını [0,1]'e normalize → μ_k = ort(λ^k).
 
@@ -140,10 +141,10 @@ def _hausdorff_moments(A: np.ndarray, num_moments: int):
     _EPS = 0.02
     moments = [Fraction(1)]
     for k in range(1, num_moments):
-        emp = sum(d ** k for d in norm) / nv
+        emp = sum(d**k for d in norm) / nv
         uni = 1.0 / (k + 1)
         mk = (1.0 - _EPS) * emp + _EPS * uni
-        moments.append(Fraction(float(mk)).limit_denominator(10 ** 9))
+        moments.append(Fraction(float(mk)).limit_denominator(10**9))
     return moments, sorted(norm, reverse=True)
 
 
@@ -156,8 +157,10 @@ def _moments_and_structure(A_np: np.ndarray, raw_input, name: str):
     structure = _DEFAULT_ENCODER._extract_structure(raw_input, A_small, G_small, moments)
     structure["eigenvalues"] = norm_eigs
     structure["eigenvalue_source"] = "topological_gram"
-    structure.update({
-        "matrix_size": int(A_np.shape[0]),
-        "num_moments": _DEFAULT_ENCODER.num_moments,
-    })
+    structure.update(
+        {
+            "matrix_size": int(A_np.shape[0]),
+            "num_moments": _DEFAULT_ENCODER.num_moments,
+        }
+    )
     return moments, structure

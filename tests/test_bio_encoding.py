@@ -3,7 +3,8 @@
 DNA/RNA/protein = harf değil, fiziksel sinyal (EIIP/hidropati → spektrum). Yalnız dil
 (kelime/cümle) metin-yoluna düşer. Yakınlık/istatistik yalnız dilde.
 """
-from tantrium.core.encoder import encode, _detect_bio_sequence
+
+from tantrium.core.encoder import _detect_bio_sequence, encode
 from tantrium.perception.encode import encode_dna, encode_protein
 
 

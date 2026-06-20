@@ -11,9 +11,10 @@ sonuçları da o an zaten belirlenmiş. Ölçümden önce var olan gerçeklik.
   2. Manifold tamamlama: moment uzayında boşlukları doldurması zorunlu
      kavramları tespit et (yapısal zorunluluk)
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -23,26 +24,29 @@ if TYPE_CHECKING:
 @dataclass
 class NecessaryEdge:
     """TAU grafında zorunlu olduğu tespit edilen kenar."""
+
     source: str
     target: str
-    chain: list[str]          # A→B→C ise [A, B, C]
-    paradigms: list[str]      # her atlama için paradigm
-    is_new: bool              # TAU grafında henüz yoksa True
+    chain: list[str]  # A→B→C ise [A, B, C]
+    paradigms: list[str]  # her atlama için paradigm
+    is_new: bool  # TAU grafında henüz yoksa True
     certainty: str = "LOGICAL"  # LOGICAL | STRUCTURAL
 
 
 @dataclass
 class ManifoldGap:
     """Moment uzayında doldurulması zorunlu boşluk."""
-    centroid: list[float]         # boşluğun moment koordinatları
-    nearest_concepts: list[str]   # çevresindeki sertifikalı kavramlar
-    domain_constraint: str        # hangi domain'den gelmeli
-    description: str              # ne tür bir kavram gerekli
+
+    centroid: list[float]  # boşluğun moment koordinatları
+    nearest_concepts: list[str]  # çevresindeki sertifikalı kavramlar
+    domain_constraint: str  # hangi domain'den gelmeli
+    description: str  # ne tür bir kavram gerekli
 
 
 @dataclass
 class NecessityReport:
     """Necessity Engine çalışma raporu."""
+
     necessary_edges: list[NecessaryEdge]
     manifold_gaps: list[ManifoldGap]
     edges_injected: int
@@ -75,7 +79,7 @@ class NecessityEngine:
     Bu sonuçlar 'tahmin' değil: sertifikanın varlığından zorunlu olarak çıkar.
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     # ── 1. TAU transitif kapanış ──────────────────────────────────────────────
@@ -124,8 +128,9 @@ class NecessityEngine:
         necessary: list[NecessaryEdge] = []
 
         # BFS/DFS ile transitif kapanış
-        def find_chains(start: str, current: str, chain: list[str],
-                        paradigms: list[str], visited: set[str]) -> None:
+        def find_chains(
+            start: str, current: str, chain: list[str], paradigms: list[str], visited: set[str]
+        ) -> None:
             if len(chain) > depth + 1:
                 return
             if current not in edges_map:
@@ -167,7 +172,9 @@ class NecessityEngine:
                 if ne.is_new:
                     combined_paradigm = "+".join(dict.fromkeys(ne.paradigms))
                     added = certify_and_add_edge(
-                        self.engine, ne.source, ne.target,
+                        self.engine,
+                        ne.source,
+                        ne.target,
                         combined_paradigm,
                     )
                     if added:
@@ -191,11 +198,13 @@ class NecessityEngine:
         aranacak çift sayısı sınırlanır — büyük manifoldlarda timeout'u önler.
         """
         import numpy as np
+
         from tantrium.core.semantic import Concept
 
         prefix = "theorem:" if domain == "math_kernel" else f"{domain}:"
         concepts = [
-            (n, c) for n, c in self.engine.manifold.concepts.items()
+            (n, c)
+            for n, c in self.engine.manifold.concepts.items()
             if n.startswith(prefix) and len(c.moments) >= 4
         ]
         if len(concepts) < 4:
@@ -206,6 +215,7 @@ class NecessityEngine:
 
         # Büyük kümede rastgele örnekle — hız garanti
         import random as _rnd
+
         pairs: list[tuple[int, int]] = []
         for i in range(len(concepts)):
             for j in range(i + 1, min(i + 6, len(concepts))):
@@ -229,16 +239,18 @@ class NecessityEngine:
                 nearest_dist = float(neighbors[0][1])
                 nearest_name = neighbors[0][0]
                 if nearest_dist > 5.0 and nearest_name not in (names[i], names[j]):
-                    gaps.append(ManifoldGap(
-                        centroid=[float(x) for x in midpoint],
-                        nearest_concepts=[names[i], names[j]],
-                        domain_constraint=domain,
-                        description=(
-                            f"{names[i].replace('theorem:', '')} ile "
-                            f"{names[j].replace('theorem:', '')} arasında "
-                            f"sertifikalı kavram gerekli (dist={nearest_dist:.1f})"
-                        ),
-                    ))
+                    gaps.append(
+                        ManifoldGap(
+                            centroid=[float(x) for x in midpoint],
+                            nearest_concepts=[names[i], names[j]],
+                            domain_constraint=domain,
+                            description=(
+                                f"{names[i].replace('theorem:', '')} ile "
+                                f"{names[j].replace('theorem:', '')} arasında "
+                                f"sertifikalı kavram gerekli (dist={nearest_dist:.1f})"
+                            ),
+                        )
+                    )
             if len(gaps) >= n_gaps:
                 break
 

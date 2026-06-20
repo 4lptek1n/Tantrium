@@ -3,14 +3,18 @@
 İyi şifreleme bu okuyucuya gürültü görünür; zayıf şifreleme yapı sızdırır.
 Anahtar kurtarma YOK — sadece spektral entropi + ECB blok tekrarı okuması.
 """
+
 import hashlib
 
 import numpy as np
-import pytest
 
 from tantrium.perception.crypto import (
-    analyze, achilles, bytes_to_signal, count_repeated_blocks,
-    CryptoReading, AchillesReading,
+    AchillesReading,
+    CryptoReading,
+    achilles,
+    analyze,
+    bytes_to_signal,
+    count_repeated_blocks,
 )
 
 
@@ -28,7 +32,7 @@ def _ecb(data: bytes, block: int = 16) -> bytes:
     out = bytearray()
     cache: dict[bytes, bytes] = {}
     for i in range(0, len(data), block):
-        blk = data[i:i + block].ljust(block, b"\x00")
+        blk = data[i : i + block].ljust(block, b"\x00")
         if blk not in cache:
             cache[blk] = hashlib.sha256(blk).digest()[:block]
         out += cache[blk]
@@ -39,6 +43,7 @@ PLAIN = b"ATTACK AT DAWN. " * 64  # tekrarlı düz metin
 
 
 # ─── Temel okuma ─────────────────────────────────────────────────────────────
+
 
 def test_analyze_returns_reading():
     r = analyze(PLAIN, name="p")
@@ -53,6 +58,7 @@ def test_bytes_to_signal_length():
 
 
 # ─── Spektral entropi: güçlü şifre gürültü, düz metin yapılı ──────────────────
+
 
 def test_strong_cipher_has_high_entropy():
     """CTR akış şifresi → gürültü gibi (yüksek μ₁)."""
@@ -76,6 +82,7 @@ def test_strong_higher_entropy_than_plaintext():
 
 # ─── ECB blok sızıntısı (ünlü ECB penguen zafiyeti) ──────────────────────────
 
+
 def test_ecb_leaks_repeated_blocks():
     """ECB özdeş blokları korur → blok tekrarı > 0 (zafiyet)."""
     rep = count_repeated_blocks(_ecb(PLAIN), block_size=16)
@@ -97,6 +104,7 @@ def test_ecb_distinguishable_from_ctr():
 
 # ─── Güçlü şifreleme bu göze gürültüdür (kırılamaz, sadece okunur) ────────────
 
+
 def test_strong_cipher_is_opaque():
     """Güçlü şifre STRONG (gürültü) olarak okunur — yapı tespit edilmez.
     Bu okuyucu zafiyet bulur; güçlü şifreyi KIRMAZ."""
@@ -110,6 +118,7 @@ def test_summary_is_string():
 
 
 # ─── GIMEL Aşil topuğu (en zayıf eksen tespiti) ──────────────────────────────
+
 
 def test_achilles_returns_reading():
     r = achilles(_ecb(PLAIN), name="ecb")

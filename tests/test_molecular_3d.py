@@ -3,6 +3,7 @@
 embed_3d_sdf: SMILES → ETKDGv3 seed=42 → SDF. inverse._make_3d ve
 certifier._smiles_to_sdf ikisi de buna delege; farklar parametrede.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -49,8 +50,7 @@ def test_prefix_changes_filename(tmp_path):
 
 def test_props_written(tmp_path):
     """props SDF alanlarına yazılır."""
-    path = embed_3d_sdf("CCO", "ethanol", str(tmp_path),
-                        props={"Target": "EGFR", "Source": "test"})
+    path = embed_3d_sdf("CCO", "ethanol", str(tmp_path), props={"Target": "EGFR", "Source": "test"})
     content = _read(path)
     assert "Target" in content and "EGFR" in content
     assert "Source" in content
@@ -68,9 +68,8 @@ def test_remove_hs_smaller_block(tmp_path):
 
 def test_caller_equivalence_inverse(tmp_path):
     """inverse._make_3d util ile aynı sonucu üretir (delege doğrulaması)."""
-    from tantrium.core.inverse import InverseTransport
-    direct = embed_3d_sdf("CCO", "x", str(tmp_path),
-                         props={"SMILES": "CCO"}, remove_hs=True)
+
+    direct = embed_3d_sdf("CCO", "x", str(tmp_path), props={"SMILES": "CCO"}, remove_hs=True)
     # InverseTransport._make_3d aynı util'i çağırır → aynı dosya adı/içerik
     assert direct.endswith("x.sdf")
     # Util çağrısı çökmeden çalışıyor ve geçerli SDF üretiyor

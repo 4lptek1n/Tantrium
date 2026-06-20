@@ -1,4 +1,5 @@
 """CoreMachine (4-eksenli tek geçiş) testleri."""
+
 from __future__ import annotations
 
 import pytest
@@ -7,12 +8,14 @@ import pytest
 @pytest.fixture(scope="module")
 def ai():
     import tantrium
+
     return tantrium.AI()
 
 
 def test_certify_all_returns_unified_certificate(ai):
     """certify_all() UnifiedCertificate döndürmeli."""
     from tantrium.core.unified import UnifiedCertificate
+
     result = ai.certify_all("EGFR")
     assert isinstance(result, UnifiedCertificate)
 
@@ -41,6 +44,7 @@ def test_certify_all_has_truth_and_confidence(ai):
 def test_reconstruct_returns_measure():
     """Moment rekonstrüksiyonu ölçü döndürmeli."""
     from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
+
     moments = [1.0, 0.5, 0.3, 0.2, 0.15, 0.12, 0.1, 0.09]
     rec = reconstruct_measure(moments)
     assert rec is not None
@@ -51,6 +55,7 @@ def test_reconstruct_returns_measure():
 def test_truth_certifier_consistent(ai):
     """Gerçek kavram CONSISTENT olmalı."""
     from tantrium.core.truth import TruthCertifier
+
     tc = TruthCertifier(ai._engine)
     result = tc.certify("prime")
     assert result.verdict in ("CONSISTENT", "CONTESTED")
@@ -63,6 +68,7 @@ def test_truth_certifier_consistent(ai):
 def test_confidence_calibration():
     """Tüm eksenler güçlüyse STRONG veya CERTAIN döndürmeli."""
     from tantrium.core.confidence import calibrate
+
     # Remote API: calibrate(coverage, margin, grounding, truth)
     conf = calibrate(coverage=0.96, margin=0.15, grounding=0.8, truth=0.9)
     assert conf.level in ("CERTAIN", "STRONG")
@@ -72,6 +78,7 @@ def test_confidence_calibration():
 def test_canonical_distance_symmetric():
     """Kanonik mesafe simetrik olmalı."""
     from tantrium.core.metric import canonical_distance
+
     a = [1.0, 0.5, 0.3, 0.2, 0.15, 0.12, 0.1, 0.09]
     b = [1.0, 0.6, 0.4, 0.25, 0.18, 0.14, 0.12, 0.10]
     assert abs(canonical_distance(a, b) - canonical_distance(b, a)) < 1e-10
@@ -97,6 +104,7 @@ def test_new_api_methods_exist(ai):
 def test_engine_core_property(ai):
     """engine.core CoreMachine döndürmeli (lazy singleton)."""
     from tantrium.core.unified import CoreMachine
+
     core = ai._engine.core
     assert isinstance(core, CoreMachine)
     # Singleton
@@ -106,6 +114,7 @@ def test_engine_core_property(ai):
 def test_certify_unified_shorthand(ai):
     """engine.certify_unified() shorthand çalışmalı."""
     from tantrium.core.unified import UnifiedCertificate
+
     result = ai._engine.certify_unified("EGFR")
     assert isinstance(result, UnifiedCertificate)
 

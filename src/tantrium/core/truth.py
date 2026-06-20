@@ -25,6 +25,7 @@ Yargı:
 gerekli (yeterli değil) koşuludur. Çelişkili = kesinlikle sorunlu;
 tutarlı = sorun görünmüyor.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -37,22 +38,21 @@ if TYPE_CHECKING:
 @dataclass
 class TruthCertificate:
     """Bir kavramın doğruluk (tutarlılık) ekseni sertifikası."""
+
     name: str
-    verdict: str                    # CONSISTENT | CONTESTED | CONTRADICTORY
-    truth_score: float              # 0.0 (çelişkili) → 1.0 (tam tutarlı)
+    verdict: str  # CONSISTENT | CONTESTED | CONTRADICTORY
+    truth_score: float  # 0.0 (çelişkili) → 1.0 (tam tutarlı)
 
     neighbors_checked: int
-    transport_certified: int        # kaç komşuya CERTIFIED transport
-    transport_failed: int           # kaç komşuya transport başarısız
-    emet_contradiction: bool        # kendi pipeline'ında EMET çelişkisi var mı
+    transport_certified: int  # kaç komşuya CERTIFIED transport
+    transport_failed: int  # kaç komşuya transport başarısız
+    emet_contradiction: bool  # kendi pipeline'ında EMET çelişkisi var mı
 
     consistent_neighbors: list[str] = field(default_factory=list)
     contested_neighbors: list[str] = field(default_factory=list)
 
     def summary(self) -> str:
-        glyph = {"CONSISTENT": "✓", "CONTESTED": "≈", "CONTRADICTORY": "✗"}.get(
-            self.verdict, "?"
-        )
+        glyph = {"CONSISTENT": "✓", "CONTESTED": "≈", "CONTRADICTORY": "✗"}.get(self.verdict, "?")
         bar = int(self.truth_score * 20)
         bar_str = "█" * bar + "░" * (20 - bar)
         lines = [
@@ -72,7 +72,7 @@ class TruthCertificate:
 class TruthCertifier:
     """Kavramın komşularıyla tutarlılığını ölçen üçüncü eksen."""
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     def certify(
@@ -85,21 +85,23 @@ class TruthCertifier:
 
         name manifoldda yoksa moments verilebilir (ya da encode edilir).
         """
-        from tantrium.core.transport import CertifiedTransport
-        from tantrium.core.semantic import Concept
         from tantrium.core.encoder import encode as enc
+        from tantrium.core.semantic import Concept
+        from tantrium.core.transport import CertifiedTransport
 
         # Kavramı al ya da encode et
         concept = self.engine.manifold.concepts.get(name)
         if concept is None:
             if moments is not None:
                 from fractions import Fraction
-                fracs = [Fraction(m).limit_denominator(10 ** 9) for m in moments]
+
+                fracs = [Fraction(m).limit_denominator(10**9) for m in moments]
                 concept = Concept(name=name, moments=fracs, domain="probe", source="truth")
             else:
                 obj = enc(name, name=name[:64])
-                concept = Concept(name=name[:64], moments=list(obj.moments),
-                                  domain="probe", source="truth")
+                concept = Concept(
+                    name=name[:64], moments=list(obj.moments), domain="probe", source="truth"
+                )
 
         # EMET çapraz-kontrol: kendi pipeline'ında çelişki var mı?
         emet_contradiction = False

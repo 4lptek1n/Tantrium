@@ -11,43 +11,54 @@ TCE matematiksel temeli:
 
 Çıktı: PlanStep listesi — adım adım, sıralı, certified yol.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
     from tantrium.research.goal import Goal
 
-_SEMANTIC = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
-             "CAUSES", "INHIBITS", "ACTIVATES"}
+_SEMANTIC = {
+    "IS_A",
+    "USES",
+    "DEFINES",
+    "ACHIEVES",
+    "REQUIRES",
+    "COMPOSED",
+    "CAUSES",
+    "INHIBITS",
+    "ACTIVATES",
+}
 
 
 @dataclass
 class PlanStep:
     """Planın tek bir adımı."""
+
     step_num: int
-    concept: str          # bu adımda odaklanılacak kavram
-    paradigm: str         # bu kavrama nasıl ulaşıldı (IS_A, USES, ...)
-    from_concept: str     # hangi kavramdan bu adıma geçildi
+    concept: str  # bu adımda odaklanılacak kavram
+    paradigm: str  # bu kavrama nasıl ulaşıldı (IS_A, USES, ...)
+    from_concept: str  # hangi kavramdan bu adıma geçildi
     goal_distance: float  # bu kavramın hedefe manifold mesafesi
-    action: str           # önerilen eylem: "learn", "relate", "think"
+    action: str  # önerilen eylem: "learn", "relate", "think"
 
     def describe(self) -> str:
         verb = {
-            "IS_A":           "türü olduğunu öğren",
-            "USES":           "kullandığını öğren",
-            "ACHIEVES":       "elde ettiğini öğren",
-            "REQUIRES":       "gerektirdiğini öğren",
-            "DEFINES":        "tanımladığını öğren",
-            "COMPOSED":       "bileşenini öğren",
-            "SPECTRAL_BRIDGE":"spektral köprüyü keşfet",
+            "IS_A": "türü olduğunu öğren",
+            "USES": "kullandığını öğren",
+            "ACHIEVES": "elde ettiğini öğren",
+            "REQUIRES": "gerektirdiğini öğren",
+            "DEFINES": "tanımladığını öğren",
+            "COMPOSED": "bileşenini öğren",
+            "SPECTRAL_BRIDGE": "spektral köprüyü keşfet",
             "QUANTUM_BRIDGE": "kuantum köprüsünü keşfet",
-            "CAUSES":         "nedenini izle",
-            "INHIBITS":       "engelleyiciyi belirle",
-            "ACTIVATES":      "aktivatörü takip et",
-            "ALEPH":          "manifoldda konumunu bul",
+            "CAUSES": "nedenini izle",
+            "INHIBITS": "engelleyiciyi belirle",
+            "ACTIVATES": "aktivatörü takip et",
+            "ALEPH": "manifoldda konumunu bul",
         }.get(self.paradigm, "incele")
         return (
             f"  Adım {self.step_num}: '{self.concept}' — {verb}  "
@@ -59,6 +70,7 @@ class PlanStep:
 @dataclass
 class Plan:
     """Hedefe giden adım adım certified yol."""
+
     goal_name: str
     steps: list[PlanStep]
     initial_distance: float
@@ -76,7 +88,7 @@ class Plan:
         ]
         for step in self.steps:
             lines.append(step.describe())
-        lines.append(f"  ──────────────────────────────────────────────────")
+        lines.append("  ──────────────────────────────────────────────────")
         return "\n".join(lines)
 
     def action_sequence(self) -> list[tuple[str, str]]:
@@ -87,7 +99,9 @@ class Plan:
                 text = f"{step.concept} {step.paradigm.lower()} {step.from_concept}"
                 actions.append(("learn", text))
             elif step.action == "relate":
-                text = f"{step.from_concept} {step.paradigm.lower().replace('_', ' ')} {step.concept}"
+                text = (
+                    f"{step.from_concept} {step.paradigm.lower().replace('_', ' ')} {step.concept}"
+                )
                 actions.append(("relate", text))
             else:
                 actions.append(("think", step.concept))
@@ -108,12 +122,12 @@ class Planner:
         print(plan.summary())
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     def plan(
         self,
-        goal: "Goal",
+        goal: Goal,
         known_concepts: list[str] | None = None,
         max_steps: int = 5,
         beam_width: int = 4,
@@ -139,6 +153,7 @@ class Planner:
         # ANLAM-PUSULASI: hedef köklü kavrama indirgenebiliyorsa "yaklaştım mı?" yazılış
         # değil ANLAM mesafesiyle ölçülür; değilse moment (eski davranış). TEK tutarlı metrik.
         from tantrium.core.meaning_pipeline import goal_distance_function
+
         dist_fn = goal_distance_function(self.engine, goal.name, goal_concept)
 
         # Başlangıç mesafesini hesapla
@@ -149,7 +164,7 @@ class Planner:
 
         # Frontier'ı known_concepts'ten doldur
         tau = self.engine.tau
-        for src in known_concepts[:beam_width * 2]:
+        for src in known_concepts[: beam_width * 2]:
             for edge in tau.edges.get(src, []):
                 if edge.target not in known_set and edge.target not in frontier:
                     tc = self.engine.manifold.concepts.get(edge.target)
@@ -176,14 +191,16 @@ class Planner:
             if paradigm in {"IS_A", "USES"}:
                 action = "relate"
 
-            steps.append(PlanStep(
-                step_num=step_num,
-                concept=best_name,
-                paradigm=paradigm,
-                from_concept=from_name,
-                goal_distance=best_dist,
-                action=action,
-            ))
+            steps.append(
+                PlanStep(
+                    step_num=step_num,
+                    concept=best_name,
+                    paradigm=paradigm,
+                    from_concept=from_name,
+                    goal_distance=best_dist,
+                    action=action,
+                )
+            )
 
             # Bu kavramı bilinenlere ekle, frontier'dan çıkar
             known_set.add(best_name)
@@ -202,7 +219,7 @@ class Planner:
             # Frontier'ı beam_width ile sınırla (bellekte)
             if len(frontier) > beam_width * 8:
                 sorted_f = sorted(frontier.items(), key=lambda x: x[1][0])
-                frontier = dict(sorted_f[:beam_width * 4])
+                frontier = dict(sorted_f[: beam_width * 4])
 
         final_dist = steps[-1].goal_distance if steps else initial_dist
 
@@ -235,9 +252,10 @@ class Planner:
         # Fallback: session yoksa manifoldun ilk kavramları
         return list(self.engine.manifold.concepts.keys())[:10]
 
-    def execute_plan(self, plan: Plan, goal: "Goal") -> list[str]:
+    def execute_plan(self, plan: Plan, goal: Goal) -> list[str]:
         """Planı Actor aracılığıyla uygula. Döner: eylem sonuçları."""
-        from tantrium.research.actor import Actor, Action
+        from tantrium.research.actor import Action, Actor
+
         actor = Actor(self.engine)
         results = []
         for action_type, payload in plan.action_sequence():

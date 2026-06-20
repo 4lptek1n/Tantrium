@@ -16,14 +16,15 @@ DNA/metin/sayı farkı:
   Şimdiye kadar: R175H ≈ rastgele mutasyon (8 ort. moment)
   Artık: R175H kendi özdeğer kaydını yaratır — spektrumda izi var
 """
+
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
 from fractions import Fraction
 
-
 # ─── Jacobi özdeğer algoritması (saf Python, float) ──────────────────────────
+
 
 def _jacobi_eigvals(
     S: list[list[float]],
@@ -81,6 +82,7 @@ def _jacobi_eigvals(
 
 # ─── SpectralMeasure ─────────────────────────────────────────────────────────
 
+
 @dataclass
 class SpectralMeasure:
     """G = AᵀA'nın özdeğer ölçüsü  dμ = Σ wᵢ δ(λ - λᵢ).
@@ -103,7 +105,7 @@ class SpectralMeasure:
 
     def moment(self, k: int) -> float:
         """μₖ = Σ wᵢ λᵢᵏ — Hankel momentleri buradan türetilir."""
-        return sum(w * (lam ** k) for lam, w in zip(self.eigenvalues, self.weights))
+        return sum(w * (lam**k) for lam, w in zip(self.eigenvalues, self.weights, strict=False))
 
     def moments_list(self, num: int = 8) -> list[float]:
         return [self.moment(k) for k in range(num)]
@@ -179,12 +181,13 @@ class SpectralMeasure:
         return [float(x) for x in self.eigenvalues]
 
     @classmethod
-    def from_list(cls, eigenvalues: list[float], name: str = "") -> "SpectralMeasure":
+    def from_list(cls, eigenvalues: list[float], name: str = "") -> SpectralMeasure:
         """Float listesinden SpectralMeasure kur (uniform ağırlık)."""
         return cls(eigenvalues=list(eigenvalues), name=name)
 
 
 # ─── Fraction matris → SpectralMeasure ───────────────────────────────────────
+
 
 def gram_spectrum(
     A_frac: list[list[Fraction]],
@@ -197,10 +200,7 @@ def gram_spectrum(
         return SpectralMeasure(eigenvalues=[0.0], name=name)
 
     A = [[float(A_frac[i][j]) for j in range(m)] for i in range(n)]
-    G = [
-        [sum(A[k][i] * A[k][j] for k in range(n)) for j in range(m)]
-        for i in range(m)
-    ]
+    G = [[sum(A[k][i] * A[k][j] for k in range(n)) for j in range(m)] for i in range(m)]
     return SpectralMeasure(eigenvalues=_jacobi_eigvals(G), name=name)
 
 
@@ -218,7 +218,7 @@ def dna_bigram_matrix(seq: str) -> list[list[float]]:
     """
     counts = [[0] * 4 for _ in range(4)]
     seq_up = seq.upper()
-    for a, b in zip(seq_up, seq_up[1:]):
+    for a, b in zip(seq_up, seq_up[1:], strict=False):
         if a in _B2I and b in _B2I:
             counts[_B2I[a]][_B2I[b]] += 1
     matrix = []
@@ -232,10 +232,7 @@ def dna_measure(seq: str, name: str = "DNA") -> SpectralMeasure:
     """DNA sekansı → 4×4 bigram matrisi → G = AᵀA → SpectralMeasure."""
     A = dna_bigram_matrix(seq)
     n = 4
-    G = [
-        [sum(A[k][i] * A[k][j] for k in range(n)) for j in range(n)]
-        for i in range(n)
-    ]
+    G = [[sum(A[k][i] * A[k][j] for k in range(n)) for j in range(n)] for i in range(n)]
     return SpectralMeasure(eigenvalues=_jacobi_eigvals(G), name=name)
 
 
@@ -260,6 +257,7 @@ def dna_window_measures(
 
 # ─── Spektral Mesafe ──────────────────────────────────────────────────────────
 
+
 def spectral_distance(m1: SpectralMeasure, m2: SpectralMeasure) -> float:
     """Wasserstein-2 benzeri mesafe: sıralı özdeğer dizileri arası L₂/n.
 
@@ -277,7 +275,7 @@ def spectral_distance(m1: SpectralMeasure, m2: SpectralMeasure) -> float:
     elif lb < la:
         b = b + [0.0] * (la - lb)
     n = max(len(a), 1)
-    return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b))) / n
+    return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b, strict=False))) / n
 
 
 def spectral_window_diff(
@@ -291,7 +289,7 @@ def spectral_window_diff(
     """
     return [
         (pos_n, spectral_distance(m_n, m_c))
-        for (pos_n, m_n), (_, m_c) in zip(normal, cancer)
+        for (pos_n, m_n), (_, m_c) in zip(normal, cancer, strict=False)
     ]
 
 
@@ -308,6 +306,7 @@ def mutation_hotspots(
 
 # ─── Momentlerden spektral ölçü geri çıkarımı (Golub-Welsch) ─────────────────
 
+
 def _stieltjes(mu: list[float], n: int) -> tuple[list[float], list[float]]:
     """Stieltjes üç-terim tekrarlayıcısı: 2n moment → (alpha, beta).
 
@@ -319,7 +318,7 @@ def _stieltjes(mu: list[float], n: int) -> tuple[list[float], list[float]]:
     σ_k[l] = σ_{k-1}[l+1] - α_{k-1}·σ_{k-1}[l] - β_{k-1}·σ_{k-2}[l]
     """
     sz = 2 * n
-    s_m2 = [0.0] * sz                                          # sigma_{k-2} = 0
+    s_m2 = [0.0] * sz  # sigma_{k-2} = 0
     s_m1 = [(mu[l] if l < len(mu) else 0.0) for l in range(sz)]  # sigma_0 = moments
 
     alpha = [0.0] * n

@@ -20,6 +20,7 @@ komşuluk → modality="surface" (harfe düş — dürüst sınır, TopologyEnco
 Mimari: additive. Mevcut harf-sertifikasyon yolu DEĞİŞMEZ; bu, köklü kavram için
 "ne demek"i birincil ölçü yapan paralel kattır.
 """
+
 from __future__ import annotations
 
 import math
@@ -42,10 +43,10 @@ def _li_cascade(spectrum: list[float], k: int = 4) -> list[float]:
         s = 0.0
         for lam in pos:
             mod2 = 0.25 + lam * lam
-            omr = 1.0 - 0.5 / mod2          # Re(1 − 1/ρ)
-            omi = lam / mod2                # Im(1 − 1/ρ)
+            omr = 1.0 - 0.5 / mod2  # Re(1 − 1/ρ)
+            omi = lam / mod2  # Im(1 − 1/ρ)
             r = (omr * omr + omi * omi) ** 0.5
-            s += 1.0 - (r ** n) * math.cos(n * math.atan2(omi, omr))
+            s += 1.0 - (r**n) * math.cos(n * math.atan2(omi, omr))
         out.append(s)
     return out
 
@@ -55,12 +56,12 @@ class MeaningSignature:
     """Bir kavramın üç-katlı ölçümü: yüzey + topoloji + RH-cascade."""
 
     name: str
-    surface_moments: list[float]                 # harf (bootstrap adresi)
-    modality: str = "surface"                    # "relational" | "surface"
-    topo_moments: list[float] | None = None      # graf (anlam) — köklüyse
-    topo_spectrum: list[float] | None = None     # tam Laplacian spektrumu (n≤25)
-    li_cascade: list[float] | None = None        # Li katsayıları (topoloji üstünde)
-    flow: list[float] | None = None              # akış gradyanı λ_{n+1}−λ_n
+    surface_moments: list[float]  # harf (bootstrap adresi)
+    modality: str = "surface"  # "relational" | "surface"
+    topo_moments: list[float] | None = None  # graf (anlam) — köklüyse
+    topo_spectrum: list[float] | None = None  # tam Laplacian spektrumu (n≤25)
+    li_cascade: list[float] | None = None  # Li katsayıları (topoloji üstünde)
+    flow: list[float] | None = None  # akış gradyanı λ_{n+1}−λ_n
     n_neighbors: int = 0
     neighbors: list[str] = field(default_factory=list)
 
@@ -73,7 +74,7 @@ class MeaningSignature:
         return self.topo_moments if self.grounded else self.surface_moments
 
     @classmethod
-    def from_cache(cls, name: str, rec: dict) -> "MeaningSignature":
+    def from_cache(cls, name: str, rec: dict) -> MeaningSignature:
         """Kalıcı cache kaydından hafif imza kur (topoloji baştan hesaplanmaz — UCUZ).
 
         Düşünme motorları saniyede çok kez mesafe ölçer; cache hit → topoloji-encode
@@ -111,6 +112,7 @@ def _is_math_core_object(engine, name: str) -> bool:
         return False
     try:
         from tantrium.core.encoder import _is_valid_smiles
+
         if _is_valid_smiles(name):
             return True
     except Exception:
@@ -127,8 +129,14 @@ def _is_math_core_object(engine, name: str) -> bool:
     return False
 
 
-def measure(engine, name: str, *, max_neighbors: int = 24,
-            topo_encoder: TopologyEncoder | None = None, store=None) -> MeaningSignature:
+def measure(
+    engine,
+    name: str,
+    *,
+    max_neighbors: int = 24,
+    topo_encoder: TopologyEncoder | None = None,
+    store=None,
+) -> MeaningSignature:
     """Kavramı üç katta ölç. Köklüyse topoloji birincil + RH-cascade; değilse harf.
 
     `topo_encoder` verilirse yeniden kurulmaz (indegree cache paylaşımı — toplu ölçüm hızlı).
@@ -182,8 +190,9 @@ def _cascade_distance(a: list[float], b: list[float]) -> float:
     return sum(abs(a[i] - b[i]) / (abs(a[i]) + abs(b[i]) + 1e-9) for i in range(k)) / k
 
 
-def signature_distance(sa: MeaningSignature, sb: MeaningSignature, *,
-                       cascade_weight: float = 0.0) -> float:
+def signature_distance(
+    sa: MeaningSignature, sb: MeaningSignature, *, cascade_weight: float = 0.0
+) -> float:
     """İki ölçümün mesafesi. İKİSİ DE köklüyse topoloji (anlam); değilse harf (yüzey).
 
     cascade_weight>0 ise topoloji-moment mesafesine RH-cascade'in GÖRELİ-sınırlı (Li)
@@ -204,8 +213,9 @@ def signature_distance(sa: MeaningSignature, sb: MeaningSignature, *,
     return _l1(sm_a, sm_b)
 
 
-def measure_distance(engine, a: str, b: str, *, max_neighbors: int = 24,
-                     cascade_weight: float = 0.0) -> float:
+def measure_distance(
+    engine, a: str, b: str, *, max_neighbors: int = 24, cascade_weight: float = 0.0
+) -> float:
     """İki kavramı ölç + anlam-birincil mesafe (köklüyse topoloji, değilse harf)."""
     te = TopologyEncoder(engine)
     sa = measure(engine, a, max_neighbors=max_neighbors, topo_encoder=te)
@@ -222,6 +232,7 @@ def _graph_candidates(engine, query: str, neighbors: list[str], limit: int) -> l
     komşu sayısına göre sıralanır → en yüksek yapısal örtüşme önce.
     """
     from tantrium.core.topology_encode import _SEMANTIC_PARADIGMS
+
     nset = set(neighbors)
     if not nset:
         return []
@@ -238,9 +249,15 @@ def _graph_candidates(engine, query: str, neighbors: list[str], limit: int) -> l
     return sorted(scores, key=lambda k: -scores[k])[:limit]
 
 
-def nearest_meaning(engine, query: str, *, n: int = 10, pool: int = 60,
-                    max_neighbors: int = 24, cascade_weight: float = 0.0
-                    ) -> list[tuple[str, float, str]]:
+def nearest_meaning(
+    engine,
+    query: str,
+    *,
+    n: int = 10,
+    pool: int = 60,
+    max_neighbors: int = 24,
+    cascade_weight: float = 0.0,
+) -> list[tuple[str, float, str]]:
     """GRAF-birincil en yakın komşu: RETRIEVE graftan + RERANK topolojiyle.
 
     Mimari tez canlı: anlam grafta. İki kademe, İKİSİ DE graf-temelli (harf DEĞİL):
@@ -258,6 +275,7 @@ def nearest_meaning(engine, query: str, *, n: int = 10, pool: int = 60,
     # Sorgu topraksız → anlam yapamayız: harf adresine dürüstçe düş.
     if not q_sig.grounded:
         from tantrium.core.semantic import Concept
+
         q_obj = engine.encoder.encode(query, name=query[:64])
         wide = engine.manifold.nearest(Concept(name=query, moments=list(q_obj.moments)), n=pool)
         return [(nm, float(d), "surface") for nm, d in wide if nm != query][:n]
@@ -285,15 +303,42 @@ def meaning_neighbor_names(engine, name: str, *, n: int = 6, pool: int = 60) -> 
 
 
 # Hedef-cümlesindeki jenerik fiil/sözcükler — çapa olamaz (anlam taşımaz, hub'dır).
-_GOAL_STOPWORDS = frozenset({
-    "understand", "learn", "know", "find", "explore", "study", "analyze", "discover",
-    "the", "a", "an", "of", "to", "how", "what", "why", "about", "with", "for",
-    "anla", "öğren", "bul", "keşfet", "incele", "araştır", "nedir", "nasıl",
-})
+_GOAL_STOPWORDS = frozenset(
+    {
+        "understand",
+        "learn",
+        "know",
+        "find",
+        "explore",
+        "study",
+        "analyze",
+        "discover",
+        "the",
+        "a",
+        "an",
+        "of",
+        "to",
+        "how",
+        "what",
+        "why",
+        "about",
+        "with",
+        "for",
+        "anla",
+        "öğren",
+        "bul",
+        "keşfet",
+        "incele",
+        "araştır",
+        "nedir",
+        "nasıl",
+    }
+)
 
 
-def resolve_goal_anchors(engine, goal_name: str, *, topo_encoder=None,
-                         max_anchors: int = 3) -> list[str]:
+def resolve_goal_anchors(
+    engine, goal_name: str, *, topo_encoder=None, max_anchors: int = 3
+) -> list[str]:
     """Hedefin köklü içerik-kelimelerini ÇAPA KÜMESİ olarak döndür (tek-kelime seçme tuzağı yok).
 
     'understand egfr signaling' → ['egfr', 'signaling'] (jenerik 'understand' elenir). Tek
@@ -321,17 +366,20 @@ def goal_distance_function(engine, goal_name: str, goal_concept):
     mı?' yazılış değil ANLAM mesafesiyle ölçülür: aday, çapa kelimelerinden HERHANGİ birine
     yakınsa yakın sayılır (min)."""
     from tantrium.core.semantic import moment_distance
+
     te = TopologyEncoder(engine)
     store = getattr(engine, "_meaning_store", None)
     anchors = resolve_goal_anchors(engine, goal_name, topo_encoder=te)
     anchor_sigs = [measure(engine, a, topo_encoder=te, store=store) for a in anchors]
     anchor_sigs = [s for s in anchor_sigs if s.grounded]
     if anchor_sigs:
+
         def _meaning_dist(candidate_name: str) -> float:
             c_sig = measure(engine, candidate_name, topo_encoder=te, store=store)
             if not c_sig.grounded:
-                return float("inf")     # topraksız aday hedefe yakın SAYILMAZ (çöpe yürüme)
+                return float("inf")  # topraksız aday hedefe yakın SAYILMAZ (çöpe yürüme)
             return min(signature_distance(a, c_sig) for a in anchor_sigs)
+
         return _meaning_dist
 
     def _moment_dist(candidate_name: str) -> float:
@@ -339,5 +387,5 @@ def goal_distance_function(engine, goal_name: str, goal_concept):
         if c is None:
             return float("inf")
         return float(moment_distance(goal_concept, c))
-    return _moment_dist
 
+    return _moment_dist

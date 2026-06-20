@@ -1,15 +1,28 @@
-from tantrium.meta.paradigm import MetaParadigm, UniversalRule, ParadigmMoment, SelfCertResult
-from tantrium.meta.topology import MomentTopology, MathRegion
-from tantrium.meta.vision import CosmicVision, CosmicFrame
+from tantrium.meta.paradigm import MetaParadigm, ParadigmMoment, SelfCertResult, UniversalRule
 from tantrium.meta.synthesis import (
-    ConceptSynthesizer, BridgeResult, GenesisReport, GenesisEntry,
-    ResonanceResult, EnergyProfile,
+    BridgeResult,
+    ConceptSynthesizer,
+    EnergyProfile,
+    GenesisEntry,
+    GenesisReport,
+    ResonanceResult,
 )
+from tantrium.meta.topology import MathRegion, MomentTopology
+from tantrium.meta.vision import CosmicFrame, CosmicVision
 
 __all__ = [
-    "MetaParadigm", "UniversalRule", "ParadigmMoment", "SelfCertResult",
-    "MomentTopology", "MathRegion",
-    "CosmicVision", "CosmicFrame",
-    "ConceptSynthesizer", "BridgeResult", "GenesisReport", "GenesisEntry",
-    "ResonanceResult", "EnergyProfile",
+    "MetaParadigm",
+    "UniversalRule",
+    "ParadigmMoment",
+    "SelfCertResult",
+    "MomentTopology",
+    "MathRegion",
+    "CosmicVision",
+    "CosmicFrame",
+    "ConceptSynthesizer",
+    "BridgeResult",
+    "GenesisReport",
+    "GenesisEntry",
+    "ResonanceResult",
+    "EnergyProfile",
 ]

@@ -9,16 +9,25 @@ Applied to language, it becomes the existence filter for meaning.
 
 The system does not predict. It certifies or names its gap.
 """
+
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from fractions import Fraction
-from typing import Sequence
 
-from tantrium.core.codex import CertifiableObject as CodexObject, PositivityParadigm as AlephParadigm, ParadigmResult
-
+from tantrium.core.codex import (
+    CertifiableObject as CodexObject,
+)
+from tantrium.core.codex import (
+    ParadigmResult,
+)
+from tantrium.core.codex import (
+    PositivityParadigm as AlephParadigm,
+)
 
 # ─── Admission verdict (F3: tek admit() yolu) ──────────────────────────────
+
 
 @dataclass
 class AdmissionResult:
@@ -28,6 +37,7 @@ class AdmissionResult:
     tier     : "core" (Aleph sertifikalı) | "trusted" (kapı-muaf) | "rejected"
     reason   : insan-okunur gerekçe (Aleph gap adı / kaynak güveni)
     """
+
     admitted: bool
     tier: str
     reason: str
@@ -38,6 +48,7 @@ class AdmissionResult:
 
 
 # ─── A concept in natural language / any domain ────────────────────────────
+
 
 @dataclass
 class Concept:
@@ -53,6 +64,7 @@ class Concept:
     zeta-function moments works on this concept.
     This is not a metaphor. It is the same mathematics.
     """
+
     name: str
     moments: list[Fraction] = field(default_factory=list)
     domain: str = "general"
@@ -60,7 +72,9 @@ class Concept:
     metadata: dict = field(default_factory=dict)
 
     @classmethod
-    def from_counts(cls, name: str, counts: Sequence[int | float], domain: str = "general") -> "Concept":
+    def from_counts(
+        cls, name: str, counts: Sequence[int | float], domain: str = "general"
+    ) -> Concept:
         """Build a concept from raw co-occurrence or measurement counts.
         Normalizes to a probability-like moment sequence summing to 1.
         """
@@ -71,7 +85,9 @@ class Concept:
         return cls(name=name, moments=moments, domain=domain, source="counts")
 
     @classmethod
-    def from_rational(cls, name: str, moments: Sequence[Fraction], domain: str = "general") -> "Concept":
+    def from_rational(
+        cls, name: str, moments: Sequence[Fraction], domain: str = "general"
+    ) -> Concept:
         """Build a concept from exact rational moments."""
         return cls(name=name, moments=list(moments), domain=domain, source="rational")
 
@@ -83,7 +99,7 @@ class Concept:
                 "domain": self.domain,
                 "source": self.source,
                 **self.metadata,
-            }
+            },
         )
 
     def verify_existence(self) -> ParadigmResult:
@@ -91,9 +107,9 @@ class Concept:
         PSD Hankel ⟺ the concept is realizable as a genuine measure.
         A concept that fails this test is not real — it has no referent.
         """
-        return AlephParadigm(
-            "ALEPH", "Positivity", "D ≥ 0, p_i ≥ 0, A ⪰ 0", []
-        ).verify(self.to_codex_object())
+        return AlephParadigm("ALEPH", "Positivity", "D ≥ 0, p_i ≥ 0, A ⪰ 0", []).verify(
+            self.to_codex_object()
+        )
 
     def hankel_matrix(self, size: int = 4) -> list[list[Fraction]]:
         return self.to_codex_object().hankel(size)
@@ -104,6 +120,7 @@ class Concept:
 
 # ─── Semantic distance on the manifold ─────────────────────────────────────
 
+
 def moment_distance(a: Concept, b: Concept) -> Fraction:
     """L1 distance between two moment sequences (Het / gradient).
     This is the potential difference: how far apart two concepts are
@@ -112,7 +129,7 @@ def moment_distance(a: Concept, b: Concept) -> Fraction:
     n = max(len(a.moments), len(b.moments))
     a_m = a.moments + [Fraction(0)] * (n - len(a.moments))
     b_m = b.moments + [Fraction(0)] * (n - len(b.moments))
-    return sum(abs(x - y) for x, y in zip(a_m, b_m))
+    return sum(abs(x - y) for x, y in zip(a_m, b_m, strict=False))
 
 
 def are_gauge_equivalent(a: Concept, b: Concept, tol: Fraction = Fraction(1, 1000)) -> bool:
@@ -126,9 +143,9 @@ def are_gauge_equivalent(a: Concept, b: Concept, tol: Fraction = Fraction(1, 100
 
 def semantic_fixed_point(
     concept: Concept,
-    interpretation_fn: "Callable[[Concept], Concept]",
+    interpretation_fn: Callable[[Concept], Concept],  # noqa: F821
     max_iter: int = 50,
-    tol: Fraction = Fraction(1, 10 ** 9),
+    tol: Fraction = Fraction(1, 10**9),
 ) -> tuple[Concept, bool, int]:
     """Tav: find the fixed point of interpretation.
     Repeatedly apply interpretation_fn until convergence.
@@ -147,6 +164,7 @@ def semantic_fixed_point(
 
 # ─── Semantic manifold: a collection of concepts with transport ─────────────
 
+
 @dataclass
 class SemanticManifold:
     """The semantic manifold: all concepts and their geometric relationships.
@@ -158,9 +176,10 @@ class SemanticManifold:
       - identity = gauge equivalence (Mem)
       - meaning = fixed point of interpretation (Tav)
     """
+
     concepts: dict[str, Concept] = field(default_factory=dict)
 
-    def admit(self, concept: Concept, *, policy: str = "aleph") -> "AdmissionResult":
+    def admit(self, concept: Concept, *, policy: str = "aleph") -> AdmissionResult:
         """TEK admission yolu — tüm manifold girişleri buraya iner (F3).
 
         policy="aleph"   : Aleph PSD kontrolü (verify_existence). Geçerse core,
@@ -177,20 +196,16 @@ class SemanticManifold:
         """
         if policy == "trusted":
             self.concepts[concept.name] = concept
-            return AdmissionResult(True, "trusted", "trusted source — gate-exempt",
-                                   concept.name)
+            return AdmissionResult(True, "trusted", "trusted source — gate-exempt", concept.name)
         if policy == "aleph":
             result = concept.verify_existence()
             if result.is_certified():
                 self.concepts[concept.name] = concept
-                return AdmissionResult(True, "core", "Aleph PSD certified",
-                                       concept.name)
-            return AdmissionResult(False, "rejected", str(result.gap_name),
-                                   concept.name)
-        raise ValueError(
-            f"Unknown admission policy: {policy!r} (expected 'aleph' or 'trusted')")
+                return AdmissionResult(True, "core", "Aleph PSD certified", concept.name)
+            return AdmissionResult(False, "rejected", str(result.gap_name), concept.name)
+        raise ValueError(f"Unknown admission policy: {policy!r} (expected 'aleph' or 'trusted')")
 
-    def add(self, concept: Concept) -> "SemanticManifold":
+    def add(self, concept: Concept) -> SemanticManifold:
         result = self.admit(concept, policy="aleph")
         if not result.admitted:
             raise ValueError(
@@ -199,7 +214,7 @@ class SemanticManifold:
             )
         return self
 
-    def add_unchecked(self, concept: Concept) -> "SemanticManifold":
+    def add_unchecked(self, concept: Concept) -> SemanticManifold:
         """Add without Aleph check — use only for trusted certified inputs.
 
         admit(policy="trusted")'a delege — kapı-muaf tek yol.
@@ -214,13 +229,16 @@ class SemanticManifold:
         İki kavram da manifoldda olmalı; biri yoksa None.
         """
         from tantrium.core.metric import distance as _metric_distance
+
         ca = self.concepts.get(name_a)
         cb = self.concepts.get(name_b)
         if ca is None or cb is None:
             return None
         return _metric_distance(ca.moments, cb.moments, metric=metric)
 
-    def nearest(self, concept: Concept, n: int = 5, metric: str = "l1") -> list[tuple[str, Fraction]]:
+    def nearest(
+        self, concept: Concept, n: int = 5, metric: str = "l1"
+    ) -> list[tuple[str, Fraction]]:
         """Find the n nearest concepts by moment distance (gradient flow direction).
 
         metric="l1" (varsayılan): hızlı L1 ön-eleme — büyük manifoldda hız için.
@@ -239,13 +257,14 @@ class SemanticManifold:
             for nm, d in hits:
                 if nm == concept.name:
                     continue
-                out.append((nm, Fraction(d).limit_denominator(10 ** 6)))
+                out.append((nm, Fraction(d).limit_denominator(10**6)))
             return out[:n]
         if metric == "extended":
             return self._nearest_l1_extended(concept, n)
         if metric == "spectral_w2":
             # L1 ile geniş aday kümesi (3n), sonra kanonik W2 ile yeniden sırala
             from tantrium.core.metric import canonical_distance
+
             wide = self._nearest_l1(concept, n=max(n * 3, n + 5))
             reranked = []
             for nm, _ in wide:
@@ -255,7 +274,7 @@ class SemanticManifold:
                 d = canonical_distance(concept.moments, c.moments)
                 reranked.append((d, nm))
             reranked.sort()
-            return [(nm, Fraction(d).limit_denominator(10 ** 6)) for d, nm in reranked[:n]]
+            return [(nm, Fraction(d).limit_denominator(10**6)) for d, nm in reranked[:n]]
         return self._nearest_l1(concept, n)
 
     _L1_W = 8  # karşılaştırma genişliği (standart moment sayısı)
@@ -270,6 +289,7 @@ class SemanticManifold:
         l1 "ön-eleme, hüküm değil" — küçük staleness kabul edilebilir.
         """
         import numpy as np
+
         W = self._L1_W
         n_now = len(self.concepts)
         cached = getattr(self, "_l1_count", -1)
@@ -312,13 +332,13 @@ class SemanticManifold:
             name = self._l1_names[int(i)]
             if name == concept.name:
                 continue
-            out.append((name, Fraction(float(d[int(i)])).limit_denominator(10 ** 6)))
+            out.append((name, Fraction(float(d[int(i)])).limit_denominator(10**6)))
             if len(out) >= n:
                 break
         return out
 
     def _nearest_l1_extended(
-        self, concept: "Concept", n: int = 5, text_weight: float = 0.10
+        self, concept: Concept, n: int = 5, text_weight: float = 0.10
     ) -> list[tuple[str, Fraction]]:
         """L1 moment mesafesi + metin boyutu tiebreaker (uzunluk + çeşitlilik).
 
@@ -328,6 +348,7 @@ class SemanticManifold:
         (protein/glucose) için label_aware encoding gerekir.
         """
         from tantrium.core.encoder import _text_extra_dims
+
         q = [float(m) for m in concept.moments]
         q_text = _text_extra_dims(concept.name)
         k = len(q)
@@ -337,9 +358,7 @@ class SemanticManifold:
             if name == concept.name:
                 continue
             cm = c.moments
-            d_moment = sum(
-                abs(q[i] - (float(cm[i]) if i < len(cm) else 0.0)) for i in range(k)
-            )
+            d_moment = sum(abs(q[i] - (float(cm[i]) if i < len(cm) else 0.0)) for i in range(k))
             c_text = _text_extra_dims(name)
             d_text = abs(q_text[0] - c_text[0]) + abs(q_text[1] - c_text[1])
             d = (1.0 - text_weight) * d_moment + text_weight * d_text
@@ -352,11 +371,11 @@ class SemanticManifold:
                 best.sort(reverse=True)
 
         best.sort()
-        return [(name, Fraction(d).limit_denominator(10 ** 6)) for d, name in best]
+        return [(name, Fraction(d).limit_denominator(10**6)) for d, name in best]
 
     def nearest_spectral(
         self,
-        concept: "Concept",
+        concept: Concept,
         n: int = 5,
     ) -> list[tuple[str, float]]:
         """Wasserstein-2 spektral mesafesiyle n en yakın kavram.
@@ -436,7 +455,7 @@ class SemanticManifold:
             arr = np.zeros((len(cache_keys), L), dtype=np.float64)
             for i, nm in enumerate(cache_keys):
                 ev = sorted(cache[nm].eigenvalues, reverse=True)[:L]
-                arr[i, :len(ev)] = ev
+                arr[i, : len(ev)] = ev
             self._spec_mat = arr
             self._spec_labels = list(cache_keys)
             self._spec_index = {nm: i for i, nm in enumerate(cache_keys)}
@@ -444,11 +463,11 @@ class SemanticManifold:
         elif len(cache_keys) > len(labels):
             # Büyüme: yeni eklenen kavramları sona ekle (O(yeni) — O(N) değil)
             L = self._spec_L
-            new_keys = cache_keys[len(labels):]
+            new_keys = cache_keys[len(labels) :]
             new_rows = np.zeros((len(new_keys), L), dtype=np.float64)
             for j, nm in enumerate(new_keys):
                 ev = sorted(cache[nm].eigenvalues, reverse=True)[:L]
-                new_rows[j, :len(ev)] = ev
+                new_rows[j, : len(ev)] = ev
             self._spec_mat = np.vstack([mat, new_rows])
             base = len(self._spec_labels)
             self._spec_labels.extend(new_keys)
@@ -464,7 +483,7 @@ class SemanticManifold:
         L = self._spec_L
         qv = sorted(q_spec.eigenvalues, reverse=True)[:L]
         q = np.zeros(L, dtype=np.float64)
-        q[:len(qv)] = qv
+        q[: len(qv)] = qv
 
         # Wasserstein-2 benzeri: L2 / L  (tüm satırlar tek seferde)
         dists = np.sqrt(((mat - q) ** 2).sum(axis=1)) / max(L, 1)
@@ -535,6 +554,7 @@ class SemanticManifold:
         """
         import json
         from pathlib import Path
+
         from tantrium.domains.spectral import SpectralMeasure
 
         p = Path(path)
@@ -548,7 +568,7 @@ class SemanticManifold:
             return 0
 
         self._spec_cache = {}
-        for name, eigs in zip(data["labels"], data["e"]):
+        for name, eigs in zip(data["labels"], data["e"], strict=False):
             if name in self.concepts:
                 self._spec_cache[name] = SpectralMeasure.from_list(eigs, name=name)
         return len(self._spec_cache)
@@ -561,12 +581,13 @@ class SemanticManifold:
 
     # ─── Kuantum moment metotları ─────────────────────────────────────────────
 
-    def _get_quantum_sig(self, name: str) -> "object | None":
+    def _get_quantum_sig(self, name: str) -> object | None:
         """Kavramın QuantumSignature'ını al (tembel hesaplama + cache)."""
         c = self.concepts.get(name)
         if c is None:
             return None
         from tantrium.core.quantum_moments import QuantumSignature
+
         cache = getattr(self, "_cumulant_cache", None)
         if cache is None:
             self._cumulant_cache: dict[str, list[float]] = {}
@@ -574,6 +595,7 @@ class SemanticManifold:
         kappa = cache.get(name)
         if kappa is not None:
             from tantrium.core.quantum_moments import FreeCumulants
+
             return QuantumSignature(
                 moments=[float(m) for m in c.moments],
                 cumulants=FreeCumulants(kappa),
@@ -590,6 +612,7 @@ class SemanticManifold:
     ) -> list[tuple[str, float]]:
         """Kuantum mesafeyle en yakın kavramlar: (1-γ)×W2_proxy + γ×κ_mesafe."""
         from tantrium.core.quantum_moments import QuantumSignature
+
         query = QuantumSignature.from_moments(mu)
         results: list[tuple[str, float]] = []
         for name in self.concepts:
@@ -620,10 +643,7 @@ class SemanticManifold:
         """Find all concepts gauge-equivalent to the given one (Mem).
         These are synonyms — different names, same referent.
         """
-        return [
-            name for name, c in self.concepts.items()
-            if are_gauge_equivalent(concept, c, tol)
-        ]
+        return [name for name, c in self.concepts.items() if are_gauge_equivalent(concept, c, tol)]
 
     def is_injective(self) -> bool:
         """Kaf test: are all concepts distinct?
@@ -634,8 +654,7 @@ class SemanticManifold:
         for i in range(len(names)):
             for j in range(i + 1, len(names)):
                 if are_gauge_equivalent(
-                    self.concepts[names[i]], self.concepts[names[j]],
-                    tol=Fraction(0)
+                    self.concepts[names[i]], self.concepts[names[j]], tol=Fraction(0)
                 ):
                     return False
         return True
@@ -652,8 +671,16 @@ class SemanticManifold:
         import json
         from pathlib import Path
 
-        _DC = {"physics": "p", "math": "a", "cs_ai": "c", "biology": "b",
-               "theorem": "t", "language": "l", "general": "g", "philosophy": "f"}
+        _DC = {
+            "physics": "p",
+            "math": "a",
+            "cs_ai": "c",
+            "biology": "b",
+            "theorem": "t",
+            "language": "l",
+            "general": "g",
+            "philosophy": "f",
+        }
 
         names = list(self.concepts.keys())
         data = {
@@ -670,25 +697,34 @@ class SemanticManifold:
         return len(names)
 
     @classmethod
-    def load(cls, path: str) -> "SemanticManifold":
+    def load(cls, path: str) -> SemanticManifold:
         """JSON'dan manifold yükle. v3 (parallel arrays) ve eski formatları destekler."""
         import json
         from pathlib import Path
+
         p = Path(path)
         if not p.exists():
             return cls()
         data = json.loads(p.read_text(encoding="utf-8"))
         m = cls()
 
-        _DC_REV = {"p": "physics", "a": "math", "c": "cs_ai", "b": "biology",
-                   "t": "theorem", "l": "language", "g": "general", "f": "philosophy"}
+        _DC_REV = {
+            "p": "physics",
+            "a": "math",
+            "c": "cs_ai",
+            "b": "biology",
+            "t": "theorem",
+            "l": "language",
+            "g": "general",
+            "f": "philosophy",
+        }
 
         if data.get("v") == 3:
             # v3: parallel arrays
             labels = data["labels"]
             domains = data.get("d", ["g"] * len(labels))
             moments_list = data["m"]
-            for name, d_char, raw in zip(labels, domains, moments_list):
+            for name, d_char, raw in zip(labels, domains, moments_list, strict=False):
                 moments = [Fraction(*float(f).as_integer_ratio()) for f in raw]
                 m.concepts[name] = Concept(
                     name=name,
@@ -721,7 +757,9 @@ class SemanticManifold:
         ]
         for name, concept in list(self.concepts.items())[:10]:
             r = concept.verify_existence()
-            lines.append(f"  [{r.status}] {name} ({len(concept.moments)} moments, domain={concept.domain})")
+            lines.append(
+                f"  [{r.status}] {name} ({len(concept.moments)} moments, domain={concept.domain})"
+            )
         if len(self.concepts) > 10:
             lines.append(f"  ... and {len(self.concepts) - 10} more")
         return "\n".join(lines)

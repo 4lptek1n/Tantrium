@@ -12,6 +12,7 @@ fonksiyonlar BİRBİRİNİ çağırır ("bir yerden bir yere bağlantı var" —
 HALÜSİNASYON İMKÂNSIZ: her fonksiyon örneklerini sağladığı KANITLI; modül yalnız sertifikalı
 parçalardan kurulur. Çağrı zinciri (pipeline) deterministik. Sentezleyiciyi yeniden kullanır.
 """
+
 from __future__ import annotations
 
 import re
@@ -23,12 +24,13 @@ from tantrium.core.code_synthesis import CertifiedProgram, synthesize
 @dataclass
 class ComposedModule:
     """Çok-fonksiyon modülünün sertifikası — denetlenebilir."""
-    functions: list = field(default_factory=list)   # [(name, CertifiedProgram)]
-    verified: bool = False                            # TÜM fonksiyonlar kanıtlı mı
-    source: str = ""                                  # tam modül kaynağı (birleşik)
+
+    functions: list = field(default_factory=list)  # [(name, CertifiedProgram)]
+    verified: bool = False  # TÜM fonksiyonlar kanıtlı mı
+    source: str = ""  # tam modül kaynağı (birleşik)
     n_functions: int = 0
-    failed: list = field(default_factory=list)        # doğrulanamayan fonksiyon adları
-    moments: list = field(default_factory=list)       # modül AST-graf imzası (manifold grounding)
+    failed: list = field(default_factory=list)  # doğrulanamayan fonksiyon adları
+    moments: list = field(default_factory=list)  # modül AST-graf imzası (manifold grounding)
 
 
 _IMPORT_RE = re.compile(r"^\s*import\s+[\w, ]+\s*$", re.MULTILINE)
@@ -58,11 +60,11 @@ def compose(specs, *, max_depth: int = 5, research: bool = False) -> ComposedMod
 
     Döner: ComposedModule (functions, verified, source, failed).
     """
-    funcs: list = []          # [(name, CertifiedProgram)]
+    funcs: list = []  # [(name, CertifiedProgram)]
     failed: list = []
-    ns: dict = {}             # derlenmiş fonksiyonlar (sonrakiler için callable)
+    ns: dict = {}  # derlenmiş fonksiyonlar (sonrakiler için callable)
     imports: set = set()
-    pieces: list = []         # gövde kaynak parçaları (sıralı)
+    pieces: list = []  # gövde kaynak parçaları (sıralı)
 
     for spec in specs:
         name = str(spec.get("name", "")).strip()
@@ -80,8 +82,15 @@ def compose(specs, *, max_depth: int = 5, research: bool = False) -> ComposedMod
             for c in chain:
                 expr = f"{c}({expr})"
             src = f"def {name}(x):\n    return {expr}"
-            cp = CertifiedProgram(program=expr, verified=True, examples_passed=0,
-                                  examples_total=0, steps=len(chain), args=["x"], full_source=src)
+            cp = CertifiedProgram(
+                program=expr,
+                verified=True,
+                examples_passed=0,
+                examples_total=0,
+                steps=len(chain),
+                args=["x"],
+                full_source=src,
+            )
             # opsiyonel: örnek verilmişse zinciri doğrula
             ex = spec.get("examples")
             if ex:
@@ -100,11 +109,18 @@ def compose(specs, *, max_depth: int = 5, research: bool = False) -> ComposedMod
             extra_glob = {u: ns[u] for u in uses}
             extra_prims = [f"{u}({{c}})" for u in uses]
             from tantrium.core.code_research import relevant_primitives
-            grounded, _ = (relevant_primitives(spec.get("task", name), ex, research=research)
-                           if spec.get("task") or research else ([], set()))
-            cp = synthesize(ex, max_depth=max_depth,
-                            extra_primitives=extra_prims + list(grounded),
-                            extra_globals=extra_glob or None)
+
+            grounded, _ = (
+                relevant_primitives(spec.get("task", name), ex, research=research)
+                if spec.get("task") or research
+                else ([], set())
+            )
+            cp = synthesize(
+                ex,
+                max_depth=max_depth,
+                extra_primitives=extra_prims + list(grounded),
+                extra_globals=extra_glob or None,
+            )
             if not cp.verified:
                 failed.append(name)
 
@@ -128,13 +144,14 @@ def compose(specs, *, max_depth: int = 5, research: bool = False) -> ComposedMod
     except Exception:
         mod_ns = {}
     for name, cp in funcs:
-        if not cp.examples_total:                 # calls-zinciri (örneksiz) — atla
+        if not cp.examples_total:  # calls-zinciri (örneksiz) — atla
             continue
         fn = mod_ns.get(name)
         ok = fn is not None
         if ok:
-            for inp, out in [(i, o) for s in specs if s.get("name") == name
-                             for i, o in (s.get("examples") or [])]:
+            for inp, out in [
+                (i, o) for s in specs if s.get("name") == name for i, o in (s.get("examples") or [])
+            ]:
                 args = inp if isinstance(inp, tuple) else (inp,)
                 try:
                     if fn(*args) != out:
@@ -149,11 +166,18 @@ def compose(specs, *, max_depth: int = 5, research: bool = False) -> ComposedMod
     moments: list = []
     try:
         from tantrium.core.encoder import _code_to_graph_moments
+
         moments = [float(m) for m in (_code_to_graph_moments(source) or [])]
     except Exception:
         pass
-    return ComposedModule(functions=funcs, verified=(not failed and bool(funcs)),
-                          source=source, n_functions=len(funcs), failed=failed, moments=moments)
+    return ComposedModule(
+        functions=funcs,
+        verified=(not failed and bool(funcs)),
+        source=source,
+        n_functions=len(funcs),
+        failed=failed,
+        moments=moments,
+    )
 
 
 def _verify_in_ns(src: str, name: str, examples, ns: dict) -> bool:
@@ -184,5 +208,7 @@ def _compile_into(body: str, imports: set, ns: dict) -> None:
 
 def _module_builtins() -> str:
     """ns exec'i için güvenli builtin köprüsü (synthesize'in _SAFE_GLOBALS'ı ile tutarlı)."""
-    return ("from builtins import (abs, len, sum, max, min, sorted, str, int, round, list, "
-            "set, tuple, reversed, any, all, range, map, filter, zip, enumerate)\n")
+    return (
+        "from builtins import (abs, len, sum, max, min, sorted, str, int, round, list, "
+        "set, tuple, reversed, any, all, range, map, filter, zip, enumerate)\n"
+    )

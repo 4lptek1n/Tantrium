@@ -4,10 +4,11 @@ Frontier: sistem elle yazılmamış kuralı kendi keşfeder + sertifikalar. Grap
 kuralı icat eder; CodeAdapter kod şemasını AYNI motora bağlar (tek-gerçek). Tutarsız/
 sertifikasız aday REDDEDİLİR (uydurma yok).
 """
+
 import types
 
 import tantrium
-from tantrium.core.meta import meta_synthesize, GraphAdapter, CodeAdapter, MetaCandidate
+from tantrium.core.meta import CodeAdapter, GraphAdapter, MetaCandidate, meta_synthesize
 
 
 def test_meta_candidate_accepts_generalizing():
@@ -15,10 +16,10 @@ def test_meta_candidate_accepts_generalizing():
     committed = []
     cand = MetaCandidate(
         name="t",
-        build=lambda train: ("R" if {x[1] for x in train} == {"R"} else None),
+        build=lambda train: "R" if {x[1] for x in train} == {"R"} else None,
         instances=[("a", "R"), ("b", "R"), ("c", "R")],
         verify=lambda art, held: all(x[1] == art for x in held),
-        commit=lambda art: (committed.append(art) or "icat:R"),
+        commit=lambda art: committed.append(art) or "icat:R",
     )
     adapter = types.SimpleNamespace(domain="t", candidates=lambda engine, **kw: [cand])
     inv = meta_synthesize(adapter, engine=None)
@@ -31,9 +32,9 @@ def test_meta_rejects_inconsistent():
     cand = MetaCandidate(
         name="t",
         build=lambda train: (lambda s: s.pop() if len(s) == 1 else None)({x[1] for x in train}),
-        instances=[("a", "R"), ("b", "Q"), ("c", "R")],   # tutarsız
+        instances=[("a", "R"), ("b", "Q"), ("c", "R")],  # tutarsız
         verify=lambda art, held: art is not None and all(x[1] == art for x in held),
-        commit=lambda art: (committed.append(art) or "icat"),
+        commit=lambda art: committed.append(art) or "icat",
     )
     adapter = types.SimpleNamespace(domain="t", candidates=lambda engine, **kw: [cand])
     assert meta_synthesize(adapter, engine=None) == [] and committed == []
@@ -44,17 +45,18 @@ def test_graph_adapter_invents_certified_rule():
     from tantrium.reasoning.causal_rules import LEARNED_TRANSITIVE, lookup_transitive
 
     class _E:
-        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+        def __init__(s, t, p):
+            s.target, s.paradigm, s.distance = t, p, 0.0
 
     edges = {}
     for i in range(3):
         a, b, c = f"za{i}", f"zb{i}", f"zc{i}"
-        edges[a] = [_E(b, "ZREL1"), _E(c, "ZRELD")]   # a -ZREL1-> b, a -ZRELD-> c (doğrudan)
-        edges[b] = [_E(c, "ZREL2")]                    # b -ZREL2-> c
+        edges[a] = [_E(b, "ZREL1"), _E(c, "ZRELD")]  # a -ZREL1-> b, a -ZRELD-> c (doğrudan)
+        edges[b] = [_E(c, "ZREL2")]  # b -ZREL2-> c
     eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges=edges))
     try:
         inv = meta_synthesize(GraphAdapter(min_obs=3), eng)
-        assert lookup_transitive("ZREL1", "ZREL2") == "ZRELD"     # kural icat edildi
+        assert lookup_transitive("ZREL1", "ZREL2") == "ZRELD"  # kural icat edildi
         assert any("ZREL1" in s and "ZRELD" in s for s in inv)
     finally:
         LEARNED_TRANSITIVE.pop(("ZREL1", "ZREL2"), None)
@@ -65,10 +67,11 @@ def test_graph_adapter_rejects_inconsistent_observations():
     from tantrium.reasoning.causal_rules import LEARNED_TRANSITIVE, lookup_transitive
 
     class _E:
-        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+        def __init__(s, t, p):
+            s.target, s.paradigm, s.distance = t, p, 0.0
 
     edges = {}
-    labels = ["ZRELD", "ZRELE", "ZRELD"]   # tutarsız
+    labels = ["ZRELD", "ZRELE", "ZRELD"]  # tutarsız
     for i in range(3):
         a, b, c = f"qa{i}", f"qb{i}", f"qc{i}"
         edges[a] = [_E(b, "QREL1"), _E(c, labels[i])]
@@ -76,7 +79,7 @@ def test_graph_adapter_rejects_inconsistent_observations():
     eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges=edges))
     try:
         meta_synthesize(GraphAdapter(min_obs=3), eng)
-        assert lookup_transitive("QREL1", "QREL2") is None    # tutarsız → öğrenilmedi
+        assert lookup_transitive("QREL1", "QREL2") is None  # tutarsız → öğrenilmedi
     finally:
         LEARNED_TRANSITIVE.pop(("QREL1", "QREL2"), None)
 
@@ -84,6 +87,7 @@ def test_graph_adapter_rejects_inconsistent_observations():
 def test_graph_adapter_does_not_relearn_builtin_rules():
     """Sabit TRANSITIVE_CAUSAL'daki çift YENİDEN öğrenilmez (elle bilgi korunur)."""
     from tantrium.reasoning.causal_rules import TRANSITIVE_CAUSAL
+
     # (ACTIVATES, ACTIVATES) zaten tabloda → GraphAdapter onu aday yapmaz
     assert ("ACTIVATES", "ACTIVATES") in TRANSITIVE_CAUSAL
 
@@ -93,17 +97,18 @@ def test_graph_adapter_invents_converse_rule():
     from tantrium.reasoning.causal_rules import LEARNED_CONVERSE, lookup_converse
 
     class _E:
-        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+        def __init__(s, t, p):
+            s.target, s.paradigm, s.distance = t, p, 0.0
 
     edges = {}
     for i in range(3):
         a, b = f"ca{i}", f"cb{i}"
-        edges[a] = [_E(b, "XPART")]        # a -XPART-> b
-        edges[b] = [_E(a, "XWHOLE")]       # b -XWHOLE-> a (tutarlı ters)
+        edges[a] = [_E(b, "XPART")]  # a -XPART-> b
+        edges[b] = [_E(a, "XWHOLE")]  # b -XWHOLE-> a (tutarlı ters)
     eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges=edges))
     try:
         inv = meta_synthesize(GraphAdapter(min_obs=3), eng)
-        assert lookup_converse("XPART") == "XWHOLE"       # ters kural icat edildi (IS_A değil)
+        assert lookup_converse("XPART") == "XWHOLE"  # ters kural icat edildi (IS_A değil)
         assert any("XPART" in s for s in inv)
     finally:
         LEARNED_CONVERSE.pop("XPART", None)
@@ -113,25 +118,26 @@ def test_apply_converse_materializes_certified_back_edges():
     """Converse kuralı UYGULANIR: eksik ters kenar (pozitiflik geçerse) materyalize edilir."""
     from tantrium.core.meta import apply_converse_rules
     from tantrium.reasoning.causal_rules import LEARNED_CONVERSE
+
     ai = tantrium.AI()
     e = ai._engine
     from tantrium.core.semantic import Concept
 
     class _E:
-        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+        def __init__(s, t, p):
+            s.target, s.paradigm, s.distance = t, p, 0.0
 
     # gerçek momentli kavramlar (pozitiflik certify edilebilsin)
     for n in ("cvx", "cvy"):
         if n not in e.manifold.concepts:
             cod = e.encoder.encode(n, name=n)
             e.manifold.concepts[n] = Concept(name=n, moments=list(cod.moments), domain="test")
-    e.tau.edges["cvx"] = [_E("cvy", "XF")]    # cvx -XF-> cvy ; ters (cvy-XB->cvx) YOK
+    e.tau.edges["cvx"] = [_E("cvy", "XF")]  # cvx -XF-> cvy ; ters (cvy-XB->cvx) YOK
     e.tau.edges.setdefault("cvy", [])
     LEARNED_CONVERSE["XF"] = "XB"
     try:
         n = apply_converse_rules(e, max_apply=10)
-        has_back = any(x.target == "cvx" and x.paradigm == "XB"
-                       for x in e.tau.edges.get("cvy", []))
+        has_back = any(x.target == "cvx" and x.paradigm == "XB" for x in e.tau.edges.get("cvy", []))
         # pozitiflik geçtiyse materyalize edilmiş olur; geçmediyse dürüstçe eklenmez
         assert (n >= 1) == has_back
     finally:
@@ -145,17 +151,18 @@ def test_graph_adapter_invents_implication_rule():
     from tantrium.reasoning.causal_rules import LEARNED_IMPLICATION, lookup_implication
 
     class _E:
-        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+        def __init__(s, t, p):
+            s.target, s.paradigm, s.distance = t, p, 0.0
 
     edges = {}
     for i in range(3):
         a, b = f"ia{i}", f"ib{i}"
-        edges[a] = [_E(b, "XSPEC"), _E(b, "XGEN")]   # her çiftte hem XSPEC hem XGEN
+        edges[a] = [_E(b, "XSPEC"), _E(b, "XGEN")]  # her çiftte hem XSPEC hem XGEN
         edges[b] = []
     eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges=edges))
     try:
         inv = meta_synthesize(GraphAdapter(min_obs=3), eng)
-        assert lookup_implication("XSPEC") == "XGEN"   # XSPEC ⊑ XGEN icat edildi
+        assert lookup_implication("XSPEC") == "XGEN"  # XSPEC ⊑ XGEN icat edildi
         assert any("XSPEC" in s and "XGEN" in s for s in inv)
     finally:
         LEARNED_IMPLICATION.pop("XSPEC", None)
@@ -167,7 +174,8 @@ def test_implication_not_learned_with_counterexample():
     from tantrium.reasoning.causal_rules import LEARNED_IMPLICATION, lookup_implication
 
     class _E:
-        def __init__(s, t, p): s.target, s.paradigm, s.distance = t, p, 0.0
+        def __init__(s, t, p):
+            s.target, s.paradigm, s.distance = t, p, 0.0
 
     edges = {}
     for i in range(3):
@@ -178,7 +186,7 @@ def test_implication_not_learned_with_counterexample():
     eng = types.SimpleNamespace(tau=types.SimpleNamespace(edges=edges))
     try:
         meta_synthesize(GraphAdapter(min_obs=3), eng)
-        assert lookup_implication("YSPEC") is None    # karşı-örnek → öğrenilmedi
+        assert lookup_implication("YSPEC") is None  # karşı-örnek → öğrenilmedi
     finally:
         LEARNED_IMPLICATION.pop("YSPEC", None)
 
@@ -186,9 +194,10 @@ def test_implication_not_learned_with_counterexample():
 def test_analogy_transfer_certified_only():
     """Analoji-transfer: yapısal-analog kavramlar arası ilişki transferi, her biri pozitiflik-kapılı."""
     from tantrium.core.meta import derive_analogy_edges
+
     ai = tantrium.AI()
     n = derive_analogy_edges(ai._engine, min_shared=3, max_apply=5)
-    assert isinstance(n, int) and n >= 0       # çalışır, sertifikasız conjecture eklemez
+    assert isinstance(n, int) and n >= 0  # çalışır, sertifikasız conjecture eklemez
 
 
 def test_code_adapter_routes_through_unified_engine():

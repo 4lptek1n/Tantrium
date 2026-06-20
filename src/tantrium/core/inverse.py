@@ -10,12 +10,13 @@ Algoritma:
   4. Sertifika: 4 eksen (CoreMachine)
   5. 3D konformasyon: RDKit ETKDGv3
 """
+
 from __future__ import annotations
 
-import os
 import logging
+import os
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 warnings.filterwarnings("ignore")
@@ -23,6 +24,7 @@ logging.getLogger("rdkit").setLevel(logging.CRITICAL)
 
 try:
     from rdkit import RDLogger
+
     RDLogger.DisableLog("rdApp.*")
 except Exception:
     pass
@@ -31,42 +33,54 @@ if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
 
 _SUBSTITUENTS = [
-    "F", "Cl", "Br", "I",
-    "O", "N", "C",
-    "[OH]", "[NH2]", "[CH3]", "[CF3]", "[OCH3]",
-    "[CN]", "[NO2]", "[COOH]", "[SO3H]",
+    "F",
+    "Cl",
+    "Br",
+    "I",
+    "O",
+    "N",
+    "C",
+    "[OH]",
+    "[NH2]",
+    "[CH3]",
+    "[CF3]",
+    "[OCH3]",
+    "[CN]",
+    "[NO2]",
+    "[COOH]",
+    "[SO3H]",
 ]
 
 _RING_REPLACEMENTS = [
-    ("c1ccccc1", "c1ccncc1"),   # benzene → pyridine
-    ("c1ccccc1", "c1ccncc1"),   # benzene → pyrimidine
-    ("C1CCCCC1", "C1CCNCC1"),   # cyclohexane → piperidine
-    ("C1CCCCC1", "C1CCOCC1"),   # cyclohexane → morpholine
-    ("c1ccccc1", "c1ccsc1"),    # benzene → thiophene
-    ("c1ccccc1", "c1ccocc1"),   # benzene → furan
+    ("c1ccccc1", "c1ccncc1"),  # benzene → pyridine
+    ("c1ccccc1", "c1ccncc1"),  # benzene → pyrimidine
+    ("C1CCCCC1", "C1CCNCC1"),  # cyclohexane → piperidine
+    ("C1CCCCC1", "C1CCOCC1"),  # cyclohexane → morpholine
+    ("c1ccccc1", "c1ccsc1"),  # benzene → thiophene
+    ("c1ccccc1", "c1ccocc1"),  # benzene → furan
 ]
 
 _DRUG_SCAFFOLDS = [
-    ("aspirin",          "CC(=O)Oc1ccccc1C(=O)O"),
-    ("ibuprofen",        "CC(C)Cc1ccc(cc1)C(C)C(=O)O"),
-    ("paracetamol",      "CC(=O)Nc1ccc(O)cc1"),
-    ("caffeine",         "Cn1cnc2c1c(=O)n(c(=O)n2C)C"),
-    ("dopamine",         "NCCc1ccc(O)c(O)c1"),
-    ("serotonin",        "NCCc1c[nH]c2ccc(O)cc12"),
-    ("adenine",          "Nc1ncnc2ncnc12"),
-    ("glucose",          "OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O"),
-    ("benzimidazole",    "c1ccc2[nH]cnc2c1"),
-    ("indole",           "c1ccc2[nH]ccc2c1"),
-    ("quinoline",        "c1ccc2ncccc2c1"),
-    ("piperazine",       "C1CNCCN1"),
-    ("imidazole",        "c1cn[nH]c1"),
-    ("triazole",         "c1cnn[nH]1"),
-    ("morpholine",       "C1COCCN1"),
-    ("thiazolidine",     "C1CSCN1"),
-    ("pyrimidine_core",  "c1ccncn1"),
-    ("oxazole",          "c1cocn1"),
-    ("furanose",         "C1CCCO1"),
-    ("sulfonamide_ph",   "NS(=O)(=O)c1ccccc1"),
+    ("aspirin", "CC(=O)Oc1ccccc1C(=O)O"),
+    ("ibuprofen", "CC(C)Cc1ccc(cc1)C(C)C(=O)O"),
+    ("paracetamol", "CC(=O)Nc1ccc(O)cc1"),
+    ("caffeine", "Cn1cnc2c1c(=O)n(c(=O)n2C)C"),
+    ("dopamine", "NCCc1ccc(O)c(O)c1"),
+    ("serotonin", "NCCc1c[nH]c2ccc(O)cc12"),
+    ("adenine", "Nc1ncnc2ncnc12"),
+    ("glucose", "OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O"),
+    ("benzimidazole", "c1ccc2[nH]cnc2c1"),
+    ("indole", "c1ccc2[nH]ccc2c1"),
+    ("quinoline", "c1ccc2ncccc2c1"),
+    ("piperazine", "C1CNCCN1"),
+    ("imidazole", "c1cn[nH]c1"),
+    ("triazole", "c1cnn[nH]1"),
+    ("morpholine", "C1COCCN1"),
+    ("thiazolidine", "C1CSCN1"),
+    ("pyrimidine_core", "c1ccncn1"),
+    ("oxazole", "c1cocn1"),
+    ("furanose", "C1CCCO1"),
+    ("sulfonamide_ph", "NS(=O)(=O)c1ccccc1"),
 ]
 
 
@@ -143,7 +157,7 @@ class DesignReport:
 class InverseTransport:
     """Hedef → manifold araması + fragment mutasyonu → minimum W2 moleküller."""
 
-    def __init__(self, engine: "CertificationEngine"):
+    def __init__(self, engine: CertificationEngine):
         self.engine = engine
 
     # ── Genel giriş noktası ──────────────────────────────────────────────────
@@ -156,6 +170,7 @@ class InverseTransport:
         n_fragment_rounds: int = 2,
     ) -> DesignReport:
         import time
+
         t0 = time.time()
 
         target_moments, target_type = self._encode_target(target)
@@ -196,8 +211,10 @@ class InverseTransport:
     def _encode_target(self, target: str) -> tuple[list[float], str]:
         """Hedefi moment vektörüne çevir. SMILES veya metin."""
         from tantrium.core.encoder import encode
+
         try:
             from rdkit import Chem
+
             if Chem.MolFromSmiles(target) is not None:
                 obj = encode(target)
                 return [float(m) for m in obj.moments], "smiles"
@@ -210,9 +227,9 @@ class InverseTransport:
 
     def _search_manifold(self, target_moments: list[float], n: int) -> list[dict]:
         """Manifolda L1 ön-filtre → W2 yeniden sıralama ile en yakın kavramları bul."""
-        from tantrium.core.metric import l1_distance, canonical_distance
-        from tantrium.core.semantic import Concept
         from fractions import Fraction
+
+        from tantrium.core.semantic import Concept
 
         manifold = self.engine.manifold
         if not manifold or not manifold.concepts:
@@ -235,13 +252,15 @@ class InverseTransport:
             c = manifold.concepts.get(name)
             if c is None:
                 continue
-            hits.append({
-                "name": name,
-                "smiles": self._concept_to_smiles(name),
-                "moments": [float(m) for m in c.moments],
-                "w2": float(dist),
-                "method": "manifold",
-            })
+            hits.append(
+                {
+                    "name": name,
+                    "smiles": self._concept_to_smiles(name),
+                    "moments": [float(m) for m in c.moments],
+                    "w2": float(dist),
+                    "method": "manifold",
+                }
+            )
 
         return hits
 
@@ -249,6 +268,7 @@ class InverseTransport:
         """Kavram adı SMILES ise döndür, değilse None."""
         try:
             from rdkit import Chem
+
             if Chem.MolFromSmiles(name) is not None:
                 return name
         except Exception:
@@ -288,16 +308,19 @@ class InverseTransport:
                     break
                 try:
                     from tantrium.core.encoder import encode
+
                     obj = encode(v_smi)
                     v_moments = [float(m) for m in obj.moments]
                     w2 = canonical_distance(v_moments, target_moments)
-                    results.append({
-                        "name": f"frag_{len(results):03d}",
-                        "smiles": v_smi,
-                        "moments": v_moments,
-                        "w2": w2,
-                        "method": "fragment",
-                    })
+                    results.append(
+                        {
+                            "name": f"frag_{len(results):03d}",
+                            "smiles": v_smi,
+                            "moments": v_moments,
+                            "w2": w2,
+                            "method": "fragment",
+                        }
+                    )
                 except Exception:
                     continue
             if len(results) >= budget:
@@ -309,7 +332,7 @@ class InverseTransport:
         """Tek SMILES'tan RDKit substituent ekleme/değiştirme ile varyantlar üret."""
         try:
             from rdkit import Chem
-            from rdkit.Chem import AllChem, rdMolDescriptors
+            from rdkit.Chem import rdMolDescriptors
 
             mol = Chem.MolFromSmiles(smiles)
             if mol is None:
@@ -346,7 +369,6 @@ class InverseTransport:
         """Aromatik halkaya substituent ekle."""
         try:
             from rdkit import Chem
-            from rdkit.Chem import AllChem
 
             mol = Chem.MolFromSmiles(smiles)
             if mol is None:
@@ -359,8 +381,7 @@ class InverseTransport:
                         for sub in ["F", "Cl", "C", "O", "N"]:
                             rwmol = Chem.RWMol(mol)
                             new_idx = rwmol.AddAtom(Chem.Atom(sub))
-                            rwmol.AddBond(atom.GetIdx(), new_idx,
-                                          Chem.BondType.SINGLE)
+                            rwmol.AddBond(atom.GetIdx(), new_idx, Chem.BondType.SINGLE)
                             try:
                                 Chem.SanitizeMol(rwmol)
                                 s = Chem.MolToSmiles(rwmol)
@@ -382,6 +403,7 @@ class InverseTransport:
                 new_smi = smiles.replace(src, tgt, 1)
                 try:
                     from rdkit import Chem
+
                     m = Chem.MolFromSmiles(new_smi)
                     if m is not None:
                         variants.append(Chem.MolToSmiles(m))
@@ -408,7 +430,7 @@ class InverseTransport:
                 seen_smi.add(key)
                 raw_unique.append(h)
 
-        raw_sorted = raw_unique[:top_k * 3]
+        raw_sorted = raw_unique[: top_k * 3]
 
         candidates: list[DesignCandidate] = []
         for h in raw_sorted:
@@ -426,9 +448,7 @@ class InverseTransport:
 
             try:
                 encode_key = smiles if smiles else name
-                run = self.engine.network.run(
-                    self.engine.encoder.encode(encode_key)
-                )
+                run = self.engine.network.run(self.engine.encoder.encode(encode_key))
                 paradigms_passed = run.certified_count
                 paradigms_total = run.total
                 certified = paradigms_passed >= paradigms_total - 1
@@ -438,19 +458,20 @@ class InverseTransport:
             except Exception:
                 pass
 
-            has_smiles = smiles is not None
-            candidates.append(DesignCandidate(
-                name=name,
-                smiles=smiles or "",
-                moments=h_moments,
-                w2_distance=w2,
-                certified=certified,
-                paradigms_passed=paradigms_passed,
-                paradigms_total=paradigms_total,
-                coherent=coherent,
-                confidence=confidence,
-                method=h.get("method", "unknown"),
-            ))
+            candidates.append(
+                DesignCandidate(
+                    name=name,
+                    smiles=smiles or "",
+                    moments=h_moments,
+                    w2_distance=w2,
+                    certified=certified,
+                    paradigms_passed=paradigms_passed,
+                    paradigms_total=paradigms_total,
+                    coherent=coherent,
+                    confidence=confidence,
+                    method=h.get("method", "unknown"),
+                )
+            )
 
         # SMILES adayları önce (ilaç tasarımı için), sonra W2 + yapısal skor
         def _rank_key(c: DesignCandidate):
@@ -468,8 +489,11 @@ class InverseTransport:
         Kanonik `embed_3d_sdf` util'ine delege (#7): remove_hs=True + SMILES alanı.
         """
         from tantrium.core.molecular_3d import embed_3d_sdf
+
         return embed_3d_sdf(
-            smiles, name, out_dir,
+            smiles,
+            name,
+            out_dir,
             props={"SMILES": smiles},
             remove_hs=True,
         )

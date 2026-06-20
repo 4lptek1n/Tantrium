@@ -16,11 +16,11 @@ Kuantum dolanıklık:
   - Bir node değişince bağlı tüm node'lar etkilenir
   - Edge'ler TAV fixed-point'i — sistem kapandığında ağ tutarlı
 """
+
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from fractions import Fraction
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -37,11 +37,29 @@ GEOMETRIC_PARADIGMS = frozenset({"ALEPH", "SPECTRAL_BRIDGE", "QUANTUM_BRIDGE"})
 
 # Tarihsel/çekirdek anlam tipleri — yalnız ITERASYON için (üyelik açık-sözlüktür).
 _KNOWN_SEMANTIC = (
-    "IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOSED",
-    "CAUSES", "INHIBITS", "ACTIVATES", "TARGETS", "BINDS", "REGULATES",
-    "PHOSPHORYLATES", "EXPRESSES", "ENCODES", "COMPONENT_OF",
-    "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE", "HAS_DNA",
-    "HAS_GEOMETRY", "HAS_TOPOLOGY", "IS_GOVERNED_BY",
+    "IS_A",
+    "USES",
+    "DEFINES",
+    "ACHIEVES",
+    "REQUIRES",
+    "COMPOSED",
+    "CAUSES",
+    "INHIBITS",
+    "ACTIVATES",
+    "TARGETS",
+    "BINDS",
+    "REGULATES",
+    "PHOSPHORYLATES",
+    "EXPRESSES",
+    "ENCODES",
+    "COMPONENT_OF",
+    "HAS_SIGNAL",
+    "HAS_COMPOUND",
+    "HAS_IMAGE",
+    "HAS_DNA",
+    "HAS_GEOMETRY",
+    "HAS_TOPOLOGY",
+    "IS_GOVERNED_BY",
 )
 
 
@@ -58,6 +76,7 @@ class _OpenSemanticParadigms:
 
     Sonsuz açık küme: üyelik blacklist'le karar verilir; iterasyon çekirdek tipleri verir
     (sonlu, anlamlı). Eski whitelist-set'lerin yerini saydam doldurur — çağrı sitesi değişmez."""
+
     __slots__ = ()
 
     def __contains__(self, p) -> bool:
@@ -76,12 +95,13 @@ SEMANTIC_PARADIGMS = _OpenSemanticParadigms()
 
 # ─── Node & Edge ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class KnowledgeNode:
     name: str
     domain: str = "general"
     source: str = "undefined"
-    sr: float = 0.0   # spectral radius = μ_7 (dominant eigenvalue, 96% variance)
+    sr: float = 0.0  # spectral radius = μ_7 (dominant eigenvalue, 96% variance)
 
 
 @dataclass
@@ -94,6 +114,7 @@ class KnowledgeEdge:
 
 
 # ─── TAU Graph ────────────────────────────────────────────────────────────────
+
 
 class KnowledgeGraph:
     """Tau / Hankel Kernel ağı.
@@ -112,7 +133,7 @@ class KnowledgeGraph:
 
     # ─── Node operasyonları ───────────────────────────────────────────────────
 
-    def add_node(self, concept: "Concept") -> None:
+    def add_node(self, concept: Concept) -> None:
         """Kavramı node olarak ekle. Sadece isim + spektral yarıçap saklanır."""
         sr = float(concept.moments[-1]) if concept.moments else 0.0
         self.nodes[concept.name] = KnowledgeNode(
@@ -131,8 +152,8 @@ class KnowledgeGraph:
 
     def certify_edge(
         self,
-        a: "Concept",
-        b: "Concept",
+        a: Concept,
+        b: Concept,
     ) -> KnowledgeEdge | None:
         """İki node arasındaki Hankel kernel'i sertifikala.
 
@@ -140,6 +161,7 @@ class KnowledgeGraph:
         Joint PSD → dyadic transport var → edge certified.
         """
         from tantrium.core.semantic import moment_distance
+
         d = float(moment_distance(a, b))
         return KnowledgeEdge(
             source=a.name,
@@ -150,8 +172,8 @@ class KnowledgeGraph:
 
     def add_edges_for(
         self,
-        concept: "Concept",
-        manifold: "SemanticManifold",
+        concept: Concept,
+        manifold: SemanticManifold,
         k: int = 5,
     ) -> int:
         """Bir node için K yakın certified edge — sr-index ile O(√n)."""
@@ -187,8 +209,8 @@ class KnowledgeGraph:
         self,
         name: str,
         k: int = 5,
-        concept: "Concept | None" = None,
-        manifold: "SemanticManifold | None" = None,
+        concept: Concept | None = None,
+        manifold: SemanticManifold | None = None,
     ) -> list[tuple[str, float]]:
         """K en yakın certified komşuyu döndür.
 
@@ -213,7 +235,7 @@ class KnowledgeGraph:
         candidates = self._sr_candidates(sr_q, window=min(200, len(self.nodes)))
 
         # 2. Aşama: adaylar içinde exact distance
-        from tantrium.core.semantic import moment_distance
+
         q_m = concept.moments
         k_len = len(q_m)
 
@@ -257,10 +279,10 @@ class KnowledgeGraph:
     @classmethod
     def build(
         cls,
-        manifold: "SemanticManifold",
+        manifold: SemanticManifold,
         k: int = 5,
         verbose: bool = True,
-    ) -> "KnowledgeGraph":
+    ) -> KnowledgeGraph:
         """Manifold'dan TAU ağı inşa et.
 
         Her node için K certified edge bulur.
@@ -269,7 +291,7 @@ class KnowledgeGraph:
         g = cls()
 
         # Tüm node'ları ekle
-        for name, concept in manifold.concepts.items():
+        for _name, concept in manifold.concepts.items():
             g.add_node(concept)
         g._rebuild_sr_index()
 
@@ -277,11 +299,11 @@ class KnowledgeGraph:
             print(f"  TAU: {len(g.nodes)} node eklendi. Edge'ler hesaplanıyor (k={k})...")
 
         total_edges = 0
-        for i, (name, concept) in enumerate(manifold.concepts.items()):
+        for i, (_name, concept) in enumerate(manifold.concepts.items()):
             n_edges = g.add_edges_for(concept, manifold, k=k)
             total_edges += n_edges
             if verbose and (i + 1) % 1000 == 0:
-                print(f"  {i+1}/{len(manifold.concepts)} node işlendi...")
+                print(f"  {i + 1}/{len(manifold.concepts)} node işlendi...")
 
         if verbose:
             print(f"  TAU: {total_edges} certified edge oluşturuldu.")
@@ -307,24 +329,41 @@ class KnowledgeGraph:
             return domain[0] if domain else "g"
 
         node_list = [
-            [name, _d(self.nodes[name].domain), round(self.nodes[name].sr, 8)]
-            for name in names
+            [name, _d(self.nodes[name].domain), round(self.nodes[name].sr, 8)] for name in names
         ]
 
         # ALEPH: moment-distance certified (L2 Hankel kernel) — k=10, distance sorted
         # Geri kalan HER kenar (tipli ilişki + genesis köprüleri + AÇIK-sözlük öğrenilen
         # yeni tipler) tam saklanır — açık-sözlük: whitelist yok, yalnız ALEPH budanır.
         # Paradigm → single-char code for compact storage (bilinmeyen=literal ad korunur)
-        _P = {"ALEPH": "A", "IS_A": "I", "USES": "U", "DEFINES": "D",
-              "ACHIEVES": "V", "REQUIRES": "R", "COMPOSED": "C",
-              "SPECTRAL_BRIDGE": "S", "QUANTUM_BRIDGE": "Q",
-              "CAUSES": "CA", "INHIBITS": "IN", "ACTIVATES": "AC",
-              "TARGETS": "TG", "BINDS": "BN", "REGULATES": "RG",
-              "PHOSPHORYLATES": "PH", "EXPRESSES": "EX", "ENCODES": "EN",
-              "COMPONENT_OF": "CO", "HAS_SIGNAL": "HS",
-              "HAS_COMPOUND": "HC", "HAS_IMAGE": "HI",
-              "HAS_DNA": "HD", "HAS_GEOMETRY": "HG",
-              "HAS_TOPOLOGY": "HT", "IS_GOVERNED_BY": "GB"}
+        _P = {
+            "ALEPH": "A",
+            "IS_A": "I",
+            "USES": "U",
+            "DEFINES": "D",
+            "ACHIEVES": "V",
+            "REQUIRES": "R",
+            "COMPOSED": "C",
+            "SPECTRAL_BRIDGE": "S",
+            "QUANTUM_BRIDGE": "Q",
+            "CAUSES": "CA",
+            "INHIBITS": "IN",
+            "ACTIVATES": "AC",
+            "TARGETS": "TG",
+            "BINDS": "BN",
+            "REGULATES": "RG",
+            "PHOSPHORYLATES": "PH",
+            "EXPRESSES": "EX",
+            "ENCODES": "EN",
+            "COMPONENT_OF": "CO",
+            "HAS_SIGNAL": "HS",
+            "HAS_COMPOUND": "HC",
+            "HAS_IMAGE": "HI",
+            "HAS_DNA": "HD",
+            "HAS_GEOMETRY": "HG",
+            "HAS_TOPOLOGY": "HT",
+            "IS_GOVERNED_BY": "GB",
+        }
         edge_list: list[list] = []
         total_edges = 0
         for name in names:
@@ -337,20 +376,23 @@ class KnowledgeGraph:
             semantic = [e for e in all_edges if e.paradigm != "ALEPH"]
             combined = aleph + semantic
             edge_list.append(
-                [[id_map[e.target], round(e.distance, 6), _P.get(e.paradigm, e.paradigm)]
-                 for e in combined if e.target in id_map]
+                [
+                    [id_map[e.target], round(e.distance, 6), _P.get(e.paradigm, e.paradigm)]
+                    for e in combined
+                    if e.target in id_map
+                ]
             )
             total_edges += len(combined)
 
         data = {"n": node_list, "e": edge_list}
         Path(path).write_text(
-            json.dumps(data, ensure_ascii=False, separators=(',', ':')),
+            json.dumps(data, ensure_ascii=False, separators=(",", ":")),
             encoding="utf-8",
         )
         return len(names), total_edges
 
     @classmethod
-    def load(cls, path: str) -> "KnowledgeGraph":
+    def load(cls, path: str) -> KnowledgeGraph:
         """TAU ağını integer-ID formatından yükle. Eski string formatı da desteklenir."""
         p = Path(path)
         if not p.exists():
@@ -360,24 +402,47 @@ class KnowledgeGraph:
 
         # Yeni format: "n" ve "e" listeleri
         if "n" in data:
-            domain_map = {"g": "general", "l": "language", "t": "theorem",
-                          "d": "derived", "q": "query"}
+            domain_map = {
+                "g": "general",
+                "l": "language",
+                "t": "theorem",
+                "d": "derived",
+                "q": "query",
+            }
             names: list[str] = []
             for row in data["n"]:
                 name, d_char, sr = row[0], row[1], row[2]
                 domain = domain_map.get(d_char, "general")
                 g.nodes[name] = KnowledgeNode(name=name, domain=domain, source="saved", sr=sr)
                 names.append(name)
-            _P_REV = {"A": "ALEPH", "I": "IS_A", "U": "USES", "D": "DEFINES",
-                      "V": "ACHIEVES", "R": "REQUIRES", "C": "COMPOSED",
-                      "S": "SPECTRAL_BRIDGE", "Q": "QUANTUM_BRIDGE",
-                      "CA": "CAUSES", "IN": "INHIBITS", "AC": "ACTIVATES",
-                      "TG": "TARGETS", "BN": "BINDS", "RG": "REGULATES",
-                      "PH": "PHOSPHORYLATES", "EX": "EXPRESSES", "EN": "ENCODES",
-                      "CO": "COMPONENT_OF", "HS": "HAS_SIGNAL",
-                      "HC": "HAS_COMPOUND", "HI": "HAS_IMAGE",
-                      "HD": "HAS_DNA", "HG": "HAS_GEOMETRY",
-                      "HT": "HAS_TOPOLOGY", "GB": "IS_GOVERNED_BY"}
+            _P_REV = {
+                "A": "ALEPH",
+                "I": "IS_A",
+                "U": "USES",
+                "D": "DEFINES",
+                "V": "ACHIEVES",
+                "R": "REQUIRES",
+                "C": "COMPOSED",
+                "S": "SPECTRAL_BRIDGE",
+                "Q": "QUANTUM_BRIDGE",
+                "CA": "CAUSES",
+                "IN": "INHIBITS",
+                "AC": "ACTIVATES",
+                "TG": "TARGETS",
+                "BN": "BINDS",
+                "RG": "REGULATES",
+                "PH": "PHOSPHORYLATES",
+                "EX": "EXPRESSES",
+                "EN": "ENCODES",
+                "CO": "COMPONENT_OF",
+                "HS": "HAS_SIGNAL",
+                "HC": "HAS_COMPOUND",
+                "HI": "HAS_IMAGE",
+                "HD": "HAS_DNA",
+                "HG": "HAS_GEOMETRY",
+                "HT": "HAS_TOPOLOGY",
+                "GB": "IS_GOVERNED_BY",
+            }
             for i, edge_rows in enumerate(data["e"]):
                 src = names[i]
                 g.edges[src] = [
@@ -402,8 +467,7 @@ class KnowledgeGraph:
                 )
             for name, edge_list in data.get("edges", {}).items():
                 g.edges[name] = [
-                    KnowledgeEdge(source=name, target=e["t"], distance=e["d"])
-                    for e in edge_list
+                    KnowledgeEdge(source=name, target=e["t"], distance=e["d"]) for e in edge_list
                 ]
 
         g._rebuild_sr_index()
@@ -420,5 +484,3 @@ class KnowledgeGraph:
             f"avg degree {avg_deg:.1f}  |  "
             f"topoloji = bilgi"
         )
-
-

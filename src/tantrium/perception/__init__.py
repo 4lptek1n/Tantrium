@@ -28,8 +28,17 @@ Kullanım:
     obj = encode_signal(samples, name="440hz_tone")
     run = engine.process(obj)            # 23 paradigma
 """
+
 from __future__ import annotations
 
+from tantrium.perception.crypto import (
+    AchillesReading,
+    CryptoReading,
+    achilles,
+    analyze,
+    bytes_to_signal,
+    count_repeated_blocks,
+)
 from tantrium.perception.encode import (
     encode_image,
     encode_matrix,
@@ -38,8 +47,8 @@ from tantrium.perception.encode import (
     signal_autocorrelation,
 )
 from tantrium.perception.generate import (
-    chord,
     checkerboard_image,
+    chord,
     concentric_image,
     gradient_image,
     noise_image,
@@ -47,14 +56,6 @@ from tantrium.perception.generate import (
     stripes_image,
     tone,
     white_noise,
-)
-from tantrium.perception.crypto import (
-    analyze,
-    achilles,
-    bytes_to_signal,
-    count_repeated_blocks,
-    CryptoReading,
-    AchillesReading,
 )
 
 __all__ = [

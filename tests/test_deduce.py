@@ -3,6 +3,7 @@
 Karakterizasyon (plan gereği ÖNCE): engine.grow()'un summary yapısı + idempotens
 (teorem düğümleri zaten manifoldda → büyüme katastrofik değil) sabitlenir.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -11,6 +12,7 @@ import pytest
 @pytest.fixture(scope="module")
 def ai():
     import tantrium
+
     return tantrium.AI()
 
 
@@ -18,8 +20,13 @@ def test_deduce_summary_structure(ai):
     """deduce() beklenen 5 anahtarlı summary dict döndürür."""
     summary = ai.deduce(max_rounds=1, max_explore_objectives=2)
     assert isinstance(summary, dict)
-    for key in ("theorem_nodes_processed", "inferences_derived",
-                "gaps_closed", "gaps_persistent", "manifold_size_after"):
+    for key in (
+        "theorem_nodes_processed",
+        "inferences_derived",
+        "gaps_closed",
+        "gaps_persistent",
+        "manifold_size_after",
+    ):
         assert key in summary, f"summary '{key}' içermeli"
     assert isinstance(summary["theorem_nodes_processed"], int)
 

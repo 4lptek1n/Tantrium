@@ -17,6 +17,7 @@ CodexObject that exercises the blocked paradigm — and reports exactly what it 
 This is the self-directed part of the system: the knowledge frontier tells it
 where to look next. It follows the mathematics, not instructions.
 """
+
 from __future__ import annotations
 
 import json
@@ -40,10 +41,10 @@ def _now() -> str:
 # campaign that has a chance of producing new mathematical certificates.
 
 _GAP_TO_CAMPAIGN: dict[str, str] = {
-    "ZAYIN": "lah_gate_ab",         # LGV ↔ LAH transfer
-    "HE": "subresultant_recurrence", # Sturm/Lyapunov recurrence
+    "ZAYIN": "lah_gate_ab",  # LGV ↔ LAH transfer
+    "HE": "subresultant_recurrence",  # Sturm/Lyapunov recurrence
     "DALET": "subresultant_recurrence",
-    "ALEPH": "rh_formalization",    # D-positivity formalization
+    "ALEPH": "rh_formalization",  # D-positivity formalization
     "TAV": "rh_formalization",
     "EMET": "rh_formalization",
     "SHIN": "coefficient_frontier",  # optimal action = coefficient selection
@@ -54,17 +55,34 @@ _GAP_TO_CAMPAIGN: dict[str, str] = {
 # ─── Gap priority table ────────────────────────────────────────────────────
 # Foundation paradigms block everything downstream → highest priority
 _PARADIGM_PRIORITY: dict[str, int] = {
-    "ALEPH": 100, "BET": 90, "DALET": 85,
-    "KAF": 80, "AYIN": 75, "MEM": 75, "HE": 70,
-    "VAV": 65, "NUN": 65, "LAMED": 60,
-    "ZAYIN": 55, "HET": 55, "TET": 50,
-    "TSADI": 45, "PE": 45, "SHIN": 40,
-    "GIMEL": 35, "SU3": 30, "KUF": 25,
-    "YOD": 20, "RESH": 20, "TAV": 15, "EMET": 10,
+    "ALEPH": 100,
+    "BET": 90,
+    "DALET": 85,
+    "KAF": 80,
+    "AYIN": 75,
+    "MEM": 75,
+    "HE": 70,
+    "VAV": 65,
+    "NUN": 65,
+    "LAMED": 60,
+    "ZAYIN": 55,
+    "HET": 55,
+    "TET": 50,
+    "TSADI": 45,
+    "PE": 45,
+    "SHIN": 40,
+    "GIMEL": 35,
+    "SU3": 30,
+    "KUF": 25,
+    "YOD": 20,
+    "RESH": 20,
+    "TAV": 15,
+    "EMET": 10,
 }
 
 
 # ─── Probe templates: minimal CodexObjects for each paradigm ───────────────
+
 
 def _make_probe(paradigm_id: str, gap_name: str, source_name: str) -> CodexObject:
     """Generate a minimal probe object targeting a specific paradigm gap.
@@ -86,8 +104,7 @@ def _make_probe(paradigm_id: str, gap_name: str, source_name: str) -> CodexObjec
     extras: dict[str, Any] = {
         "BET": {
             "transformations": [
-                {"name": f"probe_transform_{i}", "information_loss": 0}
-                for i in range(3)
+                {"name": f"probe_transform_{i}", "information_loss": 0} for i in range(3)
             ]
         },
         "DALET": {
@@ -96,22 +113,19 @@ def _make_probe(paradigm_id: str, gap_name: str, source_name: str) -> CodexObjec
         "HE": {
             "lyapunov_values": [1.0, 0.8, 0.6, 0.4, 0.2, 0.1, 0.05],
         },
-        "KAF": {
-            "mappings": {
-                f"probe_elem_{i}": f"probe_img_{i}" for i in range(5)
-            }
-        },
+        "KAF": {"mappings": {f"probe_elem_{i}": f"probe_img_{i}" for i in range(5)}},
         "AYIN": {
             "distinct_pairs": [
-                {"a": f"elem_{i}", "b": f"elem_{i+1}",
-                 "separating_measurement": f"position_{i}"}
+                {"a": f"elem_{i}", "b": f"elem_{i + 1}", "separating_measurement": f"position_{i}"}
                 for i in range(3)
             ]
         },
         "MEM": {
             "gauge_classes": [
-                [{"id": "probe_a", "all_measurements_equal": True},
-                 {"id": "probe_b", "all_measurements_equal": True}]
+                [
+                    {"id": "probe_a", "all_measurements_equal": True},
+                    {"id": "probe_b", "all_measurements_equal": True},
+                ]
             ]
         },
         "ZAYIN": {
@@ -166,8 +180,13 @@ def _make_probe(paradigm_id: str, gap_name: str, source_name: str) -> CodexObjec
         },
         "TET": {
             "cross_ratio_quadruples": [
-                {"a": "1", "b": "2", "c": "3", "d": "4",
-                 "expected_cr": str(Fraction((1 - 3) * (2 - 4), (1 - 4) * (2 - 3)))}
+                {
+                    "a": "1",
+                    "b": "2",
+                    "c": "3",
+                    "d": "4",
+                    "expected_cr": str(Fraction((1 - 3) * (2 - 4), (1 - 4) * (2 - 3))),
+                }
             ]
         },
         "TAV": {
@@ -176,14 +195,12 @@ def _make_probe(paradigm_id: str, gap_name: str, source_name: str) -> CodexObjec
         },
         "PE": {
             "semantic_map": {
-                f"elem_{i}": [i, float(moments[i])]
-                for i in range(min(5, len(moments)))
+                f"elem_{i}": [i, float(moments[i])] for i in range(min(5, len(moments)))
             }
         },
         "EMET": {
             "certified_claims": [
-                {"claim": f"probe_{paradigm_id}_holds",
-                 "certificate": f"PROBE_{paradigm_id}"}
+                {"claim": f"probe_{paradigm_id}_holds", "certificate": f"PROBE_{paradigm_id}"}
             ],
             "contradictions": [],
         },
@@ -202,9 +219,11 @@ def _make_probe(paradigm_id: str, gap_name: str, source_name: str) -> CodexObjec
 
 # ─── Exploration objective ────────────────────────────────────────────────
 
+
 @dataclass
 class ExplorationObjective:
     """A named gap to explore: what the system knows it does not know."""
+
     gap_paradigm: str
     gap_name: str
     source_object: str
@@ -220,11 +239,13 @@ class ExplorationObjective:
 
 # ─── Exploration result ───────────────────────────────────────────────────
 
+
 @dataclass
 class ExplorationResult:
     """Outcome of one exploration attempt."""
+
     objective: ExplorationObjective
-    outcome: str          # CLOSED | REFINED | PERSISTENT
+    outcome: str  # CLOSED | REFINED | PERSISTENT
     probe_name: str
     certified_after: int
     total_paradigms: int
@@ -250,6 +271,7 @@ class ExplorationResult:
 
 # ─── The explorer ─────────────────────────────────────────────────────────
 
+
 class Explorer:
     """Autonomous exploration loop over the knowledge frontier.
 
@@ -264,12 +286,12 @@ class Explorer:
 
     def __init__(
         self,
-        engine: "CertificationEngine",  # type: ignore[name-defined]
+        engine: CertificationEngine,  # type: ignore[name-defined]  # noqa: F821
         max_attempts_per_gap: int = 3,
     ) -> None:
         self.engine = engine
         self.max_attempts = max_attempts_per_gap
-        self._explored: set[str] = set()   # (paradigm, source) pairs already resolved
+        self._explored: set[str] = set()  # (paradigm, source) pairs already resolved
 
     # ─── Gap scanning ────────────────────────────────────────────────────
 
@@ -324,8 +346,7 @@ class Explorer:
 
         probe_paradigm_node = run.nodes.get(objective.gap_paradigm)
         gap_still_open = (
-            probe_paradigm_node is not None and
-            probe_paradigm_node.status != "CERTIFIED"
+            probe_paradigm_node is not None and probe_paradigm_node.status != "CERTIFIED"
         )
 
         new_frontier = run.knowledge_frontier()
@@ -386,7 +407,7 @@ class Explorer:
         all_results: list[ExplorationResult] = []
         prev_objectives: set[str] = set()
 
-        for round_num in range(max_rounds):
+        for _round_num in range(max_rounds):
             objectives = self.scan_frontier()[:max_objectives]
 
             if not objectives:
@@ -477,7 +498,9 @@ class Explorer:
         if closed:
             lines.append("─── CLOSED GAPS ───")
             for r in closed:
-                lines.append(f"  ✓ [{r.objective.gap_paradigm}] {r.objective.gap_name} → closed by {r.probe_name}")
+                lines.append(
+                    f"  ✓ [{r.objective.gap_paradigm}] {r.objective.gap_name} → closed by {r.probe_name}"
+                )
         if refined:
             lines.append("─── REFINED GAPS ───")
             for r in refined:

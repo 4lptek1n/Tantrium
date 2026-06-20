@@ -1,12 +1,11 @@
 """Tests for CertificationEngine and CertificationPipeline."""
-import pytest
 
 from tantrium import CertificationEngine, CertificationPipeline, CertificationRun
 from tantrium.core.encoder import encode, encode_smiles
 from tantrium.core.semantic import SemanticManifold
 
-
 # ─── CertificationEngine initialization ───────────────────────────────────────
+
 
 def test_engine_initializes(engine):  # type: ignore[misc]
     assert engine is not None
@@ -28,6 +27,7 @@ def test_engine_manifold_concepts_is_dict(engine):  # type: ignore[misc]
 
 
 # ─── CertificationPipeline.run() ──────────────────────────────────────────────
+
 
 def test_pipeline_run_returns_certification_run(engine):  # type: ignore[misc]
     obj = encode("prime number theory")
@@ -57,6 +57,7 @@ def test_pipeline_run_has_nodes(engine):  # type: ignore[misc]
 
 
 # ─── Certification results ────────────────────────────────────────────────────
+
 
 def test_certify_text_passes_all_paradigms(engine):  # type: ignore[misc]
     """Encoding 'prime number theory' must certify all 23 paradigms."""
@@ -91,6 +92,7 @@ def test_certify_dna_passes(engine):  # type: ignore[misc]
 
 # ─── CertificationPipeline: all 23 paradigms run ─────────────────────────────
 
+
 def test_pipeline_runs_23_paradigms(engine):  # type: ignore[misc]
     obj = encode("test")
     run = engine.network.run(obj)
@@ -107,16 +109,20 @@ def test_pipeline_node_statuses_are_valid(engine):  # type: ignore[misc]
 
 # ─── SemanticManifold ────────────────────────────────────────────────────────
 
+
 def test_manifold_has_concepts(engine):  # type: ignore[misc]
     """After engine init, manifold must have at least some concepts loaded."""
     assert len(engine.manifold.concepts) >= 0  # may be 0 if no persisted data
 
 
 def test_manifold_nearest_returns_list(engine):  # type: ignore[misc]
-    from tantrium.core.semantic import Concept
     from fractions import Fraction
-    c = Concept(name="probe", moments=[Fraction(1, 2), Fraction(1, 3), Fraction(1, 6)],
-                domain="test")
+
+    from tantrium.core.semantic import Concept
+
+    c = Concept(
+        name="probe", moments=[Fraction(1, 2), Fraction(1, 3), Fraction(1, 6)], domain="test"
+    )
     if engine.manifold.concepts:
         neighbors = engine.manifold.nearest(c, n=3)
         assert isinstance(neighbors, list)

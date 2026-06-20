@@ -3,7 +3,9 @@
 Yasa-keşfinin gürültü-dayanıklı gerçek-dünya genişlemesi: herhangi zaman serisini yöneten
 yineleme + gelecek tahmini (holdout sertifikalı) + yapısal anomali/sahtelik tespiti.
 """
+
 import numpy as np
+
 import tantrium
 
 
@@ -24,7 +26,7 @@ def test_forecast_certifies_unreliable():
     """Tahmin zor/gürültülü olunca DÜRÜSTÇE güvenilir=False der (kara-kutu değil)."""
     np.random.seed(1)
     ai = tantrium.AI()
-    noise = np.random.randn(60).tolist()   # saf gürültü — yasa yok
+    noise = np.random.randn(60).tolist()  # saf gürültü — yasa yok
     f = ai.forecast(noise, steps=8)
     # saf gürültüde holdout hatası büyük → güvenilmez
     assert f["reliable"] is False
@@ -34,7 +36,7 @@ def test_detect_anomalies_localizes():
     """Yasaya uymayan noktalar (enjekte anomaliler) yer+şiddetle yakalanmalı."""
     np.random.seed(2)
     ai = tantrium.AI()
-    data = (np.sin(0.4 * np.arange(100)) + 0.03 * np.random.randn(100))
+    data = np.sin(0.4 * np.arange(100)) + 0.03 * np.random.randn(100)
     data[37] += 1.5
     data[71] -= 1.2
     r = ai.detect_anomalies(data.tolist(), z=3.0)
@@ -45,6 +47,7 @@ def test_detect_anomalies_localizes():
 def test_recovers_chaotic_logistic_law():
     """NONLİNEER/KAOTİK yasa: lojistik harita x[n+1]=r·x(1-x) KESİN geri kurulmalı."""
     from tantrium.core.structure import nonlinear_fit
+
     r = 3.9
     x = [0.4]
     for _ in range(60):

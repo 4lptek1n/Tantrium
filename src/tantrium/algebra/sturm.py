@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List
+from typing import Any
 
 import sympy as sp
 
@@ -30,7 +30,7 @@ def _div_rem(prev: Any, cur: Any, var: Any) -> Any:
     return sp.expand(rem)
 
 
-def normalized_sturm_chain(poly: Any, var: Any) -> List[Any]:
+def normalized_sturm_chain(poly: Any, var: Any) -> list[Any]:
     """Compute a monic normalized Sturm chain.
 
     The first two entries are P and monic(P'). Subsequent entries are monic
@@ -58,7 +58,7 @@ def normalized_sturm_chain(poly: Any, var: Any) -> List[Any]:
     return chain
 
 
-def normalized_sturm_pivots(poly: Any, var: Any) -> List[Any]:
+def normalized_sturm_pivots(poly: Any, var: Any) -> list[Any]:
     """Return normalized Sturm pivots rho_j.
 
     If the monic chain satisfies
@@ -69,7 +69,7 @@ def normalized_sturm_pivots(poly: Any, var: Any) -> List[Any]:
     Euclidean remainder.
     """
     chain = normalized_sturm_chain(poly, var)
-    pivots: List[Any] = []
+    pivots: list[Any] = []
 
     for j in range(1, len(chain) - 1):
         rem = _div_rem(chain[j - 1], chain[j], var)
@@ -85,6 +85,6 @@ def pivot_factorization(rho: Any) -> PivotFactorization:
     return PivotFactorization(numerator=sp.factor(num), denominator=sp.factor(den))
 
 
-def pivot_factorizations(pivots: List[Any]) -> List[PivotFactorization]:
+def pivot_factorizations(pivots: list[Any]) -> list[PivotFactorization]:
     """Return factored numerator/denominator for all pivots."""
     return [pivot_factorization(rho) for rho in pivots]

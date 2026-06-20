@@ -12,6 +12,7 @@ AGI manifolduna kavram olarak, bağımlılık ilişkileri TAU kenarı olarak gir
   - RH/zeta teoremler ↔ ZETA_ZEROS anchor → SPECTRAL_BRIDGE
   - D-pozitiflik teoremler ↔ PRIME_GAPS anchor → SPECTRAL_BRIDGE
 """
+
 from __future__ import annotations
 
 import json
@@ -23,7 +24,13 @@ if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
 
 # Teorem grafiği yolu
-_GRAPH_PATH = pathlib.Path(__file__).parents[5] / "Tantrium" / "tantrium" / "theorem_graph" / "theorem_graph.yaml"
+_GRAPH_PATH = (
+    pathlib.Path(__file__).parents[5]
+    / "Tantrium"
+    / "tantrium"
+    / "theorem_graph"
+    / "theorem_graph.yaml"
+)
 # Alternatif: working directory'den relative
 _GRAPH_PATH_ALT = pathlib.Path("tantrium/theorem_graph/theorem_graph.yaml")
 
@@ -41,26 +48,27 @@ _CERTIFIED_STATUSES = {
 
 # Teorem → hangi anchor'larla köprü kurulsun
 _THEOREM_ANCHORS: dict[str, list[str]] = {
-    "RH_SYMBOLIC_CLOSURE":       ["ZETA_ZEROS"],
-    "DYADIC_TRANSPORT":          ["ZETA_ZEROS", "PRIME_GAPS"],
-    "D_POSITIVITY":              ["PRIME_GAPS", "GUE_RANDOM_MATRIX"],
-    "CELL_SUPPORT_POSITIVITY":   ["PRIME_GAPS"],
-    "AG_LGV_TRANSFER":           ["GUE_RANDOM_MATRIX"],
-    "TAU_SUBDISCRIMINANT":       ["ZETA_ZEROS"],
-    "STURM_PIVOT_POSITIVITY":    ["ZETA_ZEROS"],
-    "JENSEN_HYPERBOLICITY":      ["ZETA_ZEROS", "GAUSSIAN_BELL"],
-    "XI_REAL_FORM":              ["ZETA_ZEROS"],
-    "GATE_A_CROSS_RATIO":        ["PERIODIC_LATTICE"],
-    "GATE_B_STAIRCASE":          ["LINEAR_RAMP"],
-    "RH_CLOSURE":                ["ZETA_ZEROS", "PRIME_GAPS"],
-    "dyadic_transport_theorem":  ["ZETA_ZEROS"],
-    "uniform_lift_lemma":        ["GUE_RANDOM_MATRIX"],
+    "RH_SYMBOLIC_CLOSURE": ["ZETA_ZEROS"],
+    "DYADIC_TRANSPORT": ["ZETA_ZEROS", "PRIME_GAPS"],
+    "D_POSITIVITY": ["PRIME_GAPS", "GUE_RANDOM_MATRIX"],
+    "CELL_SUPPORT_POSITIVITY": ["PRIME_GAPS"],
+    "AG_LGV_TRANSFER": ["GUE_RANDOM_MATRIX"],
+    "TAU_SUBDISCRIMINANT": ["ZETA_ZEROS"],
+    "STURM_PIVOT_POSITIVITY": ["ZETA_ZEROS"],
+    "JENSEN_HYPERBOLICITY": ["ZETA_ZEROS", "GAUSSIAN_BELL"],
+    "XI_REAL_FORM": ["ZETA_ZEROS"],
+    "GATE_A_CROSS_RATIO": ["PERIODIC_LATTICE"],
+    "GATE_B_STAIRCASE": ["LINEAR_RAMP"],
+    "RH_CLOSURE": ["ZETA_ZEROS", "PRIME_GAPS"],
+    "dyadic_transport_theorem": ["ZETA_ZEROS"],
+    "uniform_lift_lemma": ["GUE_RANDOM_MATRIX"],
 }
 
 
 @dataclass
 class InjectionResult:
     """Math kernel enjeksiyonunun özeti."""
+
     concepts_added: int
     edges_added: int
     bridges_added: int
@@ -76,13 +84,13 @@ class InjectionResult:
         )
 
 
-def inject_math_kernel(engine: "CertificationEngine") -> InjectionResult:
+def inject_math_kernel(engine: CertificationEngine) -> InjectionResult:
     """Theorem graph'ı oku, certified teoremler → AGI manifoldu + TAU.
 
     Idempotent — zaten manifoldda olanları atlar.
     """
     from tantrium.core.semantic import Concept
-    from tantrium.graph.knowledge_graph import KnowledgeNode, KnowledgeEdge
+    from tantrium.graph.knowledge_graph import KnowledgeEdge, KnowledgeNode
     from tantrium.graph.relations import certify_and_add_edge
 
     path = _GRAPH_PATH if _GRAPH_PATH.exists() else _GRAPH_PATH_ALT
@@ -179,13 +187,22 @@ def inject_math_kernel(engine: "CertificationEngine") -> InjectionResult:
             existing = {e.target for e in tau_edges.get(theorem_name, [])}
             if anchor_full not in existing:
                 from tantrium.graph.knowledge_graph import KnowledgeEdge
+
                 tau_edges.setdefault(theorem_name, []).append(
-                    KnowledgeEdge(source=theorem_name, target=anchor_full,
-                            distance=0.01, paradigm="SPECTRAL_BRIDGE")
+                    KnowledgeEdge(
+                        source=theorem_name,
+                        target=anchor_full,
+                        distance=0.01,
+                        paradigm="SPECTRAL_BRIDGE",
+                    )
                 )
                 tau_edges.setdefault(anchor_full, []).append(
-                    KnowledgeEdge(source=anchor_full, target=theorem_name,
-                            distance=0.01, paradigm="SPECTRAL_BRIDGE")
+                    KnowledgeEdge(
+                        source=anchor_full,
+                        target=theorem_name,
+                        distance=0.01,
+                        paradigm="SPECTRAL_BRIDGE",
+                    )
                 )
                 bridges_added += 1
 
@@ -202,8 +219,18 @@ def inject_math_kernel(engine: "CertificationEngine") -> InjectionResult:
 import math as _math
 
 _RIEMANN_ZEROS_12 = [
-    14.134725, 21.022040, 25.010858, 30.424876, 32.935062, 37.586178,
-    40.918720, 43.327073, 48.005151, 49.773832, 52.970321, 56.446248,
+    14.134725,
+    21.022040,
+    25.010858,
+    30.424876,
+    32.935062,
+    37.586178,
+    40.918720,
+    43.327073,
+    48.005151,
+    49.773832,
+    52.970321,
+    56.446248,
 ]
 
 
@@ -225,9 +252,7 @@ def _li_coefficient(n: int) -> float:
 # → gerçek sayısal dizilerinden yeniden encode et
 _MATH_OBJECT_SEQUENCES: dict[str, list[float]] = {
     # LGV transfer matrix path count = Catalan C_k
-    "AG_LGV_TRANSFER": [
-        _math.comb(2 * k, k) // (k + 1) if k > 0 else 1 for k in range(12)
-    ],
+    "AG_LGV_TRANSFER": [_math.comb(2 * k, k) // (k + 1) if k > 0 else 1 for k in range(12)],
     # Möbius cross-ratio (0,k,k+1,k+2) = 2(k+1)/(k+2) for k=0..11
     "GATE_A_CROSS_RATIO": [2 * (k + 1) / (k + 2) for k in range(12)],
     # Cross-ratio'nun ardışık farkı d_k = 2/((k+2)(k+3)) — pertürbasyon türevi
@@ -241,7 +266,7 @@ _MATH_OBJECT_SEQUENCES: dict[str, list[float]] = {
 }
 
 
-def inject_computational_math_objects(engine: "CertificationEngine") -> int:
+def inject_computational_math_objects(engine: CertificationEngine) -> int:
     """Boş/uniform encode edilmiş matematiksel kavramları gerçek dizilerden güncelle.
 
     Bu kavramlar başlangıçta uniform metin olarak encode edildi.

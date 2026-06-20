@@ -4,6 +4,7 @@ ASİ öğrenmez/edinmez; mevcut manifold üzerinde hesaplar. Bu modül yalnız G
 kenar/propagasyon yardımcılarını sağlar (kavram çiftini moment-mesafeyle sertifikalayıp
 TAU kenarı eklemek + PSD-koruyan moment hizalama). Metinden ilişki çıkarma kaldırıldı.
 """
+
 from __future__ import annotations
 
 from fractions import Fraction
@@ -19,7 +20,7 @@ SEMANTIC_PARADIGMS = {"IS_A", "USES", "DEFINES", "ACHIEVES", "REQUIRES", "COMPOS
 
 
 def certify_and_add_edge(
-    engine: "CertificationEngine",
+    engine: CertificationEngine,
     subj: str,
     obj: str,
     paradigm: str,
@@ -32,6 +33,7 @@ def certify_and_add_edge(
         return False
 
     from tantrium.core.semantic import moment_distance
+
     d = float(moment_distance(c_a, c_b))
 
     existing = engine.tau.edges.setdefault(subj, [])
@@ -46,6 +48,7 @@ def certify_and_add_edge(
 
 
 # ─── Mini-Tav: PSD-koruyan moment propagasyonu ────────────────────────────────
+
 
 def propagate_subset(
     manifold_concepts: dict,
@@ -69,10 +72,7 @@ def propagate_subset(
         new_moments: dict[str, list] = {}
         for name in target:
             concept = manifold_concepts[name]
-            sem_edges = [
-                e for e in tau_edges.get(name, [])
-                if e.paradigm in SEMANTIC_PARADIGMS
-            ]
+            sem_edges = [e for e in tau_edges.get(name, []) if e.paradigm in SEMANTIC_PARADIGMS]
             if not sem_edges:
                 continue
             neighbor_moments = [
@@ -89,12 +89,9 @@ def propagate_subset(
                 for i in range(k)
             ]
             blended = [
-                (1.0 - alpha) * float(concept.moments[i]) + alpha * avg_sem[i]
-                for i in range(k)
+                (1.0 - alpha) * float(concept.moments[i]) + alpha * avg_sem[i] for i in range(k)
             ]
-            new_moments[name] = [
-                Fraction(x).limit_denominator(10 ** 9) for x in blended
-            ]
+            new_moments[name] = [Fraction(x).limit_denominator(10**9) for x in blended]
 
         if not new_moments:
             break

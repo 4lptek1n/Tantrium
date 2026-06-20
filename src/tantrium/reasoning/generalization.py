@@ -16,9 +16,10 @@ Kullanım:
   g.derive(["algebra","manifold","topology"])  → üç kavramın merkezini türet
   g.explore_midpoints("A","B", steps=7)   → A→B arasında gap haritası
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import TYPE_CHECKING
 
@@ -31,11 +32,12 @@ if TYPE_CHECKING:
 @dataclass
 class DerivedConcept:
     """Hankel genellemeden türetilmiş kavram."""
+
     concept: Concept
     parents: list[str]
-    alpha: float              # A ağırlığı (B = 1 - alpha)
-    certified: bool           # Aleph filtresi geçti mi?
-    method: str               # "interpolate" | "derive" | "extrapolate"
+    alpha: float  # A ağırlığı (B = 1 - alpha)
+    certified: bool  # Aleph filtresi geçti mi?
+    method: str  # "interpolate" | "derive" | "extrapolate"
     paradigms_certified: int = 0
 
     def summary(self) -> str:
@@ -57,7 +59,7 @@ class HankelGeneralizer:
     Yani iki gerçek kavramın konveks kombinasyondaki her nokta da gerçek.
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     # ─── Temel operasyonlar ───────────────────────────────────────────────────
@@ -80,22 +82,26 @@ class HankelGeneralizer:
         if ca is None:
             try:
                 raw = self.engine.encoder.encode(name_a, name=name_a[:64])
-                ca = Concept(name=name_a, moments=list(raw.moments), domain="input", source="auto_encode")
+                ca = Concept(
+                    name=name_a, moments=list(raw.moments), domain="input", source="auto_encode"
+                )
                 self.engine.manifold.add_unchecked(ca)
             except Exception:
                 return None
         if cb is None:
             try:
                 raw = self.engine.encoder.encode(name_b, name=name_b[:64])
-                cb = Concept(name=name_b, moments=list(raw.moments), domain="input", source="auto_encode")
+                cb = Concept(
+                    name=name_b, moments=list(raw.moments), domain="input", source="auto_encode"
+                )
                 self.engine.manifold.add_unchecked(cb)
             except Exception:
                 return None
 
         alpha = max(0.0, min(1.0, alpha))
         from tantrium.core.moment_ops import convex_combine
-        blended = convex_combine(
-            [ca.moments, cb.moments], [alpha, 1.0 - alpha], mode="frac")
+
+        blended = convex_combine([ca.moments, cb.moments], [alpha, 1.0 - alpha], mode="frac")
 
         name = derived_name or f"⟨{name_a}⊕{name_b}⟩"
         concept = Concept(
@@ -115,7 +121,9 @@ class HankelGeneralizer:
             if c is None:
                 try:
                     raw = self.engine.encoder.encode(n, name=n[:64])
-                    c = Concept(name=n, moments=list(raw.moments), domain="input", source="auto_encode")
+                    c = Concept(
+                        name=n, moments=list(raw.moments), domain="input", source="auto_encode"
+                    )
                     self.engine.manifold.add_unchecked(c)
                 except Exception:
                     pass
@@ -128,16 +136,12 @@ class HankelGeneralizer:
         k = min(len(c.moments) for c in concepts)
         n = len(concepts)
         avg = [
-            Fraction(
-                sum(float(c.moments[i]) for c in concepts) / n
-            ).limit_denominator(10 ** 9)
+            Fraction(sum(float(c.moments[i]) for c in concepts) / n).limit_denominator(10**9)
             for i in range(k)
         ]
 
         name = "⟨" + "∪".join(concept_names[:4]) + "⟩"
-        concept = Concept(
-            name=name, moments=avg, domain="derived", source="hankel_derivation"
-        )
+        concept = Concept(name=name, moments=avg, domain="derived", source="hankel_derivation")
         return self._certify_and_add(concept, concept_names, 1.0 / n, "derive")
 
     def explore_midpoints(
@@ -185,14 +189,14 @@ class HankelGeneralizer:
             return None
 
         from tantrium.core.moment_ops import convex_combine
-        blended = convex_combine(
-            [c.moments for c in concepts], weights, mode="frac")
+
+        blended = convex_combine([c.moments for c in concepts], weights, mode="frac")
 
         names = [n for n, _ in weighted_concepts]
-        name = derived_name or "⟨" + "+".join(f"{n}×{w:.2f}" for n, w in weighted_concepts[:3]) + "⟩"
-        concept = Concept(
-            name=name, moments=blended, domain="derived", source="hankel_blend"
+        name = (
+            derived_name or "⟨" + "+".join(f"{n}×{w:.2f}" for n, w in weighted_concepts[:3]) + "⟩"
         )
+        concept = Concept(name=name, moments=blended, domain="derived", source="hankel_blend")
         return self._certify_and_add(concept, names, weights[0] if weights else 0.5, "blend")
 
     # ─── Internal ─────────────────────────────────────────────────────────────

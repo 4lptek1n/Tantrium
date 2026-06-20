@@ -13,6 +13,7 @@ Pin edilen davranış:
   add()           ≡ admit(policy="aleph"), rejected → ValueError
   add_unchecked() ≡ admit(policy="trusted"), her zaman kabul
 """
+
 from __future__ import annotations
 
 from fractions import Fraction
@@ -21,8 +22,8 @@ import pytest
 
 from tantrium.core.semantic import AdmissionResult, Concept, SemanticManifold
 
-
 # ─── Golden girdiler ────────────────────────────────────────────────────────
+
 
 def _real_concept(name: str = "real_pt") -> Concept:
     """Aleph-sertifikalı: μ_k = (1/2)^k geometrik dizi = nokta kütlesi momentleri.
@@ -31,8 +32,9 @@ def _real_concept(name: str = "real_pt") -> Concept:
     """
     return Concept(
         name=name,
-        moments=[Fraction(1, 2 ** k) for k in range(6)],
-        domain="test", source="t",
+        moments=[Fraction(1, 2**k) for k in range(6)],
+        domain="test",
+        source="t",
     )
 
 
@@ -43,13 +45,21 @@ def _junk_concept(name: str = "junk_pt") -> Concept:
     """
     return Concept(
         name=name,
-        moments=[Fraction(1), Fraction(9, 10), Fraction(1, 100),
-                 Fraction(0), Fraction(0), Fraction(0)],
-        domain="test", source="t",
+        moments=[
+            Fraction(1),
+            Fraction(9, 10),
+            Fraction(1, 100),
+            Fraction(0),
+            Fraction(0),
+            Fraction(0),
+        ],
+        domain="test",
+        source="t",
     )
 
 
 # ─── 1. admit() politikaları ────────────────────────────────────────────────
+
 
 def test_admit_aleph_admits_real():
     m = SemanticManifold()
@@ -98,6 +108,7 @@ def test_admission_result_bool():
 
 # ─── 2. add() / add_unchecked() PARITY (eski sözleşme korunur) ──────────────
 
+
 def test_add_matches_aleph_admit_for_real():
     """add() gerçek kavramı eskisi gibi saklar, self döner."""
     m = SemanticManifold()
@@ -141,8 +152,9 @@ def test_add_and_admit_aleph_identical_decision():
 
 # ─── 3. Gated yol (engine evren kapısı) — yargı sabitlenir ──────────────────
 
+
 @pytest.fixture(scope="module")
 def ai():
     import tantrium
-    return tantrium.AI()
 
+    return tantrium.AI()

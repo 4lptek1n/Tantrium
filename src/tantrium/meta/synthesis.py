@@ -17,10 +17,11 @@ Bu, dünyanın hiçbir başka sisteminin yapamayacağı şey:
 Matematiksel ZORUNLULUKTAN kavram üretmek.
 Bir kavramı tahmin değil, ispat etmek.
 """
+
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import TYPE_CHECKING
 
@@ -30,23 +31,25 @@ if TYPE_CHECKING:
 
 # ─── Sonuç Tipleri ─────────────────────────────────────────────────────────
 
+
 @dataclass
 class BridgeResult:
     """İki varlık arasındaki matematiksel zorunlu köprü."""
+
     source: str
     target: str
 
-    bridge_name: str               # köprü kavramının adı (manifolda eklendi)
-    bridge_moments: list[float]    # köprünün moment vektörü
-    bridge_certified: bool         # Aleph filtresi geçti mi?
-    paradigms_passed: int          # 23'ten kaçı
+    bridge_name: str  # köprü kavramının adı (manifolda eklendi)
+    bridge_moments: list[float]  # köprünün moment vektörü
+    bridge_certified: bool  # Aleph filtresi geçti mi?
+    paradigms_passed: int  # 23'ten kaçı
 
     transport_source_bridge: bool  # source→bridge CERTIFIED mi?
     transport_bridge_target: bool  # bridge→target CERTIFIED mi?
     total_path_cost: float
 
-    source_distance: float         # source ↔ bridge L1
-    target_distance: float         # bridge ↔ target L1
+    source_distance: float  # source ↔ bridge L1
+    target_distance: float  # bridge ↔ target L1
 
     def summary(self) -> str:
         icon = "✓" if self.bridge_certified else "∅"
@@ -63,6 +66,7 @@ class BridgeResult:
 @dataclass
 class GenesisEntry:
     """Genesis döngüsünde yaratılan tek bir kavram."""
+
     name: str
     moments: list[float]
     paradigms_passed: int
@@ -74,10 +78,11 @@ class GenesisEntry:
 @dataclass
 class GenesisReport:
     """Genesis döngüsünün tam raporu."""
+
     concepts_created: list[GenesisEntry]
     gaps_found: int
     gaps_filled: int
-    manifold_growth: int           # manifolda eklenen kavram sayısı
+    manifold_growth: int  # manifolda eklenen kavram sayısı
     new_tau_edges: int
 
     def summary(self) -> str:
@@ -99,11 +104,12 @@ class GenesisReport:
 @dataclass
 class EmanationResult:
     """Kabalistik emanasyon — 23 sefirottan Malkuth'a inen ışık."""
+
     name: str
     certified_paradigms: int
-    grounding: str                  # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
-    manifested: bool                # Malkuth'a indi mi
-    light: dict                     # spektrum, Li, TAV sabit noktası, de Bruijn Λ ...
+    grounding: str  # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
+    manifested: bool  # Malkuth'a indi mi
+    light: dict  # spektrum, Li, TAV sabit noktası, de Bruijn Λ ...
     descended_to: str
 
     def summary(self) -> str:
@@ -137,12 +143,13 @@ class EmanationResult:
 @dataclass
 class ResonanceResult:
     """İki varlık arasındaki moment harmonik rezonansı."""
+
     name_a: str
     name_b: str
 
-    resonance_score: float         # 0.0 (ahenksiz) → 1.0 (tam harmonik)
-    harmonic_ratios: list[float]   # her moment için en yakın rasyonel oran
-    dominant_interval: str         # en güçlü harmonik ilişki (örn: "5/3")
+    resonance_score: float  # 0.0 (ahenksiz) → 1.0 (tam harmonik)
+    harmonic_ratios: list[float]  # her moment için en yakın rasyonel oran
+    dominant_interval: str  # en güçlü harmonik ilişki (örn: "5/3")
     moment_correlations: list[float]
 
     def summary(self) -> str:
@@ -159,18 +166,19 @@ class ResonanceResult:
 @dataclass
 class EnergyProfile:
     """Bir kavramın spektral termodinamiği."""
+
     name: str
 
-    ground_energy: float           # F(T=0) = ortalama eigenvalue (sıfır nokta enerjisi)
-    thermal_energy: float          # F(T=1) = Shannon entropisi (oda sıcaklığı)
-    max_entropy: float             # F(T→∞) = log₂(n_eigs) (max termal durum)
-    free_energy: float             # F(T) = -T·H_thermal + (1-T)·E_ground (istenen sıcaklıkta)
-    temperature: float             # kullanılan T değeri
+    ground_energy: float  # F(T=0) = ortalama eigenvalue (sıfır nokta enerjisi)
+    thermal_energy: float  # F(T=1) = Shannon entropisi (oda sıcaklığı)
+    max_entropy: float  # F(T→∞) = log₂(n_eigs) (max termal durum)
+    free_energy: float  # F(T) = -T·H_thermal + (1-T)·E_ground (istenen sıcaklıkta)
+    temperature: float  # kullanılan T değeri
 
     eigenvalue_partition: list[float]  # Boltzmann ağırlıkları
-    dominant_mode: int             # en enerjik eigenvalue indeksi
+    dominant_mode: int  # en enerjik eigenvalue indeksi
 
-    stability: str                 # "GROUND_STATE" | "EXCITED" | "CRITICAL"
+    stability: str  # "GROUND_STATE" | "EXCITED" | "CRITICAL"
 
     def summary(self) -> str:
         return (
@@ -186,6 +194,7 @@ class EnergyProfile:
 
 # ─── Sentez Motoru ─────────────────────────────────────────────────────────
 
+
 class ConceptSynthesizer:
     """Matematiksel zorunluluktan kavram üreten motor.
 
@@ -194,7 +203,7 @@ class ConceptSynthesizer:
       b) Geçmez → bu bölgede gerçek yoktur, void olarak kaydedilir
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     # ─── BRIDGE: İki varlık arasındaki zorunlu köprü ────────────────────────
@@ -206,8 +215,8 @@ class ConceptSynthesizer:
         Köprü manifolda eklenir ve iki yönlü transport sertifikalanır.
         """
         from tantrium.core.encoder import encode as enc
-        from tantrium.core.transport import CertifiedTransport
         from tantrium.core.semantic import Concept
+        from tantrium.core.transport import CertifiedTransport
 
         concept_a = self._get_or_encode(name_a)
         concept_b = self._get_or_encode(name_b)
@@ -220,7 +229,7 @@ class ConceptSynthesizer:
         mu_bridge = [(mu_a[i] + mu_b[i]) / 2.0 for i in range(k)]
 
         # En yakın mevcut kavramı bul (köprü zaten manifoldda mı?)
-        bridge_fracs = [Fraction(m).limit_denominator(10 ** 9) for m in mu_bridge]
+        bridge_fracs = [Fraction(m).limit_denominator(10**9) for m in mu_bridge]
         probe = Concept(
             name="_bridge_probe_",
             moments=bridge_fracs,
@@ -239,13 +248,13 @@ class ConceptSynthesizer:
             bridge_dist_a = sum(abs(bridge_moments[i] - mu_a[i]) for i in range(k_br))
             bridge_dist_b = sum(abs(bridge_moments[i] - mu_b[i]) for i in range(k_br))
             try:
-                bridge_fracs_real = [Fraction(m).limit_denominator(10 ** 9) for m in bridge_moments]
+                bridge_fracs_real = [Fraction(m).limit_denominator(10**9) for m in bridge_moments]
                 obj_br = enc(bridge_fracs_real, name=bridge_name)
                 run_br = self.engine.process(obj_br)
                 certified = run_br.certified_count >= 20
                 paradigms_passed = run_br.certified_count
             except Exception:
-                certified = True   # manifold'da zaten var → güvenilir
+                certified = True  # manifold'da zaten var → güvenilir
                 paradigms_passed = 23
         else:
             # Yeni kavram oluştur: iki ebeveynin isimlerinden sentezlenmiş
@@ -279,7 +288,7 @@ class ConceptSynthesizer:
         obj_a = enc(list(concept_a.moments), name=name_a)
         obj_b = enc(list(concept_b.moments), name=name_b)
 
-        bridge_mom_fracs = [Fraction(m).limit_denominator(10 ** 9) for m in mu_bridge]
+        bridge_mom_fracs = [Fraction(m).limit_denominator(10**9) for m in mu_bridge]
         obj_bridge = enc(bridge_mom_fracs, name=bridge_name)
 
         tc_ab = ct.certify(obj_a, obj_bridge)
@@ -318,11 +327,12 @@ class ConceptSynthesizer:
 
         Topoloji rehberli mod bulgu üretmezse interpolasyon, o da bulamazsa keşif devreye girer.
         """
-        from tantrium.reasoning.necessity import NecessityEngine
-        from tantrium.meta.topology import MomentTopology
-        from tantrium.core.semantic import Concept
-        from tantrium.core.encoder import encode as enc
         from fractions import Fraction
+
+        from tantrium.core.encoder import encode as enc
+        from tantrium.core.semantic import Concept
+        from tantrium.meta.topology import MomentTopology
+        from tantrium.reasoning.necessity import NecessityEngine
 
         # ── MOD 1: Topoloji rehberli gap tespiti (sistematik, harita tabanlı) ──
         topology_gaps: list = []
@@ -343,11 +353,20 @@ class ConceptSynthesizer:
                         neighbor_moments.append([float(m) for m in c.moments])
                 if not neighbor_moments:
                     continue
-                avg_m = [sum(row[i] for row in neighbor_moments) / len(neighbor_moments) for i in range(8)]
+                avg_m = [
+                    sum(row[i] for row in neighbor_moments) / len(neighbor_moments)
+                    for i in range(8)
+                ]
                 avg_m[1] = cx  # μ₂ (index 1 after μ₀=1): topoloji koordinatı
                 avg_m[2] = cy  # μ₃ (index 2): topoloji koordinatı
                 avg_m[0] = 1.0  # normalize
-                topology_gaps.append((avg_m, region.concept_names[:3], region.named_unknown or f"TOPO_{region.region_id}"))
+                topology_gaps.append(
+                    (
+                        avg_m,
+                        region.concept_names[:3],
+                        region.named_unknown or f"TOPO_{region.region_id}",
+                    )
+                )
         except Exception:
             pass
 
@@ -361,15 +380,13 @@ class ConceptSynthesizer:
         tau_before = sum(len(v) for v in self.engine.tau.edges.values())
 
         # ── MOD 1 İŞLEME: Topoloji boşluklarını kavrama dönüştür ─────────────
-        for (avg_m, topo_parents, name_hint) in topology_gaps:
+        for avg_m, topo_parents, name_hint in topology_gaps:
             if sum(1 for e in created if e.certified) >= max_gaps:
                 break
             # İÇERİK TAŞIYAN isim: sentetik TOPO_id yerine GERÇEK komşulardan türet.
             # Boş ⊕topo_42 noktası anlamsız hacim; iki gerçek ebeveynin kesişimi
             # ise içerik taşır — domain'i de komşulardan miras alır.
-            parent_concepts = [
-                self.engine.manifold.concepts.get(p) for p in topo_parents
-            ]
+            parent_concepts = [self.engine.manifold.concepts.get(p) for p in topo_parents]
             parent_concepts = [c for c in parent_concepts if c is not None]
             if len(parent_concepts) >= 2:
                 p1 = topo_parents[0][:12].replace(" ", "_").replace("/", "_")
@@ -381,8 +398,11 @@ class ConceptSynthesizer:
             elif topo_parents:
                 p1 = topo_parents[0][:18].replace(" ", "_").replace("/", "_")
                 concept_name = f"⊕{p1}_frontier"
-                inherited_domain = getattr(parent_concepts[0], "domain", "topology") \
-                    if parent_concepts else "topology"
+                inherited_domain = (
+                    getattr(parent_concepts[0], "domain", "topology")
+                    if parent_concepts
+                    else "topology"
+                )
             else:
                 safe_hint = name_hint[:24].replace(" ", "_").replace("/", "_")
                 concept_name = f"⊕topo_{safe_hint}"
@@ -396,7 +416,7 @@ class ConceptSynthesizer:
             norm = avg_m[0]
             mu_norm = [m / norm for m in avg_m]
 
-            fracs = [Fraction(m).limit_denominator(10 ** 9) for m in mu_norm]
+            fracs = [Fraction(m).limit_denominator(10**9) for m in mu_norm]
             new_concept = Concept(
                 name=concept_name,
                 moments=fracs,
@@ -412,23 +432,27 @@ class ConceptSynthesizer:
                     self.engine.manifold.add_unchecked(new_concept)
                     self.engine.tau.add_node(new_concept)
                     self.engine.tau.add_edges_for(new_concept, self.engine.manifold, k=3)
-                created.append(GenesisEntry(
-                    name=concept_name,
-                    moments=mu_norm,
-                    paradigms_passed=paradigms,
-                    gap_description=f"topoloji frontier: {name_hint}",
-                    nearest_parents=list(topo_parents),
-                    certified=cert,
-                ))
+                created.append(
+                    GenesisEntry(
+                        name=concept_name,
+                        moments=mu_norm,
+                        paradigms_passed=paradigms,
+                        gap_description=f"topoloji frontier: {name_hint}",
+                        nearest_parents=list(topo_parents),
+                        certified=cert,
+                    )
+                )
             except Exception:
-                created.append(GenesisEntry(
-                    name=concept_name,
-                    moments=mu_norm,
-                    paradigms_passed=0,
-                    gap_description=f"topoloji frontier: {name_hint}",
-                    nearest_parents=list(topo_parents),
-                    certified=False,
-                ))
+                created.append(
+                    GenesisEntry(
+                        name=concept_name,
+                        moments=mu_norm,
+                        paradigms_passed=0,
+                        gap_description=f"topoloji frontier: {name_hint}",
+                        nearest_parents=list(topo_parents),
+                        certified=False,
+                    )
+                )
 
         # ── MOD 2 İŞLEME: NecessityEngine boşluklarını doldur ────────────────
         for gap in gaps:
@@ -456,7 +480,7 @@ class ConceptSynthesizer:
             if concept_name in self.engine.manifold.concepts:
                 continue
 
-            fracs = [Fraction(m).limit_denominator(10 ** 9) for m in mu_norm]
+            fracs = [Fraction(m).limit_denominator(10**9) for m in mu_norm]
             new_concept = Concept(
                 name=concept_name,
                 moments=fracs,
@@ -469,8 +493,7 @@ class ConceptSynthesizer:
                 obj = enc(fracs, name=concept_name)
                 run = self.engine.process(obj)
                 paradigms = run.certified_count
-                coherent = paradigms >= 18 and self._coherent_for_genesis(
-                    concept_name, mu_norm)
+                coherent = paradigms >= 18 and self._coherent_for_genesis(concept_name, mu_norm)
                 cert = coherent
 
                 if cert:
@@ -479,23 +502,27 @@ class ConceptSynthesizer:
                     # K=3 TAU edge ekle
                     self.engine.tau.add_edges_for(new_concept, self.engine.manifold, k=3)
 
-                created.append(GenesisEntry(
-                    name=concept_name,
-                    moments=mu_norm,
-                    paradigms_passed=paradigms,
-                    gap_description=gap.description,
-                    nearest_parents=parents,
-                    certified=cert,
-                ))
+                created.append(
+                    GenesisEntry(
+                        name=concept_name,
+                        moments=mu_norm,
+                        paradigms_passed=paradigms,
+                        gap_description=gap.description,
+                        nearest_parents=parents,
+                        certified=cert,
+                    )
+                )
             except Exception:
-                created.append(GenesisEntry(
-                    name=concept_name,
-                    moments=mu_norm,
-                    paradigms_passed=0,
-                    gap_description=gap.description,
-                    nearest_parents=parents,
-                    certified=False,
-                ))
+                created.append(
+                    GenesisEntry(
+                        name=concept_name,
+                        moments=mu_norm,
+                        paradigms_passed=0,
+                        gap_description=gap.description,
+                        nearest_parents=parents,
+                        certified=False,
+                    )
+                )
 
         # ── KEŞİF: interpolasyon yetmezse gövde DIŞINA ekstrapole et ──────────
         # Yaratıcılığı interpolasyondan keşfe çıkar: yeni noktayı bilinenin
@@ -526,6 +553,7 @@ class ConceptSynthesizer:
         """CONTRADICTORY kavramları reddet — öz-düzelten büyüme."""
         try:
             from tantrium.core.truth import TruthCertifier
+
             tv = TruthCertifier(self.engine).certify(name, n_neighbors=3, moments=moments)
             return tv.verdict != "CONTRADICTORY"
         except Exception:
@@ -547,9 +575,10 @@ class ConceptSynthesizer:
         """
         import random
         from fractions import Fraction
-        from tantrium.core.semantic import Concept
+
         from tantrium.core.encoder import encode as enc
         from tantrium.core.grounding import GroundingCertifier
+        from tantrium.core.semantic import Concept
 
         concepts = self.engine.manifold.concepts
         if len(concepts) < 8:
@@ -583,20 +612,17 @@ class ConceptSynthesizer:
 
             # Gövde dışına doğru ekstrapolasyon — birkaç adımda dene
             for alpha in (0.4, 0.8, 1.5):
-                mu_new = [
-                    mu_anchor[i] + alpha * (mu_anchor[i] - centroid[i])
-                    for i in range(dim)
-                ]
+                mu_new = [mu_anchor[i] + alpha * (mu_anchor[i] - centroid[i]) for i in range(dim)]
                 # μ₀ pozitif olmalı; normalize et
                 if mu_new[0] <= 1e-9:
                     continue
                 mu_norm = [m / mu_new[0] for m in mu_new]
 
-                name = f"⊙keşif_{anchor_name[:12]}_a{int(alpha*10)}"
+                name = f"⊙keşif_{anchor_name[:12]}_a{int(alpha * 10)}"
                 if name in concepts:
                     continue
 
-                fracs = [Fraction(m).limit_denominator(10 ** 9) for m in mu_norm]
+                fracs = [Fraction(m).limit_denominator(10**9) for m in mu_norm]
                 try:
                     obj = enc(fracs, name=name)
                     run = self.engine.process(obj)
@@ -615,7 +641,10 @@ class ConceptSynthesizer:
 
                 # Hayatta kaldı: gerçek keşif — yeni, sertifikalı, topraklı
                 new_concept = Concept(
-                    name=name, moments=fracs, domain="discovery", source="frontier_extrapolation",
+                    name=name,
+                    moments=fracs,
+                    domain="discovery",
+                    source="frontier_extrapolation",
                 )
                 self.engine.manifold.add_unchecked(new_concept)
                 self.engine.tau.add_node(new_concept)
@@ -624,14 +653,16 @@ class ConceptSynthesizer:
                 except Exception:
                     pass
 
-                discovered.append(GenesisEntry(
-                    name=name,
-                    moments=mu_norm,
-                    paradigms_passed=paradigms,
-                    gap_description=f"frontier: {anchor_name}'dan α={alpha} ile gövde dışına",
-                    nearest_parents=[anchor_name] + gcert.nearest_grounded[:2],
-                    certified=True,
-                ))
+                discovered.append(
+                    GenesisEntry(
+                        name=name,
+                        moments=mu_norm,
+                        paradigms_passed=paradigms,
+                        gap_description=f"frontier: {anchor_name}'dan α={alpha} ile gövde dışına",
+                        nearest_parents=[anchor_name] + gcert.nearest_grounded[:2],
+                        certified=True,
+                    )
+                )
                 break  # bu çapadan bir keşif yeter, sıradakine geç
 
         return discovered
@@ -709,8 +740,9 @@ class ConceptSynthesizer:
         Yüksek F(T=1) = kavram çok enerji taşıyor = kararsız/frontier
         Düşük  F(T=0) = kavram tek bir özdeğerde kilitli = stabil/uzmanlaşmış
         """
-        from tantrium.core.encoder import encode as enc
         import numpy as np
+
+        from tantrium.core.encoder import encode as enc
 
         concept = self._get_or_encode(name)
         obj = enc(list(concept.moments), name=name)
@@ -779,8 +811,8 @@ class ConceptSynthesizer:
 
         Sertifika >= 20 VE topraklama != UNGROUNDED ise Malkuth'a iner.
         """
+
         from tantrium.core.encoder import encode as enc
-        from fractions import Fraction
         from tantrium.core.semantic import Concept
 
         obj = enc(name, name=name[:64])
@@ -799,7 +831,7 @@ class ConceptSynthesizer:
 
         if len(moments_float) >= 3:
             mu1, mu2 = moments_float[1], moments_float[2]
-            light["debruijn_lambda"] = -(max(0.0, mu2 - mu1 ** 2))
+            light["debruijn_lambda"] = -(max(0.0, mu2 - mu1**2))
 
         li_base = light.get("spectrum", moments_float[:4])
         light["li_coefficients"] = [
@@ -829,10 +861,7 @@ class ConceptSynthesizer:
 
         certified_count = run.certified_count
         already_in_manifold = name[:64] in self.engine.manifold.concepts
-        can_manifest = (
-            certified_count >= 20
-            and grounding != "UNGROUNDED"
-        )
+        can_manifest = certified_count >= 20 and grounding != "UNGROUNDED"
 
         manifested = False
         if can_manifest and already_in_manifold:
@@ -868,6 +897,7 @@ class ConceptSynthesizer:
     def _get_or_encode(self, name: str):
         """Manifolddan al, yoksa encode et."""
         from tantrium.core.semantic import Concept
+
         concept = self.engine.manifold.concepts.get(name)
         if concept is not None:
             return concept

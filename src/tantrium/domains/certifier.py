@@ -6,14 +6,15 @@ Pipeline:
   Her aday certify (Aleph, D-positivity, paradigma skoru) →
   En yakın certified aday → SMILES → RDKit 3D → SDF dosyası
 """
+
 from __future__ import annotations
 
+import json
+import logging
 import time
 import urllib.request
-import json
 import warnings
-import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 logging.getLogger("rdkit").setLevel(logging.CRITICAL)
@@ -21,6 +22,7 @@ warnings.filterwarnings("ignore")
 
 try:
     from rdkit import RDLogger
+
     RDLogger.DisableLog("rdApp.*")
 except Exception:
     pass
@@ -32,6 +34,7 @@ if TYPE_CHECKING:
 @dataclass
 class MoleculeReport:
     """Tek molekülün certified raporu."""
+
     name: str
     smiles: str
     certified_count: int
@@ -55,7 +58,7 @@ class MoleculeReport:
 
     def summary(self) -> str:
         bar = "█" * self.certified_count + "░" * (self.total_paradigms - self.certified_count)
-        gap_str = ", ".join(self.gaps) if self.gaps else "yok"
+        ", ".join(self.gaps) if self.gaps else "yok"
         tc_str = self.transport_cert.summary() if self.transport_cert else "—"
         return (
             f"  {self.name:<20} [{bar}] {self.certified_count}/{self.total_paradigms}\n"
@@ -68,23 +71,24 @@ class MoleculeReport:
 @dataclass
 class CertificationReport:
     """Tüm aday moleküllerin certified karşılaştırma raporu."""
+
     target: str
     candidates: list[MoleculeReport]
     best: MoleculeReport | None
     duration_s: float
-    sdf_path: str = ""   # 3D yapı dosyası (varsa)
+    sdf_path: str = ""  # 3D yapı dosyası (varsa)
 
     def summary(self) -> str:
         lines = [
-            f"",
-            f"  ══════════════════════════════════════════════════",
-            f"  Tantrium Molecular Certification Report",
+            "",
+            "  ══════════════════════════════════════════════════",
+            "  Tantrium Molecular Certification Report",
             f"  Hedef: {self.target}",
             f"  Aday: {len(self.candidates)} molekül  |  "
             f"Certified: {sum(1 for c in self.candidates if c.certified)}",
             f"  Süre: {self.duration_s:.2f}s",
-            f"  ══════════════════════════════════════════════════",
-            f"",
+            "  ══════════════════════════════════════════════════",
+            "",
         ]
 
         if not self.candidates:
@@ -102,13 +106,15 @@ class CertificationReport:
             lines.append("")
 
         if self.best:
-            lines.append(f"  ══════════════════════════════════════════════════")
+            lines.append("  ══════════════════════════════════════════════════")
             lines.append(f"  EN İYİ ADAY: {self.best.name}")
-            lines.append(f"  SMILES: {self.best.smiles[:80]}{'...' if len(self.best.smiles) > 80 else ''}")
+            lines.append(
+                f"  SMILES: {self.best.smiles[:80]}{'...' if len(self.best.smiles) > 80 else ''}"
+            )
             lines.append(f"  Sertifika: {self.best.certified_count}/23 paradigma")
             if self.sdf_path:
                 lines.append(f"  3D yapı: {self.sdf_path}")
-            lines.append(f"  ══════════════════════════════════════════════════")
+            lines.append("  ══════════════════════════════════════════════════")
 
         return "\n".join(lines)
 
@@ -127,7 +133,7 @@ class MolecularCertifier:
         - manifold_candidates(): Zaten manifoldda olan molekülleri kullan
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     def certify_for_target(
@@ -144,9 +150,8 @@ class MolecularCertifier:
         auto_fetch: True → PubChem'den otomatik çek
         top_k: kaç aday değerlendirilsin
         """
-        from tantrium.core.semantic import Concept, moment_distance
+        from tantrium.core.semantic import Concept
         from tantrium.graph.relations import certify_and_add_edge
-        from tantrium.graph.anchors import nearest_anchor
 
         t0 = time.time()
 
@@ -178,7 +183,9 @@ class MolecularCertifier:
 
         if not smiles_list:
             return CertificationReport(
-                target=target_name, candidates=[], best=None,
+                target=target_name,
+                candidates=[],
+                best=None,
                 duration_s=time.time() - t0,
             )
 
@@ -194,7 +201,10 @@ class MolecularCertifier:
                 if name not in self.engine.manifold.concepts:
                     c = Concept(
                         name=name,
-                        moments=[__import__('fractions').Fraction(m) for m in [report.mu1, report.mu2, report.mu3]],
+                        moments=[
+                            __import__("fractions").Fraction(m)
+                            for m in [report.mu1, report.mu2, report.mu3]
+                        ],
                         domain="drug_candidate",
                         source="molecular_certifier",
                     )
@@ -257,6 +267,7 @@ class MolecularCertifier:
 
         # Gerçek certified dyadic transport: source=target_concept, tgt=aday
         from tantrium.core.transport import CertifiedTransport
+
         transport = CertifiedTransport(self.engine)
         tc = transport.certify(list(target_concept.moments), list(raw.moments))
         dyadic_score = tc.transport_cost if tc.certified else 0.0
@@ -370,9 +381,11 @@ class MolecularCertifier:
 
             m1 = h(0, 0)
             m2 = h(0, 0) * h(1, 1) - h(0, 1) * h(1, 0)
-            m3 = (h(0,0) * (h(1,1)*h(2,2) - h(1,2)*h(2,1))
-                  - h(0,1) * (h(1,0)*h(2,2) - h(1,2)*h(2,0))
-                  + h(0,2) * (h(1,0)*h(2,1) - h(1,1)*h(2,0)))
+            m3 = (
+                h(0, 0) * (h(1, 1) * h(2, 2) - h(1, 2) * h(2, 1))
+                - h(0, 1) * (h(1, 0) * h(2, 2) - h(1, 2) * h(2, 0))
+                + h(0, 2) * (h(1, 0) * h(2, 1) - h(1, 1) * h(2, 0))
+            )
 
             minors = [m1, m2, m3]
             if any(v < -1e-9 for v in minors):
@@ -430,8 +443,11 @@ class MolecularCertifier:
         Başarısız olursa boş string döner.
         """
         from tantrium.core.molecular_3d import embed_3d_sdf
+
         return embed_3d_sdf(
-            smiles, name, out_dir,
+            smiles,
+            name,
+            out_dir,
             prefix=f"{target}_",
             props={"Target": target, "Source": "Tantrium_MolecularCertifier"},
         )

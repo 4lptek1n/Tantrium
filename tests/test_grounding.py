@@ -7,11 +7,12 @@ yapısal olarak geçerli ama anlamsız bir nokta mı?
 Bu testler ana iddiayı doğrular: rastgele harf çöpü artık köklü
 kavramlarla AYNI yargıyı almıyor.
 """
-import tantrium
-from tantrium.core.grounding import GroundingCertifier, GroundingCertificate
 
+import tantrium
+from tantrium.core.grounding import GroundingCertificate, GroundingCertifier
 
 # ─── Temel: doğrudan topraklama ──────────────────────────────────────────────
+
 
 def test_known_concept_is_grounded(ai):
     """Öğrenilmiş kelime (köklü TAU düğümü) GROUNDED olmalı."""
@@ -29,6 +30,7 @@ def test_grounded_concept_reports_edges(ai):
 
 
 # ─── Asıl iddia: çöp elenir ──────────────────────────────────────────────────
+
 
 def test_random_garbage_is_not_grounded(ai):
     """Rastgele harf çöpü GROUNDED olmamalı — asıl ayrım budur."""
@@ -54,6 +56,7 @@ def test_garbage_and_concept_get_different_verdicts(ai):
 
 # ─── Rezonans: bilinmeyen ama anlamlı token ──────────────────────────────────
 
+
 def test_unknown_meaningful_token_resonates(ai):
     """Manifoldda kayıtlı bir kavram zayıf topraklı olmalı; bilinmeyen topraksız.
 
@@ -61,21 +64,25 @@ def test_unknown_meaningful_token_resonates(ai):
     güvenilmez. Grounding artık in_manifold + direct_edges ekseninde. ATP
     manifoldda değilse UNGROUNDED kabul edilir — sistem öğrenmemişse bilmez.
     """
-    import tantrium
     from tests._seed import seed_relations
+
     ai2 = tantrium.AI()
     # ATP'yi önce yapısal tohumla (dil yok), sonra test et
-    seed_relations(ai2, [
-        ("atp", "ACTIVATES", "kinase"),
-        ("atp", "IS_A", "nucleotide"),
-        ("atp", "CAUSES", "energy release"),
-    ])
+    seed_relations(
+        ai2,
+        [
+            ("atp", "ACTIVATES", "kinase"),
+            ("atp", "IS_A", "nucleotide"),
+            ("atp", "CAUSES", "energy release"),
+        ],
+    )
     cert = ai2.grounding("ATP")
     assert cert.verdict in ("GROUNDED", "WEAKLY_GROUNDED")
     assert cert.direct_edges >= 1
 
 
 # ─── Skor monotonluğu ─────────────────────────────────────────────────────────
+
 
 def test_grounded_score_exceeds_ungrounded(ai):
     """Köklü kavramın topraklama skoru çöpünkinden yüksek olmalı."""
@@ -85,6 +92,7 @@ def test_grounded_score_exceeds_ungrounded(ai):
 
 
 # ─── Sertifika nesnesi ────────────────────────────────────────────────────────
+
 
 def test_certificate_structure(ai):
     """GroundingCertificate beklenen alanları taşımalı."""

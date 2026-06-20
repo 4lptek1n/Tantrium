@@ -7,6 +7,7 @@ parametrelerde (dosya öneki, ekstra SDF alanları, H atomu temizleme).
 Determinizm: randomSeed=42 HER ZAMAN (ETKDGv3 ve fallback ETKDG) — aynı SMILES
 aynı 3D konformeri verir. Bu, üretim sertifikasının denetlenebilirliği için kritik.
 """
+
 from __future__ import annotations
 
 import pathlib

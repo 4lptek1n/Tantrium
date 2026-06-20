@@ -30,6 +30,7 @@ Kullanım:
     # Durum
     print(ai.status())
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -38,11 +39,69 @@ from typing import Any
 # Graf-düğümü gürültü süzgeci (işlev-kelime/noktalama) — walk/prune_noise için.
 # (Eski core.cooccurrence.is_noise'in yerine; dil katmanı kaldırıldı, bu saf graf filtresi kaldı.)
 _NOISE_STOP = {
-    "the", "a", "an", "of", "and", "or", "to", "in", "on", "for", "is", "are", "was", "were",
-    "be", "been", "being", "by", "with", "as", "at", "from", "that", "this", "these", "those",
-    "it", "its", "he", "she", "they", "we", "you", "i", "his", "her", "their", "our", "your",
-    "but", "not", "no", "so", "if", "then", "than", "such", "into", "out", "up", "down", "over",
-    "which", "who", "what", "when", "where", "how", "can", "will", "would", "may", "also",
+    "the",
+    "a",
+    "an",
+    "of",
+    "and",
+    "or",
+    "to",
+    "in",
+    "on",
+    "for",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "by",
+    "with",
+    "as",
+    "at",
+    "from",
+    "that",
+    "this",
+    "these",
+    "those",
+    "it",
+    "its",
+    "he",
+    "she",
+    "they",
+    "we",
+    "you",
+    "i",
+    "his",
+    "her",
+    "their",
+    "our",
+    "your",
+    "but",
+    "not",
+    "no",
+    "so",
+    "if",
+    "then",
+    "than",
+    "such",
+    "into",
+    "out",
+    "up",
+    "down",
+    "over",
+    "which",
+    "who",
+    "what",
+    "when",
+    "where",
+    "how",
+    "can",
+    "will",
+    "would",
+    "may",
+    "also",
 }
 
 
@@ -58,6 +117,7 @@ def is_noise(token: str) -> bool:
 
 # ─── Sonuç tipleri ──────────────────────────────────────────────────────────
 
+
 @dataclass
 class AskResult:
     """ai.ask() sonucu — 4 eksenli sertifika.
@@ -65,16 +125,17 @@ class AskResult:
     certified: yapısal geçerlilik (23 paradigma). Geriye dönük uyumlu.
     coherent:  tüm 4 eksen anlaşıyor (yapısal + toraklama + gerçek + güven).
     """
+
     query: str
     answer: str
-    certified: bool        # paradigm coverage (geriye dönük uyumlu)
+    certified: bool  # paradigm coverage (geriye dönük uyumlu)
     paradigms_passed: int
     paradigms_total: int
     gaps: list[str]
-    nearest: list[str]        # en yakın manifold kavramları
-    grounding: str = "UNKNOWN"   # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
+    nearest: list[str]  # en yakın manifold kavramları
+    grounding: str = "UNKNOWN"  # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
     grounding_score: float = 0.0
-    truth: str = "CONSISTENT"    # CONSISTENT | CONTESTED | CONTRADICTORY
+    truth: str = "CONSISTENT"  # CONSISTENT | CONTESTED | CONTRADICTORY
     truth_score: float = 0.7
     confidence: float = 0.5
     confidence_level: str = "MODERATE"
@@ -96,13 +157,14 @@ class AskResult:
 @dataclass
 class MolResult:
     """ai.certify() ve ai.discover() sonucu."""
+
     name: str
     smiles: str
     certified: bool
     paradigms_passed: int
     paradigms_total: int
     dyadic_score: float
-    sdf: str                  # 3D SDF dosya yolu (varsa)
+    sdf: str  # 3D SDF dosya yolu (varsa)
     gaps: list[str]
 
     def __str__(self) -> str:
@@ -110,14 +172,14 @@ class MolResult:
         sdf_info = f"  sdf: {self.sdf}" if self.sdf else ""
         return (
             f"{cert} {self.name}  [{self.paradigms_passed}/{self.paradigms_total}]"
-            f"  dyadic={self.dyadic_score:.3e}"
-            + sdf_info
+            f"  dyadic={self.dyadic_score:.3e}" + sdf_info
         )
 
 
 @dataclass
 class GenResult:
     """ai.generate() sonucu."""
+
     seed: str
     text: str
     steps: int
@@ -131,6 +193,7 @@ class GenResult:
 @dataclass
 class ReasonResult:
     """ai.reason() sonucu."""
+
     query: str
     steps: list[str]
     conclusion: str
@@ -144,6 +207,7 @@ class ReasonResult:
 @dataclass
 class DiscoverResult:
     """ai.discover() — de novo molekül üretim sonucu."""
+
     target: str
     candidates: list[MolResult]
     best: MolResult | None
@@ -179,6 +243,7 @@ class DiscoverResult:
 @dataclass
 class DesignResult:
     """ai.design() — ters transport molekül tasarım sonucu."""
+
     target: str
     target_type: str
     candidates: list  # list[DesignCandidate]
@@ -212,8 +277,10 @@ class DesignResult:
         ]
         if self.best.sdf_path:
             lines.append(f"   3D: {self.best.sdf_path}")
-        lines.append(f"   Manifold: {self.n_manifold}  Fragment: {self.n_fragment}  "
-                     f"Süre: {self.duration_s:.1f}s")
+        lines.append(
+            f"   Manifold: {self.n_manifold}  Fragment: {self.n_fragment}  "
+            f"Süre: {self.duration_s:.1f}s"
+        )
         return "\n".join(lines)
 
 
@@ -224,9 +291,10 @@ class CompositeSignature:
     Bir cümledeki kavramların TAU topolojik momentlerinin serbest kümülant
     toplamı: κ_total = κ(A) ⊞ κ(B) ⊞ κ(C). Dil komposisyonu = κ-additivite.
     """
+
     text: str
     components: list  # list[tuple[str, list[float]]] — (kavram_adı, moments)
-    moments: list     # list[float] — birleşik moment imzası
+    moments: list  # list[float] — birleşik moment imzası
     n_surface: int = 0  # yüzey-encoding ile kaplanan (meaning() None döndü)
 
     def nearest(self, n: int = 5, metric: str = "quantum") -> list:
@@ -238,11 +306,11 @@ class CompositeSignature:
         return self.moments
 
     def __str__(self) -> str:
-        comp_str = ", ".join(f"{c[0]}({c[1][1]:.3f})" if len(c[1]) > 1 else c[0]
-                             for c in self.components[:6])
+        comp_str = ", ".join(
+            f"{c[0]}({c[1][1]:.3f})" if len(c[1]) > 1 else c[0] for c in self.components[:6]
+        )
         mu1 = float(self.moments[1]) if len(self.moments) > 1 else 0.0
-        return (f"CompositeSignature({len(self.components)} bileşen, "
-                f"μ₁={mu1:.3f}): [{comp_str}]")
+        return f"CompositeSignature({len(self.components)} bileşen, μ₁={mu1:.3f}): [{comp_str}]"
 
 
 @dataclass
@@ -256,19 +324,22 @@ class GroundingSignature:
     Ne kadar çok boyut → o kadar çok gizli çapraz-boyutlu bağlantı keşfedilebilir.
     quantum_connections: bu birleşik imzaya göre TAU'da gizli kuantum köprüler.
     """
+
     concept: str
-    bound: dict   # paradigm → percept_name
-    kappa_moments: list   # κ_total birleşik serbest kümülant momenti
+    bound: dict  # paradigm → percept_name
+    kappa_moments: list  # κ_total birleşik serbest kümülant momenti
     quantum_connections: list  # [(kavram, klasik_mesafe, kuantum_mesafe)]
-    rejected: "list | None" = None  # ontoloji-kapısının REDDETTİĞİ boyutlar (tip izin vermedi)
+    rejected: list | None = None  # ontoloji-kapısının REDDETTİĞİ boyutlar (tip izin vermedi)
 
     def __str__(self) -> str:
         dims = list(self.bound.keys())
         qc = len(self.quantum_connections)
         k2 = float(self.kappa_moments[1]) if len(self.kappa_moments) > 1 else 0.0
-        return (f"GroundingSignature('{self.concept}', "
-                f"{len(dims)} boyut={dims}, κ₂={k2:.4f}, "
-                f"{qc} kuantum köprü)")
+        return (
+            f"GroundingSignature('{self.concept}', "
+            f"{len(dims)} boyut={dims}, κ₂={k2:.4f}, "
+            f"{qc} kuantum köprü)"
+        )
 
     def summary(self) -> str:
         lines = [
@@ -304,6 +375,7 @@ class UniverseReconstruction:
       realizable: geçerli fiziksel yapı mı (Hankel-PSD = var olabilir)
       exact     : gizli yapı KESİN mi belirlendi (well_determined)
     """
+
     name: str
     signature: list
     modes: list
@@ -318,22 +390,28 @@ class UniverseReconstruction:
             out = []
             for x in xs:
                 if isinstance(x, complex):
-                    out.append(complex(round(x.real, 3), round(x.imag, 3))
-                               if abs(x.imag) > 1e-9 else round(x.real, 4))
+                    out.append(
+                        complex(round(x.real, 3), round(x.imag, 3))
+                        if abs(x.imag) > 1e-9
+                        else round(x.real, 4)
+                    )
                 else:
                     out.append(round(float(x), 4))
             return out
+
         r = _r
-        return "\n".join([
-            f"══ {self.name} — EVRENE TERSİNE MÜHENDİSLİK ══",
-            f"  gözlem imzası      : {r(self.signature)}",
-            f"  ÜRETEN yapı (mod)  : {r(self.modes)}",
-            f"  ağırlıklar         : {r(self.weights)}",
-            f"  karmaşıklık (mod#) : {self.n_modes}",
-            f"  sadakat            : {self.fidelity:.4f}"
-            f"   {'(KESİN belirlendi)' if self.exact else '(yaklaşık)'}",
-            f"  gerçeklenebilir    : {'✓ var olabilir' if self.realizable else '✗'}",
-        ])
+        return "\n".join(
+            [
+                f"══ {self.name} — EVRENE TERSİNE MÜHENDİSLİK ══",
+                f"  gözlem imzası      : {r(self.signature)}",
+                f"  ÜRETEN yapı (mod)  : {r(self.modes)}",
+                f"  ağırlıklar         : {r(self.weights)}",
+                f"  karmaşıklık (mod#) : {self.n_modes}",
+                f"  sadakat            : {self.fidelity:.4f}"
+                f"   {'(KESİN belirlendi)' if self.exact else '(yaklaşık)'}",
+                f"  gerçeklenebilir    : {'✓ var olabilir' if self.realizable else '✗'}",
+            ]
+        )
 
 
 @dataclass
@@ -353,6 +431,7 @@ class LawDiscovery:
       predict_error: GÖRÜLMEMİŞ kuyruğa karşı tahmin hatası (yasanın SERTİFİKASI)
       law_holds  : tahmin gerçeği tutuyor mu (hata küçük)
     """
+
     name: str
     order: int
     modes: list = field(default_factory=list)
@@ -363,21 +442,26 @@ class LawDiscovery:
     law_holds: bool = False
 
     def summary(self) -> str:
-        lines = [f"══ {self.name} — KEŞFEDİLEN YASA ══",
-                 f"  mertebe (yineleme derinliği): {self.order}"]
+        lines = [
+            f"══ {self.name} — KEŞFEDİLEN YASA ══",
+            f"  mertebe (yineleme derinliği): {self.order}",
+        ]
         if self.recurrence:
-            terms = " + ".join(f"{c:+.4f}·x[n-{i+1}]" for i, c in enumerate(self.recurrence))
+            terms = " + ".join(f"{c:+.4f}·x[n-{i + 1}]" for i, c in enumerate(self.recurrence))
             lines.append(f"  yineleme: x[n] = {terms}")
         for d in self.dynamics:
             lines.append(f"  • {d}")
         if self.forecast:
-            lines.append(f"  tahmin (görülmemiş): {[round(float(x),4) for x in self.forecast]}")
-        lines.append(f"  tahmin hatası: {self.predict_error:.2e}  → "
-                     f"{'✓ YASA GERÇEĞİ TUTUYOR' if self.law_holds else '✗ tutmuyor'}")
+            lines.append(f"  tahmin (görülmemiş): {[round(float(x), 4) for x in self.forecast]}")
+        lines.append(
+            f"  tahmin hatası: {self.predict_error:.2e}  → "
+            f"{'✓ YASA GERÇEĞİ TUTUYOR' if self.law_holds else '✗ tutmuyor'}"
+        )
         return "\n".join(lines)
 
 
 # ─── Ana AI sınıfı ───────────────────────────────────────────────────────────
+
 
 class AI:
     """Tantrium AGI — Native SDK.
@@ -396,16 +480,18 @@ class AI:
         persist=True: manifold her işlemden sonra otomatik kaydedilir.
         """
         from tantrium.core.engine import CertificationEngine
+
         self._engine = CertificationEngine()
         self._persist = persist
-        self._mol_gen = None   # lazy init
-        self._certifier = None # lazy init
+        self._mol_gen = None  # lazy init
+        self._certifier = None  # lazy init
 
     # ── Evrensel giriş noktası ───────────────────────────────────────────────
 
     @staticmethod
     def _detect_modality(data: Any) -> str:
         import numpy as np
+
         if isinstance(data, np.ndarray):
             return "image" if data.ndim == 2 else "signal"
         return "signal"
@@ -415,7 +501,7 @@ class AI:
         smiles_chars = set("CNOSPFClBrI[]()=#@/\\+1234567890-")
         return 3 <= len(s) <= 200 and all(c in smiles_chars for c in s)
 
-    def grounding(self, token: str) -> "object":
+    def grounding(self, token: str) -> object:
         """Topraklama sertifikası — token bilinen referanslara bağlı mı?
 
         Yapısal sertifika (23 paradigma) her şeyi geçirir; bu eksen ELER:
@@ -423,7 +509,7 @@ class AI:
         """
         return self._engine.grounder.certify(token)
 
-    def truth(self, name: str, n_neighbors: int = 6) -> "object":
+    def truth(self, name: str, n_neighbors: int = 6) -> object:
         """Doğruluk ekseni (3.) — kavram komşularıyla TUTARLI mı, çelişiyor mu?
 
         Topraklama "bağlı mı?" der; doğruluk "çevresiyle tutarlı mı?" der.
@@ -432,9 +518,10 @@ class AI:
         Döner: TruthCertificate
         """
         from tantrium.core.truth import TruthCertifier
+
         return TruthCertifier(self._engine).certify(name, n_neighbors=n_neighbors)
 
-    def confidence(self, query: str) -> "object":
+    def confidence(self, query: str) -> object:
         """Kalibre edilmiş tek güven — 4 ekseni (kapsama+margin+topraklama+doğruluk) birleştir.
 
         "23/23 ama margin 0.001" ile "23/23 margin 0.4" farkını tek sayıya indirir.
@@ -443,11 +530,13 @@ class AI:
         Döner: Confidence (value, level, weakest_axis, ...)
         """
         from tantrium.core.confidence import calibrate
+
         obj = self._engine.encoder.encode(query, name=query[:64])
         run = self._engine.process(obj)
         gcert = self._engine.grounder.certify(query[:64], moments=list(obj.moments))
         try:
             from tantrium.core.truth import TruthCertifier
+
             tcert = TruthCertifier(self._engine).certify(query[:64], moments=list(obj.moments))
             truth_score = tcert.truth_score
         except Exception:
@@ -456,7 +545,7 @@ class AI:
         margin = float(obj.structure.get("achilles_margin", 0.0) or 0.0)
         return calibrate(coverage, margin, gcert.score, truth_score)
 
-    def reconstruct(self, query: str, max_atoms: int = 4) -> "object":
+    def reconstruct(self, query: str, max_atoms: int = 4) -> object:
         """Ters yön: moment dizisinden ölçüyü GERİ KUR (Gauss kuadratürü / Prony).
 
         Encoder ileri yön (yapı→moment); bu ters yön (moment→ölçü).
@@ -466,11 +555,13 @@ class AI:
         Döner: ReconstructedMeasure (support, weights, reconstruction_error, ...)
         """
         from tantrium.core.reconstruct import reconstruct_measure
+
         obj = self._engine.encoder.encode(query, name=query[:64])
         return reconstruct_measure(obj.moments, max_atoms=max_atoms)
 
-    def reverse_engineer(self, observations, name: str = "fenomen",
-                         max_modes: int = 8) -> "UniverseReconstruction":
+    def reverse_engineer(
+        self, observations, name: str = "fenomen", max_modes: int = 8
+    ) -> UniverseReconstruction:
         """EVRENE TERSİNE MÜHENDİSLİK — gözlemden onu ÜRETEN gizli yapıyı geri çıkar.
 
         Bir domain DEĞİL, META-güç: drug/material/math bunun örnekleri. Herhangi bir
@@ -482,29 +573,33 @@ class AI:
         observations: ham gözlem — sayı listesi (ölçüm) / SMILES / DNA / sinyal / metin.
         Döner: UniverseReconstruction (.modes = üreten yapı, .summary()).
         """
-        from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
-        from tantrium.core.codex import CertifiableObject
         from fractions import Fraction
+
+        from tantrium.core.codex import CertifiableObject
+        from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
 
         # SAYISAL GÖZLEM (sinyal/ölçüm/dizi) → HAM matematik (Kronecker/Prony Hankel rank).
         # Encoder'ın 8-moment sıkıştırmasından GEÇİRMEYİZ (yapıyı siler: 8 moment hep ~4 atom).
         # Ham veriden üreten yapıyı okur — yapılı=düşük rank, gürültü=tam rank, manipüle=rank fırlar.
-        if isinstance(observations, (list, tuple)) and observations and all(
-                isinstance(x, (int, float)) for x in observations):
+        if (
+            isinstance(observations, (list, tuple))
+            and observations
+            and all(isinstance(x, (int, float)) for x in observations)
+        ):
             from tantrium.core.structure import structural_decomposition
+
             x = [float(v) for v in observations]
             sd = structural_decomposition(x, max_modes=max_modes)
-            real_modes = [m.real for m in sd.modes if abs(m.imag) < 1e-6]
+            [m.real for m in sd.modes if abs(m.imag) < 1e-6]
             return UniverseReconstruction(
                 name=str(name),
                 signature=[round(v, 6) for v in x[:8]],
-                modes=[round(m.real, 6) if abs(m.imag) < 1e-9 else complex(m)
-                       for m in sd.modes],
+                modes=[round(m.real, 6) if abs(m.imag) < 1e-9 else complex(m) for m in sd.modes],
                 weights=list(sd.singular_values[:max_modes]),
                 n_modes=sd.rank,
                 fidelity=float(sd.sv_gap),
-                realizable=bool(sd.structured),     # gizli düzen var mı (rank ≪ tam)
-                exact=bool(sd.sv_gap > 0.05),        # rank'ta keskin spektral boşluk
+                realizable=bool(sd.structured),  # gizli düzen var mı (rank ≪ tam)
+                exact=bool(sd.sv_gap > 0.05),  # rank'ta keskin spektral boşluk
             )
 
         # SEMBOLİK GÖZLEM (molekül/DNA/metin) → evrensel yasayla gerçek-form encode → spektral imza
@@ -516,8 +611,7 @@ class AI:
         rec = reconstruct_measure(mu, max_atoms=max_modes)
         try:
             psd = CertifiableObject(
-                name=str(name),
-                moments=[Fraction(x).limit_denominator(10 ** 9) for x in mu]
+                name=str(name), moments=[Fraction(x).limit_denominator(10**9) for x in mu]
             ).is_moment_sequence(size=4)
         except Exception:
             psd = False
@@ -532,8 +626,7 @@ class AI:
             exact=bool(rec.well_determined),
         )
 
-    def discover_law(self, observations, name: str = "veri",
-                     holdout: int = 4) -> "LawDiscovery":
+    def discover_law(self, observations, name: str = "veri", holdout: int = 4) -> LawDiscovery:
         """HAM VERİDEN DOĞA YASASI KEŞFİ — hiçbir formül verilmeden, domain-kör.
 
         Gözlemleri YÖNETEN lineer yineleme + karakteristik kökleri (dinamik modlar) çıkarır
@@ -544,11 +637,15 @@ class AI:
         holdout     : son kaç değer SAKLANSIN (yasa onları tahmin edip doğrulayacak).
         Döner: LawDiscovery (.summary(); .recurrence = yasa; .forecast = tahmin).
         """
-        import numpy as np, math
+        import math
+
+        import numpy as np
+
         from tantrium.core.structure import structural_decomposition
+
         x = [float(v) for v in observations]
         h = max(0, min(holdout, len(x) - 4))
-        fit = x[:len(x) - h] if h else x
+        fit = x[: len(x) - h] if h else x
         sd = structural_decomposition(fit, tol=1e-6)
         modes = sd.modes
         r = max(1, len(modes))
@@ -569,8 +666,9 @@ class AI:
                 if abs(rate - 1) < 1e-4:
                     desc = "sabit mod (λ≈1)"
                 elif rate > 0:
-                    desc = (f"büyüme oranı λ={rate:.5f}"
-                            + (f"  (= altın oran φ!)" if abs(rate - (1 + 5 ** .5) / 2) < 1e-3 else ""))
+                    desc = f"büyüme oranı λ={rate:.5f}" + (
+                        "  (= altın oran φ!)" if abs(rate - (1 + 5**0.5) / 2) < 1e-3 else ""
+                    )
                     if rate < 1:
                         desc = f"üstel bozunum λ={rate:.5f} (sabit={-math.log(rate):.4f})"
                 else:
@@ -578,7 +676,8 @@ class AI:
             else:
                 if z.imag <= 0:
                     continue
-                freq = abs(math.atan2(z.imag, z.real)); decay = -math.log(abs(z))
+                freq = abs(math.atan2(z.imag, z.real))
+                decay = -math.log(abs(z))
                 key = (round(freq, 4), round(decay, 4))
                 if key in seen:
                     continue
@@ -593,21 +692,32 @@ class AI:
             k = h if h else 4
             for _ in range(k):
                 nxt = sum(c * seq[-(i + 1)] for i, c in enumerate(recurrence))
-                seq.append(nxt); forecast.append(nxt)
+                seq.append(nxt)
+                forecast.append(nxt)
             if h:
-                actual = x[len(x) - h:]
+                actual = x[len(x) - h :]
                 denom = max(1e-9, max(abs(a) for a in actual))
-                perr = sum(abs(f - a) for f, a in zip(forecast, actual)) / (len(actual) * denom)
+                perr = sum(abs(f - a) for f, a in zip(forecast, actual, strict=False)) / (
+                    len(actual) * denom
+                )
                 holds = perr < 1e-3
             else:
                 holds = sd.structured
         return LawDiscovery(
-            name=str(name), order=r,
-            modes=[round(m.real, 6) if abs(m.imag) < 1e-9 else complex(round(m.real, 4), round(m.imag, 4))
-                   for m in modes],
+            name=str(name),
+            order=r,
+            modes=[
+                round(m.real, 6)
+                if abs(m.imag) < 1e-9
+                else complex(round(m.real, 4), round(m.imag, 4))
+                for m in modes
+            ],
             recurrence=[round(c, 6) for c in recurrence],
-            dynamics=dynamics, forecast=forecast,
-            predict_error=float(perr), law_holds=bool(holds))
+            dynamics=dynamics,
+            forecast=forecast,
+            predict_error=float(perr),
+            law_holds=bool(holds),
+        )
 
     def forecast(self, series, steps: int = 8, order: int | None = None) -> dict:
         """EVRENSEL TAHMİN — lineer VE nonlineer/kaotik yasaları çözer (en gelişmiş).
@@ -617,7 +727,9 @@ class AI:
         Domain-kör; sertifika: holdout hatası + reliable. Döner: {forecast, model, order,
         residual_std, holdout_error, reliable}.
         """
-        from tantrium.core.structure import (forecast as _fc, nonlinear_forecast as _nl)
+        from tantrium.core.structure import forecast as _fc
+        from tantrium.core.structure import nonlinear_forecast as _nl
+
         x = [float(v) for v in series]
         h = max(1, min(int(steps), len(x) // 4))
 
@@ -625,19 +737,21 @@ class AI:
             if len(x) - h < 4:
                 return None, None
             try:
-                pred = fn(x[:len(x) - h], h)[0]
-                actual = x[len(x) - h:]
+                pred = fn(x[: len(x) - h], h)[0]
+                actual = x[len(x) - h :]
                 if not pred:
                     return None, None
                 denom = max(1e-9, max(abs(a) for a in actual))
-                return sum(abs(p - a) for p, a in zip(pred, actual)) / (len(actual) * denom), pred
+                return sum(abs(p - a) for p, a in zip(pred, actual, strict=False)) / (
+                    len(actual) * denom
+                ), pred
             except Exception:
                 return None, None
 
         lin_err, _ = _holdout(lambda s, k: _fc(s, steps=k, order=order))
         nl_err, _ = _holdout(lambda s, k: _nl(s, steps=k, degree=2, embed=3))
         # KAZANANI seç (düşük holdout hatası)
-        use_nl = (nl_err is not None and (lin_err is None or nl_err < lin_err))
+        use_nl = nl_err is not None and (lin_err is None or nl_err < lin_err)
         if use_nl:
             fut, meta, sigma = _nl(x, steps=steps, degree=2, embed=3)
             model, herr, c = "nonlineer (Koopman/EDMD)", nl_err, meta[0]
@@ -661,6 +775,7 @@ class AI:
         Domain-kör: sensör/finans/ağ/biyosinyal. Döner: {anomalies, n, residual_std, clean}.
         """
         from tantrium.core.structure import anomaly_scan
+
         anomalies, sigma = anomaly_scan([float(v) for v in series], order=order, z=z)
         return {
             "anomalies": anomalies,
@@ -674,7 +789,7 @@ class AI:
         n_samples: int = 200,
         epsilon: float = 1e-4,
         seed: int = 0,
-    ) -> "object":
+    ) -> object:
         """Çakışma avı — çekirdek iddianın ampirik testi.
 
         İki YAPISAL FARKLI girdi aynı 8 momente çöküyor mu? Sistemin kendi
@@ -684,9 +799,8 @@ class AI:
         Döner: CollisionReport (collisions, collision_rate, claim_holds, ...)
         """
         from tantrium.core.collision import CollisionHunter
-        return CollisionHunter(self._engine).hunt(
-            n_samples=n_samples, epsilon=epsilon, seed=seed
-        )
+
+        return CollisionHunter(self._engine).hunt(n_samples=n_samples, epsilon=epsilon, seed=seed)
 
     def crossmodal(self, pairs: list[tuple] | None = None) -> dict:
         """Cross-modal sadakat koşumu — ses/metin/molekül AYNI uzayda mı?
@@ -725,21 +839,25 @@ class AI:
                 else:
                     mu_b = list(self._engine.encoder.encode(name_b).moments)
                 d = canonical_distance(mu_a, mu_b)
-                results.append({
-                    "pair": f"{name_a}({mod_a}) ↔ {name_b}({mod_b})",
-                    "distance": round(d, 5),
-                    "expected": expect,
-                })
+                results.append(
+                    {
+                        "pair": f"{name_a}({mod_a}) ↔ {name_b}({mod_b})",
+                        "distance": round(d, 5),
+                        "expected": expect,
+                    }
+                )
         else:
-            for (a, mod_a, b, mod_b, expect) in pairs:
+            for a, mod_a, b, mod_b, expect in pairs:
                 mu_a = list(self._engine.encoder.encode(a).moments)
                 mu_b = list(self._engine.encoder.encode(b).moments)
                 d = canonical_distance(mu_a, mu_b)
-                results.append({
-                    "pair": f"{a}({mod_a}) ↔ {b}({mod_b})",
-                    "distance": round(d, 5),
-                    "expected": expect,
-                })
+                results.append(
+                    {
+                        "pair": f"{a}({mod_a}) ↔ {b}({mod_b})",
+                        "distance": round(d, 5),
+                        "expected": expect,
+                    }
+                )
 
         return {"pairs": results, "metric": "spectral_w2"}
 
@@ -752,11 +870,10 @@ class AI:
     ) -> MolResult:
         """Tek SMILES → Aleph sertifika + 3D SDF."""
         import warnings
+
         warnings.filterwarnings("ignore")
 
         from tantrium.core.encoder import encode_smiles
-        from tantrium.domains.certifier import MolecularCertifier
-
         from tantrium.core.transport import CertifiedTransport
 
         certifier = self._get_certifier()
@@ -802,9 +919,8 @@ class AI:
     ) -> DiscoverResult:
         """Hedef → Morgan moment uzayı → de novo molekül üretimi → 3D SDF."""
         import warnings
-        warnings.filterwarnings("ignore")
 
-        from tantrium.domains.generator import MoleculeGenerator
+        warnings.filterwarnings("ignore")
 
         gen = self._get_mol_gen()
         report = gen.generate(target, top_k=top_k, out_dir=out_dir)
@@ -839,18 +955,21 @@ class AI:
         top_k: int = 10,
         out_dir: str = "results/molecules",
         n_fragment_rounds: int = 2,
-    ) -> "DesignResult":
+    ) -> DesignResult:
         """Ters transport — hedef → W2-minimal moleküller → 3D SDF.
 
         Manifold araması (L1→W2) + fragment mutasyonu + 4-eksen sertifika.
         target: protein adı, hastalık işareti, SMILES veya herhangi metin.
         """
         import warnings
+
         warnings.filterwarnings("ignore")
         from tantrium.core.inverse import InverseTransport
+
         inv = InverseTransport(self.engine)
-        report = inv.design(target, top_k=top_k, out_dir=out_dir,
-                            n_fragment_rounds=n_fragment_rounds)
+        report = inv.design(
+            target, top_k=top_k, out_dir=out_dir, n_fragment_rounds=n_fragment_rounds
+        )
         return DesignResult(
             target=report.target,
             target_type=report.target_type,
@@ -866,7 +985,7 @@ class AI:
         target: str,
         n: int = 12,
         cls_filter: str | None = None,
-    ) -> "object":
+    ) -> object:
         """Moleküler düzenleme — hedef etrafında W2 mesafesine göre 150+ ilaç diz.
 
         Saf matematiksel. Metin arama yok — her molekül G=AᵀA → μ_k kernel'den geçer.
@@ -874,8 +993,10 @@ class AI:
         cls_filter: "kinase", "nsaid", "oncology", "natural", vb.
         """
         import warnings
+
         warnings.filterwarnings("ignore")
         from tantrium.core.molecular_space import MolecularSpace
+
         ms = MolecularSpace(self.engine)
         return ms.arrange(target, n=n, cls_filter=cls_filter)
 
@@ -884,15 +1005,17 @@ class AI:
         source_smiles: str,
         target_smiles: str,
         steps: int = 6,
-    ) -> "object":
+    ) -> object:
         """İki molekül arasında moment uzayında interpolasyon yolu.
 
         Her ara noktada kütüphaneden en yakın gerçek molekül bulunur.
         A → B arasındaki kimyasal evrim yolunu gösterir.
         """
         import warnings
+
         warnings.filterwarnings("ignore")
         from tantrium.core.molecular_space import MolecularSpace
+
         ms = MolecularSpace(self.engine)
         return ms.morph(source_smiles, target_smiles, steps=steps)
 
@@ -906,8 +1029,10 @@ class AI:
         Her seviyede 3 en yakın kimyasal akraba. Molekülün 'kimden geldiğini' gösterir.
         """
         import warnings
+
         warnings.filterwarnings("ignore")
         from tantrium.core.molecular_space import MolecularSpace
+
         ms = MolecularSpace(self.engine)
         return ms.lineage(smiles, depth=depth)
 
@@ -917,7 +1042,7 @@ class AI:
         top_k: int = 6,
         max_atoms: int = 16,
         beam_width: int = 4,
-    ) -> "object":
+    ) -> object:
         """Moleküler Genesis — saf matematiksel türetim. Tahmin yok.
 
         Hedef → momentler → Gauss-Bolyai spektral ölçü → yapı kılavuzu
@@ -927,8 +1052,10 @@ class AI:
         target: protein, hastalık, SMILES, herhangi metin.
         """
         import warnings
+
         warnings.filterwarnings("ignore")
         from tantrium.core.molecular_genesis import MolecularGenesis
+
         gen = MolecularGenesis(self.engine)
         return gen.generate(target, top_k=top_k, max_atoms=max_atoms, beam_width=beam_width)
 
@@ -941,6 +1068,7 @@ class AI:
         a, b: kavram adı, metin, SMILES — herhangi girdi.
         """
         from tantrium.core.quantum_moments import QuantumSignature
+
         mu_a = [float(m) for m in self.engine.encoder.encode(a).moments]
         mu_b = [float(m) for m in self.engine.encoder.encode(b).moments]
         return QuantumSignature.from_moments(mu_a).quantum_distance(
@@ -955,6 +1083,7 @@ class AI:
         a, b: kavram adı, metin veya SMILES.
         """
         from tantrium.core.quantum_moments import FreeCumulants
+
         ka = FreeCumulants.from_moments(
             [float(m) for m in self.engine.encoder.encode(concept_a).moments]
         )
@@ -975,8 +1104,9 @@ class AI:
         Klasik mesafe yüksek + κ-mesafe düşük → gizli matematiksel bağlantı.
         Döner: {classical_dist, quantum_dist, kappa_dist, entangled, note}
         """
-        from tantrium.core.quantum_moments import QuantumSignature
         from tantrium.core.metric import l1_distance
+        from tantrium.core.quantum_moments import QuantumSignature
+
         mu_a = [float(m) for m in self.engine.encoder.encode(concept_a).moments]
         mu_b = [float(m) for m in self.engine.encoder.encode(concept_b).moments]
         sig_a = QuantumSignature.from_moments(mu_a)
@@ -984,8 +1114,8 @@ class AI:
         entangled = sig_a.is_entangled_with(sig_b)
         return {
             "classical_dist": round(l1_distance(mu_a, mu_b), 5),
-            "quantum_dist":   round(sig_a.quantum_distance(sig_b), 5),
-            "kappa_dist":     round(sig_a.cumulants.distance(sig_b.cumulants), 5),
+            "quantum_dist": round(sig_a.quantum_distance(sig_b), 5),
+            "kappa_dist": round(sig_a.cumulants.distance(sig_b.cumulants), 5),
             "entangled": entangled,
             "note": "Gizli matematiksel bağlantı" if entangled else "Normal ayrışma",
         }
@@ -994,35 +1124,34 @@ class AI:
 
     # Statik protein→bilinen-inhibitör haritası (TAU eksikse geri düşme)
     _PROTEIN_DIRECT_MAP: dict[str, list[str]] = {
-        "egfr":   ["erlotinib", "gefitinib", "afatinib", "osimertinib"],
-        "her2":   ["lapatinib", "afatinib"],
-        "braf":   ["vemurafenib", "sorafenib"],
-        "kit":    ["imatinib", "sunitinib"],
-        "src":    ["dasatinib", "bosutinib", "imatinib"],
-        "abl":    ["imatinib", "dasatinib", "bosutinib"],
-        "akt":    ["ipatasertib", "capivasertib"],
-        "akt1":   ["ipatasertib", "capivasertib"],
-        "mek":    ["trametinib", "cobimetinib"],
-        "mek1":   ["trametinib", "cobimetinib"],
-        "jak":    ["ruxolitinib", "tofacitinib", "baricitinib"],
-        "jak2":   ["ruxolitinib", "tofacitinib", "baricitinib"],
-        "jak1":   ["tofacitinib", "baricitinib"],
-        "parp":   ["olaparib", "niraparib", "rucaparib"],
-        "parp1":  ["olaparib", "niraparib", "rucaparib"],
-        "cdk4":   ["palbociclib", "ribociclib", "abemaciclib"],
-        "cdk6":   ["palbociclib", "ribociclib", "abemaciclib"],
-        "alk":    ["alectinib", "brigatinib", "crizotinib"],
-        "mtor":   ["everolimus", "temsirolimus"],
-        "vegfr":  ["sorafenib", "sunitinib", "vandetanib"],
+        "egfr": ["erlotinib", "gefitinib", "afatinib", "osimertinib"],
+        "her2": ["lapatinib", "afatinib"],
+        "braf": ["vemurafenib", "sorafenib"],
+        "kit": ["imatinib", "sunitinib"],
+        "src": ["dasatinib", "bosutinib", "imatinib"],
+        "abl": ["imatinib", "dasatinib", "bosutinib"],
+        "akt": ["ipatasertib", "capivasertib"],
+        "akt1": ["ipatasertib", "capivasertib"],
+        "mek": ["trametinib", "cobimetinib"],
+        "mek1": ["trametinib", "cobimetinib"],
+        "jak": ["ruxolitinib", "tofacitinib", "baricitinib"],
+        "jak2": ["ruxolitinib", "tofacitinib", "baricitinib"],
+        "jak1": ["tofacitinib", "baricitinib"],
+        "parp": ["olaparib", "niraparib", "rucaparib"],
+        "parp1": ["olaparib", "niraparib", "rucaparib"],
+        "cdk4": ["palbociclib", "ribociclib", "abemaciclib"],
+        "cdk6": ["palbociclib", "ribociclib", "abemaciclib"],
+        "alk": ["alectinib", "brigatinib", "crizotinib"],
+        "mtor": ["everolimus", "temsirolimus"],
+        "vegfr": ["sorafenib", "sunitinib", "vandetanib"],
         "vegfr2": ["sorafenib", "sunitinib", "vandetanib"],
-        "stat3":  ["sorafenib", "sunitinib"],
-        "btk":    ["ibrutinib"],
-        "pdgfr":  ["imatinib", "sorafenib", "sunitinib"],
-        "ret":    ["vandetanib", "cabozantinib"],
+        "stat3": ["sorafenib", "sunitinib"],
+        "btk": ["ibrutinib"],
+        "pdgfr": ["imatinib", "sorafenib", "sunitinib"],
+        "ret": ["vandetanib", "cabozantinib"],
     }
 
-    def _protein_reference_ligands(self, protein: str, top_refs: int = 8
-                                   ) -> list[tuple[str, str]]:
+    def _protein_reference_ligands(self, protein: str, top_refs: int = 8) -> list[tuple[str, str]]:
         """Proteinin bilinen ligandlarını gerçek SMILES'a çözümle.
 
         Protein word-encode EDİLMEZ. TAU'daki INHIBITS/ACTIVATES kenarları →
@@ -1031,6 +1160,7 @@ class AI:
         Boş liste = referans yok (dürüst).
         """
         from tantrium.core.molecular_space import DRUG_LIBRARY
+
         name2smi = {n.lower(): smi for n, smi, _ in DRUG_LIBRARY}
         name2cls = {n.lower(): cls for n, _, cls in DRUG_LIBRARY}
         prot = protein.lower().strip()
@@ -1064,18 +1194,27 @@ class AI:
             ref = [(n.lower(), s) for n, s, c in DRUG_LIBRARY if c == ref_cls][:top_refs]
         return ref[:top_refs]
 
-    def design_drug(self, protein: str, max_steps: int = 16, beam_width: int = 6,
-                    out_dir: str = "results/molecules") -> dict:
+    def design_drug(
+        self,
+        protein: str,
+        max_steps: int = 16,
+        beam_width: int = 6,
+        out_dir: str = "results/molecules",
+    ) -> dict:
         """Protein → kanıtlı ilaç adayları + 3D SDF. produce() üzerinden çalışır."""
         refs = self._protein_reference_ligands(protein)
         if not refs:
-            return {"protein": protein, "verdict": "BİLİNMİYOR",
-                    "reason": f"'{protein}' için referans ligand yok — yön kurulamıyor.",
-                    "candidates": []}
+            return {
+                "protein": protein,
+                "verdict": "BİLİNMİYOR",
+                "reason": f"'{protein}' için referans ligand yok — yön kurulamıyor.",
+                "candidates": [],
+            }
         from tantrium.core.production import ProductionEngine
+
         cert = ProductionEngine(self.engine).produce(
-            protein, max_steps=max_steps, beam_width=beam_width,
-            out_dir=out_dir, inject=False)
+            protein, max_steps=max_steps, beam_width=beam_width, out_dir=out_dir, inject=False
+        )
         result = cert.to_design_dict()
         result["n_refs"] = len(refs)
         result["reference_ligands"] = [n for n, _ in refs]
@@ -1088,23 +1227,31 @@ class AI:
         Bulunamazsa serbest-Gauss (yarı-daire, κ_k=0 k≥3) referansına düşer.
         """
         from tantrium.core.quantum_moments import FreeCumulants
+
         for name in ("⊕ANCHOR:ZETA_ZEROS", "ZETA_ZEROS", "zeta_zeros_18"):
             c = self.engine.manifold.concepts.get(name)
             if c is not None:
                 return FreeCumulants.from_moments([float(m) for m in c.moments])
         return FreeCumulants([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-    def cure(self, disease: str, max_steps: int = 14, beam_width: int = 5,
-             out_dir: str = "results/molecules") -> dict:
+    def cure(
+        self,
+        disease: str,
+        max_steps: int = 14,
+        beam_width: int = 5,
+        out_dir: str = "results/molecules",
+    ) -> dict:
         """Hastalık → κ-dekonvolüsyon → kanıtlı molekül + 3D SDF. produce() üzerinden."""
         from tantrium.core.production import ProductionEngine
+
         cert = ProductionEngine(self.engine).produce(
-            disease, max_steps=max_steps, beam_width=beam_width,
-            out_dir=out_dir, inject=False)
+            disease, max_steps=max_steps, beam_width=beam_width, out_dir=out_dir, inject=False
+        )
         return cert.to_cure_dict()
 
-    def simulate(self, seed: str = "CC", max_steps: int = 14,
-                 beam_width: int = 5, toward: str | None = None) -> "object":
+    def simulate(
+        self, seed: str = "CC", max_steps: int = 14, beam_width: int = 5, toward: str | None = None
+    ) -> object:
         """Evren simülasyonu — makineyi çalıştırarak molekülü transport ile diz.
 
         Hafızadan benzer arama YOK. Her atom-ekleme adımı CertifiedTransport ile
@@ -1115,13 +1262,24 @@ class AI:
         seed: başlangıç SMILES   toward: opsiyonel yön (gradyan, eşleşme değil)
         """
         from tantrium.core.molecular_genesis import MolecularGenesis
-        return MolecularGenesis(self.engine).simulate(
-            seed=seed, max_steps=max_steps, beam_width=beam_width, toward=toward)
 
-    def produce(self, target: "str | list[float]", max_steps: int = 16, beam_width: int = 6,
-                out_dir: str = "results/molecules", refine_rounds: int = 2,
-                combination: bool = True, network: bool = False, inject: bool = True,
-                epsilon: float = 0.5, top_k: int = 10) -> "object":
+        return MolecularGenesis(self.engine).simulate(
+            seed=seed, max_steps=max_steps, beam_width=beam_width, toward=toward
+        )
+
+    def produce(
+        self,
+        target: str | list[float],
+        max_steps: int = 16,
+        beam_width: int = 6,
+        out_dir: str = "results/molecules",
+        refine_rounds: int = 2,
+        combination: bool = True,
+        network: bool = False,
+        inject: bool = True,
+        epsilon: float = 0.5,
+        top_k: int = 10,
+    ) -> object:
         """TEK GİRİŞ — çok-stratejili üret → evren-kapat → 6-eksen sertifikala.
 
         target: kavram/hastalık/SMILES string VEYA moment listesi
@@ -1134,12 +1292,21 @@ class AI:
         koşul); biyolojik geçerlilik wet-lab ile.
         """
         from tantrium.core.production import ProductionEngine
-        return ProductionEngine(self.engine).produce(
-            target, max_steps=max_steps, beam_width=beam_width, out_dir=out_dir,
-            refine_rounds=refine_rounds, combination=combination, network=network,
-            inject=inject, epsilon=epsilon, top_k=top_k)
 
-    def produce_math(self, disease, build: bool = False, healthy=None) -> "object":
+        return ProductionEngine(self.engine).produce(
+            target,
+            max_steps=max_steps,
+            beam_width=beam_width,
+            out_dir=out_dir,
+            refine_rounds=refine_rounds,
+            combination=combination,
+            network=network,
+            inject=inject,
+            epsilon=epsilon,
+            top_k=top_k,
+        )
+
+    def produce_math(self, disease, build: bool = False, healthy=None) -> object:
         """Hastalık → ilaç, TAMAMEN MATEMATİK (harf/SMILES yok) — RH parçaları zinciri.
 
         disease:
@@ -1157,9 +1324,10 @@ class AI:
         Döner: MathDrug (.summary() insan-okunur; .eigenvalues = ilacın spektrumu).
         """
         from tantrium.core.production import ProductionEngine
+
         return ProductionEngine(self.engine).produce_math(disease, build=build, healthy=healthy)
 
-    def cross(self, disease, drug: str, dna: str) -> "object":
+    def cross(self, disease, drug: str, dna: str) -> object:
         """ÜÇLÜ CROSS — sanal wet-lab: hastalık × ilaç × KİŞİNİN DNA'sı → işe yarar mı.
 
         disease: ölçülen hastalık (sayı/bulgu/isim) → κ_disease
@@ -1173,6 +1341,7 @@ class AI:
         Döner: CrossResult (.summary() insan-okunur; .works/.verdict).
         """
         from tantrium.core.production import ProductionEngine
+
         return ProductionEngine(self.engine).cross_check(disease, drug, dna)
 
     # Paradigma-matematik mesafe eşiği (45-özellik normalize imza):
@@ -1193,16 +1362,17 @@ class AI:
         Protein word-encode EDİLMEZ — ligandları gerçek SMILES'a çözümlenir.
         candidate: SMILES   protein: hedef adı (egfr, bcr-abl, ...)
         """
-        from tantrium.core.quantum_moments import QuantumSignature
         from tantrium.core.metric import paradigm_distance
+        from tantrium.core.quantum_moments import QuantumSignature
 
         ref_smiles = self._protein_reference_ligands(protein, top_refs)
         if not ref_smiles:
             return {
-                "candidate": candidate, "protein": protein,
+                "candidate": candidate,
+                "protein": protein,
                 "verdict": "BİLİNMİYOR",
                 "reason": f"'{protein}' için SMILES'a çözümlenebilen bilinen ligand yok — "
-                          f"yargılamak için referans gerekiyor.",
+                f"yargılamak için referans gerekiyor.",
                 "n_refs": 0,
             }
 
@@ -1212,8 +1382,13 @@ class AI:
             cand_struct = cand_obj.structure
             cand_sig = QuantumSignature.from_moments([float(m) for m in cand_obj.moments])
         except Exception:
-            return {"candidate": candidate, "protein": protein,
-                    "verdict": "GEÇERSİZ", "reason": "Aday encode edilemedi.", "n_refs": 0}
+            return {
+                "candidate": candidate,
+                "protein": protein,
+                "verdict": "GEÇERSİZ",
+                "reason": "Aday encode edilemedi.",
+                "n_refs": 0,
+            }
 
         # Her referans ligandla paradigma-matematik + κ mesafesi
         best = None  # (name, paradigm_dist, kappa_dist)
@@ -1221,8 +1396,7 @@ class AI:
             try:
                 ref_obj = self.engine.encoder.encode(smi)
                 pd = paradigm_distance(cand_struct, ref_obj.structure)
-                ref_sig = QuantumSignature.from_moments(
-                    [float(m) for m in ref_obj.moments])
+                ref_sig = QuantumSignature.from_moments([float(m) for m in ref_obj.moments])
                 kd = cand_sig.cumulants.distance(ref_sig.cumulants)
             except Exception:
                 continue
@@ -1230,8 +1404,13 @@ class AI:
                 best = (nm, pd, kd)
 
         if best is None:
-            return {"candidate": candidate, "protein": protein, "verdict": "GEÇERSİZ",
-                    "reason": "Referans imzaları hesaplanamadı.", "n_refs": len(ref_smiles)}
+            return {
+                "candidate": candidate,
+                "protein": protein,
+                "verdict": "GEÇERSİZ",
+                "reason": "Referans imzaları hesaplanamadı.",
+                "n_refs": len(ref_smiles),
+            }
 
         nearest_name, nearest_pd, nearest_kd = best
         gc = self.grounding(candidate)
@@ -1241,16 +1420,20 @@ class AI:
         verdict = "İŞE YARAYABİLİR" if works else "İŞE YARAMAZ"
 
         return {
-            "candidate": candidate, "protein": protein, "verdict": verdict,
+            "candidate": candidate,
+            "protein": protein,
+            "verdict": verdict,
             "n_refs": len(ref_smiles),
             "nearest_ligand": nearest_name,
             "paradigm_dist_to_nearest": round(nearest_pd, 4),
             "kappa_dist_to_nearest": round(nearest_kd, 4),
             "grounding": gc.verdict,
-            "reason": (f"En yakın bilinen ligand '{nearest_name}': paradigma-matematik "
-                       f"mesafesi {nearest_pd:.3f} (eşik {self._PARADIGM_WORKS_THR}); "
-                       f"κ={nearest_kd:.3f}. "
-                       f"{'Aynı yapısal tür.' if works else 'Farklı tür.'}"),
+            "reason": (
+                f"En yakın bilinen ligand '{nearest_name}': paradigma-matematik "
+                f"mesafesi {nearest_pd:.3f} (eşik {self._PARADIGM_WORKS_THR}); "
+                f"κ={nearest_kd:.3f}. "
+                f"{'Aynı yapısal tür.' if works else 'Farklı tür.'}"
+            ),
         }
 
     def causal_chain(self, goal: str, depth: int = 4) -> dict:
@@ -1277,6 +1460,7 @@ class AI:
         # Goal normalizasyonu: causal kenarlar lowercase + normalize kaydedilir
         try:
             from tantrium.research.autonomous import _normalize_entity
+
             goal_normalized = _normalize_entity(goal.strip().lower())
         except ImportError:
             goal_normalized = goal.strip().lower()
@@ -1350,7 +1534,8 @@ class AI:
 
         # Forward chaining ekle: goal'ın TAU'daki doğrudan komşuları
         direct_achievers = [
-            e.source for src, edges in tau.edges.items()
+            e.source
+            for src, edges in tau.edges.items()
             for e in edges
             if e.target == goal and e.paradigm in {"ACHIEVES", "CAUSES", "ACTIVATES"}
         ]
@@ -1377,8 +1562,8 @@ class AI:
             "n_paths": len(chains),
             "note": (
                 f"{len(chains)} nedensel yol bulundu, {len(actionable)} müdahale noktası"
-                if chains else
-                "TAU'da nedensel kenar yok — önce metinler öğrenilmeli (ai.learn)"
+                if chains
+                else "TAU'da nedensel kenar yok — önce metinler öğrenilmeli (ai.learn)"
             ),
         }
 
@@ -1403,6 +1588,7 @@ class AI:
 
         try:
             from tantrium.research.autonomous import _normalize_entity
+
             start_norm = _normalize_entity(concept.strip().lower())
         except ImportError:
             start_norm = concept.strip().lower()
@@ -1419,9 +1605,7 @@ class AI:
 
         found_paths: list[list] = []
         effects: set[str] = set()
-        queue: list[tuple[str, list]] = [
-            (n, [n]) for n in start_nodes if forward.get(n)
-        ]
+        queue: list[tuple[str, list]] = [(n, [n]) for n in start_nodes if forward.get(n)]
         if not queue:
             # Hiç kenar yoksa BFS dene — boş çıkacak ama tutarlı yanıt ver
             queue = [(n, [n]) for n in start_nodes]
@@ -1452,8 +1636,8 @@ class AI:
             "n_paths": len(chains),
             "note": (
                 f"{len(chains)} etki zinciri, {len(effects)} son etki"
-                if chains else
-                "TAU'da bu kavramdan çıkan nedensel kenar yok — önce ai.learn() ile öğret"
+                if chains
+                else "TAU'da bu kavramdan çıkan nedensel kenar yok — önce ai.learn() ile öğret"
             ),
         }
 
@@ -1465,9 +1649,8 @@ class AI:
     ) -> DiscoverResult:
         """Bilinen SMILES listesini certify et, dyadic transport ile sırala."""
         import warnings
-        warnings.filterwarnings("ignore")
 
-        from tantrium.domains.certifier import MolecularCertifier
+        warnings.filterwarnings("ignore")
 
         certifier = self._get_certifier()
         report = certifier.generate_3d(
@@ -1502,16 +1685,47 @@ class AI:
 
     # ── Öğrenme ───────────────────────────────────────────────────────────────
 
-    _STOP_TR = {"nedir", "ne", "nasıl", "neden", "kim", "hangi", "mıdır", "midir",
-                "mu", "mı", "bir", "bu", "şu", "ve", "ile", "için", "the", "what",
-                "is", "are", "a", "an", "of", "how", "why", "açıkla", "anlat",
-                "hakkında", "dair", "ilgili", "üzerine", "konusunda"}
+    _STOP_TR = {
+        "nedir",
+        "ne",
+        "nasıl",
+        "neden",
+        "kim",
+        "hangi",
+        "mıdır",
+        "midir",
+        "mu",
+        "mı",
+        "bir",
+        "bu",
+        "şu",
+        "ve",
+        "ile",
+        "için",
+        "the",
+        "what",
+        "is",
+        "are",
+        "a",
+        "an",
+        "of",
+        "how",
+        "why",
+        "açıkla",
+        "anlat",
+        "hakkında",
+        "dair",
+        "ilgili",
+        "üzerine",
+        "konusunda",
+    }
 
     def _pe(self):
         """Lazy ProductionEngine (Sturm-yol sertifikası için paylaşılır)."""
         pe = getattr(self, "_pe_cache", None)
         if pe is None:
             from tantrium.core.production import ProductionEngine
+
             pe = ProductionEngine(self._engine)
             self._pe_cache = pe
         return pe
@@ -1544,6 +1758,7 @@ class AI:
     def _extract_numbers(text: str) -> list:
         """İstekten sayı dizisini çıkar (virgül/boşluk ayrık, ondalık/negatif dahil)."""
         import re
+
         return [float(x) for x in re.findall(r"-?\d+\.?\d*(?:[eE][-+]?\d+)?", str(text))]
 
     def _lean_admit(self, name: str) -> str:
@@ -1554,17 +1769,19 @@ class AI:
         atıl frontier bilgisi çıktıda KULLANILMAZ. Manifold-geneli aramalar da atlanır (hız).
         Döner: 'core'(bilinen) | 'frontier'(yeni, atıl) | 'rejected'(encode edilemedi)."""
         from tantrium.core.semantic import Concept
+
         eng = self._engine
         if name in eng.manifold.concepts:
             return "core"
         try:
             cobj = eng.encoder.encode(name, name)
-            c = Concept(name=cobj.name, moments=list(cobj.moments),
-                        domain="absorbed", source="absorb")
+            c = Concept(
+                name=cobj.name, moments=list(cobj.moments), domain="absorbed", source="absorb"
+            )
             eng.manifold.add_unchecked(c)
             eng.tau.add_node(c)
         except Exception:
-            return "rejected"                     # yalnız encode edilemeyen düşer (yapısal değil)
+            return "rejected"  # yalnız encode edilemeyen düşer (yapısal değil)
         return "frontier"
 
     def quantum_links(self, concept, *, top_k: int = 8):
@@ -1583,32 +1800,44 @@ class AI:
         c = str(concept).lower()
         if c not in m.concepts:
             return {"concept": c, "links": [], "reason": "manifoldda yok"}
-        _DIM = {"HAS_DNA", "HAS_COMPOUND", "HAS_GEOMETRY", "HAS_TOPOLOGY",
-                "IS_GOVERNED_BY", "HAS_SIGNAL", "HAS_IMAGE"}
+        _DIM = {
+            "HAS_DNA",
+            "HAS_COMPOUND",
+            "HAS_GEOMETRY",
+            "HAS_TOPOLOGY",
+            "IS_GOVERNED_BY",
+            "HAS_SIGNAL",
+            "HAS_IMAGE",
+        }
 
         def isa_of(x):
-            return {str(getattr(e, "target", "")).lower() for e in tau.edges.get(x, [])
-                    if str(getattr(e, "paradigm", "")) == "IS_A"}
+            return {
+                str(getattr(e, "target", "")).lower()
+                for e in tau.edges.get(x, [])
+                if str(getattr(e, "paradigm", "")) == "IS_A"
+            }
 
         def dims_of(x):
             return {str(getattr(e, "paradigm", "")) for e in tau.edges.get(x, [])} & _DIM
 
         src_isa, src_dims = isa_of(c), dims_of(c)
         if not src_isa and not src_dims:
-            return {"concept": c, "links": [],
-                    "reason": "kaynak ONTOLOJİK köklü değil (IS_A tipi/boyutu yok) — "
-                              "ontoloji-kapısı bağ kuramaz (doğru: tipsiz string bağlanmamalı)"}
+            return {
+                "concept": c,
+                "links": [],
+                "reason": "kaynak ONTOLOJİK köklü değil (IS_A tipi/boyutu yok) — "
+                "ontoloji-kapısı bağ kuramaz (doğru: tipsiz string bağlanmamalı)",
+            }
         # ONTOLOJİ KAPISI ÖNCE: yalnız paylaşılan tip/boyut adaylarını topla (tek O(E) geçiş)
         cand: dict = {}
-        for src, el in tau.edges.items():
+        for src, _el in tau.edges.items():
             srcl = str(src).lower()
             if srcl == c or srcl.startswith("⟨bridge") or srcl not in m.concepts:
                 continue
             shared_type = isa_of(srcl) & src_isa
             shared_dim = dims_of(srcl) & src_dims
             if shared_type or shared_dim:
-                cand[srcl] = ("boyut" if shared_dim else "tip",
-                              sorted(shared_dim | shared_type))
+                cand[srcl] = ("boyut" if shared_dim else "tip", sorted(shared_dim | shared_type))
         sig = m._get_quantum_sig(c)
         if sig is None:
             return {"concept": c, "links": [], "reason": "κ-imza yok"}
@@ -1617,12 +1846,22 @@ class AI:
             sc = m._get_quantum_sig(name)
             if sc is None:
                 continue
-            if sig.is_entangled_with(sc):          # klasik-uzak + κ-yakın = gizli bağ
-                links.append({"concept": name, "kappa_dist": round(float(sig.quantum_distance(sc)), 4),
-                              "shared": shared, "via": via})
+            if sig.is_entangled_with(sc):  # klasik-uzak + κ-yakın = gizli bağ
+                links.append(
+                    {
+                        "concept": name,
+                        "kappa_dist": round(float(sig.quantum_distance(sc)), 4),
+                        "shared": shared,
+                        "via": via,
+                    }
+                )
         links.sort(key=lambda d: d["kappa_dist"])
-        return {"concept": c, "n_candidates": len(cand), "links": links[:top_k],
-                "principle": "bağ ontoloji üzerinden (paylaşılan tip/boyut), her kelimeyle değil"}
+        return {
+            "concept": c,
+            "n_candidates": len(cand),
+            "links": links[:top_k],
+            "principle": "bağ ontoloji üzerinden (paylaşılan tip/boyut), her kelimeyle değil",
+        }
 
     def prune_noise(self, *, persist: bool = False) -> dict:
         """Mevcut manifoldda işlev-kelime/noktalama GÜRÜLTÜ kenarlarını temizle (keep_all
@@ -1636,8 +1875,7 @@ class AI:
                 removed += len(tau.edges[src])
                 tau.edges[src] = []
                 continue
-            kept = [e for e in tau.edges[src]
-                    if not is_noise(str(getattr(e, "target", "")))]
+            kept = [e for e in tau.edges[src] if not is_noise(str(getattr(e, "target", "")))]
             removed += len(tau.edges[src]) - len(kept)
             tau.edges[src] = kept
         after = sum(len(v) for v in tau.edges.values())
@@ -1660,6 +1898,7 @@ class AI:
         yürümeyi sürdür, çıkmaza sapma). Döner: {start, path, steps, on_critical_line, narrative}.
         """
         from tantrium.core.positivity_ladder import positivity_depth
+
         eng = self._engine
         m = eng.manifold
         tau = eng.tau
@@ -1670,9 +1909,14 @@ class AI:
 
         cur = str(start).lower()
         if mom(cur) is None:
-            return {"start": cur, "path": [], "steps": 0,
-                    "on_critical_line": False, "narrative": "",
-                    "reason": "başlangıç kavramı manifoldda yok"}
+            return {
+                "start": cur,
+                "path": [],
+                "steps": 0,
+                "on_critical_line": False,
+                "narrative": "",
+                "reason": "başlangıç kavramı manifoldda yok",
+            }
         path = [cur]
         visited = {cur}
         steps_ok = 0
@@ -1682,29 +1926,34 @@ class AI:
             for e in tau.edges.get(cur, []):
                 t = str(getattr(e, "target", "")).lower()
                 if not t or t in visited or is_noise(t) or mom(t) is None:
-                    continue                      # gürültü düğüme sapma (the/,/of)
+                    continue  # gürültü düğüme sapma (the/,/of)
                 d, r = positivity_depth(cm, mom(t))
                 on_line = (d >= 3) if strict else (r["hankel"] and r["sturm"])
                 if not on_line:
                     continue
-                onward = len(tau.edges.get(t, []))        # çıkmaza sapma: en çok devam seçeneği
+                onward = len(tau.edges.get(t, []))  # çıkmaza sapma: en çok devam seçeneği
                 key = (d, onward)
                 if best_key is None or key > best_key:
                     best_key, best = key, t
             if best is None:
-                break                                     # kritik hattan sapmadan adım yok → dur
+                break  # kritik hattan sapmadan adım yok → dur
             path.append(best)
             visited.add(best)
             steps_ok += 1
             cur = best
-        return {"start": path[0], "path": path, "steps": len(path) - 1,
-                "on_critical_line": steps_ok > 0,
-                "narrative": " → ".join(path)}
+        return {
+            "start": path[0],
+            "path": path,
+            "steps": len(path) - 1,
+            "on_critical_line": steps_ok > 0,
+            "narrative": " → ".join(path),
+        }
 
     def _target_moments_for_peptide(self, target) -> list:
         """Hedef (peptit dizisi / liste / protein adı / SMILES) → hedef moment imzası.
         Dizi ise encode_protein (fiziksel hidropati spektrumu); değilse genel encoder."""
         from tantrium.perception.encode import encode_protein
+
         if isinstance(target, (list, tuple)):
             return [float(m) for m in target]
         s = str(target).strip()
@@ -1713,8 +1962,9 @@ class AI:
             return [float(m) for m in encode_protein(seq).moments]
         return [float(m) for m in self._engine.encoder.encode(s).moments]
 
-    def design_peptide(self, target, *, max_residues: int = 8, beam_width: int = 3,
-                       seed: str = "G") -> dict:
+    def design_peptide(
+        self, target, *, max_residues: int = 8, beam_width: int = 3, seed: str = "G"
+    ) -> dict:
         """ASI Pilar C — DETERMİNİSTİK BİYOPOLİMER (peptit) TASARIMI, kalıntı-kalıntı Sturm-certified.
 
         molecular_genesis'in atom-atom Sturm-certified büyümesini AMİNO ASİDE taşır: her AA ekleme
@@ -1727,8 +1977,9 @@ class AI:
         seviye deterministik tasarım. FARK: her kalıntı Sturm-certified, tekrar üretilebilir.
         Döner: {target, peptide, n_residues, sturm_steps_ok, fit, answer}.
         """
-        from tantrium.perception.encode import encode_protein
         from tantrium.core.transport import CertifiedTransport
+        from tantrium.perception.encode import encode_protein
+
         tmu = self._target_moments_for_peptide(target)
         ct = CertifiedTransport(self._engine)
         _enc_cache: dict = {}
@@ -1736,7 +1987,8 @@ class AI:
         def _enc(seq):
             o = _enc_cache.get(seq)
             if o is None:
-                o = encode_protein(seq); _enc_cache[seq] = o
+                o = encode_protein(seq)
+                _enc_cache[seq] = o
             return o
 
         def _dist(seq) -> float:
@@ -1750,30 +2002,38 @@ class AI:
             cands: list = []
             for base in beam:
                 base_obj = _enc(base)
-                for aa in self._AA20:        # deterministik sıra (random yok)
+                for aa in self._AA20:  # deterministik sıra (random yok)
                     ext = base + aa
                     try:
                         tc = ct.certify(base_obj, _enc(ext), fast_sturm=True)
                         if not getattr(tc, "sturm_verified", False):
-                            continue          # Sturm SERT geçit: gerçek-ölçü yolu değilse ele
+                            continue  # Sturm SERT geçit: gerçek-ölçü yolu değilse ele
                         cands.append((ext, _dist(ext)))
                     except Exception:
                         continue
             if not cands:
                 break
-            cands.sort(key=lambda x: (x[1], x[0]))   # mesafe, sonra deterministik tie-break
+            cands.sort(key=lambda x: (x[1], x[0]))  # mesafe, sonra deterministik tie-break
             beam = [c[0] for c in cands[:beam_width]]
             steps_ok += 1
         best = min(beam, key=lambda s: (_dist(s), s)) if beam else seed
         fit = round(_dist(best), 5)
-        ans = (f"'{target}' hedefine deterministik peptit tasarladım: {best} "
-               f"({len(best)} kalıntı). Her kalıntı ekleme Sturm-certified (kritik hat) — "
-               f"spektral uyum {fit}. 3D fold YOK (istatistik): köklü DİZİ + sertifika, "
-               f"tekrar üretilebilir. Mythos istatistikle üretir; ben her adımı sertifikalarım."
-               if steps_ok else
-               f"'{target}' için Sturm-certified peptit yolu kuramadım (kısıt sıkı).")
-        return {"target": str(target), "peptide": best, "n_residues": len(best),
-                "sturm_steps_ok": steps_ok, "fit": fit, "answer": ans}
+        ans = (
+            f"'{target}' hedefine deterministik peptit tasarladım: {best} "
+            f"({len(best)} kalıntı). Her kalıntı ekleme Sturm-certified (kritik hat) — "
+            f"spektral uyum {fit}. 3D fold YOK (istatistik): köklü DİZİ + sertifika, "
+            f"tekrar üretilebilir. Mythos istatistikle üretir; ben her adımı sertifikalarım."
+            if steps_ok
+            else f"'{target}' için Sturm-certified peptit yolu kuramadım (kısıt sıkı)."
+        )
+        return {
+            "target": str(target),
+            "peptide": best,
+            "n_residues": len(best),
+            "sturm_steps_ok": steps_ok,
+            "fit": fit,
+            "answer": ans,
+        }
 
     def _parse_numeric_series(self, source) -> list:
         """Yapısal kaynaktan (liste/JSON/CSV/metin) sayı dizisini DETERMİNİSTİK çıkar."""
@@ -1789,6 +2049,7 @@ class AI:
         # JSON listesi dene
         try:
             import json as _json
+
             v = _json.loads(s)
             if isinstance(v, list):
                 return self._parse_numeric_series(v)
@@ -1809,8 +2070,7 @@ class AI:
         # düz metin: tüm sayılar
         return self._extract_numbers(s)
 
-    def code(self, examples, *, task: str = "", max_depth: int = 5,
-             research: bool = True) -> dict:
+    def code(self, examples, *, task: str = "", max_depth: int = 5, research: bool = True) -> dict:
         """ASI §12 — ÖRNEKTEN KANITLI PROGRAM SENTEZİ (saf Tantrium, dış model YOK).
 
         Sertifikalı kod sentezleyici (`core/code_synthesis`, molecular_genesis deseni): operasyon-
@@ -1824,23 +2084,36 @@ class AI:
         examples: [(girdi, çıktı), ...]. task: NL ipucu (grounded operasyon seçimi için).
         Döner: {program, source, verified, examples_passed, steps, answer, cert}.
         """
-        from tantrium.core.code_synthesis import synthesize
         from tantrium.core.code_research import relevant_primitives
-        extra, _imps = (relevant_primitives(task, examples, research=research)
-                        if task else ([], set()))
+        from tantrium.core.code_synthesis import synthesize
+
+        extra, _imps = (
+            relevant_primitives(task, examples, research=research) if task else ([], set())
+        )
         cp = synthesize(list(examples), max_depth=max_depth, extra_primitives=extra)
         if cp.verified:
-            ans = (f"Kanıtlı program: def solve(x): return {cp.program} — "
-                   f"{cp.examples_total}/{cp.examples_total} örnek DOĞRULANDI ({cp.steps} operasyon). "
-                   f"Tahmin değil, sertifikalı: her örneği sağladığı KANITLI. LLM olası kod "
-                   f"verir, sen incelersin; ben garantili-doğru veririm — halüsinasyon imkânsız.")
+            ans = (
+                f"Kanıtlı program: def solve(x): return {cp.program} — "
+                f"{cp.examples_total}/{cp.examples_total} örnek DOĞRULANDI ({cp.steps} operasyon). "
+                f"Tahmin değil, sertifikalı: her örneği sağladığı KANITLI. LLM olası kod "
+                f"verir, sen incelersin; ben garantili-doğru veririm — halüsinasyon imkânsız."
+            )
         else:
-            ans = (f"Bu örneklerden SERTİFİKALI program kuramadım (en iyi "
-                   f"{cp.examples_passed}/{cp.examples_total}). Uydurmam — yalnız DOĞRULANMIŞ "
-                   f"program veririm (örnekleri genişlet ya da daha derin ara).")
-        return {"program": cp.program, "source": cp.source(), "verified": cp.verified,
-                "examples_passed": cp.examples_passed, "examples_total": cp.examples_total,
-                "steps": cp.steps, "answer": ans, "cert": cp}
+            ans = (
+                f"Bu örneklerden SERTİFİKALI program kuramadım (en iyi "
+                f"{cp.examples_passed}/{cp.examples_total}). Uydurmam — yalnız DOĞRULANMIŞ "
+                f"program veririm (örnekleri genişlet ya da daha derin ara)."
+            )
+        return {
+            "program": cp.program,
+            "source": cp.source(),
+            "verified": cp.verified,
+            "examples_passed": cp.examples_passed,
+            "examples_total": cp.examples_total,
+            "steps": cp.steps,
+            "answer": ans,
+            "cert": cp,
+        }
 
     def code_app(self, specs, *, max_depth: int = 5, research: bool = False) -> dict:
         """ASI §12 #3 — ÇOK-FONKSİYON UYGULAMA SENTEZİ (app = birçok sertifikalı fonksiyon).
@@ -1854,21 +2127,34 @@ class AI:
         Döner: {source, verified, n_functions, functions, failed, answer, cert}.
         """
         from tantrium.core.code_compose import compose
+
         m = compose(specs, max_depth=max_depth, research=research)
         names = [n for n, _ in m.functions]
         if m.verified:
-            ans = (f"Sertifikalı uygulama: {m.n_functions} fonksiyon ({', '.join(names)}) — "
-                   f"HEPSİ örneklerini sağladığı KANITLI, grounded kompozisyon (her fonksiyon yalnız "
-                   f"doğrulanmış parçalardan kurulur). LLM olası app verir, sen test edersin; ben "
-                   f"garantili-doğru modül veririm — halüsinasyon imkânsız.")
+            ans = (
+                f"Sertifikalı uygulama: {m.n_functions} fonksiyon ({', '.join(names)}) — "
+                f"HEPSİ örneklerini sağladığı KANITLI, grounded kompozisyon (her fonksiyon yalnız "
+                f"doğrulanmış parçalardan kurulur). LLM olası app verir, sen test edersin; ben "
+                f"garantili-doğru modül veririm — halüsinasyon imkânsız."
+            )
         else:
-            ans = (f"Tam sertifikalı modül kuramadım — doğrulanamayan: {', '.join(m.failed)}. "
-                   f"Uydurmam; o fonksiyonların örneklerini genişlet ya da alt-fonksiyona böl.")
-        return {"source": m.source, "verified": m.verified, "n_functions": m.n_functions,
-                "functions": names, "failed": m.failed, "answer": ans, "cert": m}
+            ans = (
+                f"Tam sertifikalı modül kuramadım — doğrulanamayan: {', '.join(m.failed)}. "
+                f"Uydurmam; o fonksiyonların örneklerini genişlet ya da alt-fonksiyona böl."
+            )
+        return {
+            "source": m.source,
+            "verified": m.verified,
+            "n_functions": m.n_functions,
+            "functions": names,
+            "failed": m.failed,
+            "answer": ans,
+            "cert": m,
+        }
 
-    def build(self, intent: str, *, examples=None, max_depth: int = 6,
-              research: bool = True) -> dict:
+    def build(
+        self, intent: str, *, examples=None, max_depth: int = 6, research: bool = True
+    ) -> dict:
         """ASI §12 #4 — MUĞLAK İSTEK → ÇALIŞAN SERTİFİKALI KOD (anla→araştır→tasarla→çalıştır).
 
         Kullanıcı örnek vermez, NİYET söyler ('kelimeleri ters çeviren bir şey'). Niyeti GROUNDED
@@ -1880,8 +2166,9 @@ class AI:
         Döner: {understood, program, source, verified, examples, clarify, answer, researched}.
         """
         from tantrium.core.code_intent import derive_spec
-        from tantrium.core.code_synthesis import synthesize
         from tantrium.core.code_research import relevant_primitives
+        from tantrium.core.code_synthesis import synthesize
+
         ex = list(examples) if examples else None
         ds = None
         understood: list = []
@@ -1891,24 +2178,42 @@ class AI:
             ds = derive_spec(intent, research=research)
             understood, researched, program_hint = ds.understood, ds.researched, ds.program
             if not ds.grounded:
-                return {"understood": understood, "program": program_hint, "source": "",
-                        "verified": False, "examples": [], "clarify": ds.clarify,
-                        "researched": researched,
-                        "answer": ds.clarify or "İsteği bir operasyona bağlayamadım."}
+                return {
+                    "understood": understood,
+                    "program": program_hint,
+                    "source": "",
+                    "verified": False,
+                    "examples": [],
+                    "clarify": ds.clarify,
+                    "researched": researched,
+                    "answer": ds.clarify or "İsteği bir operasyona bağlayamadım.",
+                }
             ex = ds.examples
         extra, _imps = relevant_primitives(intent, ex, research=research)
         cp = synthesize(ex, max_depth=max_depth, extra_primitives=extra)
         if cp.verified:
-            via = (f" ({' → '.join(understood)})" if understood else "")
-            ans = (f"İsteğini anladım{via}, kanonik girdide çalıştırıp ground-truth örnek türettim, "
-                   f"sentezleyip DOĞRULADIM: def solve(x): return {cp.program} — {cp.examples_total}/"
-                   f"{cp.examples_total} örnek KANITLI. Uydurmadım; her adım sertifikalı.")
+            via = f" ({' → '.join(understood)})" if understood else ""
+            ans = (
+                f"İsteğini anladım{via}, kanonik girdide çalıştırıp ground-truth örnek türettim, "
+                f"sentezleyip DOĞRULADIM: def solve(x): return {cp.program} — {cp.examples_total}/"
+                f"{cp.examples_total} örnek KANITLI. Uydurmadım; her adım sertifikalı."
+            )
         else:
-            ans = (f"İsteği anladım ama bu örneklerden SERTİFİKALI program çıkaramadım "
-                   f"(en iyi {cp.examples_passed}/{cp.examples_total}). Uydurmam — bir örnek daha ver.")
-        return {"understood": understood, "program": cp.program, "source": cp.source(),
-                "verified": cp.verified, "examples": ex, "clarify": None,
-                "researched": researched, "answer": ans, "cert": cp}
+            ans = (
+                f"İsteği anladım ama bu örneklerden SERTİFİKALI program çıkaramadım "
+                f"(en iyi {cp.examples_passed}/{cp.examples_total}). Uydurmam — bir örnek daha ver."
+            )
+        return {
+            "understood": understood,
+            "program": cp.program,
+            "source": cp.source(),
+            "verified": cp.verified,
+            "examples": ex,
+            "clarify": None,
+            "researched": researched,
+            "answer": ans,
+            "cert": cp,
+        }
 
     def build_app(self, goal: str, *, research: bool = True, max_depth: int = 6) -> dict:
         """ASI §12 — TEK İSTEK → ÇOK-FONKSİYON ÇALIŞAN MODÜL (niyet dekompozisyonu, uçtan uca).
@@ -1921,28 +2226,54 @@ class AI:
 
         Döner: {source, verified, n_functions, functions, parts, failed, clarify, answer}.
         """
-        from tantrium.core.code_intent import decompose_goal
         from tantrium.core.code_compose import compose
+        from tantrium.core.code_intent import decompose_goal
+
         specs = decompose_goal(goal, research=research)
         if not specs:
-            msg = ("Bu isteği grounded operasyonlara bölemedim. Parçaları biraz daha açık söyle "
-                   "ya da bir örnek ver — uydurmam, yalnız DOĞRULANMIŞ kod veririm.")
-            return {"source": "", "verified": False, "n_functions": 0, "functions": [],
-                    "parts": [], "failed": [], "clarify": msg, "answer": msg}
-        m = compose([{"name": s["name"], "examples": s["examples"]} for s in specs],
-                    max_depth=max_depth)
+            msg = (
+                "Bu isteği grounded operasyonlara bölemedim. Parçaları biraz daha açık söyle "
+                "ya da bir örnek ver — uydurmam, yalnız DOĞRULANMIŞ kod veririm."
+            )
+            return {
+                "source": "",
+                "verified": False,
+                "n_functions": 0,
+                "functions": [],
+                "parts": [],
+                "failed": [],
+                "clarify": msg,
+                "answer": msg,
+            }
+        m = compose(
+            [{"name": s["name"], "examples": s["examples"]} for s in specs], max_depth=max_depth
+        )
         names = [n for n, _ in m.functions]
-        parts = [{"name": s["name"], "part": s["part"], "understood": s["understood"]} for s in specs]
+        parts = [
+            {"name": s["name"], "part": s["part"], "understood": s["understood"]} for s in specs
+        ]
         if m.verified:
-            ans = (f"Tek isteği {m.n_functions} sertifikalı fonksiyona böldüm "
-                   f"({', '.join(names)}) — her biri ground-truth örnekle KANITLI, tek modülde "
-                   f"birleşti. Niyeti anladım → parçaladım → her parçayı doğruladım. Halüsinasyon yok.")
+            ans = (
+                f"Tek isteği {m.n_functions} sertifikalı fonksiyona böldüm "
+                f"({', '.join(names)}) — her biri ground-truth örnekle KANITLI, tek modülde "
+                f"birleşti. Niyeti anladım → parçaladım → her parçayı doğruladım. Halüsinasyon yok."
+            )
         else:
-            ans = (f"Modülün bir kısmını kuramadım (doğrulanamayan: {', '.join(m.failed)}). "
-                   f"Kalan parçalar sertifikalı; eksiği örnekle netleştir — uydurmam.")
-        return {"source": m.source, "verified": m.verified, "n_functions": m.n_functions,
-                "functions": names, "parts": parts, "failed": m.failed, "clarify": None,
-                "answer": ans, "cert": m}
+            ans = (
+                f"Modülün bir kısmını kuramadım (doğrulanamayan: {', '.join(m.failed)}). "
+                f"Kalan parçalar sertifikalı; eksiği örnekle netleştir — uydurmam."
+            )
+        return {
+            "source": m.source,
+            "verified": m.verified,
+            "n_functions": m.n_functions,
+            "functions": names,
+            "parts": parts,
+            "failed": m.failed,
+            "clarify": None,
+            "answer": ans,
+            "cert": m,
+        }
 
     def meta_synthesize(self, examples) -> dict:
         """ASI §12 frontier — META-SENTEZ: taban strateji merdiveni yetmezse YENİ strateji İCAT et.
@@ -1964,18 +2295,29 @@ class AI:
         after = discovered_schemas()
         invented = [s for s in after if s not in before]
         if cp.verified and not base.verified:
-            ans = (f"Taban strateji merdiveni bu spec'i çözemedi; MEVCUT şemaları bileştirip yeni "
-                   f"strateji icat ettim ({cp.program}), leave-one-out genelleştiğini kanıtladım ve "
-                   f"merdivene kaydettim. Artık sonraki sentezler onu otomatik kullanır."
-                   + (f" (yeni şema: {', '.join(invented)})" if invented else ""))
+            ans = (
+                f"Taban strateji merdiveni bu spec'i çözemedi; MEVCUT şemaları bileştirip yeni "
+                f"strateji icat ettim ({cp.program}), leave-one-out genelleştiğini kanıtladım ve "
+                f"merdivene kaydettim. Artık sonraki sentezler onu otomatik kullanır."
+                + (f" (yeni şema: {', '.join(invented)})" if invented else "")
+            )
         elif cp.verified:
-            ans = (f"Taban merdiven zaten çözdü ({cp.program}) — meta-sentez gerekmedi.")
+            ans = f"Taban merdiven zaten çözdü ({cp.program}) — meta-sentez gerekmedi."
         else:
-            ans = (f"Bileşik şemalar da bu spec'i genelleştiremedi "
-                   f"(en iyi {cp.examples_passed}/{cp.examples_total}). Uydurmam.")
-        return {"verified": cp.verified, "program": cp.program, "source": cp.source(),
-                "schema": cp.program if cp.full_source else None, "schemas": after,
-                "invented": invented, "answer": ans, "cert": cp}
+            ans = (
+                f"Bileşik şemalar da bu spec'i genelleştiremedi "
+                f"(en iyi {cp.examples_passed}/{cp.examples_total}). Uydurmam."
+            )
+        return {
+            "verified": cp.verified,
+            "program": cp.program,
+            "source": cp.source(),
+            "schema": cp.program if cp.full_source else None,
+            "schemas": after,
+            "invented": invented,
+            "answer": ans,
+            "cert": cp,
+        }
 
     def grow_code(self, tasks=None, *, rounds: int = 2, research: bool = True) -> dict:
         """ASI §12 — OTONOM KOD-KAPSAMI BÜYÜTME (sistem KENDİ büyütür, elle DEĞİL).
@@ -1992,10 +2334,11 @@ class AI:
         icadı meta-sentez frontier'ı — bu döngüde YOK (dürüstçe).
         """
         import itertools
+
+        from tantrium.core.code_behavior import _exact
+        from tantrium.core.code_meta import meta_synthesize
         from tantrium.core.code_research import ground_stdlib_operations
         from tantrium.core.code_synthesis import discovered_schemas, solved_library, synthesize
-        from tantrium.core.code_meta import meta_synthesize
-        from tantrium.core.code_behavior import _exact
 
         ops_before = len(ground_stdlib_operations())
         lib_before = len(solved_library())
@@ -2004,32 +2347,40 @@ class AI:
         failed: list = []
         composed: list = []
 
-        for t in (tasks or []):
+        for t in tasks or []:
             try:
                 if isinstance(t, str):
                     r = self.build(t, research=research)
                     (learned if r["verified"] else failed).append(t)
                 else:
                     cp = synthesize(list(t))
-                    if not cp.verified:                       # taban yetmedi → META-SENTEZ dene
-                        cp = meta_synthesize(list(t))          # yeni strateji icat + kaydet
+                    if not cp.verified:  # taban yetmedi → META-SENTEZ dene
+                        cp = meta_synthesize(list(t))  # yeni strateji icat + kaydet
                     (learned if cp.verified else failed).append("spec")
             except Exception:
                 failed.append(str(t)[:40])
 
         # ÖZ-KOMPOZİSYON: çözülmüş tek-arg fonksiyonları zincirle → yeni fonksiyon (otonom genişleme)
-        _GLOB = {"abs": abs, "max": max, "min": min, "len": len, "sum": sum,
-                 "sorted": sorted, "str": str, "reversed": reversed, "list": list}
+        _GLOB = {
+            "abs": abs,
+            "max": max,
+            "min": min,
+            "len": len,
+            "sum": sum,
+            "sorted": sorted,
+            "str": str,
+            "reversed": reversed,
+            "list": list,
+        }
         _CANON_SETS = [[1, 2, 3, 5, 8], [[3, 1, 2], [5, 4], [2, 8, 1]], ["abc", "hi", "test"]]
         for _round in range(max(0, rounds)):
-            lib = [cp for cp in solved_library()
-                   if len(cp.args) == 1 and not cp.full_source]
+            lib = [cp for cp in solved_library() if len(cp.args) == 1 and not cp.full_source]
             made = 0
             for f, g in itertools.permutations(lib, 2):
                 if made >= 4:
                     break
-                expr = g.program.replace("x", f"({f.program})")   # g(f(x)) zinciri
-                ex: list = []                                     # tip-uyumlu kanonik küme bul
+                expr = g.program.replace("x", f"({f.program})")  # g(f(x)) zinciri
+                ex: list = []  # tip-uyumlu kanonik küme bul
                 for canon in _CANON_SETS:
                     trial: list = []
                     ok = True
@@ -2042,7 +2393,7 @@ class AI:
                     if ok:
                         ex = trial
                         break
-                if not ex or len({o for _, o in ex}) <= 1:        # sabit/çöken zincir atla
+                if not ex or len({o for _, o in ex}) <= 1:  # sabit/çöken zincir atla
                     continue
                 cp = synthesize(ex)
                 if cp.verified and cp.program not in {c[1] for c in composed}:
@@ -2054,26 +2405,38 @@ class AI:
         ops_after = len(ground_stdlib_operations())
         lib_after = len(solved_library())
         invented = [s for s in discovered_schemas() if s not in schemas_before]
-        meta_note = (f" {len(invented)} YENİ STRATEJİ meta-sentezle icat edildi "
-                     f"({', '.join(invented)}) — merdiven kendi büyüdü."
-                     if invented else
-                     " (Yeni strateji gerekmedi; gerekirse meta-sentez devrede.)")
-        ans = (f"Otonom büyüme: {ops_after - ops_before} yeni operasyon topraklandı (araştırma), "
-               f"kütüphane {lib_before}→{lib_after} fonksiyon (hafıza), {len(composed)} yeni fonksiyon "
-               f"öz-kompozisyonla türedi. Hepsi KANITLI — elle müdahale yok." + meta_note)
-        return {"ops_grounded": ops_after - ops_before, "functions_learned": len(learned),
-                "library_size": lib_after, "composed": [c[1] for c in composed],
-                "schemas_invented": invented, "failed": failed, "answer": ans}
+        meta_note = (
+            f" {len(invented)} YENİ STRATEJİ meta-sentezle icat edildi "
+            f"({', '.join(invented)}) — merdiven kendi büyüdü."
+            if invented
+            else " (Yeni strateji gerekmedi; gerekirse meta-sentez devrede.)"
+        )
+        ans = (
+            f"Otonom büyüme: {ops_after - ops_before} yeni operasyon topraklandı (araştırma), "
+            f"kütüphane {lib_before}→{lib_after} fonksiyon (hafıza), {len(composed)} yeni fonksiyon "
+            f"öz-kompozisyonla türedi. Hepsi KANITLI — elle müdahale yok." + meta_note
+        )
+        return {
+            "ops_grounded": ops_after - ops_before,
+            "functions_learned": len(learned),
+            "library_size": lib_after,
+            "composed": [c[1] for c in composed],
+            "schemas_invented": invented,
+            "failed": failed,
+            "answer": ans,
+        }
 
     def ground_codebase(self, files: dict) -> dict:
         """ASI §12 P4 — repo'yu KÖKLÜ manifolda çevir (kod-tabanı = topoloji).
         files: {path: source}. Döner: {symbols, imports, functions, edges, n_symbols}."""
         from tantrium.core.code_agent import ground_codebase as _gc
+
         g = _gc(files)
         return {**g, "n_symbols": len(g["symbols"]), "n_edges": len(g["edges"])}
 
-    def verify_code(self, code: str, *, codebase: dict | None = None,
-                    tests: str | None = None) -> dict:
+    def verify_code(
+        self, code: str, *, codebase: dict | None = None, tests: str | None = None
+    ) -> dict:
         """ASI §12 P4 — HERHANGİ kodu DOĞRULA: köklülük (halüsinasyon tespiti) + test geçidi.
 
         check_grounded: kodun her sembolü kod-tabanında/builtin/yerel mi (var olmayan = halüsinasyon).
@@ -2081,7 +2444,9 @@ class AI:
         kodu BİZ sertifikalarız — hayali API reddedilir, çalışmayan test geçemez.
         Döner: {grounded, ungrounded, syntax_ok, tests_passed, verified, answer}.
         """
-        from tantrium.core.code_agent import ground_codebase as _gc, check_grounded, run_tests
+        from tantrium.core.code_agent import check_grounded, run_tests
+        from tantrium.core.code_agent import ground_codebase as _gc
+
         ground = _gc(codebase or {})
         gc = check_grounded(code, ground)
         tests_passed = None
@@ -2089,33 +2454,51 @@ class AI:
         if tests and gc["syntax_ok"]:
             tr = run_tests(code, tests)
             tests_passed, test_out = tr["passed"], tr["output"]
-        verified = bool(gc["grounded"] and gc["syntax_ok"]
-                        and (tests_passed if tests else True))
+        verified = bool(gc["grounded"] and gc["syntax_ok"] and (tests_passed if tests else True))
         if not gc["syntax_ok"]:
             ans = "Kod sözdizimsel geçersiz (parse edilemedi) — reddedildi."
         elif not gc["grounded"]:
-            ans = (f"HALÜSİNASYON: kod var olmayan sembol(ler) çağırıyor: "
-                   f"{', '.join(gc['ungrounded'][:6])} — köklü değil, REDDEDİLDİ. "
-                   f"LLM bunu yakalayamaz; ben geometrik olarak yakalarım.")
+            ans = (
+                f"HALÜSİNASYON: kod var olmayan sembol(ler) çağırıyor: "
+                f"{', '.join(gc['ungrounded'][:6])} — köklü değil, REDDEDİLDİ. "
+                f"LLM bunu yakalayamaz; ben geometrik olarak yakalarım."
+            )
         elif tests and not tests_passed:
             ans = "Kod köklü ama TEST GEÇMEDİ — doğrulanmadı (çalışmıyor)."
         else:
-            ans = ("Kod DOĞRULANDI: tüm semboller köklü"
-                   + (" + testler geçti" if tests else "") + " — sertifikalı, halüsinasyonsuz.")
-        return {"grounded": gc["grounded"], "ungrounded": gc["ungrounded"],
-                "syntax_ok": gc["syntax_ok"], "tests_passed": tests_passed,
-                "test_output": test_out, "verified": verified, "answer": ans}
+            ans = (
+                "Kod DOĞRULANDI: tüm semboller köklü"
+                + (" + testler geçti" if tests else "")
+                + " — sertifikalı, halüsinasyonsuz."
+            )
+        return {
+            "grounded": gc["grounded"],
+            "ungrounded": gc["ungrounded"],
+            "syntax_ok": gc["syntax_ok"],
+            "tests_passed": tests_passed,
+            "test_output": test_out,
+            "verified": verified,
+            "answer": ans,
+        }
 
-    def code_task(self, *, examples=None, tests: str | None = None,
-                  codebase: dict | None = None, max_depth: int = 6) -> dict:
+    def code_task(
+        self,
+        *,
+        examples=None,
+        tests: str | None = None,
+        codebase: dict | None = None,
+        max_depth: int = 6,
+    ) -> dict:
         """ASI §12 P4 — AGENTIC kod görevi: SENTEZLE → KÖKLÜLÜK + TEST doğrula (kapalı döngü).
 
         examples'tan kanıtlı program sentezler (P2), sonra codebase'e karşı köklülük (halüsinasyon
         tespiti) + tests ile gerçek doğrulama (P4). Üç kapı da geçerse 'verified'. Saf Tantrium,
         dış model YOK. Döner: {program, source, examples_verified, grounded, tests_passed, verified, answer}.
         """
+        from tantrium.core.code_agent import check_grounded, run_tests
+        from tantrium.core.code_agent import ground_codebase as _gc
         from tantrium.core.code_synthesis import synthesize
-        from tantrium.core.code_agent import ground_codebase as _gc, check_grounded, run_tests
+
         ground = _gc(codebase or {})
         out: dict = {"verified": False}
         if not examples:
@@ -2133,14 +2516,27 @@ class AI:
         kap.append(f"köklülük {'✓' if gc['grounded'] else '✗'}")
         if tests:
             kap.append(f"test {'✓' if tests_passed else '✗'}")
-        ans = (f"def solve({', '.join(cp.args)}): return {cp.program} — "
-               + " · ".join(kap)
-               + (". DOĞRULANDI (kanıtlı + köklü"
-                  + (" + test-geçer" if tests else "") + ") — halüsinasyonsuz."
-                  if verified else ". Tüm kapılar geçmedi — uydurmam."))
-        return {"program": cp.program, "source": src, "examples_verified": cp.verified,
-                "grounded": gc["grounded"], "ungrounded": gc["ungrounded"],
-                "tests_passed": tests_passed, "verified": verified, "answer": ans}
+        ans = (
+            f"def solve({', '.join(cp.args)}): return {cp.program} — "
+            + " · ".join(kap)
+            + (
+                ". DOĞRULANDI (kanıtlı + köklü"
+                + (" + test-geçer" if tests else "")
+                + ") — halüsinasyonsuz."
+                if verified
+                else ". Tüm kapılar geçmedi — uydurmam."
+            )
+        )
+        return {
+            "program": cp.program,
+            "source": src,
+            "examples_verified": cp.verified,
+            "grounded": gc["grounded"],
+            "ungrounded": gc["ungrounded"],
+            "tests_passed": tests_passed,
+            "verified": verified,
+            "answer": ans,
+        }
 
     def code_from_nl(self, task: str, *, examples=None) -> dict:
         """ASI §12 — DOĞAL DİL → KOD (TAHMİN değil, grounded ANLAMA).
@@ -2153,44 +2549,67 @@ class AI:
         "anlamadım, örnek ver" der. Döner: {task, understood, program, source, verified, answer}.
         """
         from tantrium.core.nl_code import nl_to_program
+
         nl = nl_to_program(task)
         prog, ops = nl["program"], nl["ops"]
         argnames = ["x"]
         verified = None
         # örnek varsa: NL-türetilen programı doğrula; geçmezse sentezle (örnek otoritedir)
         if examples:
-            from tantrium.core.code_synthesis import synthesize, _run, _detect_args
             from tantrium.core.code_research import relevant_primitives
+            from tantrium.core.code_synthesis import _detect_args, _run, synthesize
+
             argnames = _detect_args(list(examples))
             ok = ops and all(_run(prog, inp, argnames) == out for inp, out in examples)
             if ok:
                 verified = True
             else:
-                _extra, _ = relevant_primitives(task, examples)   # GERÇEK-kod grounded ops
+                _extra, _ = relevant_primitives(task, examples)  # GERÇEK-kod grounded ops
                 cp = synthesize(list(examples), extra_primitives=_extra)
                 if cp.verified:
                     prog = cp.program
-                    nl["understood"] = (nl["understood"] + " — ama örneklerle DOĞRULANAMADI; "
-                                        "örneklerden sentezledim") if ops else \
-                        "NL'den operasyon çıkmadı; örneklerden sentezledim"
+                    nl["understood"] = (
+                        (
+                            nl["understood"] + " — ama örneklerle DOĞRULANAMADI; "
+                            "örneklerden sentezledim"
+                        )
+                        if ops
+                        else "NL'den operasyon çıkmadı; örneklerden sentezledim"
+                    )
                     verified = True
                     argnames = cp.args
                 else:
                     verified = False
         src = f"def solve({', '.join(argnames)}):\n    return {prog}"
         if not ops and not examples:
-            ans = ("Bu görevden grounded operasyon çıkaramadım (sözlüğümde yok). UYDURMAM — "
-                   "ya örnek (girdi/çıktı) ver ya da operasyonu öğret (sözlük genişler, kod gibi).")
+            ans = (
+                "Bu görevden grounded operasyon çıkaramadım (sözlüğümde yok). UYDURMAM — "
+                "ya örnek (girdi/çıktı) ver ya da operasyonu öğret (sözlük genişler, kod gibi)."
+            )
         elif verified is False:
-            ans = (f"NL'den anladığım: {nl['understood']} → {prog}; ama örnekleri sağlamadı ve "
-                   f"sentezleyemedim. Uydurmam — örnekleri netleştir.")
+            ans = (
+                f"NL'den anladığım: {nl['understood']} → {prog}; ama örnekleri sağlamadı ve "
+                f"sentezleyemedim. Uydurmam — örnekleri netleştir."
+            )
         else:
-            ans = (f"Anladığım: {nl['understood']}. Program: def solve(x): return {prog}"
-                   + (f" — {len(list(examples))} örnek DOĞRULANDI." if verified else
-                      " (grounded operasyon-eşlemesinden; örnek verirsen doğrularım).")
-                   + " Tahmin değil — operasyonların anlamından kurdum, halüsinasyonsuz.")
-        return {"task": task, "understood": nl["understood"], "ops": ops, "program": prog,
-                "source": src, "verified": verified, "answer": ans}
+            ans = (
+                f"Anladığım: {nl['understood']}. Program: def solve(x): return {prog}"
+                + (
+                    f" — {len(list(examples))} örnek DOĞRULANDI."
+                    if verified
+                    else " (grounded operasyon-eşlemesinden; örnek verirsen doğrularım)."
+                )
+                + " Tahmin değil — operasyonların anlamından kurdum, halüsinasyonsuz."
+            )
+        return {
+            "task": task,
+            "understood": nl["understood"],
+            "ops": ops,
+            "program": prog,
+            "source": src,
+            "verified": verified,
+            "answer": ans,
+        }
 
     def read_data(self, source, *, analyze: str = "law") -> dict:
         """BELGE/VERİ → KÖKLÜ ANALİZ (ASI Pilar D) — yapısal sayısal veriyi DETERMİNİSTİK çıkar,
@@ -2203,24 +2622,36 @@ class AI:
         """
         series = self._parse_numeric_series(source)
         if len(series) < 3:
-            return {"series": series, "analyze": analyze, "result": None,
-                    "answer": "Yapısal sayısal seri çıkaramadım (en az 3 sayı gerekli)."}
+            return {
+                "series": series,
+                "analyze": analyze,
+                "result": None,
+                "answer": "Yapısal sayısal seri çıkaramadım (en az 3 sayı gerekli).",
+            }
         if analyze == "forecast":
             r = self.forecast(series)
             conf = "güvenilir" if r.get("reliable") else "GÜVENİLMEZ"
             ans = f"{len(series)} veri noktası okudum. Sonraki: {r['forecast']} ({conf})."
         elif analyze == "anomaly":
             r = self.detect_anomalies(series)
-            ans = ("Veride yapısal anomali yok — yasaya uyuyor."
-                   if r.get("clean") else
-                   f"{r['n']} anomali (yasaya uymayan nokta): "
-                   + ", ".join(f"#{a['index']}" for a in r['anomalies'][:6]) + ".")
+            ans = (
+                "Veride yapısal anomali yok — yasaya uyuyor."
+                if r.get("clean")
+                else f"{r['n']} anomali (yasaya uymayan nokta): "
+                + ", ".join(f"#{a['index']}" for a in r["anomalies"][:6])
+                + "."
+            )
         else:
             r = self.discover_law(series, holdout=min(4, len(series) // 4))
-            tut = "ve görülmemiş geleceği doğru tahmin etti" if getattr(r, "law_holds", False) \
+            tut = (
+                "ve görülmemiş geleceği doğru tahmin etti"
+                if getattr(r, "law_holds", False)
                 else "(tahmin zayıf)"
-            ans = (f"{len(series)} veri noktasını yöneten yasa: {r.order}. mertebe yineleme. "
-                   f"Yasayı keşfettim {tut} — deterministik, sertifikalı.")
+            )
+            ans = (
+                f"{len(series)} veri noktasını yöneten yasa: {r.order}. mertebe yineleme. "
+                f"Yasayı keşfettim {tut} — deterministik, sertifikalı."
+            )
         return {"series": series, "analyze": analyze, "result": r, "answer": ans}
 
     @staticmethod
@@ -2230,8 +2661,10 @@ class AI:
         if not n or n.startswith("⟨") or ":" in n or len(n) > 30:
             return False
         low = n.lower()
-        if any(j in low for j in ("markup", "cs1", "names with", "citation",
-                                  "webarchive", "wikidata", "http")):
+        if any(
+            j in low
+            for j in ("markup", "cs1", "names with", "citation", "webarchive", "wikidata", "http")
+        ):
             return False
         toks = n.split()
         if len(toks) > 3:
@@ -2248,10 +2681,25 @@ class AI:
     # Semantik (anlamsal) TAU paradigmaları — _tau_facts köklülük kapısı için
     # (eski Speaker._TR_VERB anahtarlarının yerini alır; dil katmanı kaldırıldı).
     _SEM_PARADIGMS = {
-        "CAUSES", "INHIBITS", "ACTIVATES", "IS_A", "COMPONENT_OF", "COMPOSED",
-        "REGULATES", "BINDS", "PART_OF", "TREATS", "EXPRESSES", "ENCODES",
-        "HAS_SIGNAL", "HAS_COMPOUND", "HAS_IMAGE", "HAS_DNA", "HAS_GEOMETRY",
-        "HAS_TOPOLOGY", "IS_GOVERNED_BY",
+        "CAUSES",
+        "INHIBITS",
+        "ACTIVATES",
+        "IS_A",
+        "COMPONENT_OF",
+        "COMPOSED",
+        "REGULATES",
+        "BINDS",
+        "PART_OF",
+        "TREATS",
+        "EXPRESSES",
+        "ENCODES",
+        "HAS_SIGNAL",
+        "HAS_COMPOUND",
+        "HAS_IMAGE",
+        "HAS_DNA",
+        "HAS_GEOMETRY",
+        "HAS_TOPOLOGY",
+        "IS_GOVERNED_BY",
     }
 
     def _tau_facts(self, topic: str, max_per: int = 3) -> dict:
@@ -2270,14 +2718,14 @@ class AI:
     def _converse_topic(self, question: str) -> str:
         """Bir ifadeden manifold-kavramını çöz (string→düğüm): çok-kelime öbeğini korur
         ('tumor cell' tek 'tumor'a düşmez). Saf çözümleme (dil üretimi değil)."""
-        raw = [w.strip("?.,!:;\"").lower() for w in str(question).split()]
+        raw = [w.strip('?.,!:;"').lower() for w in str(question).split()]
         words = [w.split("'")[0] if "'" in w else w.strip("'") for w in raw]
         cands = [w for w in words if len(w) >= 3 and w not in self._STOP_TR]
         concepts = self._engine.manifold.concepts
         for n in (3, 2):
             if len(cands) >= n:
                 for i in range(len(cands) - n + 1):
-                    phrase = " ".join(cands[i:i + n])
+                    phrase = " ".join(cands[i : i + n])
                     if phrase in concepts:
                         return phrase
         if 2 <= len(cands) <= 3:
@@ -2289,7 +2737,7 @@ class AI:
             return " ".join(cands[:4])
         return cands[0] if cands else ""
 
-    def transport(self, source: str, target: str, use_smiles: bool = False) -> "object":
+    def transport(self, source: str, target: str, use_smiles: bool = False) -> object:
         """Certified dyadic transport from source → target moment sequences.
 
         Three-layer proof:
@@ -2314,10 +2762,12 @@ class AI:
 
         if use_smiles or (_looks_like_smiles(source) and _looks_like_smiles(target)):
             from tantrium.core.encoder import encode_smiles
+
             src_obj = encode_smiles(source, name=source[:64])
             tgt_obj = encode_smiles(target, name=target[:64])
         else:
             from tantrium.core.encoder import encode as _enc
+
             src_obj = _enc(source, name=source[:64])
             tgt_obj = _enc(target, name=target[:64])
 
@@ -2331,7 +2781,7 @@ class AI:
         modality: str = "signal",
         name: str = "percept",
         learn: bool = False,
-    ) -> "object":
+    ) -> object:
         """Ham duyusal veriyi oku — ses, görüntü ya da herhangi bir matris.
 
         Duyusal grounding: dil katmanı kavramları yapısal okur ama fiziksel
@@ -2348,7 +2798,7 @@ class AI:
 
         Döner: CertificationRun (23 paradigma) + .obj.moments duyusal imza.
         """
-        from tantrium.perception import encode_signal, encode_image, encode_matrix
+        from tantrium.perception import encode_image, encode_matrix, encode_signal
 
         if modality == "signal":
             obj = encode_signal(data, name=name)
@@ -2363,6 +2813,7 @@ class AI:
 
         if learn and name not in self._engine.manifold.concepts:
             from tantrium.core.semantic import Concept
+
             concept = Concept(
                 name=name,
                 moments=list(obj.moments),
@@ -2377,7 +2828,7 @@ class AI:
 
         return run
 
-    def meaning(self, name: str, *, max_neighbors: int = 24) -> "object | None":
+    def meaning(self, name: str, *, max_neighbors: int = 24) -> object | None:
         """İlişkisel kodlama — kavramın ANLAMINI TAU topolojisinden okur.
 
         Mimarinin tezi: "Bilgi node'da değil EDGE'de. Topoloji = bilgi." Kelimenin
@@ -2394,11 +2845,12 @@ class AI:
         te = getattr(self, "_topo_encoder", None)
         if te is None:
             from tantrium.core.topology_encode import TopologyEncoder
+
             te = TopologyEncoder(self._engine)
             self._topo_encoder = te
         return te.encode(name, max_neighbors=max_neighbors)
 
-    def meaning_distance(self, a: str, b: str, *, max_neighbors: int = 24) -> "float | None":
+    def meaning_distance(self, a: str, b: str, *, max_neighbors: int = 24) -> float | None:
         """İki kavramın ANLAM mesafesi (topolojik moment L1).
 
         protein~enzyme < protein~algorithm — harflerin yapamadığı ayrım.
@@ -2408,10 +2860,11 @@ class AI:
         ob = self.meaning(b, max_neighbors=max_neighbors)
         if oa is None or ob is None:
             return None
-        return float(sum(abs(float(x) - float(y))
-                         for x, y in zip(oa.moments, ob.moments)))
+        return float(
+            sum(abs(float(x) - float(y)) for x, y in zip(oa.moments, ob.moments, strict=False))
+        )
 
-    def measure(self, name: str, *, max_neighbors: int = 24) -> "object":
+    def measure(self, name: str, *, max_neighbors: int = 24) -> object:
         """ÖLÇTÜĞÜMÜZÜ kullanan tek ölçüm yolu — yüzey + topoloji + RH-cascade.
 
         Rename-invariance kanıtladı: anlam harfte değil grafta. Bu metod o ölçümü
@@ -2427,15 +2880,18 @@ class AI:
         Döner: MeaningSignature.
         """
         from tantrium.core.meaning_pipeline import measure as _measure
+
         te = getattr(self, "_topo_encoder", None)
         if te is None:
             from tantrium.core.topology_encode import TopologyEncoder
+
             te = TopologyEncoder(self._engine)
             self._topo_encoder = te
         return _measure(self._engine, name, max_neighbors=max_neighbors, topo_encoder=te)
 
-    def measure_distance(self, a: str, b: str, *, max_neighbors: int = 24,
-                         cascade_weight: float = 0.0) -> float:
+    def measure_distance(
+        self, a: str, b: str, *, max_neighbors: int = 24, cascade_weight: float = 0.0
+    ) -> float:
         """Anlam-birincil mesafe: İKİSİ DE köklüyse topoloji (graf), değilse harf.
 
         cascade_weight>0 → topoloji-moment mesafesine darboğazsız RH-cascade (Li)
@@ -2443,12 +2899,18 @@ class AI:
         None DÖNMEZ — harf yüzeyine düşer (dürüst ama her zaman sayı verir).
         """
         from tantrium.core.meaning_pipeline import measure_distance as _md
-        return _md(self._engine, a, b, max_neighbors=max_neighbors,
-                   cascade_weight=cascade_weight)
 
-    def nearest_meaning(self, query: str, *, n: int = 10, pool: int = 40,
-                        max_neighbors: int = 24, cascade_weight: float = 0.0
-                        ) -> "list[tuple[str, float, str]]":
+        return _md(self._engine, a, b, max_neighbors=max_neighbors, cascade_weight=cascade_weight)
+
+    def nearest_meaning(
+        self,
+        query: str,
+        *,
+        n: int = 10,
+        pool: int = 40,
+        max_neighbors: int = 24,
+        cascade_weight: float = 0.0,
+    ) -> list[tuple[str, float, str]]:
         """ANLAM-birincil en yakın komşu: harfle çek (adres) + topolojiyle sırala (anlam).
 
         İki kademe (retrieve-then-rerank): `manifold.nearest` ile harf-moment kaba
@@ -2460,14 +2922,22 @@ class AI:
         [(name, distance, modality), ...].
         """
         from tantrium.core.meaning_pipeline import nearest_meaning as _nm
-        return _nm(self._engine, query, n=n, pool=pool,
-                   max_neighbors=max_neighbors, cascade_weight=cascade_weight)
+
+        return _nm(
+            self._engine,
+            query,
+            n=n,
+            pool=pool,
+            max_neighbors=max_neighbors,
+            cascade_weight=cascade_weight,
+        )
 
     def _meaning_store(self):
         """Kalıcı zengin-düğüm cache'i (lazy singleton, diskten yüklenir)."""
         store = getattr(self._engine, "_meaning_store", None)
         if store is None:
             from tantrium.core.meaning_cache import MeaningStore
+
             store = MeaningStore.load()
             self._engine._meaning_store = store
         return store
@@ -2480,13 +2950,14 @@ class AI:
         Bounded (limit) + resumable. Döner: {added, total}.
         """
         from tantrium.core.meaning_cache import refresh_meaning_cache as _refresh
+
         store = self._meaning_store()
         added = _refresh(self._engine, store, limit=limit)
         if added:
             store.save()
         return {"added": added, "total": len(store)}
 
-    def meaning_cache(self, name: str) -> "dict | None":
+    def meaning_cache(self, name: str) -> dict | None:
         """Bir kavramın kalıcı zengin imzasını oku (topo/li/flow/komşular) ya da None."""
         return self._meaning_store().get(name)
 
@@ -2518,21 +2989,26 @@ class AI:
         # Encode
         if modality == "signal":
             from tantrium.perception.encode import encode_signal
+
             obj = encode_signal(signal, name=percept_name)
         elif modality == "image":
             from tantrium.perception.encode import encode_image
+
             obj = encode_image(signal, name=percept_name)
         elif modality == "matrix":
             from tantrium.perception.encode import encode_matrix
+
             obj = encode_matrix(signal, name=percept_name)
         elif modality == "smiles":
             obj = self._engine.encoder.encode(signal, name=percept_name)
         else:
             from tantrium.perception.encode import encode_signal
+
             obj = encode_signal(signal, name=percept_name)
 
         # Percept kavramını manifolda ekle (trusted — sertifikalı algı kaynağı)
         from tantrium.core.semantic import Concept
+
         concept = Concept(
             name=percept_name,
             moments=list(obj.moments),
@@ -2545,15 +3021,18 @@ class AI:
 
         # TAU kenarı: concept_name -[paradigm]→ percept_name
         from tantrium.graph.knowledge_graph import KnowledgeEdge
+
         edges = self._engine.tau.edges.setdefault(concept_name, [])
         already = any(e.target == percept_name and e.paradigm == paradigm for e in edges)
         if not already:
-            edges.append(KnowledgeEdge(
-                source=concept_name,
-                target=percept_name,
-                distance=0.0,
-                paradigm=paradigm,
-            ))
+            edges.append(
+                KnowledgeEdge(
+                    source=concept_name,
+                    target=percept_name,
+                    distance=0.0,
+                    paradigm=paradigm,
+                )
+            )
             self._engine.tau._dirty = True
 
         # Topology encoder cache'ini temizle — yeni kenar görünsün
@@ -2562,7 +3041,7 @@ class AI:
 
         return percept_name
 
-    def meaning_compose(self, text: str, *, max_neighbors: int = 24) -> "CompositeSignature | None":
+    def meaning_compose(self, text: str, *, max_neighbors: int = 24) -> CompositeSignature | None:
         """Dil komposisyonu: cümle → bileşen kavramlar → κ-toplam → birleşik anlam.
 
         "EGFR inhibitor that crosses BBB" gibi bir cümle, bileşen kavramlarının
@@ -2575,7 +3054,6 @@ class AI:
         Döner: CompositeSignature (.moments üretim hedefi, .nearest() manifold yakınları)
                ya da hiç bileşen bulunamazsa None.
         """
-        from tantrium.core.quantum_moments import FreeCumulants
 
         # Metinden anahtar kavramları çıkar — hem ilişki uçları hem tekil kelimeler
         candidates: list[str] = []
@@ -2584,9 +3062,33 @@ class AI:
         # Token tabanlı aday çıkarımı (stopword'leri ele) — metin-ilişki çıkarımı kaldırıldı
 
         import re
-        _STOP = {"that", "which", "with", "from", "into", "over", "also", "have",
-                 "been", "will", "more", "than", "some", "many", "most", "used",
-                 "the", "and", "for", "are", "was", "has", "can", "not"}
+
+        _STOP = {
+            "that",
+            "which",
+            "with",
+            "from",
+            "into",
+            "over",
+            "also",
+            "have",
+            "been",
+            "will",
+            "more",
+            "than",
+            "some",
+            "many",
+            "most",
+            "used",
+            "the",
+            "and",
+            "for",
+            "are",
+            "was",
+            "has",
+            "can",
+            "not",
+        }
         words = [w for w in re.findall(r"[a-z]{4,}", text_lower) if w not in _STOP]
         candidates.extend(words)
 
@@ -2633,8 +3135,7 @@ class AI:
         n = len(pool)
         max_len = max(len(m) for m in pool)
         combined_moments = [
-            sum(m[i] if i < len(m) else 0.0 for m in pool) / n
-            for i in range(max_len)
+            sum(m[i] if i < len(m) else 0.0 for m in pool) / n for i in range(max_len)
         ]
 
         sig = CompositeSignature(
@@ -2649,17 +3150,20 @@ class AI:
 
         def _nearest(n: int = 5, metric: str = "quantum") -> list:
             try:
-                from tantrium.core.semantic import Concept
                 from fractions import Fraction
-                moms = [Fraction(m).limit_denominator(10 ** 9) for m in sig.moments]
+
+                from tantrium.core.semantic import Concept
+
+                moms = [Fraction(m).limit_denominator(10**9) for m in sig.moments]
                 tmp = Concept(name="⟨compose:query⟩", moments=moms)
                 # Daha fazla aday al, sonra anlamsız kavramları filtrele
                 candidates = engine.manifold.nearest(tmp, n=n * 6, metric=metric)
                 _SKIP = ("list_", "⟨bridge:", "oeis:", "algo:", "dna_")
                 filtered = [
-                    (name, dist) for name, dist in candidates
+                    (name, dist)
+                    for name, dist in candidates
                     if not any(name.startswith(p) for p in _SKIP)
-                    and len(name) < 80          # Wikipedia başlıklarını ele
+                    and len(name) < 80  # Wikipedia başlıklarını ele
                     and " is the " not in name  # "X is the Y" kalıplarını ele
                 ]
                 return filtered[:n]
@@ -2669,10 +3173,17 @@ class AI:
         sig.nearest = _nearest  # type: ignore[method-assign]
         return sig
 
-    def enrich(self, name: str, *, smiles: "str | None" = None,
-               protein: "str | None" = None, dna: "str | None" = None,
-               properties: "list | None" = None, network: bool = True,
-               dims: "list | None" = None) -> dict:
+    def enrich(
+        self,
+        name: str,
+        *,
+        smiles: str | None = None,
+        protein: str | None = None,
+        dna: str | None = None,
+        properties: list | None = None,
+        network: bool = True,
+        dims: list | None = None,
+    ) -> dict:
         """Kavramı ÇOK-BOYUTLU kökle — kelimeyle değil tüm GERÇEK boyutlarıyla (F8 vizyonu).
 
         Genişletilebilir boyut-registry (`core.enrichment._DIMENSIONS`): tip-farkında —
@@ -2683,8 +3194,17 @@ class AI:
         `dims=` belirli boyutlarla sınırla. İlgisiz kavram (postal) → boş. Döner:
         {concept, bound, dimensions, values}."""
         from tantrium.core.enrichment import enrich_concept
-        return enrich_concept(self, name, smiles=smiles, protein=protein, dna=dna,
-                              properties=properties, network=network, dims=dims)
+
+        return enrich_concept(
+            self,
+            name,
+            smiles=smiles,
+            protein=protein,
+            dna=dna,
+            properties=properties,
+            network=network,
+            dims=dims,
+        )
 
     # ── ONTOLOJİ → BOYUT izin haritası (kullanıcı: 'kelimenin DNA'sı olmaz; boyut tipten doğar') ──
     # Fiziksel boyutlar (DNA/molekül/geometri/ses/görüntü) yalnız o tip varlığa takılır;
@@ -2692,35 +3212,71 @@ class AI:
     # her şey bir yasayla yönetilebilir). Tip kelimeleri TAM token eşleşir (substring değil →
     # 'general'≠'gene', 'station'≠'ion' yanlış-pozitifi yok). Domain de token sayılır.
     _ONTO_CATS = [
-        (frozenset(("organism organisms animal animals plant plants cell cells gene genes "
+        (
+            frozenset(
+                (
+                    "organism organisms animal animals plant plants cell cells gene genes "
                     "protein proteins enzyme enzymes hormone hormones virus viruses bacteria "
                     "bacterium species fruit fruits vegetable vegetables fungus fungi tissue "
                     "tissues organ organs peptide antibody receptor receptors kinase kinases "
                     "microbe mammal mammals fish bird birds insect insects flower flowers seed "
                     "seeds leaf dna rna nucleotide metabolite metabolites life biology "
-                    "biological").split()),
-         frozenset(("HAS_DNA HAS_COMPOUND HAS_GEOMETRY HAS_SIGNAL HAS_IMAGE").split())),
-        (frozenset(("molecule molecules compound compounds drug drugs chemical chemicals acid "
+                    "biological"
+                ).split()
+            ),
+            frozenset(("HAS_DNA HAS_COMPOUND HAS_GEOMETRY HAS_SIGNAL HAS_IMAGE").split()),
+        ),
+        (
+            frozenset(
+                (
+                    "molecule molecules compound compounds drug drugs chemical chemicals acid "
                     "acids element elements mineral minerals polymer polymers solvent reagent "
-                    "oxide alcohol ester chemistry").split()),
-         frozenset(("HAS_COMPOUND HAS_GEOMETRY HAS_IMAGE").split())),
-        (frozenset(("object objects device devices material materials structure body tool tools "
+                    "oxide alcohol ester chemistry"
+                ).split()
+            ),
+            frozenset(("HAS_COMPOUND HAS_GEOMETRY HAS_IMAGE").split()),
+        ),
+        (
+            frozenset(
+                (
+                    "object objects device devices material materials structure body tool tools "
                     "machine instrument vehicle building particle star planet planets rock "
-                    "crystal fiber substance physics physical").split()),
-         frozenset(("HAS_GEOMETRY HAS_IMAGE").split())),
-        (frozenset(("number numbers sequence sequences series integer integers function "
+                    "crystal fiber substance physics physical"
+                ).split()
+            ),
+            frozenset(("HAS_GEOMETRY HAS_IMAGE").split()),
+        ),
+        (
+            frozenset(
+                (
+                    "number numbers sequence sequences series integer integers function "
                     "functions ratio constant equation matrix vector prime primes math "
-                    "mathematics mathematical").split()),
-         frozenset(("HAS_GEOMETRY",))),
-        (frozenset(("sound sounds music signal signals wave waves tone frequency audio acoustic "
-                    "note song").split()),
-         frozenset(("HAS_SIGNAL",))),
-        (frozenset(("image images picture pictures color colour pattern photograph visual shape "
-                    "shapes figure").split()),
-         frozenset(("HAS_IMAGE HAS_GEOMETRY").split())),
+                    "mathematics mathematical"
+                ).split()
+            ),
+            frozenset(("HAS_GEOMETRY",)),
+        ),
+        (
+            frozenset(
+                (
+                    "sound sounds music signal signals wave waves tone frequency audio acoustic "
+                    "note song"
+                ).split()
+            ),
+            frozenset(("HAS_SIGNAL",)),
+        ),
+        (
+            frozenset(
+                (
+                    "image images picture pictures color colour pattern photograph visual shape "
+                    "shapes figure"
+                ).split()
+            ),
+            frozenset(("HAS_IMAGE HAS_GEOMETRY").split()),
+        ),
     ]
 
-    def _permitted_dims(self, concept_name: str, type_hint: "str | None" = None) -> set:
+    def _permitted_dims(self, concept_name: str, type_hint: str | None = None) -> set:
         """Bir kavramın ONTOLOJİSİNE (IS_A tipi + domain + type_hint) göre meşru grounding
         boyutları. Fiziksel boyut tipe-bağlı; topoloji+yasa her zaman. Tip yoksa → yalnız
         {HAS_TOPOLOGY, IS_GOVERNED_BY} (soyut/kelime: DNA/molekül YOK — kullanıcının kuralı)."""
@@ -2750,7 +3306,7 @@ class AI:
             if not frontier:
                 break
         for keys, dims in self._ONTO_CATS:
-            if tokens & keys:                       # TAM token kesişimi (yanlış-pozitif yok)
+            if tokens & keys:  # TAM token kesişimi (yanlış-pozitif yok)
                 permitted |= dims
         return permitted
 
@@ -2758,17 +3314,17 @@ class AI:
         self,
         concept_name: str,
         *,
-        type_hint: "str | None" = None,
+        type_hint: str | None = None,
         gate: bool = True,
         force: bool = False,
-        dna: "str | None" = None,
-        molecule: "str | None" = None,
+        dna: str | None = None,
+        molecule: str | None = None,
         geometry=None,
-        law: "str | None" = None,
+        law: str | None = None,
         sound=None,
         image=None,
         topology=None,
-    ) -> "GroundingSignature":
+    ) -> GroundingSignature:
         """Kavramı tüm boyutlarda eşzamanlı groundla — çok-boyutlu TAU bağlama.
 
         "Elma" = DNA + molekül + geometri + yasa + ses + görüntü + topoloji.
@@ -2787,6 +3343,7 @@ class AI:
         Döner: GroundingSignature — bağlı kenarlar + κ_total + quantum_connections.
         """
         from functools import reduce
+
         from tantrium.core.quantum_moments import FreeCumulants
 
         # ONTOLOJİ KAPISI: boyut, kavramın TİPİ izin veriyorsa takılır ('kelimenin DNA'sı olmaz').
@@ -2799,7 +3356,7 @@ class AI:
                 return None
             if permitted is None or paradigm in permitted:
                 return val
-            rejected.append(paradigm)               # tip izin vermedi → reddet (sessizce atma)
+            rejected.append(paradigm)  # tip izin vermedi → reddet (sessizce atma)
             return None
 
         dna = _gate(dna, "HAS_DNA")
@@ -2828,42 +3385,59 @@ class AI:
             obj = self._engine.encoder.encode(dna, name=pname)
             from tantrium.core.semantic import Concept
             from tantrium.graph.knowledge_graph import KnowledgeEdge
-            c = Concept(name=pname, moments=list(obj.moments), domain="percept",
-                        source="ground_full:dna")
+
+            c = Concept(
+                name=pname, moments=list(obj.moments), domain="percept", source="ground_full:dna"
+            )
             self._engine.manifold.admit(c, policy="trusted")
             if pname not in self._engine.tau.nodes:
                 self._engine.tau.add_node(c)
             edges = self._engine.tau.edges.setdefault(concept_name, [])
             if not any(e.target == pname and e.paradigm == "HAS_DNA" for e in edges):
-                edges.append(KnowledgeEdge(source=concept_name, target=pname,
-                                           distance=0.0, paradigm="HAS_DNA"))
+                edges.append(
+                    KnowledgeEdge(
+                        source=concept_name, target=pname, distance=0.0, paradigm="HAS_DNA"
+                    )
+                )
                 self._engine.tau._dirty = True
             bound["HAS_DNA"] = pname
             _collect_kappa(pname)
 
         # Molekül boyutu — HAS_COMPOUND (SMILES)
         if molecule is not None:
-            pname = self.bind_percept(concept_name, molecule, modality="smiles",
-                                      paradigm="HAS_COMPOUND",
-                                      name=f"⟨percept:{concept_name}:molecule⟩")
+            pname = self.bind_percept(
+                concept_name,
+                molecule,
+                modality="smiles",
+                paradigm="HAS_COMPOUND",
+                name=f"⟨percept:{concept_name}:molecule⟩",
+            )
             bound["HAS_COMPOUND"] = pname
             _collect_kappa(pname)
 
         # Geometri boyutu — HAS_GEOMETRY
         if geometry is not None:
-            pname = self.bind_percept(concept_name, geometry, modality="matrix",
-                                      paradigm="HAS_GEOMETRY",
-                                      name=f"⟨percept:{concept_name}:geometry⟩")
+            pname = self.bind_percept(
+                concept_name,
+                geometry,
+                modality="matrix",
+                paradigm="HAS_GEOMETRY",
+                name=f"⟨percept:{concept_name}:geometry⟩",
+            )
             bound["HAS_GEOMETRY"] = pname
             _collect_kappa(pname)
 
         # Yasa boyutu — IS_GOVERNED_BY (kavram adı, doğrudan TAU kenarı)
         if law is not None:
             from tantrium.graph.knowledge_graph import KnowledgeEdge
+
             edges = self._engine.tau.edges.setdefault(concept_name, [])
             if not any(e.target == law and e.paradigm == "IS_GOVERNED_BY" for e in edges):
-                edges.append(KnowledgeEdge(source=concept_name, target=law,
-                                           distance=0.0, paradigm="IS_GOVERNED_BY"))
+                edges.append(
+                    KnowledgeEdge(
+                        source=concept_name, target=law, distance=0.0, paradigm="IS_GOVERNED_BY"
+                    )
+                )
                 self._engine.tau._dirty = True
             bound["IS_GOVERNED_BY"] = law
             # Yasa kavramının kendisini manifolddan oku
@@ -2877,25 +3451,37 @@ class AI:
 
         # Ses boyutu — HAS_SIGNAL
         if sound is not None:
-            pname = self.bind_percept(concept_name, sound, modality="signal",
-                                      paradigm="HAS_SIGNAL",
-                                      name=f"⟨percept:{concept_name}:sound⟩")
+            pname = self.bind_percept(
+                concept_name,
+                sound,
+                modality="signal",
+                paradigm="HAS_SIGNAL",
+                name=f"⟨percept:{concept_name}:sound⟩",
+            )
             bound["HAS_SIGNAL"] = pname
             _collect_kappa(pname)
 
         # Görüntü boyutu — HAS_IMAGE
         if image is not None:
-            pname = self.bind_percept(concept_name, image, modality="image",
-                                      paradigm="HAS_IMAGE",
-                                      name=f"⟨percept:{concept_name}:image⟩")
+            pname = self.bind_percept(
+                concept_name,
+                image,
+                modality="image",
+                paradigm="HAS_IMAGE",
+                name=f"⟨percept:{concept_name}:image⟩",
+            )
             bound["HAS_IMAGE"] = pname
             _collect_kappa(pname)
 
         # Topoloji boyutu — HAS_TOPOLOGY
         if topology is not None:
-            pname = self.bind_percept(concept_name, topology, modality="matrix",
-                                      paradigm="HAS_TOPOLOGY",
-                                      name=f"⟨percept:{concept_name}:topology⟩")
+            pname = self.bind_percept(
+                concept_name,
+                topology,
+                modality="matrix",
+                paradigm="HAS_TOPOLOGY",
+                name=f"⟨percept:{concept_name}:topology⟩",
+            )
             bound["HAS_TOPOLOGY"] = pname
             _collect_kappa(pname)
 
@@ -2947,8 +3533,8 @@ class AI:
 
         Döner: dict — {n_files, n_channels_processed, n_concepts_added, certifications}
         """
-        import os
         from pathlib import Path
+
         from tantrium.perception import encode_signal
 
         # EEG verisi nerede?
@@ -2977,6 +3563,7 @@ class AI:
 
         try:
             import mne
+
             mne.set_log_level("ERROR")
         except ImportError:
             return {"error": "mne kütüphanesi yok (pip install mne)", "n_files": 0}
@@ -3002,6 +3589,7 @@ class AI:
 
                     if learn and concept_name not in self._engine.manifold.concepts:
                         from tantrium.core.semantic import Concept
+
                         concept = Concept(
                             name=concept_name,
                             moments=list(obj.moments),
@@ -3031,15 +3619,15 @@ class AI:
             "certifications": n_certifications,
         }
 
-    def rank(self, target: str, candidates: list[str] | None = None, top_n: int = 10) -> "object":
+    def rank(self, target: str, candidates: list[str] | None = None, top_n: int = 10) -> object:
         """Rank candidates for a target via certified dyadic transport.
 
         Returns TransportRanking with .certified_only() and .best() methods.
         Certified candidates have paths that stay on the real-measure manifold.
         """
-        from tantrium.core.transport import CertifiedTransport
-        from tantrium.core.semantic import Concept
         from tantrium.core.encoder import encode as _enc
+        from tantrium.core.semantic import Concept
+        from tantrium.core.transport import CertifiedTransport
 
         # Ensure target is in manifold
         if target not in self._engine.manifold.concepts:
@@ -3062,6 +3650,7 @@ class AI:
         Döner: LoopReport (cycles, total_new_concepts, remaining_gaps)
         """
         from tantrium.research.proof_loop import ProofLoop
+
         loop = ProofLoop(self._engine)
         report = loop.run(max_cycles=max_cycles, time_limit_s=time_limit_s)
         if self._persist and report.total_new_concepts > 0:
@@ -3084,7 +3673,8 @@ class AI:
                 gaps_persistent, manifold_size_after}.
         """
         summary = self._engine.grow(
-            max_rounds=max_rounds, max_explore_objectives=max_explore_objectives)
+            max_rounds=max_rounds, max_explore_objectives=max_explore_objectives
+        )
         if self._persist and summary.get("inferences_derived", 0) > 0:
             self._engine.auto_persist()
         return summary
@@ -3098,6 +3688,7 @@ class AI:
         Döner: NecessityReport
         """
         from tantrium.reasoning.necessity import NecessityEngine
+
         ne = NecessityEngine(self._engine)
         report = ne.run(domain=domain, inject=inject, find_gaps=True)
         if self._persist and inject and report.edges_injected > 0:
@@ -3106,7 +3697,7 @@ class AI:
 
     # ── Sistem ────────────────────────────────────────────────────────────────
 
-    def think(self, question: str, depth: int = 3) -> "object":
+    def think(self, question: str, depth: int = 3) -> object:
         """Derin düşünce — manifold walk + certified inference chain.
 
         Context window yok — manifold her şeyi tutuyor.
@@ -3115,9 +3706,10 @@ class AI:
         Döner: ThinkingResult (levels, conclusion, certified_claims, gaps)
         """
         from tantrium.reasoning.thinker import Thinker
+
         return Thinker(self._engine).think(question, depth=depth)
 
-    def plan(self, goal_text: str, max_steps: int = 5) -> "object":
+    def plan(self, goal_text: str, max_steps: int = 5) -> object:
         """Hedef → TAU BFS → sertifikalı adım planı.
 
         Mevcut manifolddaki bilgiden başlayarak hedefe giden
@@ -3125,14 +3717,16 @@ class AI:
 
         Döner: Plan (goal, steps: [PlanStep], distances)
         """
-        from tantrium.research.goal import Goal
         from tantrium.reasoning.planner import Planner
+        from tantrium.research.goal import Goal
+
         raw = self._engine.encoder.encode(goal_text, name=f"goal:{goal_text[:40]}")
         goal = Goal(name=goal_text, moments=[float(m) for m in raw.moments])
         return Planner(self._engine).plan(goal, max_steps=max_steps)
 
-    def explore(self, paradigm: str = "ALEPH", gap_name: str | None = None,
-                max_attempts: int = 2) -> "object":
+    def explore(
+        self, paradigm: str = "ALEPH", gap_name: str | None = None, max_attempts: int = 2
+    ) -> object:
         """Bilgi sınırını keşfet — probe oluştur, boşluğu kapatmaya çalış.
 
         knowledge.jsonl'den gerçek bloklanmış paradigmaları okur,
@@ -3140,7 +3734,8 @@ class AI:
 
         Döner: ExplorationResult (status: CLOSED|REFINED|PERSISTENT, gap, attempts)
         """
-        from tantrium.research.explorer import Explorer, ExplorationObjective
+        from tantrium.research.explorer import ExplorationObjective, Explorer
+
         obj = ExplorationObjective(
             gap_paradigm=paradigm,
             gap_name=gap_name or f"{paradigm}_GAP",
@@ -3156,8 +3751,9 @@ class AI:
 
         Döner: list[ActionResult]
         """
-        from tantrium.research.goal import Goal, GoalManifold
         from tantrium.research.actor import Actor
+        from tantrium.research.goal import Goal, GoalManifold
+
         raw = self._engine.encoder.encode(goal_text, name=f"goal:{goal_text[:40]}")
         goal = Goal(name=goal_text, moments=[float(m) for m in raw.moments])
         gm = GoalManifold()
@@ -3179,9 +3775,10 @@ class AI:
           transport_certified: list  — örnek certified transport çiftleri
           knowledge_frontier: list  — bloklanmış paradigma isimleri
         """
+        import json
+        import pathlib
+
         from tantrium.reasoning.necessity import NecessityEngine
-        from tantrium.domains.math_kernel import _CERTIFIED_STATUSES
-        import json, pathlib
 
         m = self._engine.manifold
         tau = self._engine.tau
@@ -3192,10 +3789,7 @@ class AI:
             domains[c.domain] = domains.get(c.domain, 0) + 1
 
         # Sertifikalı teoremler
-        certified_theorems = [
-            name for name in m.concepts
-            if name.startswith("theorem:")
-        ]
+        certified_theorems = [name for name in m.concepts if name.startswith("theorem:")]
 
         # Matematiksel çapalar
         anchors = [name for name in m.concepts if "⊕ANCHOR:" in name]
@@ -3237,7 +3831,7 @@ class AI:
 
     # ── Meta / Öz-bilgi katmanı ────────────────────────────────────────────────
 
-    def universal_rule(self) -> "object":
+    def universal_rule(self) -> object:
         """22+1 paradigmanın ortak Hankel yapısı — matematiksel evrenin temel kuralı.
 
         μ_universal = (1/22)·Σ μ_paradigma → ALEPH certify.
@@ -3247,9 +3841,10 @@ class AI:
         Döner: UniversalRule (moments, certified, tav_converged, coverage, ...)
         """
         from tantrium.meta.paradigm import MetaParadigm
+
         return MetaParadigm(self._engine).universal_rule()
 
-    def self_certify(self) -> "object":
+    def self_certify(self) -> object:
         """Tav(sistem) = sistem mi? — matematiksel öz-farkındalık.
 
         Sistemin kendi durumunu (kavram/edge/tau yoğunluğu) moment uzayına
@@ -3259,6 +3854,7 @@ class AI:
         Döner: SelfCertResult (tav_fixed_point, fixed_point_value, ...)
         """
         from tantrium.meta.paradigm import MetaParadigm
+
         return MetaParadigm(self._engine).self_certify()
 
     def blind_spots(self, threshold: int = 5) -> list:
@@ -3270,6 +3866,7 @@ class AI:
         Döner: [{"anchor": str, "count": int, "keywords": list[str]}, ...]
         """
         from tantrium.meta.paradigm import MetaParadigm
+
         return MetaParadigm(self._engine).blind_spots(threshold=threshold)
 
     def topology(self, grid_n: int = 12) -> list:
@@ -3285,6 +3882,7 @@ class AI:
         Döner: list[MathRegion]
         """
         from tantrium.meta.topology import MomentTopology
+
         return MomentTopology(self._engine).analyze(grid_n=grid_n)
 
     def frontiers(self, top_n: int = 8) -> list:
@@ -3296,14 +3894,16 @@ class AI:
         Döner: list[MathRegion] (en çok komşusu olan frontier'lar önce)
         """
         from tantrium.meta.topology import MomentTopology
+
         return MomentTopology(self._engine).named_frontiers(top_n=top_n)
 
     def moment_map(self, grid_n: int = 20) -> str:
         """Manifoldun ASCII haritası — μ₂ × μ₃ projeksiyonu (görsel)."""
         from tantrium.meta.topology import MomentTopology
+
         return MomentTopology(self._engine).summary_map(grid_n=grid_n)
 
-    def vision(self, name: str) -> "object":
+    def vision(self, name: str) -> object:
         """Tanrısal göz: sertifikalanmış herhangi bir varlığın tam kozmik vizyonu.
 
         Geçmiş:  TAU geriye iz — hangi zorunluluktan doğdu?
@@ -3320,9 +3920,10 @@ class AI:
             print(frame.eigenvalue_entropy)  # ayrımcılık kapasitesi
         """
         from tantrium.meta.vision import CosmicVision
+
         return CosmicVision(self._engine).see(name)
 
-    def reflect(self, persist: bool = False) -> "object":
+    def reflect(self, persist: bool = False) -> object:
         """Öz-model: sistem kendisini KENDİ manifoldunda görür.
 
         İşlevsel öz-referansın ilk basamağı (bilinç DEĞİL — fenomenal deneyim
@@ -3346,6 +3947,7 @@ class AI:
             print(r.coherent)           # üç eksen anlaşıyor mu
         """
         from tantrium.meta.self_model import SelfModel
+
         return SelfModel(self._engine).reflect(persist=persist)
 
     def experience(self, name: str, kind: str = "did", *, persist: bool = True) -> dict:
@@ -3357,6 +3959,7 @@ class AI:
         Bounded (son 64, episodik) → hub-taşması yok. 'ben'i NE YAPTIĞIYLA tanımlar.
         Döner: {name, kind, idx}."""
         from tantrium.meta.self_model import SelfModel
+
         return SelfModel(self._engine).experience(name, kind, persist=persist)
 
     def trace(self, name: str, depth: int = 5) -> dict:
@@ -3369,6 +3972,7 @@ class AI:
                 "depth": int, "domain": str}
         """
         from tantrium.meta.vision import CosmicVision
+
         cv = CosmicVision(self._engine)
         ancestors, domain, ancestry_depth = cv._trace_origin(name, depth_limit=depth)
 
@@ -3386,7 +3990,7 @@ class AI:
             "domain": domain,
         }
 
-    def bridge(self, name_a: str, name_b: str) -> "object":
+    def bridge(self, name_a: str, name_b: str) -> object:
         """İki varlık arasındaki matematiksel zorunlu köprü kavramını hesapla.
 
         Evren iki sertifikalı kavram arasında bir köprü OLMAK ZORUNDA olduğunu bilir.
@@ -3396,9 +4000,10 @@ class AI:
         Döner: BridgeResult — .summary() ile anlatı.
         """
         from tantrium.meta.synthesis import ConceptSynthesizer
+
         return ConceptSynthesizer(self._engine).bridge(name_a, name_b)
 
-    def genesis(self, max_gaps: int = 5) -> "object":
+    def genesis(self, max_gaps: int = 5) -> object:
         """Manifold kendi kendini büyütüyor — boşlukları zorunlu kavramlarla doldur.
 
         NecessityEngine manifold boşluklarını bulur.
@@ -3409,9 +4014,10 @@ class AI:
         Döner: GenesisReport — .summary() ile rapor.
         """
         from tantrium.meta.synthesis import ConceptSynthesizer
+
         return ConceptSynthesizer(self._engine).genesis(max_gaps=max_gaps)
 
-    def resonate(self, name_a: str, name_b: str) -> "object":
+    def resonate(self, name_a: str, name_b: str) -> object:
         """İki varlık arasındaki moment harmonik rezonansını hesapla.
 
         μ_k(A)/μ_k(B) → en yakın rasyonel oran → harmonik skor.
@@ -3421,9 +4027,10 @@ class AI:
         Döner: ResonanceResult — .summary() ile anlatı.
         """
         from tantrium.meta.synthesis import ConceptSynthesizer
+
         return ConceptSynthesizer(self._engine).resonate(name_a, name_b)
 
-    def energy(self, name: str, temperature: float = 1.0) -> "object":
+    def energy(self, name: str, temperature: float = 1.0) -> object:
         """Bir kavramın spektral serbest enerjisi (Gibbs termodinamiği).
 
         F(T=0): sıfır nokta enerjisi — ground state, maksimum uzmanlaşma
@@ -3433,9 +4040,10 @@ class AI:
         Döner: EnergyProfile — .summary() ile anlatı.
         """
         from tantrium.meta.synthesis import ConceptSynthesizer
+
         return ConceptSynthesizer(self._engine).energy(name, temperature=temperature)
 
-    def emanate(self, name: str) -> "object":
+    def emanate(self, name: str) -> object:
         """Kabalistik emanasyon — 23 sefirottan «name» üzerine ışık yağdır.
 
         Her paradigma (sefira) kendi ışığını toplar:
@@ -3449,18 +4057,20 @@ class AI:
         Döner: EmanationResult — .summary() ile Kabbalistik anlatı.
         """
         from tantrium.meta.synthesis import ConceptSynthesizer
+
         result = ConceptSynthesizer(self._engine).emanate(name)
         if self._persist and result.manifested:
             self._engine.auto_persist()
         return result
 
-    def certify_all(self, query: str, adaptive: bool = True) -> "object":
+    def certify_all(self, query: str, adaptive: bool = True) -> object:
         """CoreMachine ile tam 4-eksenli sertifikasyon — UnifiedCertificate döner."""
         return self._engine.core.certify(query, adaptive=adaptive)
 
     def manifold_gaps(self, domain: str = "math_kernel", n_gaps: int = 10) -> list:
         """NecessityEngine ile manifold boşluklarını bul (geometrik sinyal)."""
         from tantrium.reasoning.necessity import NecessityEngine
+
         ne = NecessityEngine(self._engine)
         report = ne.run(domain=domain)
         return report.manifold_gaps[:n_gaps]
@@ -3473,10 +4083,12 @@ class AI:
         Her sinyal KORUNUR; Gap.raw orijinal nesneyi taşır.
         """
         from tantrium.reasoning.gap_finder import GapFinder
+
         return GapFinder(self._engine).find(signal=signal, **kw)
 
-    def wonder(self, signal: str = "all", *, alpha: float = 1.0,
-               gamma: float = 0.7, top_k: int = 10, **kw) -> list:
+    def wonder(
+        self, signal: str = "all", *, alpha: float = 1.0, gamma: float = 0.7, top_k: int = 10, **kw
+    ) -> list:
         """Boşlukları MERAK skoruyla sırala: α·dış-değer·yenilik − γ·dejenerasyon.
 
         Kendini-tımarı (self-grooming) cezalar: sistemin kendi ürettiği genesis/
@@ -3487,6 +4099,7 @@ class AI:
         """
         from tantrium.reasoning.gap_finder import GapFinder
         from tantrium.reasoning.wonder import WonderScorer
+
         gaps = GapFinder(self._engine).find(signal=signal, **kw)
         scored = WonderScorer(self._engine, alpha=alpha, gamma=gamma).rank(gaps)
         return scored[:top_k]
@@ -3494,6 +4107,7 @@ class AI:
     def destiny(self, name: str, top_k: int = 5) -> dict:
         """Bir kavramın geleceği — TAU torunları + moment çekicisi."""
         from tantrium.meta.vision import CosmicVision
+
         frame = CosmicVision(self._engine).see(name)
         descendants = []
         for edge in self._engine.tau.edges.get(name, [])[:top_k]:
@@ -3505,13 +4119,18 @@ class AI:
             "evolution_direction": getattr(frame, "evolution_direction", None),
         }
 
-    def signal(self, kind: str = "tone", **kwargs) -> "object":
+    def signal(self, kind: str = "tone", **kwargs) -> object:
         """Sentetik sinyal/görüntü üret — perceive() için hazır."""
         from tantrium import perception as perc
+
         generators = {
-            "tone": perc.tone, "chord": perc.chord, "white_noise": perc.white_noise,
-            "solid_image": perc.solid_image, "gradient_image": perc.gradient_image,
-            "noise_image": perc.noise_image, "checkerboard_image": perc.checkerboard_image,
+            "tone": perc.tone,
+            "chord": perc.chord,
+            "white_noise": perc.white_noise,
+            "solid_image": perc.solid_image,
+            "gradient_image": perc.gradient_image,
+            "noise_image": perc.noise_image,
+            "checkerboard_image": perc.checkerboard_image,
         }
         gen = generators.get(kind, perc.tone)
         if kwargs:
@@ -3521,18 +4140,20 @@ class AI:
         args = defaults.get(kind, ())
         return gen(*args) if args else gen()
 
-    def dna(self, sequence: str, name: str | None = None) -> "object":
+    def dna(self, sequence: str, name: str | None = None) -> object:
         """DNA/RNA dizisi → moment uzayı sertifikasyonu."""
         nm = name or sequence[:16]
         obj = self._engine.encoder.encode(sequence, name=nm)
         run = self._engine.network.run(obj)
         return run
 
-    def sturm(self, poly_str: str, var: str = "x") -> "object":
+    def sturm(self, poly_str: str, var: str = "x") -> object:
         """Polinom için Sturm zinciri — gerçek kök sayısı."""
         from tantrium.algebra.sturm import normalized_sturm_chain
+
         try:
             from sympy import symbols, sympify
+
             x = symbols(var)
             poly = sympify(poly_str)
             return normalized_sturm_chain([float(c) for c in poly.as_poly(x).all_coeffs()])
@@ -3543,19 +4164,24 @@ class AI:
         """Polinom pozitifliği — Hankel PSD kontrolü."""
         try:
             from sympy import symbols, sympify
+
             x = symbols(var)
             poly = sympify(poly_str)
             coeffs = [float(c) for c in poly.as_poly(x).all_coeffs()]
             obj = self._engine.encoder.encode(coeffs, name=poly_str[:32])
             run = self._engine.network.run(obj)
-            return {"certified": run.certified_count == run.total,
-                    "paradigms": run.certified_count, "coeffs": coeffs}
+            return {
+                "certified": run.certified_count == run.total,
+                "paradigms": run.certified_count,
+                "coeffs": coeffs,
+            }
         except Exception as e:
             return {"error": str(e)}
 
-    def crypto(self, data: bytes, mode: str = "analyze") -> "object":
+    def crypto(self, data: bytes, mode: str = "analyze") -> object:
         """Şifreleme yapısı analizi (savunma)."""
-        from tantrium.perception.crypto import analyze, achilles
+        from tantrium.perception.crypto import achilles, analyze
+
         if mode == "achilles":
             return achilles(data)
         return analyze(data)
@@ -3564,10 +4190,7 @@ class AI:
         """Kısa durum özeti."""
         n = len(self._engine.manifold.concepts)
         edges = sum(len(v) for v in self._engine.tau.edges.values())
-        return (
-            f"Tantrium AI  |  {n:,} kavram  |  {edges:,} TAU kenar  |  "
-            f"Aleph-Tekin 23 paradigma"
-        )
+        return f"Tantrium AI  |  {n:,} kavram  |  {edges:,} TAU kenar  |  Aleph-Tekin 23 paradigma"
 
     def save(self) -> int:
         """Manifoldu diske kaydet. Döner: kaydedilen kavram sayısı."""
@@ -3578,12 +4201,14 @@ class AI:
     def _get_certifier(self):
         if self._certifier is None:
             from tantrium.domains.certifier import MolecularCertifier
+
             self._certifier = MolecularCertifier(self._engine)
         return self._certifier
 
     def _get_mol_gen(self):
         if self._mol_gen is None:
             from tantrium.domains.generator import MoleculeGenerator
+
             self._mol_gen = MoleculeGenerator(self._engine)
         return self._mol_gen
 
@@ -3594,7 +4219,7 @@ class AI:
         concept_a: str,
         concept_b: str,
         alpha: float = 0.5,
-    ) -> "object":
+    ) -> object:
         """İki kavramın Hankel moment uzayında konveks kombinasyonu → yeni kavram.
 
         H_A PSD, H_B PSD → H_C = αH_A + (1-α)H_B PSD (konveks → Aleph garantili).
@@ -3603,6 +4228,7 @@ class AI:
         Döner: DerivedConcept (certified, moments, parents, summary())
         """
         from tantrium.reasoning.generalization import HankelGeneralizer
+
         return HankelGeneralizer(self._engine).interpolate(concept_a, concept_b, alpha)
 
     def midpoints(
@@ -3619,24 +4245,27 @@ class AI:
         Döner: list[DerivedConcept]
         """
         from tantrium.reasoning.generalization import HankelGeneralizer
+
         return HankelGeneralizer(self._engine).explore_midpoints(concept_a, concept_b, steps)
 
-    def derive(self, concept_names: list) -> "object":
+    def derive(self, concept_names: list) -> object:
         """N kavramın moment ortalamasından yeni kavram türet (uniform ağırlık).
 
         PSD matrislerinin ortalaması PSD → Aleph garantisi korunur.
         Döner: DerivedConcept
         """
         from tantrium.reasoning.generalization import HankelGeneralizer
+
         return HankelGeneralizer(self._engine).derive(concept_names)
 
-    def blend(self, weighted_concepts: list) -> "object":
+    def blend(self, weighted_concepts: list) -> object:
         """Ağırlıklı kavram karışımı: [(isim, ağırlık), ...] → yeni kavram.
 
         Ağırlıklar normalize edilir → konveks kombinasyon → PSD garantili.
         Döner: DerivedConcept
         """
         from tantrium.reasoning.generalization import HankelGeneralizer
+
         return HankelGeneralizer(self._engine).weighted_blend(weighted_concepts)
 
     def compose(self, concept_a: str, concept_b: str, alpha: float = 0.5) -> str:
@@ -3645,6 +4274,7 @@ class AI:
         Döner: str — COMPOSED kavramın certified özellik listesi
         """
         from tantrium.reasoning.reasoner import GraphReasoner
+
         return GraphReasoner(self._engine).compose(concept_a, concept_b, alpha)
 
     # ── Konuşma / Sertifikalı Anlatım ────────────────────────────────────────
@@ -3699,17 +4329,20 @@ class AI:
         # Türetilen her sonuç TAU'ya INFERRED edge olarak ekle
         if results:
             from tantrium.graph.knowledge_graph import KnowledgeEdge
+
             for r in results:
                 src = concept_a[:64]
                 tgt = concept_b[:64]
                 edges = self._engine.tau.edges.setdefault(src, [])
                 if not any(e.target == tgt and e.paradigm == r.rule_id for e in edges):
-                    edges.append(KnowledgeEdge(
-                        source=src,
-                        target=tgt,
-                        distance=0.0,
-                        paradigm=r.rule_id,
-                    ))
+                    edges.append(
+                        KnowledgeEdge(
+                            source=src,
+                            target=tgt,
+                            distance=0.0,
+                            paradigm=r.rule_id,
+                        )
+                    )
             self._engine.tau._dirty = True
 
         return results
@@ -3717,19 +4350,20 @@ class AI:
     def set_goal(self, goal: str) -> dict:
         """ASI Pilar B — hedef koy: ALEPH-sertifikalı Goal + GoalManifold (kalıcı).
         Döner: {goal, set, progress}. set=False → Aleph PSD geçemedi."""
-        from tantrium.research.goal import encode_goal, GoalManifold
+        from tantrium.research.goal import GoalManifold, encode_goal
+
         g = encode_goal(self._engine, str(goal))
         if g is None:
-            return {"goal": str(goal), "set": False,
-                    "reason": "Aleph PSD geçemedi (yapısal değil)"}
+            return {"goal": str(goal), "set": False, "reason": "Aleph PSD geçemedi (yapısal değil)"}
         gm = getattr(self._engine, "_goal_manifold", None) or GoalManifold.load()
         gm.add(g)
         self._engine._active_goal = g
         self._engine._goal_manifold = gm
         return {"goal": g.name, "set": True, "progress": round(g.progress, 3)}
 
-    def research(self, goal: str, *, rounds: int = 2, network: bool = True,
-                 design: bool = True) -> dict:
+    def research(
+        self, goal: str, *, rounds: int = 2, network: bool = True, design: bool = True
+    ) -> dict:
         """ASI BİRLEŞİK DÖNGÜ — 5 piları TEK hedef-güdümlü bilimsel kampanyada zincirler.
 
         Pilarlar ortak manifold + sertifika zinciriyle birbirine bağlanır (bir halkanın çıktısı
@@ -3741,6 +4375,7 @@ class AI:
         kapalı bilimsel akıl. Döner: {goal, rounds, grounded, hypotheses, designs, verify, log, answer}.
         """
         from tantrium.research.corrigibility import external_verify
+
         topic = self._converse_topic(goal) or str(goal).lower()
         self.set_goal(goal)
         log: list[str] = []
@@ -3756,6 +4391,7 @@ class AI:
             seed = topic
             try:
                 from tantrium.core.meaning_pipeline import resolve_goal_anchors
+
                 _anchors = resolve_goal_anchors(self._engine, topic)
                 if _anchors:
                     seed = _anchors[0]
@@ -3768,8 +4404,9 @@ class AI:
             if design and hyps:
                 try:
                     d = self.design_peptide(seed, max_residues=6, beam_width=2)
-                    designs.append({"to_test": hyps[0]["statement"],
-                                    "peptide": d["peptide"], "fit": d["fit"]})
+                    designs.append(
+                        {"to_test": hyps[0]["statement"], "peptide": d["peptide"], "fit": d["fit"]}
+                    )
                 except Exception:
                     pass
             # (corrigibility) ÖZ-DOĞRULA — bilinen olgular hâlâ tutuyor mu
@@ -3777,8 +4414,10 @@ class AI:
                 verify = external_verify(self._engine)
             except Exception:
                 verify = {}
-            log.append(f"tur {rnd + 1}: köklü={grounded}, hipotez={len(hyps)}, "
-                       f"tasarım={len(designs)}, doğrulama-skoru={verify.get('score', '?')}")
+            log.append(
+                f"tur {rnd + 1}: köklü={grounded}, hipotez={len(hyps)}, "
+                f"tasarım={len(designs)}, doğrulama-skoru={verify.get('score', '?')}"
+            )
         try:
             self._engine.auto_persist()
         except Exception:
@@ -3790,12 +4429,20 @@ class AI:
             f"sertifikalı hipotez ürettim (ör. {top_h}), test adayı tasarladım (peptit {top_d}), "
             f"her tur corrigibility ile öz-doğruladım (skor {verify.get('score', '?')}). "
             f"Her halka köklü + RH-Sturm sertifikalı — Mythos güçlü ama kafesli; bu döngü "
-            f"denetlenebilir.")
-        return {"goal": goal, "rounds": rounds, "grounded": bool(self._tau_facts(topic)),
-                "hypotheses": hyps, "designs": designs, "verify": verify,
-                "log": log, "answer": answer}
+            f"denetlenebilir."
+        )
+        return {
+            "goal": goal,
+            "rounds": rounds,
+            "grounded": bool(self._tau_facts(topic)),
+            "hypotheses": hyps,
+            "designs": designs,
+            "verify": verify,
+            "log": log,
+            "answer": answer,
+        }
 
-    def spectrum(self, query: str) -> "object":
+    def spectrum(self, query: str) -> object:
         """Girdinin spektral ölçüsü: G=AᵀA → özdeğer dağılımı dμ = Σwᵢδ(λ-λᵢ).
 
         Hamburger: bounded support → dμ ↔ {μₖ} birebir (TAV sabit noktası unique).
@@ -3804,6 +4451,7 @@ class AI:
         Döner: SpectralMeasure (eigenvalues, entropy(), gap(), effective_rank(), ...)
         """
         from tantrium.domains.spectral import moments_to_spectral
+
         obj = self._engine.encoder.encode(query, name=query[:64])
         return moments_to_spectral([float(m) for m in obj.moments], name=query[:64])
 
@@ -3816,13 +4464,14 @@ class AI:
 
         Döner: [(anchor_name, w2_distance), ...] yakından uzağa sıralı
         """
-        from tantrium.graph.anchors import nearest_anchor
         from tantrium.core.semantic import Concept
+        from tantrium.graph.anchors import nearest_anchor
+
         obj = self._engine.encoder.encode(query, name=query[:64])
         concept = Concept(name=query[:64], moments=list(obj.moments), domain="input")
         return nearest_anchor(self._engine.manifold, concept, top_n=top_n)
 
-    def remember(self, key: str | None = None) -> "object":
+    def remember(self, key: str | None = None) -> object:
         """Session hafızası: son konuşma geçmişini döndür.
 
         Döner: SessionMemory — turns, certified_concepts listesi
@@ -3830,6 +4479,7 @@ class AI:
         session = getattr(self._engine, "session", None)
         if session is None:
             from tantrium.graph.memory import SessionMemory
+
             latest = SessionMemory.latest()
             return latest if latest is not None else SessionMemory.new()
         return session
@@ -3846,6 +4496,7 @@ class AI:
         Fallback: moment vektör aritmetiği (TAU-kök filtreli).
         """
         from tantrium.core.semantic import Concept
+
         tau = self._engine.tau
         exclude = {a, b, c, a.lower(), b.lower(), c.lower()}
 
@@ -3913,6 +4564,7 @@ class AI:
         Döner: {concept, hypotheses:[{hypothesis, via, chain, confidence}], n}
         """
         from tantrium.reasoning.causal_rules import TRANSITIVE_CAUSAL as _TRANS  # tek-gerçek
+
         fwd = self.what_if(concept, depth=depth)
         hypotheses: list[dict] = []
         seen: set[tuple] = set()
@@ -3920,9 +4572,9 @@ class AI:
             path = chain["path"]
             for i in range(0, len(path) - 4, 2):
                 a_node = path[i]
-                rel1   = path[i + 1]
+                rel1 = path[i + 1]
                 b_node = path[i + 2]
-                rel2   = path[i + 3]
+                rel2 = path[i + 3]
                 c_node = path[i + 4]
                 derived = _TRANS.get((str(rel1), str(rel2)))
                 if derived:
@@ -3930,19 +4582,23 @@ class AI:
                     if key not in seen:
                         seen.add(key)
                         conf = 0.85 if chain["depth"] <= 2 else 0.55
-                        hypotheses.append({
-                            "hypothesis": f"{a_node} {derived} {c_node}",
-                            "via": b_node,
-                            "chain": f"{a_node} -{rel1}→ {b_node} -{rel2}→ {c_node}",
-                            "confidence": round(conf, 2),
-                        })
+                        hypotheses.append(
+                            {
+                                "hypothesis": f"{a_node} {derived} {c_node}",
+                                "via": b_node,
+                                "chain": f"{a_node} -{rel1}→ {b_node} -{rel2}→ {c_node}",
+                                "confidence": round(conf, 2),
+                            }
+                        )
         return {
             "concept": concept,
             "hypotheses": sorted(hypotheses, key=lambda h: -h["confidence"])[:10],
             "n": len(hypotheses),
-            "note": (f"{len(hypotheses)} geçici hipotez üretildi"
-                     if hypotheses else
-                     "Yeterli kausal zincir yok — ai.learn() ile öğret"),
+            "note": (
+                f"{len(hypotheses)} geçici hipotez üretildi"
+                if hypotheses
+                else "Yeterli kausal zincir yok — ai.learn() ile öğret"
+            ),
         }
 
     def _good_analogy_target(self, name: str) -> bool:
@@ -3957,17 +4613,23 @@ class AI:
         if c is not None:
             if getattr(c, "domain", "") in ("theorem", "math_kernel"):
                 return False
-            if getattr(c, "source", "") in ("genesis", "bridge", "frontier_extrapolation",
-                                            "emanate", "hankel_interpolation"):
+            if getattr(c, "source", "") in (
+                "genesis",
+                "bridge",
+                "frontier_extrapolation",
+                "emanate",
+                "hankel_interpolation",
+            ):
                 return False
         return True
 
-    def _hypothesis_seeds(self, domain: "str | None", n: int = 6) -> list:
+    def _hypothesis_seeds(self, domain: str | None, n: int = 6) -> list:
         """Hipotez tohumları: domain verilmezse WONDER-sıralı boşlukların komşuları.
         WonderScorer'ı (eski ölü kod) BAĞLAR — self-grooming'i cezalayıp en değerli
         (dış-köklü + yeni) boşlukları seçer → hipotez oraya odaklanır."""
         from tantrium.reasoning.gap_finder import GapFinder
         from tantrium.reasoning.wonder import WonderScorer
+
         seeds: list[str] = []
         try:
             gaps = GapFinder(self._engine).find(signal="all")
@@ -3977,11 +4639,10 @@ class AI:
                 if not loc:
                     continue
                 from tantrium.core.semantic import Concept
-                probe = Concept(name="_hseed_", moments=list(loc),
-                                domain="_probe", source="hyp")
+
+                probe = Concept(name="_hseed_", moments=list(loc), domain="_probe", source="hyp")
                 for name, _d in self._engine.manifold.nearest(probe, n=2):
-                    if (self._is_clean_concept(name) and name not in seeds
-                            and self._tau_facts(name)):
+                    if self._is_clean_concept(name) and name not in seeds and self._tau_facts(name):
                         seeds.append(name)
                 if len(seeds) >= n:
                     break
@@ -3991,9 +4652,14 @@ class AI:
             seeds.insert(0, domain)
         return seeds[:n]
 
-    def hypothesize_novel(self, concept: "str | None" = None, *,
-                          domain: "str | None" = None, top_k: int = 8,
-                          include_analogy: bool = False) -> dict:
+    def hypothesize_novel(
+        self,
+        concept: str | None = None,
+        *,
+        domain: str | None = None,
+        top_k: int = 8,
+        include_analogy: bool = False,
+    ) -> dict:
         """SERTİFİKALI YENİ HİPOTEZ MOTORU (ASI Pilar A) — dağınık parçaları tek köklü
         çıktıda birleştirir. Varsayılan kaynak: transitif kausal zincirler (a→via→c → a-c),
         her biri RH-Sturm sertifikalı (kritik hat) + köklü (TAU) + kaynaklı + WONDER-tohumlu.
@@ -4006,8 +4672,11 @@ class AI:
         Döner: {seeds, hypotheses:[{statement, kind, chain, sturm_ok, sturm_pivot,
                 confidence, sources}], n, answer}.
         """
-        seeds = [self._converse_topic(concept) or str(concept).lower()] if concept \
+        seeds = (
+            [self._converse_topic(concept) or str(concept).lower()]
+            if concept
             else self._hypothesis_seeds(domain)
+        )
         seeds = [s for s in seeds if s]
         cands: list[dict] = []
         seen: set = set()
@@ -4023,15 +4692,26 @@ class AI:
                 # Sturm yolu [a, REL, via, REL, c] formatında (_sturm_chain_ok stride-2 ile
                 # HER hop'u sertifikalar: a↔via VE via↔c). Eski [a,via,c] yalnız uçları okuyordu.
                 via = h.get("via")
-                chain_path = ([nodes[0], "REL", via, "REL", nodes[-1]] if via
-                              else [nodes[0], "REL", nodes[-1]])
-                cands.append({"statement": h["hypothesis"], "kind": "transitive",
-                              "chain": h["chain"], "path": chain_path,
-                              "base_conf": h["confidence"], "subject": nodes[0]})
+                chain_path = (
+                    [nodes[0], "REL", via, "REL", nodes[-1]]
+                    if via
+                    else [nodes[0], "REL", nodes[-1]]
+                )
+                cands.append(
+                    {
+                        "statement": h["hypothesis"],
+                        "kind": "transitive",
+                        "chain": h["chain"],
+                        "path": chain_path,
+                        "base_conf": h["confidence"],
+                        "subject": nodes[0],
+                    }
+                )
             # (2) çapraz-domain quantum bridge → yapısal analoji (OPT-IN, dürüst sınır)
             try:
-                for other, qd in (self._engine.manifold.quantum_bridges(s, top_k=8)
-                                  if include_analogy else []):
+                for other, qd in (
+                    self._engine.manifold.quantum_bridges(s, top_k=8) if include_analogy else []
+                ):
                     # GERÇEK-dünya + İLİŞKİSEL-köklü hedef: ham κ-yakınlık anlamlı analoji
                     # DEĞİL ("egfr ~κ~ parallelepiped" matematiksel doğru, bilimsel gürültü);
                     # yalnız kausal-köklü kavramlar arası analoji araştırmaya değer.
@@ -4041,12 +4721,17 @@ class AI:
                     if key in seen:
                         continue
                     seen.add(key)
-                    cands.append({
-                        "statement": f"{s} ile {other} aynı gizli yapısal sınıfta "
-                                     f"(κ-yakın, klasik-uzak)",
-                        "kind": "analogy", "chain": f"{s} ~κ~ {other} (κ-mesafe {qd:.3f})",
-                        "path": [s, "REL", other],   # gerçek s↔other Sturm kontrolü (uç-değil)
-                        "base_conf": round(max(0.0, 1.0 - float(qd)), 2), "subject": s})
+                    cands.append(
+                        {
+                            "statement": f"{s} ile {other} aynı gizli yapısal sınıfta "
+                            f"(κ-yakın, klasik-uzak)",
+                            "kind": "analogy",
+                            "chain": f"{s} ~κ~ {other} (κ-mesafe {qd:.3f})",
+                            "path": [s, "REL", other],  # gerçek s↔other Sturm kontrolü (uç-değil)
+                            "base_conf": round(max(0.0, 1.0 - float(qd)), 2),
+                            "subject": s,
+                        }
+                    )
             except Exception:
                 pass
 
@@ -4054,35 +4739,42 @@ class AI:
         out: list[dict] = []
         for c in cands:
             subj = c["subject"]
-            if not self._tau_facts(subj):          # köklü değilse hipotez kurmayız
+            if not self._tau_facts(subj):  # köklü değilse hipotez kurmayız
                 continue
             try:
-                ok, pmin = self._sturm_chain_ok(c["path"]) if len(c["path"]) >= 2 \
-                    else (True, 0.0)
+                ok, pmin = self._sturm_chain_ok(c["path"]) if len(c["path"]) >= 2 else (True, 0.0)
             except Exception:
                 ok, pmin = True, 0.0
             conf = round(c["base_conf"] * (1.0 if ok else 0.5), 3)
-            out.append({
-                "statement": c["statement"], "kind": c["kind"], "chain": c["chain"],
-                "sturm_ok": bool(ok), "sturm_pivot": round(float(pmin), 6),
-                "confidence": conf,
-                "sources": [{"claim": c["chain"], "subject": subj}],
-            })
+            out.append(
+                {
+                    "statement": c["statement"],
+                    "kind": c["kind"],
+                    "chain": c["chain"],
+                    "sturm_ok": bool(ok),
+                    "sturm_pivot": round(float(pmin), 6),
+                    "confidence": conf,
+                    "sources": [{"claim": c["chain"], "subject": subj}],
+                }
+            )
         # RH-sertifikalı (kritik hat) önce, sonra güven
         out.sort(key=lambda h: (h["sturm_ok"], h["confidence"]), reverse=True)
         out = out[:top_k]
         if out:
             tops = [f"{h['statement']}" for h in out[:3]]
-            answer = (f"Köklü, RH-sertifikalı yeni hipotezlerim: {', '.join(tops)}. "
-                      f"Her biri TAU'da gerçek zincire dayanıyor ve Sturm pivotuyla kritik "
-                      f"hatta — Mythos parlak ama doğrulanamaz hipotez verir; benimki denetlenebilir.")
+            answer = (
+                f"Köklü, RH-sertifikalı yeni hipotezlerim: {', '.join(tops)}. "
+                f"Her biri TAU'da gerçek zincire dayanıyor ve Sturm pivotuyla kritik "
+                f"hatta — Mythos parlak ama doğrulanamaz hipotez verir; benimki denetlenebilir."
+            )
         else:
-            answer = ("Köklü ve sertifikalı yeni bir hipotez kuramadım (yeterli kausal/κ "
-                      "yapı yok) — uydurmam.")
+            answer = (
+                "Köklü ve sertifikalı yeni bir hipotez kuramadım (yeterli kausal/κ "
+                "yapı yok) — uydurmam."
+            )
         return {"seeds": seeds, "hypotheses": out, "n": len(out), "answer": answer}
 
-    def visualize_causal(self, concept: str, depth: int = 4,
-                         mode: str = "ascii") -> str:
+    def visualize_causal(self, concept: str, depth: int = 4, mode: str = "ascii") -> str:
         """Kausal etki haritasını görselleştir.
 
         mode="ascii" (varsayılan): terminal ağacı
@@ -4090,8 +4782,7 @@ class AI:
         mode="both": ikisi birden, "---" ile ayrılmış
         """
         fwd = self.what_if(concept, depth=depth)
-        _SYM = {"INHIBITS": "⊣", "ACTIVATES": "→", "CAUSES": "⇒",
-                "USES": "·→", "ACHIEVES": "✓→"}
+        _SYM = {"INHIBITS": "⊣", "ACTIVATES": "→", "CAUSES": "⇒", "USES": "·→", "ACHIEVES": "✓→"}
 
         def _ascii() -> str:
             lines = [f"⟨{concept}⟩ — Kausal Etki Haritası", ""]
@@ -4113,10 +4804,12 @@ class AI:
             return "\n".join(lines)
 
         def _dot() -> str:
-            _COLOR = {"INHIBITS": "red", "ACTIVATES": "green",
-                      "CAUSES": "blue", "USES": "gray"}
-            lines = ['digraph causal {', '  rankdir=LR;',
-                     '  node [shape=box fontname="Helvetica"];']
+            _COLOR = {"INHIBITS": "red", "ACTIVATES": "green", "CAUSES": "blue", "USES": "gray"}
+            lines = [
+                "digraph causal {",
+                "  rankdir=LR;",
+                '  node [shape=box fontname="Helvetica"];',
+            ]
             seen: set = set()
             for chain in fwd["chains"]:
                 path = chain["path"]
@@ -4127,8 +4820,7 @@ class AI:
                         seen.add(key)
                         col = _COLOR.get(str(rel), "black")
                         lines.append(
-                            f'  "{a_n}" -> "{b_n}" '
-                            f'[label="{rel}" color={col} fontcolor={col}];'
+                            f'  "{a_n}" -> "{b_n}" [label="{rel}" color={col} fontcolor={col}];'
                         )
             lines.append("}")
             return "\n".join(lines)
@@ -4147,6 +4839,7 @@ class AI:
         VerifyPhase ile paylaşılır). Döner: {score, correct, total, failures, note}.
         """
         from tantrium.research.corrigibility import external_verify
+
         r = external_verify(self._engine, facts)
         return {
             "score": round(r["score"], 3),
@@ -4168,6 +4861,7 @@ class AI:
         Döner: {score, correct, total, sturm, hankel, failures, note}.
         """
         from tantrium.research.corrigibility import computational_verify
+
         r = computational_verify(self._engine)
         return {
             "score": round(r["score"], 3),
@@ -4176,12 +4870,13 @@ class AI:
             "sturm": r["sturm"],
             "hankel": r["hankel"],
             "failures": r["failures"],
-            "note": (f"{r['correct']}/{r['total']} bağımsız matematiksel kontrol geçti "
-                     f"(Sturm↔hiperbolisite + Hankel-PSD)"),
+            "note": (
+                f"{r['correct']}/{r['total']} bağımsız matematiksel kontrol geçti "
+                f"(Sturm↔hiperbolisite + Hankel-PSD)"
+            ),
         }
 
-    def calibrate(self, targets: list[str] | None = None,
-                  metric: str = "sturm") -> dict:
+    def calibrate(self, targets: list[str] | None = None, metric: str = "sturm") -> dict:
         """AMPİRİK KALİBRASYON: sertifika bilinen ilaç→hedef farmakolojisini geri kazanıyor mu.
 
         Geriye-dönük, wet-lab GEREKMEZ. Leave-one-out: her ligand kendi hedefinin DİĞER
@@ -4192,19 +4887,27 @@ class AI:
         Çekirdek `research.corrigibility.empirical_verify` (VerifyPhase paylaşır).
         """
         from tantrium.research.corrigibility import empirical_verify
+
         if metric == "both":
             k = empirical_verify(self._engine, targets=targets, metric="kappa")
             s = empirical_verify(self._engine, targets=targets, metric="sturm")
             return {
-                "kappa_yakinlik": {"top1": round(k["top1"], 3),
-                                   "top1_related": round(k["top1_related"], 3),
-                                   "per_target": k["per_target"]},
-                "sturm_rh": {"top1": round(s["top1"], 3),
-                             "top1_related": round(s["top1_related"], 3),
-                             "per_target": s["per_target"]},
-                "tested": k["tested"], "n_targets": k["n_targets"],
-                "note": ("RH-Sturm ve κ-yakınlık FARKLI sınıfları ayırır "
-                         "(Sturm→kinaz-içi, κ→yapısal-farklı sınıf) — tamamlayıcı."),
+                "kappa_yakinlik": {
+                    "top1": round(k["top1"], 3),
+                    "top1_related": round(k["top1_related"], 3),
+                    "per_target": k["per_target"],
+                },
+                "sturm_rh": {
+                    "top1": round(s["top1"], 3),
+                    "top1_related": round(s["top1_related"], 3),
+                    "per_target": s["per_target"],
+                },
+                "tested": k["tested"],
+                "n_targets": k["n_targets"],
+                "note": (
+                    "RH-Sturm ve κ-yakınlık FARKLI sınıfları ayırır "
+                    "(Sturm→kinaz-içi, κ→yapısal-farklı sınıf) — tamamlayıcı."
+                ),
             }
         r = empirical_verify(self._engine, targets=targets, metric=metric)
         return {
@@ -4229,11 +4932,12 @@ class AI:
         """
         manifold = self._engine.manifold
         concepts_list = list(manifold.concepts.items())
-        n = len(concepts_list)
+        len(concepts_list)
         pairs: list[tuple[str, str, float]] = []
         # Sadece kısa string token'ları karşılaştır (bridge/oeis/uniprot atla)
         candidates = [
-            (nm, c) for nm, c in concepts_list
+            (nm, c)
+            for nm, c in concepts_list
             if not nm.startswith("⟨") and ":" not in nm and len(nm) < 40
         ]
         # O(n²) ama sadece candidates üzerinde ve erken dur
@@ -4242,10 +4946,9 @@ class AI:
                 break
             q = [float(m) for m in c_a.moments]
             k = len(q)
-            for nm_b, c_b in candidates[i + 1:i + 500]:
+            for nm_b, c_b in candidates[i + 1 : i + 500]:
                 cm = c_b.moments
-                d = sum(abs(q[j] - (float(cm[j]) if j < len(cm) else 0.0))
-                        for j in range(k))
+                d = sum(abs(q[j] - (float(cm[j]) if j < len(cm) else 0.0)) for j in range(k))
                 if d < threshold:
                     pairs.append((nm_a, nm_b, round(d, 5)))
         pairs.sort(key=lambda x: x[2])
@@ -4254,13 +4957,12 @@ class AI:
             tau = self._engine.tau
             for nm_a, nm_b, _ in pairs[:50]:
                 # nm_b'ye gelen tüm kenarları nm_a'ya yönlendir
-                for src, edges in list(tau.edges.items()):
+                for _src, edges in list(tau.edges.items()):
                     for e in edges:
                         if e.target == nm_b:
                             e.target = nm_a
                 # nm_a'dan nm_b'ye giden kenarları kaldır
-                tau.edges[nm_a] = [e for e in tau.edges.get(nm_a, [])
-                                    if e.target != nm_b]
+                tau.edges[nm_a] = [e for e in tau.edges.get(nm_a, []) if e.target != nm_b]
                 # nm_b'yi manifolddan çıkar
                 manifold.concepts.pop(nm_b, None)
                 merged += 1
@@ -4269,9 +4971,10 @@ class AI:
             "merged": merged,
             "dry_run": dry_run,
             "sample_pairs": [(a, b, d) for a, b, d in pairs[:10]],
-            "note": (f"{len(pairs)} çok-yakın çift bulundu"
-                     + (" (dry_run — değişiklik yok)" if dry_run else
-                        f", {merged} birleştirildi")),
+            "note": (
+                f"{len(pairs)} çok-yakın çift bulundu"
+                + (" (dry_run — değişiklik yok)" if dry_run else f", {merged} birleştirildi")
+            ),
         }
 
     # ── Engine'e doğrudan erişim ─────────────────────────────────────────────

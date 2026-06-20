@@ -3,11 +3,13 @@
 Tez (canlı kanıtlandı): anlam harfte değil grafta. Bu testler o ölçümün
 davranışını sabitler: rename-invariance + topoloji-birincil + RH-cascade darboğazsız.
 """
-import math
 
 from tantrium.core.meaning_pipeline import (
-    MeaningSignature, measure, signature_distance, _li_cascade,
-    nearest_meaning, _graph_candidates,
+    _graph_candidates,
+    _li_cascade,
+    measure,
+    nearest_meaning,
+    signature_distance,
 )
 
 
@@ -25,8 +27,10 @@ class _Tau:
 
 class _FakeEncoder:
     """Harf imzası — adın karakterlerine bağlı (rename'de DEĞİŞMELİ)."""
+
     def encode(self, input, name=None, **kw):
         import hashlib
+
         h = hashlib.md5(str(input).encode()).digest()
         mu = [1.0] + [(b / 255.0) for b in h[:7]]
         return type("O", (), {"moments": mu})()
@@ -41,9 +45,14 @@ class _FakeEngine:
 def _grounded_engine():
     """access → 6 tipli komşu; komşular arası birkaç kenar (küme şekli)."""
     edges = {
-        "access": [_E("IS_A", "history"), _E("USES", "world"), _E("USES", "expansion"),
-                   _E("REQUIRES", "intention"), _E("ACHIEVES", "intuition"),
-                   _E("COMPOSED", "word")],
+        "access": [
+            _E("IS_A", "history"),
+            _E("USES", "world"),
+            _E("USES", "expansion"),
+            _E("REQUIRES", "intention"),
+            _E("ACHIEVES", "intuition"),
+            _E("COMPOSED", "word"),
+        ],
         "world": [_E("IS_A", "history")],
         "expansion": [_E("USES", "world")],
         "intention": [_E("REQUIRES", "intuition")],
@@ -55,7 +64,7 @@ def test_li_cascade_shape_and_positivity():
     """Li cascade topoloji spektrumundan 4 katsayı üretir, hepsi pozitif (RH-merdiveni)."""
     li = _li_cascade([3.0, 1.2, 0.4, 0.1], k=4)
     assert len(li) == 4
-    assert all(x > 0 for x in li)          # λ_n > 0 (Li kriteri pozitifliği)
+    assert all(x > 0 for x in li)  # λ_n > 0 (Li kriteri pozitifliği)
 
 
 def test_grounded_concept_is_relational():
@@ -96,10 +105,11 @@ def test_math_core_gate_theorem_domain_structural():
 def test_math_core_object_detection():
     """_is_math_core_object: sayı/teorem True; kelime False (dil dışında kalır)."""
     from tantrium.core.meaning_pipeline import _is_math_core_object
+
     eng = _grounded_engine()
     assert _is_math_core_object(eng, "42")
     assert _is_math_core_object(eng, "2 3 5 7")
-    assert not _is_math_core_object(eng, "access")     # kelime → dil
+    assert not _is_math_core_object(eng, "access")  # kelime → dil
 
 
 def test_ungrounded_falls_to_surface():
@@ -118,26 +128,32 @@ def test_rename_invariance():
     isim değişir → topoloji yalnız kenarlara baktığı için imza birebir aynı kalmalı.
     """
     from tantrium.core.topology_encode import TopologyEncoder
+
     eng = _grounded_engine()
     # rename: çöp-isimli düğüme AYNI kenarları klonla — ÖNCE ekle ki indegree ortak
     eng.tau.edges["zxqw7vmpqx"] = list(eng.tau.edges["access"])
-    te = TopologyEncoder(eng)                       # tek encoder → tek IDF istatistiği
+    te = TopologyEncoder(eng)  # tek encoder → tek IDF istatistiği
     sig_orig = measure(eng, "access", topo_encoder=te)
     sig_renamed = measure(eng, "zxqw7vmpqx", topo_encoder=te)
 
     d_topo = signature_distance(sig_orig, sig_renamed)
-    d_surf = sum(abs(a - b) for a, b in
-                 zip(sig_orig.surface_moments, sig_renamed.surface_moments))
-    assert d_topo < 1e-6      # anlam değişmez (graf)
-    assert d_surf > 0.1       # yüzey değişir (harf)
+    d_surf = sum(
+        abs(a - b)
+        for a, b in zip(sig_orig.surface_moments, sig_renamed.surface_moments, strict=False)
+    )
+    assert d_topo < 1e-6  # anlam değişmez (graf)
+    assert d_surf > 0.1  # yüzey değişir (harf)
 
 
 def test_different_meaning_separates():
     """Farklı komşuluk → topoloji mesafesi > 0 (anlam ayrışır)."""
     eng = _grounded_engine()
     eng.tau.edges["other"] = [
-        _E("IS_A", "physics"), _E("USES", "energy"), _E("USES", "matter"),
-        _E("REQUIRES", "force"), _E("ACHIEVES", "motion"),
+        _E("IS_A", "physics"),
+        _E("USES", "energy"),
+        _E("USES", "matter"),
+        _E("REQUIRES", "force"),
+        _E("ACHIEVES", "motion"),
     ]
     sig_a = measure(eng, "access")
     sig_b = measure(eng, "other")
@@ -148,23 +164,33 @@ def test_different_meaning_separates():
 def test_goal_anchors_filter_generic_verbs():
     """Hedef-çapası jenerik fiili (understand) eler, köklü içerik kelimesini tutar."""
     from tantrium.core.meaning_pipeline import resolve_goal_anchors
+
     eng = _grounded_engine()
-    eng.tau.edges["egfr"] = [_E("ACTIVATES", "ras"), _E("ACTIVATES", "pi3k"),
-                             _E("CAUSES", "tumor"), _E("ACTIVATES", "akt"),
-                             _E("INHIBITS", "pten")]
+    eng.tau.edges["egfr"] = [
+        _E("ACTIVATES", "ras"),
+        _E("ACTIVATES", "pi3k"),
+        _E("CAUSES", "tumor"),
+        _E("ACTIVATES", "akt"),
+        _E("INHIBITS", "pten"),
+    ]
     anchors = resolve_goal_anchors(eng, "understand egfr signaling")
     assert "egfr" in anchors
-    assert "understand" not in anchors          # jenerik fiil elendi
+    assert "understand" not in anchors  # jenerik fiil elendi
 
 
 def test_goal_distance_function_uses_meaning_when_anchored():
     """Çapa köklüyse hedefe-mesafe ANLAM (topoloji) ile; aday çapaya yakınsa düşük."""
     from tantrium.core.meaning_pipeline import goal_distance_function
+
     eng = _grounded_engine()
-    eng.tau.edges["egfr"] = [_E("ACTIVATES", "ras"), _E("ACTIVATES", "pi3k"),
-                             _E("CAUSES", "tumor"), _E("ACTIVATES", "akt"),
-                             _E("INHIBITS", "pten")]
-    eng.tau.edges["sibling"] = list(eng.tau.edges["egfr"])   # egfr ile aynı komşuluk
+    eng.tau.edges["egfr"] = [
+        _E("ACTIVATES", "ras"),
+        _E("ACTIVATES", "pi3k"),
+        _E("CAUSES", "tumor"),
+        _E("ACTIVATES", "akt"),
+        _E("INHIBITS", "pten"),
+    ]
+    eng.tau.edges["sibling"] = list(eng.tau.edges["egfr"])  # egfr ile aynı komşuluk
     df = goal_distance_function(eng, "understand egfr", None)
     # sibling egfr ile aynı komşuluğa sahip → çapaya çok yakın olmalı
     assert df("sibling") < 0.1
@@ -175,11 +201,12 @@ def test_goal_distance_function_falls_to_moment_when_no_anchor():
     from tantrium.core.meaning_pipeline import goal_distance_function
 
     class _C:
-        def __init__(self, m): self.moments = m
+        def __init__(self, m):
+            self.moments = m
 
     eng = _grounded_engine()
     eng.manifold = type("M", (), {"concepts": {"x": _C([1.0, 0.5, 0.2])}})()
-    df = goal_distance_function(eng, "42", _C([1.0, 0.4, 0.1]))   # sayı hedef → çapa yok
+    df = goal_distance_function(eng, "42", _C([1.0, 0.4, 0.1]))  # sayı hedef → çapa yok
     d = df("x")
     assert isinstance(d, float) and d >= 0.0
 
@@ -198,8 +225,13 @@ def test_signature_distance_falls_to_surface_when_ungrounded():
 def _shared_neighbor_engine():
     """access ve sibling AYNI komşuları paylaşır (co-citation); stranger paylaşmaz."""
     edges = {
-        "access": [_E("IS_A", "history"), _E("USES", "world"), _E("USES", "expansion"),
-                   _E("REQUIRES", "intention"), _E("ACHIEVES", "intuition")],
+        "access": [
+            _E("IS_A", "history"),
+            _E("USES", "world"),
+            _E("USES", "expansion"),
+            _E("REQUIRES", "intention"),
+            _E("ACHIEVES", "intuition"),
+        ],
         "sibling": [_E("IS_A", "history"), _E("USES", "world"), _E("REQUIRES", "intention")],
         "stranger": [_E("IS_A", "rock"), _E("USES", "stone")],
         "world": [_E("IS_A", "history")],
@@ -210,10 +242,11 @@ def _shared_neighbor_engine():
 def test_graph_candidates_share_neighbors():
     """Aday çekme co-citation: komşu paylaşan kavram gelir, paylaşmayan gelmez."""
     eng = _shared_neighbor_engine()
-    cands = _graph_candidates(eng, "access",
-                              ["history", "world", "expansion", "intention", "intuition"], 10)
-    assert "sibling" in cands          # 3 paylaşılan komşu
-    assert "stranger" not in cands     # 0 paylaşılan komşu
+    cands = _graph_candidates(
+        eng, "access", ["history", "world", "expansion", "intention", "intuition"], 10
+    )
+    assert "sibling" in cands  # 3 paylaşılan komşu
+    assert "stranger" not in cands  # 0 paylaşılan komşu
 
 
 def test_nearest_meaning_graph_retrieve_and_rerank():
@@ -221,16 +254,18 @@ def test_nearest_meaning_graph_retrieve_and_rerank():
     eng = _shared_neighbor_engine()
     hits = nearest_meaning(eng, "access", n=5)
     names = [nm for nm, _, _ in hits]
-    assert "sibling" in names          # anlam-komşusu döner
-    assert "stranger" not in names     # ilgisiz dönmez
+    assert "sibling" in names  # anlam-komşusu döner
+    assert "stranger" not in names  # ilgisiz dönmez
     assert all(mod in ("relational", "surface") for _, _, mod in hits)
 
 
 def test_nearest_meaning_surface_fallback():
     """Topraksız sorgu → graf aday üretemez, harf-yüzeyine düşer (modality=surface)."""
+
     class _Manifold:
         def nearest(self, concept, n=5):
             from fractions import Fraction
+
             return [("alpha", Fraction(1, 10)), ("beta", Fraction(2, 10))]
 
     eng = _FakeEngine({"isolated": []})

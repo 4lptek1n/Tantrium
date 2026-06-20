@@ -15,6 +15,7 @@ Birleştirme: ağırlıklı geometrik ortalama. Geometrik çünkü herhangi bir
 sinyalin sıfıra gitmesi toplam güveni çökertmeli (zayıf halka kuralı).
 Bir eksen tamamen başarısızsa, diğerleri telafi edemez — dürüst kalibrasyon.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -23,15 +24,16 @@ from dataclasses import dataclass
 @dataclass
 class Confidence:
     """Bir yargının kalibre edilmiş güveni."""
-    value: float                    # 0.0 (güvensiz) → 1.0 (tam güven)
-    level: str                      # CERTAIN | STRONG | MODERATE | WEAK | UNCERTAIN
 
-    coverage: float                 # paradigma kapsama
-    margin: float                   # en zayıf paradigma payı (Aşil)
-    grounding: float                # topraklama skoru
-    truth: float                    # tutarlılık skoru
+    value: float  # 0.0 (güvensiz) → 1.0 (tam güven)
+    level: str  # CERTAIN | STRONG | MODERATE | WEAK | UNCERTAIN
 
-    weakest_axis: str               # en düşük sinyal hangisi
+    coverage: float  # paradigma kapsama
+    margin: float  # en zayıf paradigma payı (Aşil)
+    grounding: float  # topraklama skoru
+    truth: float  # tutarlılık skoru
+
+    weakest_axis: str  # en düşük sinyal hangisi
 
     def summary(self) -> str:
         bar = int(self.value * 20)
@@ -83,13 +85,12 @@ def calibrate(
 
     # Ağırlıklı geometrik ortalama: exp(Σ wᵢ·ln(sᵢ + ε)) / normalize
     import math
+
     eps = 1e-6
     names = ["kapsama", "margin", "topraklama", "doğruluk"]
     w = weights
     wsum = sum(w)
-    log_sum = sum(
-        w[i] * math.log(signals[names[i]] + eps) for i in range(4)
-    )
+    log_sum = sum(w[i] * math.log(signals[names[i]] + eps) for i in range(4))
     value = math.exp(log_sum / wsum)
     value = max(0.0, min(1.0, value))
 

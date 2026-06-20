@@ -1,6 +1,7 @@
 """Ontoloji-kapısı — ground_full boyutu TİP'e göre takar. Kullanıcı: 'kelimenin DNA'sı olmaz;
 boyut varlığın ne olduğundan (ontoloji) doğar.' Fiziksel boyut (DNA/molekül/...) tip-bağlı;
 topoloji+yasa her zaman. Soyut/kelime → fiziksel boyut REDDEDİLİR."""
+
 import tantrium
 
 

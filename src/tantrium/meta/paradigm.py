@@ -17,9 +17,10 @@ Bilinmeyeni bilmek:
   Hangi moment bölgeleri hiçbir paradigmayı içermiyor?
   Bunlar sistemin matematiksel körlük alanlarıdır.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import TYPE_CHECKING
 
@@ -31,49 +32,51 @@ if TYPE_CHECKING:
 
 # 22+1 Aleph-Tekin paradigması — isim + matematiksel öz
 _PARADIGMS: dict[str, str] = {
-    "ALEPH":   "existence positivity Hankel PSD measure real",
-    "BET":     "information conservation injective encoding lossless bijection",
-    "GIMEL":   "measure theory sigma algebra probability integral Borel",
-    "DALET":   "differential structure gradient flow manifold smooth",
-    "HE":      "harmonic analysis Fourier spectral wave transform",
-    "VAV":     "operator theory bounded linear functional Hilbert",
-    "ZAYIN":   "spectral theory eigenvalue decomposition spectrum resolvent",
-    "HET":     "ergodic theory invariant measure mixing ergodicity",
-    "TET":     "topology continuity open closed neighborhood compactness",
-    "YOD":     "category theory functor morphism natural transformation",
-    "KAF":     "injectivity bijection unique representation one-to-one",
-    "LAMED":   "learning bounds generalization VC dimension Rademacher",
-    "MEM":     "measure concentration Gaussian tail bound deviation",
-    "NUN":     "network graph Laplacian connectivity adjacency spectral",
-    "SAMECH":  "symmetry group invariance orbit representation character",
-    "AYIN":    "observation duality adjoint pairing reflexive",
-    "PE":      "semantic mapping meaning language string structure",
-    "TSADI":   "optimization saddle point critical minimum descent",
-    "QOF":     "quantum superposition entanglement Hilbert unitary",
-    "RESH":    "representation module algebra homomorphism",
-    "SHIN":    "stochastic Markov random diffusion Brownian",
-    "TAV":     "fixed point self-reference convergence stable contraction",
+    "ALEPH": "existence positivity Hankel PSD measure real",
+    "BET": "information conservation injective encoding lossless bijection",
+    "GIMEL": "measure theory sigma algebra probability integral Borel",
+    "DALET": "differential structure gradient flow manifold smooth",
+    "HE": "harmonic analysis Fourier spectral wave transform",
+    "VAV": "operator theory bounded linear functional Hilbert",
+    "ZAYIN": "spectral theory eigenvalue decomposition spectrum resolvent",
+    "HET": "ergodic theory invariant measure mixing ergodicity",
+    "TET": "topology continuity open closed neighborhood compactness",
+    "YOD": "category theory functor morphism natural transformation",
+    "KAF": "injectivity bijection unique representation one-to-one",
+    "LAMED": "learning bounds generalization VC dimension Rademacher",
+    "MEM": "measure concentration Gaussian tail bound deviation",
+    "NUN": "network graph Laplacian connectivity adjacency spectral",
+    "SAMECH": "symmetry group invariance orbit representation character",
+    "AYIN": "observation duality adjoint pairing reflexive",
+    "PE": "semantic mapping meaning language string structure",
+    "TSADI": "optimization saddle point critical minimum descent",
+    "QOF": "quantum superposition entanglement Hilbert unitary",
+    "RESH": "representation module algebra homomorphism",
+    "SHIN": "stochastic Markov random diffusion Brownian",
+    "TAV": "fixed point self-reference convergence stable contraction",
 }
 
 
 @dataclass
 class ParadigmMoment:
     """Tek bir paradigmanın moment temsili."""
+
     name: str
     moments: list[float]
-    certified: bool           # Aleph geçti mi?
+    certified: bool  # Aleph geçti mi?
     paradigms_certified: int  # kaç paradigmadan geçti?
-    source: str               # "manifold" | "canonical"
+    source: str  # "manifold" | "canonical"
 
 
 @dataclass
 class UniversalRule:
     """22+1 paradigmanın ortak Hankel yapısı."""
+
     moments: list[float]
-    certified: bool           # Aleph(μ_universal) = certified?
-    tav_converged: bool       # sabit nokta var mı?
+    certified: bool  # Aleph(μ_universal) = certified?
+    tav_converged: bool  # sabit nokta var mı?
     fixed_point_value: float | None
-    coverage: int             # kaç paradigmadan türetildi?
+    coverage: int  # kaç paradigmadan türetildi?
     nearest_concepts: list[str]
     paradigms_certified: int  # universal kavramın certify sayısı
 
@@ -84,9 +87,7 @@ class UniversalRule:
                 f"  ✓ ALEPH geçti — {self.coverage} paradigmanın "
                 f"ortak Hankel yapısı sertifikalandı."
             )
-            lines.append(
-                f"  μ_universal = [{', '.join(f'{v:.4f}' for v in self.moments[:4])}...]"
-            )
+            lines.append(f"  μ_universal = [{', '.join(f'{v:.4f}' for v in self.moments[:4])}...]")
             lines.append(f"  paradigma: {self.paradigms_certified}/23")
             lines.append(f"  manifold'da en yakın: {self.nearest_concepts[:3]}")
             if self.tav_converged:
@@ -98,18 +99,15 @@ class UniversalRule:
                 lines.append("  TAV ∅  sabit nokta bulunamadı — kural henüz kapanmamış.")
         else:
             lines.append("  ∅ ALEPH başarısız — evrensel kural bu manifold'da yok.")
-            lines.append(
-                f"  μ_candidate = [{', '.join(f'{v:.4f}' for v in self.moments[:4])}...]"
-            )
-            lines.append(
-                "  Bu bölge void — daha fazla paradigma ve kavram öğrenilmeli."
-            )
+            lines.append(f"  μ_candidate = [{', '.join(f'{v:.4f}' for v in self.moments[:4])}...]")
+            lines.append("  Bu bölge void — daha fazla paradigma ve kavram öğrenilmeli.")
         return "\n".join(lines)
 
 
 @dataclass
 class SelfCertResult:
     """Tav(sistem) = sistem analizi."""
+
     system_certified: bool
     tav_fixed_point: bool
     fixed_point_value: float | None
@@ -129,9 +127,7 @@ class SelfCertResult:
     def summary(self) -> str:
         lines = ["  ── Tav(Sistem) = Sistem? ──"]
         if self.tav_fixed_point:
-            lines.append(
-                f"  TAV ✓  F(sistem) = sistem  [fp={self.fixed_point_value:.8f}]"
-            )
+            lines.append(f"  TAV ✓  F(sistem) = sistem  [fp={self.fixed_point_value:.8f}]")
             lines.append("  Sistem kendi sabit noktasını buluyor — matematiksel öz-farkındalık.")
         else:
             lines.append("  TAV ∅  Sistem henüz öz-sertifika sınırında değil.")
@@ -142,7 +138,7 @@ class SelfCertResult:
             )
         lines.append(
             f"  Durum: {self.n_concepts:,} kavram | {self.n_edges:,} edge | "
-            f"μ[0:3]={[round(v,4) for v in self.state_moments[:3]]}"
+            f"μ[0:3]={[round(v, 4) for v in self.state_moments[:3]]}"
         )
         return "\n".join(lines)
 
@@ -156,7 +152,7 @@ class MetaParadigm:
     paradigm_map() → tam rapor
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
         self._cache: dict[str, ParadigmMoment] | None = None
 
@@ -176,10 +172,9 @@ class MetaParadigm:
 
     def _compute_one(self, pname: str, desc: str) -> ParadigmMoment:
         # Önce manifold'da ara (küçük harfli)
-        concept = (
-            self.engine.manifold.concepts.get(pname.lower())
-            or self.engine.manifold.concepts.get(pname)
-        )
+        concept = self.engine.manifold.concepts.get(
+            pname.lower()
+        ) or self.engine.manifold.concepts.get(pname)
         if concept is not None:
             run = self.engine.network.run(concept.to_codex_object())
             return ParadigmMoment(
@@ -220,9 +215,7 @@ class MetaParadigm:
         k = len(certified_pms[0].moments)
         n = len(certified_pms)
         avg = [
-            Fraction(
-                sum(p.moments[i] for p in certified_pms) / n
-            ).limit_denominator(10 ** 9)
+            Fraction(sum(p.moments[i] for p in certified_pms) / n).limit_denominator(10**9)
             for i in range(k)
         ]
 
@@ -310,18 +303,28 @@ class MetaParadigm:
         Önce en az komşusu olanlar (araştırma önceliği).
         """
         _ANCHOR_KEYWORDS: dict[str, list[str]] = {
-            "GUE_RANDOM_MATRIX":  ["random matrix", "GUE", "Wigner semicircle", "eigenvalue spacing"],
-            "POISSON_PROCESS":    ["Poisson process", "waiting times", "exponential inter-arrival"],
-            "UNIFORM_MEASURE":    ["equidistributed", "uniform distribution", "van der Corput"],
-            "EXPONENTIAL_DECAY":  ["exponential decay", "radioactive decay", "half-life sequence"],
-            "PERIODIC_LATTICE":   ["periodic", "lattice", "crystal structure", "Fourier coefficients"],
-            "GAUSSIAN_BELL":      ["Gaussian", "normal distribution", "error function", "bell curve"],
-            "LINEAR_RAMP":        ["arithmetic progression", "linear sequence", "consecutive integers"],
-            "GEOMETRIC_GROWTH":   ["geometric", "Fibonacci", "Lucas numbers", "golden ratio"],
-            "PRIME_GAPS":         ["prime gaps", "prime numbers", "primes", "Goldbach"],
-            "ZETA_ZEROS":         ["Riemann zeta", "L-function zeros", "zeta function", "critical strip"],
-            "MODULAR_FORMS":      ["modular forms", "Ramanujan tau", "cusp forms", "theta series"],
-            "ELLIPTIC_CURVES":    ["elliptic curve", "Weierstrass", "rational points", "conductor"],
+            "GUE_RANDOM_MATRIX": [
+                "random matrix",
+                "GUE",
+                "Wigner semicircle",
+                "eigenvalue spacing",
+            ],
+            "POISSON_PROCESS": ["Poisson process", "waiting times", "exponential inter-arrival"],
+            "UNIFORM_MEASURE": ["equidistributed", "uniform distribution", "van der Corput"],
+            "EXPONENTIAL_DECAY": ["exponential decay", "radioactive decay", "half-life sequence"],
+            "PERIODIC_LATTICE": [
+                "periodic",
+                "lattice",
+                "crystal structure",
+                "Fourier coefficients",
+            ],
+            "GAUSSIAN_BELL": ["Gaussian", "normal distribution", "error function", "bell curve"],
+            "LINEAR_RAMP": ["arithmetic progression", "linear sequence", "consecutive integers"],
+            "GEOMETRIC_GROWTH": ["geometric", "Fibonacci", "Lucas numbers", "golden ratio"],
+            "PRIME_GAPS": ["prime gaps", "prime numbers", "primes", "Goldbach"],
+            "ZETA_ZEROS": ["Riemann zeta", "L-function zeros", "zeta function", "critical strip"],
+            "MODULAR_FORMS": ["modular forms", "Ramanujan tau", "cusp forms", "theta series"],
+            "ELLIPTIC_CURVES": ["elliptic curve", "Weierstrass", "rational points", "conductor"],
         }
         _PREFIX = "⊕ANCHOR:"
 
@@ -331,9 +334,9 @@ class MetaParadigm:
         for anchor_short, keywords in _ANCHOR_KEYWORDS.items():
             full_name = f"{_PREFIX}{anchor_short}"
             bridges = [
-                e for e in tau_edges.get(full_name, [])
-                if e.paradigm == "SPECTRAL_BRIDGE"
-                and not e.target.startswith(_PREFIX)
+                e
+                for e in tau_edges.get(full_name, [])
+                if e.paradigm == "SPECTRAL_BRIDGE" and not e.target.startswith(_PREFIX)
             ]
             count = len(bridges)
             if count < threshold:
@@ -344,9 +347,7 @@ class MetaParadigm:
             pm = self.compute_all()
             for p in pm.values():
                 if p.source == "canonical" and not p.certified:
-                    gaps.append({
-                        "anchor": p.name, "count": 0, "keywords": [p.name.lower()]
-                    })
+                    gaps.append({"anchor": p.name, "count": 0, "keywords": [p.name.lower()]})
 
         return sorted(gaps, key=lambda x: x["count"])
 
@@ -360,7 +361,7 @@ class MetaParadigm:
 
         lines = [
             "  ══ META-PARADİGMA ANALİZİ ══",
-            f"  22+1 Aleph-Tekin Paradigması  |  Moment Uzayı Temsili",
+            "  22+1 Aleph-Tekin Paradigması  |  Moment Uzayı Temsili",
             "",
             f"  {'Paradigma':<10} {'μ₁':>7} {'μ₂':>7} {'μ₃':>7} {'para':>5}  kaynak",
             "  " + "─" * 52,

@@ -16,18 +16,20 @@ icat et." Tek ve değişmez ölçüt → halüsinasyon her katmanda (kural/strat
                                  dışarıda bırak, kalanlara kur, dışarıdakini sağlıyor mu;
                                  HEPSİ geçerse genelleşir (ezber değil). Holdout sertifikası.
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Callable, Sequence
 
 
 @dataclass
 class CertResult:
     """Bir adayın geçerlilik yargısı — tek para birimi."""
-    on_path: bool                 # kritik hatta mı (pozitiflik geçti)
-    depth: int = 0                # pozitiflik merdiveni derinliği (0–3)
-    generalizes: bool | None = None   # leave-one-out genelleşme (uygulanmadıysa None)
+
+    on_path: bool  # kritik hatta mı (pozitiflik geçti)
+    depth: int = 0  # pozitiflik merdiveni derinliği (0–3)
+    generalizes: bool | None = None  # leave-one-out genelleşme (uygulanmadıysa None)
     detail: dict = field(default_factory=dict)
 
     def __bool__(self) -> bool:
@@ -38,22 +40,28 @@ class CertResult:
 _FULL_DEPTH = 3
 
 
-def certify_transition(src: Sequence[float], tgt: Sequence[float], *,
-                       min_depth: int = _FULL_DEPTH) -> CertResult:
+def certify_transition(
+    src: Sequence[float], tgt: Sequence[float], *, min_depth: int = _FULL_DEPTH
+) -> CertResult:
     """Moment geçişinin pozitiflik geçerliliği — positivity_ladder'a delege (tek-gerçek math).
 
     on_path = depth ≥ min_depth (varsayılan 3 = tam kritik hatta: Hankel + Newton + Sturm/Jensen).
     """
     from tantrium.core.positivity_ladder import positivity_depth
+
     depth, rungs = positivity_depth(list(src), list(tgt))
-    return CertResult(on_path=(depth >= min_depth), depth=depth,
-                      generalizes=None, detail=dict(rungs))
+    return CertResult(
+        on_path=(depth >= min_depth), depth=depth, generalizes=None, detail=dict(rungs)
+    )
 
 
-def certify_generalization(builder: Callable[[list], object],
-                           instances: Sequence,
-                           verify: Callable[[object, list], bool],
-                           *, min_instances: int = 3) -> bool:
+def certify_generalization(
+    builder: Callable[[list], object],
+    instances: Sequence,
+    verify: Callable[[object, list], bool],
+    *,
+    min_instances: int = 3,
+) -> bool:
     """Leave-one-out genelleşme geçidi (ezber-karşıtı; holdout sertifikası).
 
     builder(train) → aday (veya None); verify(aday, [held]) → held'i sağlıyor mu.
@@ -65,7 +73,7 @@ def certify_generalization(builder: Callable[[list], object],
     if n < min_instances:
         return False
     for i in range(n):
-        train = items[:i] + items[i + 1:]
+        train = items[:i] + items[i + 1 :]
         cand = builder(train)
         if cand is None or not verify(cand, [items[i]]):
             return False

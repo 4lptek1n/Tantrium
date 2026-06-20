@@ -7,10 +7,11 @@ Bu, encoder.py'deki domain-blind kodlamanın AYNISIDIR — sadece girdi tipi
 duyusal (ses örnekleri, görüntü pikselleri). Yeni matematik yok; var olan
 Hamburger/Bochner momentleri duyusal veriye uygulanır.
 """
+
 from __future__ import annotations
 
+from collections.abc import Sequence
 from fractions import Fraction
-from typing import Sequence
 
 import numpy as np
 
@@ -40,8 +41,8 @@ def _hausdorff_moments(A: np.ndarray, num_moments: int):
     norm = sorted((eigs / max_eig).tolist())  # [0,1] artan
     moments = [Fraction(1)]
     for k in range(1, num_moments):
-        mk = sum(d ** k for d in norm) / len(norm)
-        moments.append(Fraction(mk).limit_denominator(10 ** 9))
+        mk = sum(d**k for d in norm) / len(norm)
+        moments.append(Fraction(mk).limit_denominator(10**9))
     return moments, sorted(norm, reverse=True)
 
 
@@ -64,15 +65,18 @@ def _moments_and_structure(A_np: np.ndarray, raw_input, name: str):
     structure = _DEFAULT_ENCODER._extract_structure(raw_input, A_small, G_small, moments)
     structure["eigenvalues"] = norm_eigs
     structure["eigenvalue_source"] = "perception_gram"
-    structure.update({
-        "encoder": "perception_spectral",
-        "matrix_size": int(A_np.shape[0]),
-        "num_moments": _DEFAULT_ENCODER.num_moments,
-    })
+    structure.update(
+        {
+            "encoder": "perception_spectral",
+            "matrix_size": int(A_np.shape[0]),
+            "num_moments": _DEFAULT_ENCODER.num_moments,
+        }
+    )
     return moments, structure
 
 
 # ─── Evrensel matris kapısı ──────────────────────────────────────────────────
+
 
 def encode_matrix(M, name: str = "matrix") -> CodexObject:
     """Herhangi bir 2D sayısal dizi → CodexObject (tekil-değer momentleri).
@@ -105,6 +109,7 @@ def _downsample_2d(arr: np.ndarray, max_dim: int) -> np.ndarray:
 
 
 # ─── Ses / zaman serisi ──────────────────────────────────────────────────────
+
 
 def signal_autocorrelation(samples: Sequence[float], lags: int = 23) -> np.ndarray:
     """Sinyalin biased otokorelasyon dizisi R[0..lags], R[0]'a normalize.
@@ -148,12 +153,14 @@ def encode_signal(
     r = signal_autocorrelation(samples, lags=lags)
     T = _toeplitz(r)
     moments, structure = _moments_and_structure(T, name, name)
-    structure.update({
-        "modality": "signal",
-        "autocorrelation": [float(v) for v in r[: min(8, len(r))]],
-        "n_samples": len(samples),
-        "lags": lags,
-    })
+    structure.update(
+        {
+            "modality": "signal",
+            "autocorrelation": [float(v) for v in r[: min(8, len(r))]],
+            "n_samples": len(samples),
+            "lags": lags,
+        }
+    )
     return CodexObject(name=name, moments=moments, structure=structure)
 
 
@@ -177,17 +184,35 @@ def encode_dna(seq: str, name: str = "dna", lags: int = 23) -> CodexObject:
         return encode_signal([0.0, 0.0], name=name, lags=1)
     samples = [_EIIP[c] for c in s]
     obj = encode_signal(samples, name=name, lags=min(lags, len(samples) - 1))
-    obj.structure.update({"modality": "dna", "n_bases": len(s),
-                          "gc_content": (s.count("G") + s.count("C")) / len(s)})
+    obj.structure.update(
+        {"modality": "dna", "n_bases": len(s), "gc_content": (s.count("G") + s.count("C")) / len(s)}
+    )
     return obj
 
 
 # Kyte-Doolittle hidropati — amino asitlerin GERÇEK fiziksel değeri (protein dizisini
 # fiziksel sinyale çevirir; harf değil). Protein → hidropati profili → spektrum.
 _KD_HYDROPATHY = {
-    "A": 1.8, "R": -4.5, "N": -3.5, "D": -3.5, "C": 2.5, "E": -3.5, "Q": -3.5,
-    "G": -0.4, "H": -3.2, "I": 4.5, "L": 3.8, "K": -3.9, "M": 1.9, "F": 2.8,
-    "P": -1.6, "S": -0.8, "T": -0.7, "W": -0.9, "Y": -1.3, "V": 4.2,
+    "A": 1.8,
+    "R": -4.5,
+    "N": -3.5,
+    "D": -3.5,
+    "C": 2.5,
+    "E": -3.5,
+    "Q": -3.5,
+    "G": -0.4,
+    "H": -3.2,
+    "I": 4.5,
+    "L": 3.8,
+    "K": -3.9,
+    "M": 1.9,
+    "F": 2.8,
+    "P": -1.6,
+    "S": -0.8,
+    "T": -0.7,
+    "W": -0.9,
+    "Y": -1.3,
+    "V": 4.2,
 }
 
 
@@ -242,7 +267,7 @@ def encode_signal_temporal(
     win = n // n_windows
     signature: list[float] = []
     for w in range(n_windows):
-        chunk = arr[w * win:(w + 1) * win]
+        chunk = arr[w * win : (w + 1) * win]
         if len(chunk) < 2:
             signature.append(0.0)
             continue
@@ -254,20 +279,24 @@ def encode_signal_temporal(
 
     # Zamansal imzanın kendisi bir dizi → momentlerini al (encoder'ın hızlı yolu)
     from tantrium.core.encoder import encode as _enc
+
     sig_obj = _enc(signature, name=f"{name}_temporal")
     moments = sig_obj.moments
     structure = dict(sig_obj.structure)
-    structure.update({
-        "modality": "signal_temporal",
-        "temporal_signature": [round(s, 5) for s in signature],
-        "temporal_variance": round(float(np.var(signature)), 6),
-        "n_windows": n_windows,
-        "n_samples": n,
-    })
+    structure.update(
+        {
+            "modality": "signal_temporal",
+            "temporal_signature": [round(s, 5) for s in signature],
+            "temporal_variance": round(float(np.var(signature)), 6),
+            "n_windows": n_windows,
+            "n_samples": n,
+        }
+    )
     return CodexObject(name=name, moments=moments, structure=structure)
 
 
 # ─── Görüntü ─────────────────────────────────────────────────────────────────
+
 
 def encode_image(pixels, name: str = "image") -> CodexObject:
     """Görüntü piksel ızgarası (2D, gri-tonlama) → CodexObject.
@@ -289,9 +318,11 @@ def encode_image(pixels, name: str = "image") -> CodexObject:
     arr = _downsample_2d(arr, _MAX_PERCEPT_DIM)
     arr = arr - arr.mean()  # DC çıkar → saf yapı (modaliteler arası tutarlılık)
     moments, structure = _moments_and_structure(arr, name, name)
-    structure.update({
-        "modality": "image",
-        "shape": list(np.asarray(pixels).shape),
-        "downsampled_to": list(arr.shape),
-    })
+    structure.update(
+        {
+            "modality": "image",
+            "shape": list(np.asarray(pixels).shape),
+            "downsampled_to": list(arr.shape),
+        }
+    )
     return CodexObject(name=name, moments=moments, structure=structure)

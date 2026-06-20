@@ -4,13 +4,14 @@
 Negative symbolic mass is covered by positive symbolic sources using exact
 rational dyadic transport edges. All arithmetic is rational — no approximation.
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Callable, Iterable
 
-from tantrium.proof.certificate import Cell, Certificate, TransportEdge, Q
+from tantrium.proof.certificate import Cell, Certificate, Q, TransportEdge
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,9 @@ def solve_greedy(
     remaining_deficit = {c.cell_id: c.mass for c in deficits}
 
     if key is None:
-        key = lambda c: (-c.mass, -_coord(c, "diff"), _coord(c, "p"))
+
+        def key(c):
+            return (-c.mass, -_coord(c, "diff"), _coord(c, "p"))
 
     for target in sorted(deficits, key=key):
         while remaining_deficit[target.cell_id] > 0:
@@ -89,13 +92,23 @@ def solve_greedy(
                 beta = Fraction(1, 2**r)
                 capacity = remaining_source[source.cell_id] * beta
                 if capacity > 0:
-                    candidates.append((r, abs(_coord(source, "diff") - _coord(target, "diff")), source.cell_id, source, beta))
+                    candidates.append(
+                        (
+                            r,
+                            abs(_coord(source, "diff") - _coord(target, "diff")),
+                            source.cell_id,
+                            source,
+                            beta,
+                        )
+                    )
             if not candidates:
                 break
             r, _, _, source, beta = sorted(candidates)[0]
             if remaining_deficit[target.cell_id] <= 0:
                 break
-            delivered = min(remaining_deficit[target.cell_id], remaining_source[source.cell_id] * beta)
+            delivered = min(
+                remaining_deficit[target.cell_id], remaining_source[source.cell_id] * beta
+            )
             raw_used = delivered / beta
             remaining_source[source.cell_id] -= raw_used
             remaining_deficit[target.cell_id] -= delivered

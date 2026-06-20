@@ -14,20 +14,19 @@ Integration with the existing Tantrium theorem graph and Atlas:
   - The knowledge frontier grows — not by losing old knowledge, but by
     extending it. Every run adds to the foundation.
 """
+
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-from tantrium.domains.bridge import SemanticBridge
-from tantrium.core.codex import CertifiableObject as CodexObject, ParadigmResult
-from tantrium.core.encoder import UniversalEncoder, encode as universal_encode
+from tantrium.core.codex import CertifiableObject as CodexObject
+from tantrium.core.encoder import UniversalEncoder
 from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.semantic import Concept, SemanticManifold
+from tantrium.domains.bridge import SemanticBridge
 
 
 def _now() -> str:
@@ -35,6 +34,7 @@ def _now() -> str:
 
 
 # ─── AGI Engine ────────────────────────────────────────────────────────────
+
 
 class CertificationEngine:
     """The Aleph-Tekin AGI engine.
@@ -79,34 +79,37 @@ class CertificationEngine:
         self._tau_path = Path("results/agi/tau_graph.json")
         self._spectral_path = Path("results/agi/spectral_cache.json")
         # Kalıcı bellek: hibrit persist + her-turn mini-Tav
-        self._dirty_count = 0      # son ağır save'den beri yeni kavram sayısı
-        self._persist_every = 10   # ağır manifold+TAU diske yazma eşiği
-        self.session = None        # attach_session() ile bağlanır
+        self._dirty_count = 0  # son ağır save'den beri yeni kavram sayısı
+        self._persist_every = 10  # ağır manifold+TAU diske yazma eşiği
+        self.session = None  # attach_session() ile bağlanır
         # Load persisted manifold, then bootstrap, then load/build TAU graph
         self._load_manifold()
         self._bootstrap_manifold()
         self._load_tau_graph()
-        self._ensure_anchors()       # çapaları hem manifold'a hem TAU'ya ekler
-        self._inject_math_kernel()   # Layer 0 → Layer 3 köprüsü
+        self._ensure_anchors()  # çapaları hem manifold'a hem TAU'ya ekler
+        self._inject_math_kernel()  # Layer 0 → Layer 3 köprüsü
         self._load_spectral_cache()
         # Topraklama ekseni: yapısal geçerlilik (23 paradigma) yanında
         # "bilinen referanslara bağlı mı?" sorusunu cevaplar.
         from tantrium.core.grounding import GroundingCertifier
+
         self.grounder = GroundingCertifier(self)
-        self._core_machine = None    # lazy singleton
+        self._core_machine = None  # lazy singleton
 
     # ─── CoreMachine: tek geçiş, 4 eksen ──────────────────────────────────
 
     @property
-    def core(self) -> "object":
+    def core(self) -> object:
         """CoreMachine: ONE encode → ONE process → 4 axes. Lazy singleton."""
         if self._core_machine is None:
             from tantrium.core.unified import CoreMachine
+
             self._core_machine = CoreMachine(self)
         return self._core_machine
 
-    def certify_unified(self, input_data: object, name: str | None = None,
-                        adaptive: bool = True) -> "object":
+    def certify_unified(
+        self, input_data: object, name: str | None = None, adaptive: bool = True
+    ) -> object:
         """Kısa yol: engine.core.certify(input_data)."""
         return self.core.certify(input_data, name=name, adaptive=adaptive)
 
@@ -166,7 +169,8 @@ class CertificationEngine:
         # Step 1: knowledge store search
         history = self._load_history()
         obj_records = [
-            h for h in history
+            h
+            for h in history
             if h.get("type") not in ("inference", "exploration")
             and any(
                 word in h.get("object", "").lower()
@@ -177,6 +181,7 @@ class CertificationEngine:
 
         # Step 2: manifold proximity
         from tantrium.core.semantic import Concept
+
         words = [w for w in question_lower.split() if len(w) > 3]
         neighbors: list[tuple[str, Any]] = []
         if self.manifold.concepts and words:
@@ -190,6 +195,7 @@ class CertificationEngine:
 
         # Step 3: theorem bridge — direct keyword match on theorem IDs
         from tantrium.domains.bridge import PARADIGM_TO_THEOREMS
+
         relevant_theorems: list[str] = []
         relevant_paradigms: list[str] = []
         for paradigm, theorem_ids in PARADIGM_TO_THEOREMS.items():
@@ -203,7 +209,7 @@ class CertificationEngine:
 
         if relevant_theorems:
             lines.append("Certified theorem evidence:")
-            for tid, pid in zip(relevant_theorems[:3], relevant_paradigms[:3]):
+            for tid, pid in zip(relevant_theorems[:3], relevant_paradigms[:3], strict=False):
                 lines.append(f"  [{pid}] {tid} — proven in the theorem graph")
             lines.append("")
 
@@ -463,6 +469,7 @@ class CertificationEngine:
         Döner: güncellenen kavram sayısı.
         """
         from tantrium.graph.relations import propagate_subset
+
         updated = propagate_subset(
             self.manifold.concepts,
             self.tau.edges,
@@ -486,6 +493,7 @@ class CertificationEngine:
     def _load_tau_graph(self) -> None:
         """TAU ağını diskten yükle — yoksa manifold'dan inşa et."""
         from tantrium.graph.knowledge_graph import KnowledgeGraph as TauGraph
+
         if self._tau_path.exists():
             self.tau = TauGraph.load(str(self._tau_path))
         else:
@@ -497,15 +505,14 @@ class CertificationEngine:
     def build_tau(self, k: int = 5) -> str:
         """TAU ağını manifold'dan (yeniden) inşa et ve kaydet."""
         from tantrium.graph.knowledge_graph import KnowledgeGraph as TauGraph
+
         print(f"TAU ağı inşa ediliyor ({len(self.manifold.concepts)} node, k={k})...")
         self.tau = TauGraph.build(self.manifold, k=k, verbose=True)
         nodes, edges = self.tau.save(str(self._tau_path))
         import os
+
         size_kb = os.path.getsize(self._tau_path) / 1024
-        return (
-            f"TAU: {nodes} node  |  {edges} edge  |  "
-            f"{size_kb:.0f} KB  →  {self._tau_path}"
-        )
+        return f"TAU: {nodes} node  |  {edges} edge  |  {size_kb:.0f} KB  →  {self._tau_path}"
 
     def _ensure_anchors(self) -> int:
         """Matematiksel çapa kavramlarını manifolda garantile (idempotent).
@@ -515,6 +522,7 @@ class CertificationEngine:
         Döner: yeni eklenen çapa sayısı.
         """
         from tantrium.graph.anchors import add_anchors_to_manifold, is_anchor
+
         added = add_anchors_to_manifold(self.manifold)
         # Çapaları TAU node'u olarak da garantile (köprü hedefi olabilmeleri için)
         tau_added = 0
@@ -534,6 +542,7 @@ class CertificationEngine:
         "Bu şey hangi matematiksel aileye benziyor?" — GUE? Poisson? Üstel?
         """
         from tantrium.graph.anchors import nearest_anchor
+
         return nearest_anchor(self.manifold, concept, top_n=top_n)
 
     def _inject_math_kernel(self) -> None:
@@ -544,6 +553,7 @@ class CertificationEngine:
         """
         try:
             from tantrium.domains.math_kernel import inject_math_kernel
+
             inject_math_kernel(self)
         except Exception:
             pass  # Math kernel eksikse AGI çalışmaya devam eder
@@ -591,19 +601,21 @@ class CertificationEngine:
             # Structural path: create AGI_ node for paradigms with no theorem mapping
             theorem_id = f"AGI_{pid}_{run.obj.name}".replace(" ", "_").upper()
             if is_cert and theorem_id not in graph.nodes:
-                graph.add(TheoremNode(
-                    theorem_id=theorem_id,
-                    title=f"[AGI] {pid} certified for {run.obj.name}",
-                    status="proven",
-                    depends_on=[
-                        f"AGI_{dep}_{run.obj.name}".replace(" ", "_").upper()
-                        for dep in self.network.nodes[pid].paradigm.depends_on
-                        if dep in self.network.nodes
-                        and not self.bridge.theorems_for_paradigm(dep)
-                    ],
-                    artifacts=[str(self.knowledge_path)],
-                    notes=[f"auto-certified by AGI engine at {_now()}"],
-                ))
+                graph.add(
+                    TheoremNode(
+                        theorem_id=theorem_id,
+                        title=f"[AGI] {pid} certified for {run.obj.name}",
+                        status="proven",
+                        depends_on=[
+                            f"AGI_{dep}_{run.obj.name}".replace(" ", "_").upper()
+                            for dep in self.network.nodes[pid].paradigm.depends_on
+                            if dep in self.network.nodes
+                            and not self.bridge.theorems_for_paradigm(dep)
+                        ],
+                        artifacts=[str(self.knowledge_path)],
+                        notes=[f"auto-certified by AGI engine at {_now()}"],
+                    )
+                )
             elif is_genuine_gap:
                 gap = node.result.gap_name if node.result else "UNKNOWN_GAP"
                 store.add_obstruction(
@@ -619,7 +631,7 @@ class CertificationEngine:
 
     # ─── Self-directed growth ───────────────────────────────────────────────
 
-    def certify_theorem_graph(self) -> dict[str, "CertificationRun"]:
+    def certify_theorem_graph(self) -> dict[str, CertificationRun]:
         """Process all proven theorem nodes through the AGI network.
 
         This is the full vertical integration: the proof graph feeds the
@@ -629,7 +641,7 @@ class CertificationEngine:
         Returns: {node_id: CertificationRun} for all processed nodes.
         """
         objects = self.bridge.proven_theorem_objects()
-        runs: dict[str, "CertificationRun"] = {}
+        runs: dict[str, CertificationRun] = {}
         for obj in objects:
             run = self.process(obj)
             runs[obj.name] = run
@@ -675,7 +687,7 @@ class CertificationEngine:
         all_inferences = []
         seen_pairs: set[tuple[str, str]] = set()
         for i, run_a in enumerate(certified_runs):
-            for run_b in certified_runs[i + 1:]:
+            for run_b in certified_runs[i + 1 :]:
                 pair = (run_a.obj.name, run_b.obj.name)
                 if pair in seen_pairs:
                     continue
@@ -692,7 +704,9 @@ class CertificationEngine:
             max_objectives=max_explore_objectives,
         )
         summary["gaps_closed"] = sum(1 for r in exploration_results if r.outcome == "CLOSED")
-        summary["gaps_persistent"] = sum(1 for r in exploration_results if r.outcome == "PERSISTENT")
+        summary["gaps_persistent"] = sum(
+            1 for r in exploration_results if r.outcome == "PERSISTENT"
+        )
 
         # Step 4: re-bootstrap manifold with new knowledge
         self.bridge.invalidate()
@@ -707,25 +721,27 @@ class CertificationEngine:
         bridge = self.bridge.paradigm_coverage_report()
         return f"{base}\n\n{bridge}"
 
-    def proof_loop(self, max_cycles: int = 3, time_limit_s: float = 300.0) -> "LoopReport":
+    def proof_loop(self, max_cycles: int = 3, time_limit_s: float = 300.0) -> LoopReport:  # noqa: F821
         """AGI ↔ Research OS kapalı döngü.
 
         Manifold boşluklarını NecessityEngine ile tespit eder, Research OS
         kampanyaları başlatır, yeni kanıtlanan teoremler manifolda enjekte
         edilir. max_cycles kadar tekrar eder.
         """
-        from tantrium.research.proof_loop import ProofLoop, LoopReport  # noqa: F401
+        from tantrium.research.proof_loop import LoopReport, ProofLoop  # noqa: F401
+
         return ProofLoop(self).run(max_cycles=max_cycles, time_limit_s=time_limit_s)
 
     # ─── Deep thinking: dyadic transport multi-level reasoning ────────────────
 
-    def think(self, question: str, depth: int = 3, neighbors: int = 5) -> "ThinkingResult":
+    def think(self, question: str, depth: int = 3, neighbors: int = 5) -> ThinkingResult:  # noqa: F821
         """Dyadic transport tabanlı derin düşünce.
 
         Tek geçiş (process) yerine: manifold walk + inference chain + second-order.
         Context window yok — manifold her şeyi tutuyor.
         """
         from tantrium.reasoning.thinker import Thinker, ThinkingResult  # noqa: F401
+
         return Thinker(self).think(question, depth=depth, neighbors=neighbors)
 
     # ─── Status ────────────────────────────────────────────────────────────
@@ -751,4 +767,3 @@ class CertificationEngine:
                 f"{last.get('certified', 0)}/{last.get('total', 0)} certified"
             )
         return "\n".join(lines)
-

@@ -22,15 +22,14 @@ Endpoint'ler:
   POST /generate     {seed, steps=8, goal=null, lang=tr, use_meaning=false}
   GET  /health
 """
+
 from __future__ import annotations
 
-import json
-from typing import Any
-
 try:
-    from fastapi import FastAPI, HTTPException
+    from fastapi import FastAPI
     from fastapi.responses import PlainTextResponse
     from pydantic import BaseModel
+
     _FASTAPI_OK = True
 except ImportError:
     _FASTAPI_OK = False
@@ -51,6 +50,7 @@ def _get_ai() -> tantrium.AI:
 
 
 if _FASTAPI_OK:
+
     class LearnReq(BaseModel):
         text: str
 
@@ -150,8 +150,12 @@ if _FASTAPI_OK:
     @app.post("/analogy")
     def analogy(req: AnalogyReq):
         results = _get_ai().analogy(req.a, req.b, req.c, top_k=req.top_k)
-        return {"a": req.a, "b": req.b, "c": req.c,
-                "results": [{"name": n, "distance": d} for n, d in results]}
+        return {
+            "a": req.a,
+            "b": req.b,
+            "c": req.c,
+            "results": [{"name": n, "distance": d} for n, d in results],
+        }
 
     @app.post("/hypothesize")
     def hypothesize(req: HypothesizeReq):
@@ -181,26 +185,38 @@ if _FASTAPI_OK:
     @app.post("/bind_percept")
     def bind_percept(req: BindPerceptReq):
         import numpy as np
+
         signal = np.array(req.signal, dtype=float)
         percept_name = _get_ai().bind_percept(
-            req.concept, signal,
+            req.concept,
+            signal,
             modality=req.modality,
             paradigm=req.paradigm,
             name=req.name,
         )
-        return {"concept": req.concept, "percept_name": percept_name,
-                "modality": req.modality, "paradigm": req.paradigm}
+        return {
+            "concept": req.concept,
+            "percept_name": percept_name,
+            "modality": req.modality,
+            "paradigm": req.paradigm,
+        }
 
     @app.post("/meaning_compose")
     def meaning_compose(req: MeaningComposeReq):
         cs = _get_ai().meaning_compose(req.text)
         if cs is None:
-            return {"text": req.text, "components": [], "moments": [],
-                    "n_surface": 0, "summary": "Bileşen bulunamadı."}
+            return {
+                "text": req.text,
+                "components": [],
+                "moments": [],
+                "n_surface": 0,
+                "summary": "Bileşen bulunamadı.",
+            }
         return {
             "text": req.text,
-            "components": [{"name": c[0], "moments": [float(x) for x in c[1][:4]]}
-                           for c in cs.components],
+            "components": [
+                {"name": c[0], "moments": [float(x) for x in c[1][:4]]} for c in cs.components
+            ],
             "moments": [float(x) for x in cs.moments[:8]],
             "n_surface": cs.n_surface,
             "nearest": cs.nearest(n=5),
@@ -211,10 +227,12 @@ if _FASTAPI_OK:
 # CLI entry point
 if __name__ == "__main__":
     import argparse
+
     if not _FASTAPI_OK:
         print("FastAPI kurulu değil. Kurmak için: pip install fastapi uvicorn")
         raise SystemExit(1)
     import uvicorn
+
     parser = argparse.ArgumentParser(description="Tantrium API Sunucusu")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--host", default="0.0.0.0")

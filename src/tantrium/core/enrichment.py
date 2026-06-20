@@ -16,24 +16,33 @@ DNA-nükleotid(NCBI) · fiziksel-özellik(PubChem) ÇALIŞIYOR. Yasa-boyutu(OEIS
 açılır). İsim-eşleşme gevşek olabilir (gen adı ≈ ilaç adı) — bio (UniProt/NCBI) kesin, molekül
 gevşek; quality_gate isim-doğrulamayı buraya ekleyebilir.
 """
+
 from __future__ import annotations
 
 import json
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
-_PUBCHEM_NAME = ("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
-                 "{}/property/SMILES/JSON")
-_PUBCHEM_PROPS = ("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
-                  "{}/property/MolecularWeight,XLogP,TPSA,Complexity/JSON")
-_UNIPROT_GENE = ("https://rest.uniprot.org/uniprotkb/search?query=gene:{}"
-                 "+AND+organism_id:9606&format=json&fields=sequence&size=1")
-_NCBI_SEARCH = ("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nuccore"
-                "&term={}[gene]+AND+human[orgn]+AND+mRNA[filter]&retmax=1&retmode=json")
-_NCBI_FETCH = ("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore"
-               "&id={}&rettype=fasta&retmode=text")
+_PUBCHEM_NAME = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{}/property/SMILES/JSON"
+_PUBCHEM_PROPS = (
+    "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
+    "{}/property/MolecularWeight,XLogP,TPSA,Complexity/JSON"
+)
+_UNIPROT_GENE = (
+    "https://rest.uniprot.org/uniprotkb/search?query=gene:{}"
+    "+AND+organism_id:9606&format=json&fields=sequence&size=1"
+)
+_NCBI_SEARCH = (
+    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nuccore"
+    "&term={}[gene]+AND+human[orgn]+AND+mRNA[filter]&retmax=1&retmode=json"
+)
+_NCBI_FETCH = (
+    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore"
+    "&id={}&rettype=fasta&retmode=text"
+)
 
 
 def _valid_name(name: str) -> bool:
@@ -57,6 +66,7 @@ def _get_text(url: str, timeout: float) -> str | None:
 
 
 # ─── Fetcher'lar (hepsi canlı-doğrulanmış; isim→gerçek boyut) ──────────────────
+
 
 def fetch_molecular_smiles(name: str, *, timeout: float = 8.0) -> str | None:
     """İsimle PubChem SMILES (kavram kimyasalsa). Yoksa/ağ → None (fail-open)."""
@@ -166,11 +176,13 @@ def fetch_governing_law(name: str, ai) -> list[float] | None:
     return fp if len(fp) >= 2 else None
 
 
-_WIKIMEDIA = ("https://en.wikipedia.org/w/api.php?action=query&titles={}"
-              "&prop=pageimages&format=json&pithumbsize=160")
+_WIKIMEDIA = (
+    "https://en.wikipedia.org/w/api.php?action=query&titles={}"
+    "&prop=pageimages&format=json&pithumbsize=160"
+)
 
 
-def fetch_image(name: str, *, timeout: float = 10.0, size: int = 48) -> "Any":
+def fetch_image(name: str, *, timeout: float = 10.0, size: int = 48) -> Any:
     """İsimle Wikimedia kavram görseli → gri-tonlu küçük piksel matrisi (görsel imza).
 
     Wikimedia thumbnail → PIL çöz → gri+yeniden-boyutla → numpy. Görsel BAĞIMSIZ bir kanal
@@ -180,10 +192,13 @@ def fetch_image(name: str, *, timeout: float = 10.0, size: int = 48) -> "Any":
         return None
     try:
         import io
+
         import numpy as np
         from PIL import Image
-        req = urllib.request.Request(_WIKIMEDIA.format(urllib.parse.quote(name)),
-                                     headers={"User-Agent": "Tantrium/1.0"})
+
+        req = urllib.request.Request(
+            _WIKIMEDIA.format(urllib.parse.quote(name)), headers={"User-Agent": "Tantrium/1.0"}
+        )
         with urllib.request.urlopen(req, timeout=timeout) as r:
             d = json.loads(r.read().decode("utf-8"))
         url = None
@@ -201,7 +216,7 @@ def fetch_image(name: str, *, timeout: float = 10.0, size: int = 48) -> "Any":
         return None
 
 
-def fetch_protein_3d(name: str, ai, *, timeout: float = 10.0, max_res: int = 48) -> "Any":
+def fetch_protein_3d(name: str, ai, *, timeout: float = 10.0, max_res: int = 48) -> Any:
     """Protein 3D yapısı (AlphaFold) → Cα uzaklık matrisi (katlanma geometrisi). Gen/protein için.
 
     gen→UniProt accession→AlphaFold PDB→Cα koordinatları→pairwise uzaklık matrisi (katlanmanın
@@ -210,8 +225,11 @@ def fetch_protein_3d(name: str, ai, *, timeout: float = 10.0, max_res: int = 48)
     if not _valid_name(name):
         return None
     acc_data = _get_json(
-        "https://rest.uniprot.org/uniprotkb/search?query=gene:" + urllib.parse.quote(name)
-        + "+AND+organism_id:9606&format=json&fields=accession&size=1", timeout)
+        "https://rest.uniprot.org/uniprotkb/search?query=gene:"
+        + urllib.parse.quote(name)
+        + "+AND+organism_id:9606&format=json&fields=accession&size=1",
+        timeout,
+    )
     if not (acc_data and acc_data.get("results")):
         return None
     acc = acc_data["results"][0].get("primaryAccession")
@@ -224,6 +242,7 @@ def fetch_protein_3d(name: str, ai, *, timeout: float = 10.0, max_res: int = 48)
     if not pdb:
         return None
     import numpy as np
+
     coords = []
     for line in pdb.split("\n"):
         if line.startswith("ATOM") and line[12:16].strip() == "CA":
@@ -237,32 +256,45 @@ def fetch_protein_3d(name: str, ai, *, timeout: float = 10.0, max_res: int = 48)
         return None
     pts = np.array(coords)
     diff = pts[:, None, :] - pts[None, :, :]
-    dist = np.sqrt((diff ** 2).sum(-1))      # Cα-Cα uzaklık matrisi (katlanma geometrisi)
+    dist = np.sqrt((diff**2).sum(-1))  # Cα-Cα uzaklık matrisi (katlanma geometrisi)
     return dist
 
 
 # ─── Bağlama (her boyut → percept + TAU kenarı, bind_percept üzerinden) ────────
 
+
 def _bind_bio(ai, concept: str, seq: str, key: str) -> None:
     """Bio-dizi (protein/DNA) bağla — encoder _detect_bio_sequence DNA↔protein'i kendi ayırır."""
-    ai.bind_percept(concept, seq, modality="smiles", paradigm="HAS_DNA",
-                    name=f"⟨percept:{concept}:{key}⟩")
+    ai.bind_percept(
+        concept, seq, modality="smiles", paradigm="HAS_DNA", name=f"⟨percept:{concept}:{key}⟩"
+    )
 
 
 def _bind_molecule(ai, concept: str, smiles: str, key: str) -> None:
-    ai.bind_percept(concept, smiles, modality="smiles", paradigm="HAS_COMPOUND",
-                    name=f"⟨percept:{concept}:molecule⟩")
+    ai.bind_percept(
+        concept,
+        smiles,
+        modality="smiles",
+        paradigm="HAS_COMPOUND",
+        name=f"⟨percept:{concept}:molecule⟩",
+    )
 
 
 def _bind_properties(ai, concept: str, vec: list[float], key: str) -> None:
     """Fiziksel özellik vektörü → PSD geometri matrisi (dış-çarpım) → HAS_GEOMETRY."""
     import numpy as np
+
     v = np.array([float(x) for x in vec], dtype=float)
     nrm = float(np.linalg.norm(v)) or 1.0
     v = v / nrm
-    mat = np.outer(v, v)                      # rank-1 PSD → encode_matrix momentleri
-    ai.bind_percept(concept, mat, modality="matrix", paradigm="HAS_GEOMETRY",
-                    name=f"⟨percept:{concept}:properties⟩")
+    mat = np.outer(v, v)  # rank-1 PSD → encode_matrix momentleri
+    ai.bind_percept(
+        concept,
+        mat,
+        modality="matrix",
+        paradigm="HAS_GEOMETRY",
+        name=f"⟨percept:{concept}:properties⟩",
+    )
 
 
 def _bind_law(ai, concept: str, fingerprint: list[float], key: str) -> None:
@@ -271,40 +303,54 @@ def _bind_law(ai, concept: str, fingerprint: list[float], key: str) -> None:
     Kavramı YÖNETİCİ DİNAMİĞİNE bağlar (matematik çekirdeği) — Fibonacci→φ. Vektör outer-
     çarpımla PSD matrise (encode_matrix momentleri); modlar/recurrence imzayı taşır."""
     import numpy as np
+
     v = np.array([float(x) for x in fingerprint], dtype=float)
     nrm = float(np.linalg.norm(v)) or 1.0
     v = v / nrm
-    ai.bind_percept(concept, np.outer(v, v), modality="matrix", paradigm="IS_GOVERNED_BY",
-                    name=f"⟨percept:{concept}:law⟩")
+    ai.bind_percept(
+        concept,
+        np.outer(v, v),
+        modality="matrix",
+        paradigm="IS_GOVERNED_BY",
+        name=f"⟨percept:{concept}:law⟩",
+    )
 
 
 def _bind_structure3d(ai, concept: str, dist_matrix, key: str) -> None:
     """3D katlanma uzaklık-matrisi → HAS_TOPOLOGY (diziden bağımsız 3D fold imzası)."""
-    ai.bind_percept(concept, dist_matrix, modality="matrix", paradigm="HAS_TOPOLOGY",
-                    name=f"⟨percept:{concept}:structure3d⟩")
+    ai.bind_percept(
+        concept,
+        dist_matrix,
+        modality="matrix",
+        paradigm="HAS_TOPOLOGY",
+        name=f"⟨percept:{concept}:structure3d⟩",
+    )
 
 
 def _bind_sound(ai, concept: str, signal, key: str) -> None:
     """Ses sinyali → HAS_SIGNAL (Wiener-Khinchin moment). Oto-kaynak yok; elle `sound=`."""
-    ai.bind_percept(concept, signal, modality="signal", paradigm="HAS_SIGNAL",
-                    name=f"⟨percept:{concept}:sound⟩")
+    ai.bind_percept(
+        concept, signal, modality="signal", paradigm="HAS_SIGNAL", name=f"⟨percept:{concept}:sound⟩"
+    )
 
 
 def _bind_image(ai, concept: str, pixels, key: str) -> None:
     """Görsel piksel matrisi → HAS_IMAGE (singular-değer dağılımı momenti)."""
-    ai.bind_percept(concept, pixels, modality="image", paradigm="HAS_IMAGE",
-                    name=f"⟨percept:{concept}:image⟩")
+    ai.bind_percept(
+        concept, pixels, modality="image", paradigm="HAS_IMAGE", name=f"⟨percept:{concept}:image⟩"
+    )
 
 
 # ─── Genişletilebilir boyut REGİSTRY'si ───────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class Dimension:
-    key: str                                  # "molecule"/"protein"/"dna"/"properties"/"law"/"structure3d"/"sound"
-    paradigm: str                             # HAS_COMPOUND/HAS_DNA/HAS_GEOMETRY/IS_GOVERNED_BY/HAS_TOPOLOGY/HAS_SIGNAL
-    fetch: Callable[[str, Any], Any]          # (isim, ai) → gerçek değer veya None (None=oto-fetch yok)
+    key: str  # "molecule"/"protein"/"dna"/"properties"/"law"/"structure3d"/"sound"
+    paradigm: str  # HAS_COMPOUND/HAS_DNA/HAS_GEOMETRY/IS_GOVERNED_BY/HAS_TOPOLOGY/HAS_SIGNAL
+    fetch: Callable[[str, Any], Any]  # (isim, ai) → gerçek değer veya None (None=oto-fetch yok)
     bind: Callable[[Any, str, Any, str], None]  # (ai, concept, value, key) → bağla
-    network: bool = True                      # oto-fetch ağ ister mi (law iç/ağsız)
+    network: bool = True  # oto-fetch ağ ister mi (law iç/ağsız)
 
 
 def _adapt(fn):
@@ -327,21 +373,30 @@ _DIMENSIONS: list[Dimension] = [
 ]
 
 # Elle-override anahtarları (ağsız test / kullanıcı verisi) → boyut anahtarı eşlemesi.
-_MANUAL_ALIASES = {"smiles": "molecule", "protein": "protein", "dna": "dna",
-                   "properties": "properties", "law": "law", "structure3d": "structure3d",
-                   "sound": "sound", "image": "image"}
+_MANUAL_ALIASES = {
+    "smiles": "molecule",
+    "protein": "protein",
+    "dna": "dna",
+    "properties": "properties",
+    "law": "law",
+    "structure3d": "structure3d",
+    "sound": "sound",
+    "image": "image",
+}
 
 
-def enrich_concept(ai, name: str, *, network: bool = True, dims: list[str] | None = None,
-                   **manual) -> dict:
+def enrich_concept(
+    ai, name: str, *, network: bool = True, dims: list[str] | None = None, **manual
+) -> dict:
     """Kavramı TÜM uygulanabilir boyutlarda kökle (registry). Tip-farkında, fail-open, idempotent.
 
     `manual` (smiles=/protein=/dna=/properties=/law=/structure3d=/sound=) elle değer verir
     (ağsız test); yoksa boyut `network` ister ve `network=True` ise fetcher dener. `dims` verilirse
     yalnız o boyutlar. Döner: {concept, bound:[paradigmalar], dimensions:[anahtarlar], values}.
     """
-    manual_by_key = {_MANUAL_ALIASES[k]: v for k, v in manual.items()
-                     if k in _MANUAL_ALIASES and v is not None}
+    manual_by_key = {
+        _MANUAL_ALIASES[k]: v for k, v in manual.items() if k in _MANUAL_ALIASES and v is not None
+    }
     bound: list[str] = []
     dims_bound: list[str] = []
     values: dict[str, str] = {}
@@ -354,7 +409,7 @@ def enrich_concept(ai, name: str, *, network: bool = True, dims: list[str] | Non
                 val = dim.fetch(name, ai)
             except Exception:
                 val = None
-        elif val is None and not dim.network:        # iç/ağsız boyut (law) — ağ bayrağından bağımsız
+        elif val is None and not dim.network:  # iç/ağsız boyut (law) — ağ bayrağından bağımsız
             try:
                 val = dim.fetch(name, ai)
             except Exception:
@@ -367,5 +422,5 @@ def enrich_concept(ai, name: str, *, network: bool = True, dims: list[str] | Non
             continue
         bound.append(dim.paradigm)
         dims_bound.append(dim.key)
-        values[dim.key] = (val[:24] if isinstance(val, str) else str(val)[:40])
+        values[dim.key] = val[:24] if isinstance(val, str) else str(val)[:40]
     return {"concept": name, "bound": bound, "dimensions": dims_bound, "values": values}

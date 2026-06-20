@@ -3,8 +3,9 @@
 Her adım bir RH parçası, hepsi sayı uzayında: κ_disease → κ_healthy ⊟ κ_disease
 = κ_drug → μ_drug → özdeğer ölçüsü (ilaç) → Hankel-PSD ∧ Sturm pivot = RH sertifikası.
 """
+
 import tantrium
-from tantrium.core.production import ProductionEngine, MathDrug
+from tantrium.core.production import MathDrug, ProductionEngine
 
 
 def _pe():
@@ -47,9 +48,9 @@ def test_rh_pieces_present():
     """RH parçalarının hepsi MathDrug'da: κ, μ, özdeğer, Hankel-PSD, Sturm pivot."""
     pe = _pe()
     d = pe.produce_math([1.0, 0.6, 0.4, 0.28, 0.2, 0.15, 0.11, 0.08])
-    assert isinstance(d.hankel_psd, bool)        # D-pozitiflik / Aleph
-    assert isinstance(d.sturm_pivot, float)      # Jensen hiperbolisitesi
-    assert isinstance(d.realizable, bool)        # RH pozitiflik sertifikası
+    assert isinstance(d.hankel_psd, bool)  # D-pozitiflik / Aleph
+    assert isinstance(d.sturm_pivot, float)  # Jensen hiperbolisitesi
+    assert isinstance(d.realizable, bool)  # RH pozitiflik sertifikası
     s = d.summary()
     assert "SAF MATEMATİK" in s and "Sturm pivot" in s
 
@@ -83,9 +84,11 @@ def test_cross_personalizes_by_dna():
     drug = "Cn1cnc2c1c(=O)n(c(=O)n2C)C"
     scores = {
         d: pe.cross_check(disease, drug, d).response_score
-        for d in ("ATCGATCGATCGTTAACCGGATCGATCGAACCGGTTATCG",
-                  "TTTTAAAACCCCGGGGTTTTAAAACCCCGGGGTTTTAAAA",
-                  "ATATATATGCGCGCGCATATGCGCATGCATGCATGCATGC")
+        for d in (
+            "ATCGATCGATCGTTAACCGGATCGATCGAACCGGTTATCG",
+            "TTTTAAAACCCCGGGGTTTTAAAACCCCGGGGTTTTAAAA",
+            "ATATATATGCGCGCGCATATGCGCATGCATGCATGCATGC",
+        )
     }
     # kişiler farklı yanıt skoru almalı (personalizasyon gerçekten DNA'ya bağlı)
     assert len(set(round(s, 1) for s in scores.values())) >= 2
@@ -98,9 +101,12 @@ def test_true_dna_encoding_discriminates_genomes():
     (bazlar→EIIP→sinyal spektrumu) dizi yapısını ölçer → farklı genom = farklı imza.
     """
     from tantrium.perception.encode import encode_dna
-    genomes = ["ATCGATCGATCGTTAACCGGATCGATCGAACCGGTTATCG",
-               "GGCCGGCCTTAAGGCCAATTCCGGAATTCCGGCCAATTGG",
-               "ATATATATGCGCGCGCATATGCGCATGCATGCATGCATGC"]
+
+    genomes = [
+        "ATCGATCGATCGTTAACCGGATCGATCGAACCGGTTATCG",
+        "GGCCGGCCTTAAGGCCAATTCCGGAATTCCGGCCAATTGG",
+        "ATATATATGCGCGCGCATATGCGCATGCATGCATGCATGC",
+    ]
     mu1 = [float(encode_dna(g).moments[1]) for g in genomes]
     # μ₁ değerleri belirgin AYRILMALI (yayılım metin yolundan çok daha büyük)
     assert max(mu1) - min(mu1) > 0.05, f"genomlar ayrılmadı: {mu1}"

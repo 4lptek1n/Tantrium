@@ -3,7 +3,9 @@
 causal_chain() geriye doğru (kime neden olan?), what_if() ileriye doğru
 (bu kavramdan ne çıkar?). Bu testler synthetic AI nesnesiyle izole çalışır.
 """
+
 import pytest
+
 import tantrium
 from tests._seed import seed_relations
 
@@ -12,18 +14,22 @@ from tests._seed import seed_relations
 def ai_fwd():
     """İleriye doğru zincirleri olan izole AI nesnesi (yapısal tohum, dil yok)."""
     ai = tantrium.AI()
-    seed_relations(ai, [
-        ("erlotinib", "INHIBITS", "egfr"),
-        ("egfr", "ACTIVATES", "ras"),
-        ("ras", "CAUSES", "mek"),
-        ("mek", "CAUSES", "erk"),
-        ("erk", "CAUSES", "tumor cell"),
-        ("erlotinib", "INHIBITS", "tumor growth"),
-    ])
+    seed_relations(
+        ai,
+        [
+            ("erlotinib", "INHIBITS", "egfr"),
+            ("egfr", "ACTIVATES", "ras"),
+            ("ras", "CAUSES", "mek"),
+            ("mek", "CAUSES", "erk"),
+            ("erk", "CAUSES", "tumor cell"),
+            ("erlotinib", "INHIBITS", "tumor growth"),
+        ],
+    )
     return ai
 
 
 # ─── Temel yapı ──────────────────────────────────────────────────────────────
+
 
 def test_what_if_returns_dict(ai_fwd):
     """what_if() sözlük döndürmeli."""
@@ -55,6 +61,7 @@ def test_what_if_n_paths_matches_chains(ai_fwd):
 
 # ─── İçerik doğrulama ─────────────────────────────────────────────────────
 
+
 def test_what_if_finds_forward_effects(ai_fwd):
     """erlotinib → ... zinciri en az bir nihai etki bulmalı."""
     r = ai_fwd.what_if("erlotinib", depth=6)
@@ -84,6 +91,7 @@ def test_what_if_chain_path_is_list(ai_fwd):
 
 # ─── Bilinmeyen kavram davranışı ──────────────────────────────────────────
 
+
 def test_what_if_unknown_concept_graceful():
     """Bilinmeyen kavram için what_if() kilitlenmemeli, not döndürmeli."""
     ai = tantrium.AI()
@@ -101,6 +109,7 @@ def test_what_if_empty_chains_note():
 
 
 # ─── causal_chain ile simetri ────────────────────────────────────────────
+
 
 def test_what_if_vs_causal_chain_complementary(ai_fwd):
     """what_if ve causal_chain ters yönde çalışmalı — çıktı seti örtüşmemeli."""

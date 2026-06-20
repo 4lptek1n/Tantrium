@@ -2,30 +2,37 @@
 
 analogy · hypothesize · visualize_causal · report · benchmark · consolidate
 """
+
 import pytest
+
 import tantrium
 
 
 @pytest.fixture(scope="module")
 def ai_causal():
     from tests._seed import seed_relations
+
     ai = tantrium.AI()
-    seed_relations(ai, [
-        ("erlotinib", "INHIBITS", "egfr"),
-        ("egfr", "ACTIVATES", "ras"),
-        ("ras", "CAUSES", "mek"),
-        ("mek", "ACTIVATES", "erk"),
-        ("erk", "CAUSES", "tumor cell"),
-        ("imatinib", "INHIBITS", "bcr-abl"),
-        ("bcr-abl", "CAUSES", "leukemia"),
-        ("gefitinib", "INHIBITS", "egfr"),
-        ("aspirin", "INHIBITS", "cyclooxygenase"),
-        ("cyclooxygenase", "CAUSES", "inflammation"),
-    ])
+    seed_relations(
+        ai,
+        [
+            ("erlotinib", "INHIBITS", "egfr"),
+            ("egfr", "ACTIVATES", "ras"),
+            ("ras", "CAUSES", "mek"),
+            ("mek", "ACTIVATES", "erk"),
+            ("erk", "CAUSES", "tumor cell"),
+            ("imatinib", "INHIBITS", "bcr-abl"),
+            ("bcr-abl", "CAUSES", "leukemia"),
+            ("gefitinib", "INHIBITS", "egfr"),
+            ("aspirin", "INHIBITS", "cyclooxygenase"),
+            ("cyclooxygenase", "CAUSES", "inflammation"),
+        ],
+    )
     return ai
 
 
 # ─── analogy (TAU-tabanlı birincil + moment fallback) ────────────────────────
+
 
 def test_analogy_returns_list(ai_causal):
     result = ai_causal.analogy("erlotinib", "egfr", "imatinib")
@@ -59,7 +66,7 @@ def test_analogy_excludes_inputs(ai_causal):
 
 def test_analogy_distances_non_negative(ai_causal):
     result = ai_causal.analogy("erlotinib", "egfr", "aspirin", top_k=5)
-    for name, dist in result:
+    for _name, dist in result:
         assert dist >= 0.0
 
 
@@ -77,6 +84,7 @@ def test_analogy_unknown_graceful():
 
 # ─── hypothesize ─────────────────────────────────────────────────────────────
 
+
 def test_hypothesize_returns_dict(ai_causal):
     r = ai_causal.hypothesize("erlotinib")
     assert isinstance(r, dict)
@@ -86,7 +94,7 @@ def test_hypothesize_returns_dict(ai_causal):
 def test_hypothesize_finds_transitive(ai_causal):
     """erlotinib INHIBITS EGFR, EGFR ACTIVATES RAS → erlotinib INHIBITS RAS?"""
     r = ai_causal.hypothesize("erlotinib", depth=4)
-    hyps_text = " ".join(h["hypothesis"] for h in r["hypotheses"]).lower()
+    " ".join(h["hypothesis"] for h in r["hypotheses"]).lower()
     # Transitif çıkarım: erlotinib bir şeyi inhibe ediyor olmalı
     assert r["n"] >= 0  # sıfır bile olsa çökmemeli
 
@@ -111,6 +119,7 @@ def test_hypothesize_unknown_graceful():
 
 
 # ─── visualize_causal ────────────────────────────────────────────────────────
+
 
 def test_visualize_ascii_returns_string(ai_causal):
     result = ai_causal.visualize_causal("erlotinib", mode="ascii")
@@ -142,6 +151,7 @@ def test_visualize_unknown_graceful():
 
 # ─── benchmark ───────────────────────────────────────────────────────────────
 
+
 def test_benchmark_returns_dict(ai_causal):
     r = ai_causal.benchmark()
     assert "score" in r and "correct" in r and "total" in r
@@ -168,6 +178,7 @@ def test_benchmark_failures_list(ai_causal):
 
 
 # ─── consolidate ─────────────────────────────────────────────────────────────
+
 
 def test_consolidate_dry_run_safe():
     ai = tantrium.AI()

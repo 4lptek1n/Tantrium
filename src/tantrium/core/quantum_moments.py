@@ -12,6 +12,7 @@ birleştirmek, manifoldda yeni bir konum üretir — sentez.
 Referans: Voiculescu (1985) — free probability; Nica & Speicher (2006) —
 Lectures on the Combinatorics of Free Probability.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,10 +28,11 @@ class FreeCumulants:
     k[3] = κ₄ = ...               (basıklık benzeri — ring/dallanma)
     k[4] = κ₅, k[5] = κ₆         (yüksek dereceli yapı)
     """
+
     k: list[float]
 
     @classmethod
-    def from_moments(cls, mu: list[float]) -> "FreeCumulants":
+    def from_moments(cls, mu: list[float]) -> FreeCumulants:
         """Güç momentlerinden serbest kümülantlar (NC Möbius bölüm kafesi).
 
         Formüller Nica-Speicher (2006) non-crossing partition Möbius
@@ -48,22 +50,39 @@ class FreeCumulants:
         k2 = m[2] - m[1] ** 2
         k3 = m[3] - 3 * m[1] * m[2] + 2 * m[1] ** 3
         # NC Möbius (|NC(4)|=14): 2 bölüm tipi {2,2} → 2κ₂², klasikten farklı (3κ₂²)
-        k4 = m[4] - 4*k3*k1 - 2*k2**2 - 6*k2*k1**2 - k1**4
+        k4 = m[4] - 4 * k3 * k1 - 2 * k2**2 - 6 * k2 * k1**2 - k1**4
         # NC Möbius (|NC(5)|=42)
-        k5 = (m[5] - 5*k4*k1 - 5*k3*k2 - 10*k3*k1**2
-              - 10*k2**2*k1 - 10*k2*k1**3 - k1**5)
+        k5 = (
+            m[5]
+            - 5 * k4 * k1
+            - 5 * k3 * k2
+            - 10 * k3 * k1**2
+            - 10 * k2**2 * k1
+            - 10 * k2 * k1**3
+            - k1**5
+        )
         # NC Möbius (|NC(6)|=132)
-        k6 = (m[6] - 6*k5*k1 - 6*k4*k2 - 3*k3**2
-              - 15*k4*k1**2 - 30*k3*k2*k1 - 5*k2**3
-              - 20*k3*k1**3 - 30*k2**2*k1**2 - 15*k2*k1**4 - k1**6)
+        k6 = (
+            m[6]
+            - 6 * k5 * k1
+            - 6 * k4 * k2
+            - 3 * k3**2
+            - 15 * k4 * k1**2
+            - 30 * k3 * k2 * k1
+            - 5 * k2**3
+            - 20 * k3 * k1**3
+            - 30 * k2**2 * k1**2
+            - 15 * k2 * k1**4
+            - k1**6
+        )
 
         return cls([k1, k2, k3, k4, k5, k6])
 
-    def add(self, other: "FreeCumulants") -> "FreeCumulants":
+    def add(self, other: FreeCumulants) -> FreeCumulants:
         """Serbest toplam κ(A ⊕ B) = κ(A) + κ(B). Kuantum kompozisyon."""
-        return FreeCumulants([a + b for a, b in zip(self.k, other.k)])
+        return FreeCumulants([a + b for a, b in zip(self.k, other.k, strict=False)])
 
-    def subtract(self, other: "FreeCumulants") -> "FreeCumulants":
+    def subtract(self, other: FreeCumulants) -> FreeCumulants:
         """Serbest dekonvolüsyon κ(A ⊟ B) = κ(A) − κ(B). Additif yasanın TERSİ.
 
         Eğer hastalık ⊞ molekül = sağlıklı isteniyorsa (additivity), o zaman
@@ -75,9 +94,9 @@ class FreeCumulants:
         b = other.k + [0.0] * (n - len(other.k))
         return FreeCumulants([a[i] - b[i] for i in range(n)])
 
-    def distance(self, other: "FreeCumulants") -> float:
+    def distance(self, other: FreeCumulants) -> float:
         """L1 mesafe — kümülant uzayında."""
-        return sum(abs(a - b) for a, b in zip(self.k, other.k)) / max(len(self.k), 1)
+        return sum(abs(a - b) for a, b in zip(self.k, other.k, strict=False)) / max(len(self.k), 1)
 
     def ring_indicator(self) -> float:
         """κ₄ büyüklüğü → halka/dallanma yapısı (non-Gaussianity).
@@ -110,16 +129,33 @@ class FreeCumulants:
             1.0,
             k1,
             k2 + k1**2,
-            k3 + 3*k1*k2 + k1**3,
+            k3 + 3 * k1 * k2 + k1**3,
             # NC(4): 1·κ₄ + 4·κ₃κ₁ + 2·κ₂² + 6·κ₂κ₁² + 1·κ₁⁴
-            k4 + 4*k3*k1 + 2*k2**2 + 6*k2*k1**2 + k1**4,
+            k4 + 4 * k3 * k1 + 2 * k2**2 + 6 * k2 * k1**2 + k1**4,
             # NC(5): coefficients from Narayana numbers
-            (k5 + 5*k4*k1 + 5*k3*k2 + 10*k3*k1**2
-             + 10*k2**2*k1 + 10*k2*k1**3 + k1**5),
+            (
+                k5
+                + 5 * k4 * k1
+                + 5 * k3 * k2
+                + 10 * k3 * k1**2
+                + 10 * k2**2 * k1
+                + 10 * k2 * k1**3
+                + k1**5
+            ),
             # NC(6)
-            (k6 + 6*k5*k1 + 6*k4*k2 + 3*k3**2 + 15*k4*k1**2
-             + 30*k3*k2*k1 + 5*k2**3 + 20*k3*k1**3
-             + 30*k2**2*k1**2 + 15*k2*k1**4 + k1**6),
+            (
+                k6
+                + 6 * k5 * k1
+                + 6 * k4 * k2
+                + 3 * k3**2
+                + 15 * k4 * k1**2
+                + 30 * k3 * k2 * k1
+                + 5 * k2**3
+                + 20 * k3 * k1**3
+                + 30 * k2**2 * k1**2
+                + 15 * k2 * k1**4
+                + k1**6
+            ),
             0.0,  # μ₇: κ₇ hesaplanmıyor
         ]
 
@@ -138,16 +174,17 @@ class QuantumSignature:
 
     Her kavram/molekülün hem klasik hem kuantum koordinatı.
     """
+
     moments: list[float]
     cumulants: FreeCumulants
 
     @classmethod
-    def from_moments(cls, mu: list[float]) -> "QuantumSignature":
+    def from_moments(cls, mu: list[float]) -> QuantumSignature:
         return cls(moments=list(mu), cumulants=FreeCumulants.from_moments(mu))
 
     def quantum_distance(
         self,
-        other: "QuantumSignature",
+        other: QuantumSignature,
         gamma: float = 0.3,
     ) -> float:
         """Kuantum mesafe: (1-γ)×tanh_L1 + γ×κ_mesafe.
@@ -158,17 +195,17 @@ class QuantumSignature:
         Sonuç [0, ~1.3] aralığında (saf farklı kavramlar için ~1.0).
         """
         import math
+
         a = self.moments
         b = other.moments
         n = min(len(a), len(b))
-        w2 = sum(abs(math.tanh(float(a[i])) - math.tanh(float(b[i])))
-                 for i in range(n)) / max(n, 1)
+        w2 = sum(abs(math.tanh(float(a[i])) - math.tanh(float(b[i]))) for i in range(n)) / max(n, 1)
         kd = self.cumulants.distance(other.cumulants)
         return (1.0 - gamma) * w2 + gamma * kd
 
     def is_entangled_with(
         self,
-        other: "QuantumSignature",
+        other: QuantumSignature,
         classical_thr: float = 0.5,
         quantum_thr: float = 0.06,
     ) -> bool:
@@ -204,6 +241,7 @@ def free_entropy(mu: list[float]) -> float:
     pozitifse hastalık daha bozuk (daha düşük entropik çeşitlilik).
     """
     import math
+
     fc = FreeCumulants.from_moments(mu)
     k2 = fc.k[1] if len(fc.k) > 1 else 0.0
     k3 = fc.k[2] if len(fc.k) > 2 else 0.0
@@ -213,7 +251,7 @@ def free_entropy(mu: list[float]) -> float:
     # Yarı-daire taban terimi (tam)
     base = 0.5 * math.log(2.0 * math.pi * math.e * k2)
     # κ₃, κ₄ düzeltmeleri (birinci mertebe, küçük kümülanlar için geçerli)
-    denom = k2 ** 3
+    denom = k2**3
     correction = -(2.0 * k3**2 / (9.0 * denom) + k4**2 / (8.0 * denom)) if denom > 1e-20 else 0.0
     return base + correction
 
@@ -239,6 +277,7 @@ def bounded_kappa_distance(
     .to_moments_approx() ile μ-uzayına dön (κ₁..κ₄ roundtrip tam).
     """
     import math
+
     ka = FreeCumulants.from_moments(mu_a).k
     kb = FreeCumulants.from_moments(mu_b).k
     idx = (0, 1, 2, 3) if include_mean else (1, 2, 3)

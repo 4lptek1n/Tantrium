@@ -10,6 +10,7 @@ arasındaki köprüdür. Manifold her şeyi tutar; SessionMemory ise
 Süreklilik: SessionMemory.latest() en son oturumu sürdürür — sistem
 bir önceki konuşmanın kaldığı yerden devam eder.
 """
+
 from __future__ import annotations
 
 import json
@@ -29,6 +30,7 @@ _SESSION_DIR = "results/agi/sessions"
 @dataclass
 class Turn:
     """Tek bir konuşma turn'ü."""
+
     user_input: str
     certified_concepts: list[str] = field(default_factory=list)  # bilinen + yeni
     new_concepts: list[str] = field(default_factory=list)
@@ -43,6 +45,7 @@ class SessionMemory:
     ağırlıklar _DECAY ile çarpılır, yeni kavramlar 1.0 ile eklenir.
     Böylece yeni bahsedilenler ağır, eskiyenler hafif olur.
     """
+
     session_id: str
     turns: list[Turn] = field(default_factory=list)
     active_concepts: dict[str, float] = field(default_factory=dict)
@@ -64,9 +67,7 @@ class SessionMemory:
 
     def context_concepts(self, top_n: int = 8) -> list[tuple[str, float]]:
         """En yüksek ağırlıklı N aktif kavram (sonraki encode'a karışacak)."""
-        return sorted(
-            self.active_concepts.items(), key=lambda x: x[1], reverse=True
-        )[:top_n]
+        return sorted(self.active_concepts.items(), key=lambda x: x[1], reverse=True)[:top_n]
 
     def clear_working(self) -> None:
         """Çalışma belleğini temizle (/forget). Turn geçmişi korunur."""
@@ -91,7 +92,7 @@ class SessionMemory:
         return str(p)
 
     @classmethod
-    def load(cls, path: str) -> "SessionMemory":
+    def load(cls, path: str) -> SessionMemory:
         p = Path(path)
         data = json.loads(p.read_text(encoding="utf-8"))
         s = cls(
@@ -103,7 +104,7 @@ class SessionMemory:
         return s
 
     @classmethod
-    def latest(cls, directory: str = _SESSION_DIR) -> "SessionMemory | None":
+    def latest(cls, directory: str = _SESSION_DIR) -> SessionMemory | None:
         """En son değiştirilmiş oturumu sürdür. Yoksa None."""
         d = Path(directory)
         if not d.exists():
@@ -117,7 +118,7 @@ class SessionMemory:
             return None
 
     @classmethod
-    def new(cls) -> "SessionMemory":
+    def new(cls) -> SessionMemory:
         """Yeni oturum — timestamp tabanlı kimlik."""
         sid = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         return cls(session_id=sid)
@@ -125,7 +126,4 @@ class SessionMemory:
     def summary(self) -> str:
         active = self.context_concepts(top_n=6)
         active_str = ", ".join(f"{n}({w:.2f})" for n, w in active) if active else "—"
-        return (
-            f"Oturum: {self.session_id}  |  {len(self.turns)} turn  |  "
-            f"aktif: {active_str}"
-        )
+        return f"Oturum: {self.session_id}  |  {len(self.turns)} turn  |  aktif: {active_str}"

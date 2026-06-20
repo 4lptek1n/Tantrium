@@ -14,6 +14,7 @@ Her aşama `state: dict` alıp günceller. Aşamalar sıralıdır:
   L5    GIMEL — Achilles: zayıf paradigma tespiti
   L6    EMET  — Matematiksel kimlik cross-check
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -21,8 +22,8 @@ import math
 from fractions import Fraction
 from typing import Any
 
-
 # ─── L0.5 – BET: Frobenius kimliği ve von Neumann entropi ───────────────────
+
 
 def stage_l05_bet_infocon(
     A: list[list[Fraction]],
@@ -36,11 +37,7 @@ def stage_l05_bet_infocon(
     eigenvalue'lar yok; entropy=0 başlangıcı, DALET sonrası güncelleriz).
     """
     try:
-        _frob_sq = sum(
-            float(A[i][j]) ** 2
-            for i in range(len(A))
-            for j in range(len(A[i]))
-        )
+        _frob_sq = sum(float(A[i][j]) ** 2 for i in range(len(A)) for j in range(len(A[i])))
         _tr_G = float(sum(G[i][i] for i in range(len(G))))
         _info_loss = abs(_frob_sq - _tr_G) / max(_frob_sq, 1e-15)
 
@@ -80,6 +77,7 @@ def stage_l05_bet_infocon(
 
 # ─── L2.5 – DALET: Gerçek spektrum ──────────────────────────────────────────
 
+
 def stage_l25_dalet_spectrum(
     G: list[list[Fraction]],
     state: dict,
@@ -104,8 +102,8 @@ def stage_l25_dalet_spectrum(
         _p2 = float(_np.trace(_gnp @ _gnp))
         _p3 = float(_np.trace(_gnp @ _gnp @ _gnp))
         _e1 = _p1
-        _e2 = (_p1 ** 2 - _p2) / 2.0
-        _e3 = (_p1 ** 3 - 3.0 * _p1 * _p2 + 2.0 * _p3) / 6.0
+        _e2 = (_p1**2 - _p2) / 2.0
+        _e3 = (_p1**3 - 3.0 * _p1 * _p2 + 2.0 * _p3) / 6.0
         _newton_rhs = _e1 * _p2 - _e2 * _p1 + 3.0 * _e3
         _newton_res = abs(_p3 - _newton_rhs) / max(abs(_p3), 1.0)
 
@@ -131,8 +129,8 @@ def stage_l25_dalet_spectrum(
         _n_zero = sum(1 for _e in _eigs_raw if abs(_e) <= 1e-9)
         _n_neg = sum(1 for _e in _eigs_raw if _e < -1e-9)
         state["inertia"] = (_n_pos, _n_zero, _n_neg)
-        state["conserved_index"] = _n_pos          # rank = Sylvester invaryantı
-        state["psd_preserved"] = (_n_neg == 0)
+        state["conserved_index"] = _n_pos  # rank = Sylvester invaryantı
+        state["psd_preserved"] = _n_neg == 0
     except Exception:
         # numpy yoksa: köşegenden türet, AMA sahte "başarı" değeri ÜRETME.
         # Hesaplanamayan invaryantlar None bırakılır → paradigma UNKNOWN der (dürüst).
@@ -173,6 +171,7 @@ def _update_bet_entropy(state: dict) -> None:
 
 # ─── L1.5 – HE: Lyapunov fonksiyonu ─────────────────────────────────────────
 
+
 def stage_l15_he_lyapunov(
     moments: list[Fraction],
     state: dict,
@@ -187,7 +186,7 @@ def stage_l15_he_lyapunov(
         if _lyap_norm <= 0:
             _lyap_norm = 1.0
         _lyap = [
-            float(moments[k]) / (_lyap_norm ** k) if _lyap_norm > 0 else 0.0
+            float(moments[k]) / (_lyap_norm**k) if _lyap_norm > 0 else 0.0
             for k in range(min(6, len(moments)))
         ]
         state["lyapunov_values"] = _lyap
@@ -196,6 +195,7 @@ def stage_l15_he_lyapunov(
 
 
 # ─── L2 – ZAYIN: τ-determinantlar + Schur tamamlayıcı ───────────────────────
+
 
 def stage_l2_zayin_hankel(
     moments: list[Fraction],
@@ -234,8 +234,10 @@ def stage_l2_zayin_hankel(
         _nh = min(len(moments), 6)
         _sz = 3
         _Hnp = _np.array(
-            [[float(moments[_i + _j2]) if _i + _j2 < _nh else 0.0
-              for _j2 in range(_sz)] for _i in range(_sz)]
+            [
+                [float(moments[_i + _j2]) if _i + _j2 < _nh else 0.0 for _j2 in range(_sz)]
+                for _i in range(_sz)
+            ]
         )
         _k = 1
         _Asub = _Hnp[:_k, :_k]
@@ -267,6 +269,7 @@ def stage_l2_zayin_hankel(
 
 # ─── L3 – HET: Li kriteri (bu objenin eigenvalue'ları!) ─────────────────────
 
+
 def stage_l3_het_li(state: dict) -> None:
     """HET / L3 — Li kriteri: λ_n = Σ_ρ [1 − (1−1/ρ)^n] ≥ 0.
 
@@ -289,22 +292,20 @@ def stage_l3_het_li(state: dict) -> None:
             for lam in _positive_eigs:
                 # Her eigenvalue λ bir spektral sıfır ρ = 1/2 + iλ tanımlar
                 rho_re, rho_im = 0.5, lam
-                mod2 = rho_re ** 2 + rho_im ** 2
-                inv_re = rho_re / mod2       # Re(1/ρ)
-                inv_im = rho_im / mod2       # Im(1/ρ)
-                omr = 1.0 - inv_re           # Re(1 − 1/ρ)
-                omi = -inv_im                # Im(1 − 1/ρ)
-                r = (omr ** 2 + omi ** 2) ** 0.5
+                mod2 = rho_re**2 + rho_im**2
+                inv_re = rho_re / mod2  # Re(1/ρ)
+                inv_im = rho_im / mod2  # Im(1/ρ)
+                omr = 1.0 - inv_re  # Re(1 − 1/ρ)
+                omi = -inv_im  # Im(1 − 1/ρ)
+                r = (omr**2 + omi**2) ** 0.5
                 theta = math.atan2(omi, omr)
-                term_re = (r ** n) * math.cos(n * theta)
+                term_re = (r**n) * math.cos(n * theta)
                 li += 1.0 - term_re
             li_coeffs.append(li)
 
         state["li_coefficients"] = li_coeffs
         state["li_positive"] = all(l > 0 for l in li_coeffs)
-        state["potential_values"] = {
-            f"lambda_{n + 1}": li_coeffs[n] for n in range(len(li_coeffs))
-        }
+        state["potential_values"] = {f"lambda_{n + 1}": li_coeffs[n] for n in range(len(li_coeffs))}
         state["flows"] = [
             {
                 "from": f"lambda_{n + 1}",
@@ -321,19 +322,29 @@ def stage_l3_het_li(state: dict) -> None:
             _li_n = 0.0
             for _lam in _eigs_fallback:
                 _rho_re, _rho_im = 0.5, _lam
-                _mod2 = _rho_re ** 2 + _rho_im ** 2
+                _mod2 = _rho_re**2 + _rho_im**2
                 _omr = 1.0 - _rho_re / _mod2
                 _omi = _rho_im / _mod2
-                _r = (_omr ** 2 + _omi ** 2) ** 0.5
-                _li_n += 1.0 - (_r ** _n) * math.cos(_n * math.atan2(_omi, _omr))
+                _r = (_omr**2 + _omi**2) ** 0.5
+                _li_n += 1.0 - (_r**_n) * math.cos(_n * math.atan2(_omi, _omr))
             _li_fallback.append(_li_n)
         state["li_coefficients"] = _li_fallback
         state["li_positive"] = all(l > 0 for l in _li_fallback)
-        state["potential_values"] = {f"lambda_{k + 1}": _li_fallback[k] for k in range(len(_li_fallback))}
-        state["flows"] = [{"from": f"lambda_{k + 1}", "to": f"lambda_{k + 2}", "gradient": _li_fallback[k + 1] - _li_fallback[k]} for k in range(len(_li_fallback) - 1)]
+        state["potential_values"] = {
+            f"lambda_{k + 1}": _li_fallback[k] for k in range(len(_li_fallback))
+        }
+        state["flows"] = [
+            {
+                "from": f"lambda_{k + 1}",
+                "to": f"lambda_{k + 2}",
+                "gradient": _li_fallback[k + 1] - _li_fallback[k],
+            }
+            for k in range(len(_li_fallback) - 1)
+        ]
 
 
 # ─── L4 – TAV: de Bruijn-Newman heat-flow ────────────────────────────────────
+
 
 def stage_l4_tav_heatflow(state: dict) -> None:
     """TAV / L4 — de Bruijn-Newman Λ=0: ısı akışı sabit noktaya yakınsar.
@@ -374,6 +385,7 @@ def stage_l4_tav_heatflow(state: dict) -> None:
 
 # ─── Yardımcı paradigmalar ────────────────────────────────────────────────────
 
+
 def stage_ancillary(
     raw_input: Any,
     A: list[list[Fraction]],
@@ -387,8 +399,7 @@ def stage_ancillary(
 
     # KAF — Enjektiflik: SHA256(position+content) her eleman için tekil
     state["mappings"] = {
-        f"elem_{i}": _hl.sha256(f"{i}:{A[i]}".encode()).hexdigest()[:12]
-        for i in range(min(n, 8))
+        f"elem_{i}": _hl.sha256(f"{i}:{A[i]}".encode()).hexdigest()[:12] for i in range(min(n, 8))
     }
 
     # TSADI — Sensör → Sertifika (determinizm/reproducibility): saf fonksiyon mu?
@@ -399,9 +410,9 @@ def stage_ancillary(
     # için n×n Fraction matris kurar (tek encode 60s+); her sertifikasyonda
     # re-encode pipeline'ı kilitler. Saflık koddan ispatlı, ampirik tekrara gerek
     # yok. Determinizm tek sayısal kaynaktan (numpy eigvalsh) gelir, deterministik.
-    _sensor_hash = _hl.sha256(
-        str(raw_input)[:4000].encode("utf-8", errors="replace")
-    ).hexdigest()[:16]
+    _sensor_hash = _hl.sha256(str(raw_input)[:4000].encode("utf-8", errors="replace")).hexdigest()[
+        :16
+    ]
     _cert_hash = _hl.sha256("|".join(str(m) for m in moments).encode()).hexdigest()[:16]
     state["sensor_hash"] = _sensor_hash
     state["certificate_hash"] = _cert_hash
@@ -418,25 +429,26 @@ def stage_ancillary(
     for _i in range(min(n, 3)):
         for _j in range(_i + 1, min(n, 4)):
             if _i < _ng_ay and _j < _ng_ay:
-                _gram_dist = sum(
-                    abs(float(G[_i][_k]) - float(G[_j][_k]))
-                    for _k in range(_ng_ay)
+                _gram_dist = sum(abs(float(G[_i][_k]) - float(G[_j][_k])) for _k in range(_ng_ay))
+                _pairs.append(
+                    {
+                        "a": f"row_{_i}",
+                        "b": f"row_{_j}",
+                        "separating_measurement": (
+                            f"gram_spectral_L1={_gram_dist:.6f}" if _gram_dist > 1e-9 else None
+                        ),
+                        "gram_distance": _gram_dist,
+                    }
                 )
-                _pairs.append({
-                    "a": f"row_{_i}",
-                    "b": f"row_{_j}",
-                    "separating_measurement": (
-                        f"gram_spectral_L1={_gram_dist:.6f}" if _gram_dist > 1e-9 else None
-                    ),
-                    "gram_distance": _gram_dist,
-                })
     if not _pairs:
-        _pairs = [{
-            "a": "row_0",
-            "b": "row_0",
-            "separating_measurement": "trivial_single_element",
-            "gram_distance": 0.0,
-        }]
+        _pairs = [
+            {
+                "a": "row_0",
+                "b": "row_0",
+                "separating_measurement": "trivial_single_element",
+                "gram_distance": 0.0,
+            }
+        ]
     state["distinct_pairs"] = _pairs[:4]
 
     # MEM — Ayar eşdeğerliği: x ~ y ↔ ∀M, M(x)=M(y) (aynı Gram satırı).
@@ -463,9 +475,9 @@ def stage_ancillary(
         _gauge_classes.append(
             [{"id": _m["id"], "all_measurements_equal": _exact} for _m in _members]
         )
-    state["gauge_classes"] = _gauge_classes if _gauge_classes else [
-        [{"id": "row_0", "all_measurements_equal": True}]
-    ]
+    state["gauge_classes"] = (
+        _gauge_classes if _gauge_classes else [[{"id": "row_0", "all_measurements_equal": True}]]
+    )
 
     # LAMED — Yerel görünürlük: G[i,i] > 0 ise yerel olarak gözlemlenebilir
     _ng_lm = len(G)
@@ -490,8 +502,10 @@ def stage_ancillary(
     # SHIN — Optimal aksiyon: en yüksek moment ağırlığı
     if moments:
         _best_k = max(range(min(4, len(moments))), key=lambda k: moments[k])
-        _actions = [{"id": f"use_moment_{k}", "score": float(moments[k])}
-                    for k in range(min(4, len(moments)))]
+        _actions = [
+            {"id": f"use_moment_{k}", "score": float(moments[k])}
+            for k in range(min(4, len(moments)))
+        ]
         state["actions"] = _actions
         state["chosen_action"] = f"use_moment_{_best_k}"
 
@@ -503,6 +517,7 @@ def stage_ancillary(
     # Bozuk/sahte moment dizilerinde D_n işaret değiştirir → b_n < 0 → obstruction.
     try:
         import numpy as _np
+
         _mu = [float(m) for m in moments]
         _dets = [1.0]  # D_0 = 1 (boş Hankel)
         for _nn in range(1, len(_mu) // 2 + 1):
@@ -533,8 +548,10 @@ def stage_ancillary(
     # Araki-Lieb üçgen eşitsizliği |S(A)−S(B)| ≤ S(AB) ≤ S(A)+S(B) doğrulanır.
     # Ayrıca her entropi fiziksel sınırda olmalı: 0 ≤ S ≤ log(dim).
     try:
-        import numpy as _rnp
         import math as _rmath
+
+        import numpy as _rnp
+
         _rng = len(G)
         _rgnp = _rnp.array([[float(G[i][j]) for j in range(_rng)] for i in range(_rng)])
         _reigs = [max(0.0, _e) for _e in _rnp.linalg.eigvalsh(_rgnp).tolist()]
@@ -556,7 +573,7 @@ def stage_ancillary(
         # Fiziksel entropi sınırı: 0 ≤ S ≤ log(n_nonzero).
         # Gerçek Gram matrisi için her zaman sağlanmalı.
         # İhlal → sayısal bozulma / dejenere spektrum → RESH bloklar.
-        _entropy_bound_holds = (0.0 - 1e-9 <= _S_AB <= _s_max + 1e-9)
+        _entropy_bound_holds = 0.0 - 1e-9 <= _S_AB <= _s_max + 1e-9
         _half = max(1, len(_reigs) // 2)
         state["environment_trace"] = True
         state["entropy_total"] = _S_AB
@@ -581,7 +598,9 @@ def stage_ancillary(
     # Hamburger: ölçü momentleriyle tam belirlenir; truncation bilgi kaybeder
     # (kalan momentler residual'e eklenir), bu yüzden tam model genelde minimal.
     try:
-        import zlib as _zlib, json as _json
+        import json as _json
+        import zlib as _zlib
+
         _raw_str = str(raw_input)[:2000]
         _raw_compressed = len(_zlib.compress(_raw_str.encode("utf-8", errors="replace"), level=9))
         _mu_full = [float(m) for m in moments]
@@ -605,11 +624,13 @@ def stage_ancillary(
                 _dropped_str = _json.dumps(_mu_full[_trunc:])
                 _dropped_compressed = len(_zlib.compress(_dropped_str.encode(), level=9))
                 _alt_residual = _residual + _dropped_compressed
-                _alternatives.append({
-                    "name": f"truncated_{_trunc}",
-                    "model_length": _alt_model,
-                    "data_given_model_length": _alt_residual,
-                })
+                _alternatives.append(
+                    {
+                        "name": f"truncated_{_trunc}",
+                        "model_length": _alt_model,
+                        "data_given_model_length": _alt_residual,
+                    }
+                )
         state["alternative_models"] = _alternatives
     except Exception:
         # Hesaplanamadı — dürüst None (sahte "minimal" değeri YOK)
@@ -631,6 +652,7 @@ def stage_ancillary(
 
 # ─── L5 – GIMEL: Achilles (en zayıf paradigma) ───────────────────────────────
 
+
 def stage_l5_gimel_admission(
     moments: list[Fraction],
     state: dict,
@@ -647,9 +669,7 @@ def stage_l5_gimel_admission(
         _margins["DALET"] = float(max(0.0, min(_eigs))) if _eigs else 0.0
         _lyap = state.get("lyapunov_values", [])
         if len(_lyap) > 1:
-            _margins["HE"] = float(
-                min(-(_lyap[k + 1] - _lyap[k]) for k in range(len(_lyap) - 1))
-            )
+            _margins["HE"] = float(min(-(_lyap[k + 1] - _lyap[k]) for k in range(len(_lyap) - 1)))
         _margins["ZAYIN"] = float(state.get("schur_min_eigenvalue", 0.0))
         _tau_vals = list(state.get("tau_determinants", {}).values())
         if _tau_vals:
@@ -658,10 +678,12 @@ def stage_l5_gimel_admission(
         _achilles = min(_margins, key=lambda k: _margins[k])
         _achilles_margin = _margins[_achilles]
         if _achilles_margin < 0:
-            state["open_obstructions"] = [{
-                "name": _achilles,
-                "repair_cost": abs(_achilles_margin),
-            }]
+            state["open_obstructions"] = [
+                {
+                    "name": _achilles,
+                    "repair_cost": abs(_achilles_margin),
+                }
+            ]
         else:
             state["open_obstructions"] = []
 
@@ -676,6 +698,7 @@ def stage_l5_gimel_admission(
 
 
 # ─── L6 – EMET: Matematiksel kimlik cross-check ──────────────────────────────
+
 
 def stage_l6_emet_certificate(
     A: list[list[Fraction]],
@@ -692,9 +715,7 @@ def stage_l6_emet_certificate(
         _contradictions: list[str] = []
 
         # 1. Frobenius kimliği: ||A||_F² = Tr(G)
-        _frob = sum(
-            float(A[i][j]) ** 2 for i in range(len(A)) for j in range(len(A[i]))
-        )
+        _frob = sum(float(A[i][j]) ** 2 for i in range(len(A)) for j in range(len(A[i])))
         _tr_G = float(sum(G[i][i] for i in range(len(G))))
         if abs(_frob - _tr_G) > 1e-5 * max(_frob, 1.0):
             _contradictions.append("FROBENIUS_TRACE_MISMATCH")
@@ -734,6 +755,7 @@ def stage_l6_emet_certificate(
 
 # ─── Ana pipeline ─────────────────────────────────────────────────────────────
 
+
 def run_pipeline(
     raw_input: Any,
     A: list[list[Fraction]],
@@ -755,9 +777,7 @@ def run_pipeline(
     """
     state: dict = {}
     n = len(A)
-    sig = hashlib.sha256(
-        "|".join(str(m) for m in moments).encode()
-    ).hexdigest()[:16]
+    sig = hashlib.sha256("|".join(str(m) for m in moments).encode()).hexdigest()[:16]
 
     # 1. Eigenvalues önce gelir — diğer aşamalar buna bağlı
     stage_l25_dalet_spectrum(G, state)

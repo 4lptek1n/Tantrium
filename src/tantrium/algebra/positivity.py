@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 import sympy as sp
 
@@ -21,7 +21,7 @@ def has_positive_coefficients(poly: Any, var: Any, strict: bool = True) -> bool:
     return all(sp.simplify(c) >= 0 for c in coeffs)
 
 
-def positivity_report(poly: Any, var: Any) -> Dict[str, Any]:
+def positivity_report(poly: Any, var: Any) -> dict[str, Any]:
     """Return a small positivity report for a polynomial."""
     coeffs = coefficients_in_var(poly, var)
     return {

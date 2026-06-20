@@ -3,18 +3,26 @@
 Ham ses/görüntü → AYNI moment uzayı → 23 paradigma. Encoder yeni katman
 eklemez; Hamburger/Bochner momentlerini duyusal veriye uygular.
 """
+
 import numpy as np
 import pytest
 
-import tantrium
 from tantrium.perception import (
-    encode_signal, encode_image, encode_matrix, signal_autocorrelation,
-    tone, chord, white_noise,
-    solid_image, stripes_image, concentric_image, noise_image,
+    chord,
+    concentric_image,
+    encode_image,
+    encode_matrix,
+    encode_signal,
+    noise_image,
+    signal_autocorrelation,
+    solid_image,
+    stripes_image,
+    tone,
+    white_noise,
 )
 
-
 # ─── Temel kodlama ───────────────────────────────────────────────────────────
+
 
 def test_encode_signal_returns_8_moments():
     obj = encode_signal(tone(440), name="t440")
@@ -42,6 +50,7 @@ def test_signal_moments_in_unit_interval():
 
 
 # ─── Spektral entropi okuması (grounding'in kalbi) ───────────────────────────
+
 
 def test_tone_has_lower_entropy_than_noise():
     """Saf ton konsantre spektrum (düşük μ₁); gürültü düz (yüksek μ₁).
@@ -75,6 +84,7 @@ def test_solid_image_has_empty_signature():
 
 # ─── Otokorelasyon (Wiener–Khinchin temeli) ──────────────────────────────────
 
+
 def test_autocorrelation_normalized_to_one_at_zero():
     r = signal_autocorrelation(tone(440), lags=10)
     assert r[0] == pytest.approx(1.0)
@@ -87,6 +97,7 @@ def test_noise_autocorrelation_decays_fast():
 
 
 # ─── 23 paradigma sertifikalama ──────────────────────────────────────────────
+
 
 def test_structured_signal_certifies_most(ai):
     """Yapılı sinyal (ton) en az 22/23 paradigmadan geçer. RESH (Araki-Lieb)
@@ -103,6 +114,7 @@ def test_noise_image_certifies_most(ai):
 
 
 # ─── ai.perceive() entegrasyonu ──────────────────────────────────────────────
+
 
 def test_perceive_signal_returns_run(ai):
     run = ai.perceive(tone(330), modality="signal", name="p_sig")

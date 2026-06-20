@@ -20,26 +20,27 @@ Neden kritik:
   - SADAKAT: geri kurulan ölçünün momentlerini yeniden hesaplayıp orijinalle
     karşılaştırırız → rekonstrüksiyon hatası = momentlerin ne kadar "sabitlediği".
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from fractions import Fraction
+from dataclasses import dataclass
 
 
 @dataclass
 class ReconstructedMeasure:
     """Moment dizisinden geri kurulan atomik ölçü dμ = Σ wᵢ·δ(x−xᵢ)."""
-    support: list[float]            # destek noktaları xᵢ (kuadratür düğümleri)
-    weights: list[float]            # ağırlıklar wᵢ (≥ 0, Σ wᵢ = μ₀)
-    input_moments: list[float]      # geri kurulurken kullanılan momentler
+
+    support: list[float]  # destek noktaları xᵢ (kuadratür düğümleri)
+    weights: list[float]  # ağırlıklar wᵢ (≥ 0, Σ wᵢ = μ₀)
+    input_moments: list[float]  # geri kurulurken kullanılan momentler
     reconstructed_moments: list[float]  # ölçüden yeniden hesaplanan momentler
-    reconstruction_error: float     # L1(input, reconstructed) — sadakat ölçüsü
-    rank: int                       # ölçünün gerçek atom sayısı (Hankel rankı)
-    well_determined: bool           # moment dizisi ölçüyü iyi sabitliyor mu?
+    reconstruction_error: float  # L1(input, reconstructed) — sadakat ölçüsü
+    rank: int  # ölçünün gerçek atom sayısı (Hankel rankı)
+    well_determined: bool  # moment dizisi ölçüyü iyi sabitliyor mu?
 
     def summary(self) -> str:
         atoms = " + ".join(
-            f"{w:.3f}·δ({x:.3f})" for x, w in zip(self.support[:4], self.weights[:4])
+            f"{w:.3f}·δ({x:.3f})" for x, w in zip(self.support[:4], self.weights[:4], strict=False)
         )
         more = " + ..." if len(self.support) > 4 else ""
         flag = "✓ iyi-belirli" if self.well_determined else "≈ zayıf-belirli"
@@ -77,9 +78,13 @@ def reconstruct_measure(
     if m < 1:
         # Tek moment → tek atom μ₀'da
         return ReconstructedMeasure(
-            support=[1.0], weights=[mass], input_moments=mu,
-            reconstructed_moments=[mass], reconstruction_error=0.0,
-            rank=1, well_determined=False,
+            support=[1.0],
+            weights=[mass],
+            input_moments=mu,
+            reconstructed_moments=[mass],
+            reconstruction_error=0.0,
+            rank=1,
+            well_determined=False,
         )
 
     # Hankel ve shifted Hankel
@@ -121,7 +126,9 @@ def reconstruct_measure(
 
     # Ağırlıklar: Vandermonde sistemi  V·w = μ  (Vᵢₖ = xₖⁱ)
     k_atoms = len(support)
-    V = np.array([[support[col] ** row for col in range(k_atoms)] for row in range(k_atoms)], dtype=float)
+    V = np.array(
+        [[support[col] ** row for col in range(k_atoms)] for row in range(k_atoms)], dtype=float
+    )
     rhs = np.array(mu[:k_atoms], dtype=float)
     try:
         weights = np.linalg.solve(V, rhs).tolist()
@@ -138,9 +145,9 @@ def reconstruct_measure(
     n_check = len(mu)
     recon = []
     for k in range(n_check):
-        recon.append(sum(w * (x ** k) for x, w in zip(support, weights)))
+        recon.append(sum(w * (x**k) for x, w in zip(support, weights, strict=False)))
 
-    error = sum(abs(a - b) for a, b in zip(mu, recon)) / max(1, n_check)
+    error = sum(abs(a - b) for a, b in zip(mu, recon, strict=False)) / max(1, n_check)
     well_determined = error < error_threshold
 
     return ReconstructedMeasure(
@@ -163,4 +170,5 @@ def reconstruction_fidelity(moments) -> float:
     rec = reconstruct_measure(moments)
     # Hata → [0,1] sadakat skoruna dönüştür
     import math
+
     return math.exp(-rec.reconstruction_error * 100.0)

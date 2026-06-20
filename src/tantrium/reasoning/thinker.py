@@ -10,13 +10,14 @@ Ell=1: manifold walk — en yakın sertifikalı kavramlar (dyadic ell=0→1)
 Ell=2: inference chain — kavram çiftlerinden yeni certified claims (ell=1→2)
 Ell=3: second-order walk — derived kavramların komşuları (ell=2→3)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import TYPE_CHECKING
 
-from tantrium.core.semantic import Concept, moment_distance
+from tantrium.core.semantic import Concept
 
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
@@ -30,9 +31,10 @@ def _meaning_neighbors(engine, name: str, fallback_concept, n: int, _fallback: b
     False` → boş liste (çağıran kendi fallback'ini seçsin). Fail-open → regresyon yok."""
     try:
         from tantrium.core.meaning_pipeline import nearest_meaning
+
         hits = nearest_meaning(engine, name, n=n)
         if any(mod == "relational" for _, _, mod in hits):
-            return [(nm, Fraction(d).limit_denominator(10 ** 6)) for nm, d, _ in hits]
+            return [(nm, Fraction(d).limit_denominator(10**6)) for nm, d, _ in hits]
     except Exception:
         pass
     if not _fallback:
@@ -41,6 +43,7 @@ def _meaning_neighbors(engine, name: str, fallback_concept, n: int, _fallback: b
 
 
 # ─── Data model ───────────────────────────────────────────────────────────────
+
 
 @dataclass
 class ThinkingLevel:
@@ -76,19 +79,19 @@ class ThinkingResult:
             "╠" + "═" * 50,
         ]
         for lv in self.levels:
-            lines.append(f"║")
+            lines.append("║")
             lines.append(f"║  [ell={lv.level}] {lv.label}")
             if lv.concepts:
                 for c in lv.concepts[:6]:
                     lines.append(f"║    · {c}")
                 if len(lv.concepts) > 6:
-                    lines.append(f"║    · ... +{len(lv.concepts)-6} daha")
+                    lines.append(f"║    · ... +{len(lv.concepts) - 6} daha")
             if lv.certified_claims:
-                lines.append(f"║    ✓ Sertifikalı:")
+                lines.append("║    ✓ Sertifikalı:")
                 for claim in lv.certified_claims[:5]:
                     lines.append(f"║      {claim}")
                 if len(lv.certified_claims) > 5:
-                    lines.append(f"║      ... +{len(lv.certified_claims)-5} daha")
+                    lines.append(f"║      ... +{len(lv.certified_claims) - 5} daha")
             if lv.gaps:
                 for concept, gap in lv.gaps[:3]:
                     lines.append(f"║    ∅ {concept}: {gap}")
@@ -98,14 +101,17 @@ class ThinkingResult:
         if self.fixed_point_found:
             lines.append(f"║  TAV ✓  Sabit nokta: {self.fixed_point_value:.8f} — sistem kapandı.")
         else:
-            lines.append(f"║  TAV ∅  Sabit nokta bulunamadı — kavram açık.")
+            lines.append("║  TAV ∅  Sabit nokta bulunamadı — kavram açık.")
         conv = "yakınsadı" if self.convergent else "açık kaldı"
-        lines.append(f"║  Sistem: {conv}  ({self.total_certified} sertifika, {self.total_gaps} gap)")
+        lines.append(
+            f"║  Sistem: {conv}  ({self.total_certified} sertifika, {self.total_gaps} gap)"
+        )
         lines.append("╚" + "═" * 50)
         return "\n".join(lines)
 
 
 # ─── Thinker ──────────────────────────────────────────────────────────────────
+
 
 class Thinker:
     """Dyadic transport tabanlı çok-seviyeli düşünce makinesi.
@@ -114,7 +120,7 @@ class Thinker:
     veya gap-isimli bilgi üretir. Context window yok — manifold hafıza.
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     def think(self, question: str, depth: int = 3, neighbors: int = 5) -> ThinkingResult:
@@ -124,8 +130,10 @@ class Thinker:
         Bulunan kelimeler yoksa tüm soruyu encode eder (fallback).
         """
         import re
+
         def _tokenize(s):
             return [w for w in re.findall(r"[a-zA-Z0-9]+", str(s).lower()) if w]
+
         result = ThinkingResult(question=question, depth=depth)
         engine = self.engine
 
@@ -140,6 +148,7 @@ class Thinker:
             k = len(all_moments[0])
             avg = [sum(float(m[i]) for m in all_moments) / len(all_moments) for i in range(k)]
             from fractions import Fraction as _F
+
             avg_moments = [_F(*float(x).as_integer_ratio()) for x in avg]
             q_name = f"query:{'+'.join(known_words[:3])}"
             concept_0 = Concept(name=q_name, moments=avg_moments, domain="query", source="thinker")
@@ -148,7 +157,9 @@ class Thinker:
             # Fallback: tam soruyu encode et
             obj = engine.encoder.encode(question, name=question[:64])
             q_name = question[:64]
-            concept_0 = Concept(name=q_name, moments=list(obj.moments), domain="query", source="thinker")
+            concept_0 = Concept(
+                name=q_name, moments=list(obj.moments), domain="query", source="thinker"
+            )
 
         run0 = engine.network.run(obj)
 
@@ -161,9 +172,7 @@ class Thinker:
                 f"✓ '{question}' gerçek manifold'da var  "
                 f"μ=[{', '.join(f'{float(m):.4f}' for m in obj.moments[:4])}...]"
             )
-            lv0.certified_claims.append(
-                f"✓ {run0.certified_count}/23 paradigma sertifikalandı"
-            )
+            lv0.certified_claims.append(f"✓ {run0.certified_count}/23 paradigma sertifikalandı")
         else:
             gap_name = aleph.result.gap_name if aleph and aleph.result else "UNKNOWN"
             lv0.gaps.append((question, gap_name))
@@ -188,7 +197,8 @@ class Thinker:
             # Semantic edges (IS_A, USES, ACHIEVES, ...) > ALEPH (byte-geometric)
             # Açık-sözlük: geometrik OLMAYAN her tip (öğrenilen yeni tipler dahil) anlamdır.
             from tantrium.graph.knowledge_graph import SEMANTIC_PARADIGMS as _SEMANTIC_PARADIGMS
-            sem_seen: dict[str, tuple[float, str]] = {}   # name → (dist, paradigm)
+
+            sem_seen: dict[str, tuple[float, str]] = {}  # name → (dist, paradigm)
             aleph_seen: dict[str, float] = {}
             for w in known_words[:neighbors]:
                 for edge in tau.edges.get(w, []):
@@ -214,8 +224,9 @@ class Thinker:
             if len(combined) < neighbors and known_words:
                 _picked = {n for n, _, _ in combined}
                 # GERÇEK kavramın (known_words[0]) anlam-komşusu — sentetik q_name değil.
-                for nm, dd in _meaning_neighbors(engine, known_words[0], concept_0, neighbors,
-                                                 _fallback=False):
+                for nm, dd in _meaning_neighbors(
+                    engine, known_words[0], concept_0, neighbors, _fallback=False
+                ):
                     if len(combined) >= neighbors:
                         break
                     if nm not in sem_seen and nm not in _picked and nm not in known_words:
@@ -237,7 +248,9 @@ class Thinker:
                 neighbor_list = meaning_hits
             else:
                 raw_neighbors = tau.nearest(q_name)
-                neighbor_list = [(n, Fraction(d).limit_denominator(10**6)) for n, d in raw_neighbors]
+                neighbor_list = [
+                    (n, Fraction(d).limit_denominator(10**6)) for n, d in raw_neighbors
+                ]
         else:
             neighbor_list = _meaning_neighbors(engine, q_name, concept_0, neighbors)
 
@@ -265,6 +278,7 @@ class Thinker:
         lv2 = ThinkingLevel(level=2, label="Inference Chain (Dyadic Transport ell=1→2)")
 
         from tantrium.reasoning.inference import InferenceChain
+
         chain = InferenceChain()
 
         # Run top-4 neighbor concepts through the network
@@ -276,7 +290,7 @@ class Thinker:
 
         derived_concepts: list[str] = []
         for i, (n_a, r_a) in enumerate(runs_1):
-            for n_b, r_b in runs_1[i + 1:]:
+            for n_b, r_b in runs_1[i + 1 :]:
                 inferences = chain.infer(r_a, r_b)  # type: ignore[arg-type]
                 if inferences:
                     derived_name = f"{n_a}⊕{n_b}"
@@ -284,9 +298,7 @@ class Thinker:
                         derived_concepts.append(derived_name)
                     for ir in inferences:
                         conc = ir.conclusion[:72] if len(ir.conclusion) > 72 else ir.conclusion
-                        lv2.certified_claims.append(
-                            f"{n_a} + {n_b} → [{ir.rule_id}] {conc}"
-                        )
+                        lv2.certified_claims.append(f"{n_a} + {n_b} → [{ir.rule_id}] {conc}")
                 else:
                     lv2.gaps.append((f"{n_a}+{n_b}", "NO_INFERENCE"))
 

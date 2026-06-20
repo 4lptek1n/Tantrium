@@ -17,10 +17,6 @@ jobs:
   lint:
     name: Lint & format (ruff)
     runs-on: ubuntu-latest
-    # Kademeli benimseme (ratchet): mevcut kod tabanında lint borcu var; rapor
-    # eder ama henüz CI'yi kilitlemez. Gerçek kapılar: test + build. Borç azaldıkça
-    # continue-on-error kaldırılıp zorunlu hale getirilecek.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

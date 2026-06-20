@@ -5,11 +5,12 @@ computational_verify: dış-gerçek köprüsünün lab-bağımsız (kesin hesap)
 external_verify yalnız küratörlü kausal olguyu sınar; bu, Sturm pivot↔hiperbolisite
 ve Hankel-PSD iddialarını gerçek matematiğe sınar.
 """
+
 import numpy as np
 
 from tantrium.research.corrigibility import (
-    computational_verify,
     _STURM_CASES,
+    computational_verify,
 )
 
 
@@ -21,6 +22,7 @@ def test_collision_resolution_closes_loop():
     """
     import tantrium
     from tantrium.research.corrigibility import detect_and_correct
+
     ai = tantrium.AI()
     r = detect_and_correct(ai.engine, set())
     assert "resolved_collisions" in r, "çözme döngüsü dönüş sözleşmesinde olmalı"
@@ -56,6 +58,7 @@ def test_sturm_pivot_predicts_hyperbolicity():
     Doğrudan algebra fonksiyonuyla, oracle'dan bağımsız ikinci kanıt.
     """
     from sympy import symbols
+
     from tantrium.algebra.sturm import normalized_sturm_pivots
 
     x = symbols("x")
@@ -71,24 +74,26 @@ def test_sturm_pivot_predicts_hyperbolicity():
 def test_hankel_accepts_real_measure_rejects_invalid():
     """Gerçek atomik ölçüden üretilen moment PSD olmalı; geçersiz dizi reddedilmeli."""
     from fractions import Fraction
+
     from tantrium.core.codex import CertifiableObject
 
     # Gerçek 3-atom ölçü → Hankel DAİMA PSD
     support, weights = [0.2, 0.5, 0.9], [0.3, 0.4, 0.3]
-    mu = [sum(w * (s ** k) for s, w in zip(support, weights)) for k in range(8)]
-    obj = CertifiableObject(name="ölçü",
-                            moments=[Fraction(v).limit_denominator(10 ** 9) for v in mu])
+    mu = [sum(w * (s**k) for s, w in zip(support, weights, strict=False)) for k in range(8)]
+    obj = CertifiableObject(name="ölçü", moments=[Fraction(v).limit_denominator(10**9) for v in mu])
     assert obj.is_moment_sequence(size=4) is True
 
     # Geçersiz: μ₂ < μ₁² (varyans negatif) → PSD değil
-    bad = CertifiableObject(name="geçersiz",
-                            moments=[Fraction(v) for v in [1, 2, 1, 2, 1, 2, 1, 2]])
+    bad = CertifiableObject(
+        name="geçersiz", moments=[Fraction(v) for v in [1, 2, 1, 2, 1, 2, 1, 2]]
+    )
     assert bad.is_moment_sequence(size=4) is False
 
 
 def test_verify_math_facade():
     """ai.verify_math() facade doğru şekli döner."""
     import tantrium
+
     ai = tantrium.AI()
     r = ai.verify_math()
     assert r["score"] == 1.0
@@ -106,6 +111,7 @@ def test_empirical_verify_recovers_distinct_classes():
     """
     import tantrium
     from tantrium.research.corrigibility import empirical_verify
+
     ai = tantrium.AI()
     r = empirical_verify(ai.engine)
     assert r["tested"] >= 10, "panel yeterli ligand içermeli"
@@ -119,6 +125,7 @@ def test_empirical_verify_recovers_distinct_classes():
 def test_calibrate_facade():
     """ai.calibrate() facade ampirik kalibrasyonu döner (varsayılan: RH-Sturm)."""
     import tantrium
+
     ai = tantrium.AI()
     r = ai.calibrate()
     assert "top1_related" in r and "mrr" in r
@@ -134,6 +141,7 @@ def test_calibrate_both_complementary():
     RH-Sturm tam da κ-yakınlığın kaçırdığı kinazları (egfr) ayırır — tamamlayıcı.
     """
     import tantrium
+
     ai = tantrium.AI()
     r = ai.calibrate(metric="both")
     # κ-yakınlık: yapısal-farklı sınıflar (rapalog/NSAID) — kinaz egfr ZAYIF

@@ -15,6 +15,7 @@ kopabilir ("kendini tımarlama" / self-grooming): genesis bridge → bridge'in b
 
 Yüksek skor = gerçek dış bilgiye yakın + yeni + kendi-üretimiyle dolu DEĞİL.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,27 +28,42 @@ if TYPE_CHECKING:
 
 # Sistemin KENDİ ürettiği kavram kaynakları (konveks/genesis/köprü türevleri).
 # Bu kaynaklı komşular = self-grooming sinyali (yeni dış bilgi taşımaz).
-_SYNTHETIC_SOURCES = frozenset({
-    "hankel_interpolation", "hankel_derivation", "hankel_blend",
-    "genesis", "frontier_extrapolation", "emanate", "core_pulse", "bridge",
-})
+_SYNTHETIC_SOURCES = frozenset(
+    {
+        "hankel_interpolation",
+        "hankel_derivation",
+        "hankel_blend",
+        "genesis",
+        "frontier_extrapolation",
+        "emanate",
+        "core_pulse",
+        "bridge",
+    }
+)
 
 
 @dataclass
 class WonderScore:
     """Bir boşluğun wonder yargısı — bileşenleriyle (denetlenebilir)."""
+
     gap: Gap
     score: float
-    v_ext: float        # dış değer (sentetik-olmayan komşu oranı) ∈ [0,1]
-    novelty: float      # mevcut kavramlardan uzaklık (tanh-sınırlı) ∈ [0,1)
-    degeneracy: float   # sentetik komşu oranı (kendini-tımar) ∈ [0,1]
+    v_ext: float  # dış değer (sentetik-olmayan komşu oranı) ∈ [0,1]
+    novelty: float  # mevcut kavramlardan uzaklık (tanh-sınırlı) ∈ [0,1)
+    degeneracy: float  # sentetik komşu oranı (kendini-tımar) ∈ [0,1]
 
 
 class WonderScorer:
     """Boşlukları wonder skoruyla sıralar — kendini-tımarı (degeneracy) cezalar."""
 
-    def __init__(self, engine: "CertificationEngine", *,
-                 alpha: float = 1.0, gamma: float = 0.7, n_neighbors: int = 8) -> None:
+    def __init__(
+        self,
+        engine: CertificationEngine,
+        *,
+        alpha: float = 1.0,
+        gamma: float = 0.7,
+        n_neighbors: int = 8,
+    ) -> None:
         self.engine = engine
         self.alpha = alpha
         self.gamma = gamma
@@ -56,6 +72,7 @@ class WonderScorer:
     def score(self, gap: Gap) -> WonderScore:
         """Tek boşluğun wonder skoru. location yoksa priority-proxy kullanılır."""
         import math
+
         neighbors = self._neighbors(gap)
         if not neighbors:
             # Konumsuz/komşusuz: yalnız priority sinyali — nötr v_ext/degeneracy.
@@ -77,23 +94,24 @@ class WonderScorer:
             if c.source in _SYNTHETIC_SOURCES:
                 synthetic += 1
         degeneracy = (synthetic / total) if total else 0.0
-        v_ext = 1.0 - degeneracy   # dışsal (gerçek bilgi) demir atma oranı
+        v_ext = 1.0 - degeneracy  # dışsal (gerçek bilgi) demir atma oranı
 
         s = self.alpha * v_ext * novelty - self.gamma * degeneracy
         return WonderScore(gap, s, v_ext, novelty, degeneracy)
 
     def rank(self, gaps: list[Gap]) -> list[WonderScore]:
         """Boşlukları wonder skoruna göre azalan sırala (en değerli önce)."""
-        return sorted((self.score(g) for g in gaps),
-                      key=lambda w: w.score, reverse=True)
+        return sorted((self.score(g) for g in gaps), key=lambda w: w.score, reverse=True)
 
     def _neighbors(self, gap: Gap):
         """Boşluğun moment-konumundaki komşular (location yoksa boş)."""
         if not gap.location:
             return []
         from tantrium.core.semantic import Concept
-        probe = Concept(name="_wonder_probe_", moments=list(gap.location),
-                        domain="_probe", source="wonder")
+
+        probe = Concept(
+            name="_wonder_probe_", moments=list(gap.location), domain="_probe", source="wonder"
+        )
         try:
             return self.engine.manifold.nearest(probe, n=self.n_neighbors)
         except Exception:

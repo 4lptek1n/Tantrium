@@ -12,15 +12,16 @@ Bir girdi, bir encode, bir process, 4 eksen — hepsi ortak durumdan.
     → Axis 4: Güven (kalibre skor)
     → UnifiedCertificate (tüm eksenler tutarlı boolean)
 """
+
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 
 
 @dataclass
 class UnifiedCertificate:
     """Tek geçişten gelen 4-eksenli sertifika."""
+
     name: str
     moments: list[float]
 
@@ -31,16 +32,16 @@ class UnifiedCertificate:
     structural_score: float
 
     # Eksen 2: Topraklama
-    grounding: str            # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
+    grounding: str  # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
     grounding_score: float
 
     # Eksen 3: Gerçek
-    truth: str                # CONSISTENT | CONTESTED | CONTRADICTORY
+    truth: str  # CONSISTENT | CONTESTED | CONTRADICTORY
     truth_score: float
 
     # Eksen 4: Güven
-    confidence: float         # 0→1
-    confidence_level: str     # CERTAIN | STRONG | MODERATE | WEAK | UNCERTAIN
+    confidence: float  # 0→1
+    confidence_level: str  # CERTAIN | STRONG | MODERATE | WEAK | UNCERTAIN
 
     # Rekonstrüksiyon kalitesi
     reconstruction_fidelity: float  # 0→1
@@ -53,8 +54,7 @@ class UnifiedCertificate:
 
     def __str__(self) -> str:
         cert = "✓" if self.coherent else "✗"
-        g = {"GROUNDED": "⏚", "WEAKLY_GROUNDED": "≈", "UNGROUNDED": "∅"}.get(
-            self.grounding, "?")
+        g = {"GROUNDED": "⏚", "WEAKLY_GROUNDED": "≈", "UNGROUNDED": "∅"}.get(self.grounding, "?")
         return (
             f"{cert} {self.name} [{self.paradigms_passed}/{self.paradigms_total}] "
             f"{g} {self.truth} conf={self.confidence:.2f} [{self.confidence_level}]"
@@ -67,8 +67,13 @@ class CoreMachine:
     def __init__(self, engine: object) -> None:
         self._engine = engine
 
-    def certify(self, input_data: object, name: str | None = None,
-                adaptive: bool = True, with_truth: bool = True) -> UnifiedCertificate:
+    def certify(
+        self,
+        input_data: object,
+        name: str | None = None,
+        adaptive: bool = True,
+        with_truth: bool = True,
+    ) -> UnifiedCertificate:
         """Tek geçiş: encode → process → 4 eksen → UnifiedCertificate."""
         nm = name or (str(input_data)[:64] if isinstance(input_data, str) else "input")
 
@@ -96,19 +101,21 @@ class CoreMachine:
         # ─── AXIS 3: TRUTH ────────────────────────────────────────────────────
         if with_truth:
             from tantrium.core.truth import TruthCertifier
+
             tcert = TruthCertifier(self._engine).certify(nm, moments=moments)
             truth = tcert.verdict
-            truth_score = getattr(tcert, "truth_score",
-                                  getattr(tcert, "consistency_score", 0.7))
+            truth_score = getattr(tcert, "truth_score", getattr(tcert, "consistency_score", 0.7))
         else:
             truth, truth_score = "CONSISTENT", 0.7
 
         # ─── RECONSTRUCTION FIDELITY ──────────────────────────────────────────
         from tantrium.core.reconstruct import reconstruction_fidelity as _recon_fid
+
         recon = _recon_fid(moments)
 
         # ─── AXIS 4: CONFIDENCE ───────────────────────────────────────────────
         from tantrium.core.confidence import calibrate
+
         achilles_margin = 0.0
         if hasattr(obj, "structure"):
             achilles_margin = float(obj.structure.get("achilles_margin", 0.0) or 0.0)
@@ -151,8 +158,9 @@ class CoreMachine:
     def _encode_adaptive(self, input_data: object, name: str) -> object:
         """8→16 moment derinliği, rekonstrüksiyon kalitesi düşükse."""
         try:
-            from tantrium.core.reconstruct import reconstruction_fidelity as _rf
             from tantrium.core.encoder import UniversalEncoder
+            from tantrium.core.reconstruct import reconstruction_fidelity as _rf
+
             obj = self._engine.encoder.encode(input_data, name=name)
             fidelity = _rf(list(obj.moments))
             if fidelity < 0.999 and len(obj.moments) < 16:

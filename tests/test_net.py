@@ -3,9 +3,9 @@
 Ağ ÇAĞIRMAZ: urllib.request.urlopen mock'lanır. Amaç: ingest/growth/researcher
 fetch yollarının hepsinin tek `net.http_get_json` ilkelinden geçtiğini sabitlemek.
 """
+
 from __future__ import annotations
 
-import io
 import json
 from unittest import mock
 
@@ -70,10 +70,9 @@ def test_http_get_json_link_no_next():
 
 def test_errors_replace_tolerates_bad_utf8():
     """errors='replace' bozuk UTF-8'i çökmeden geçer (growth toleranslı yolu)."""
-    bad = b'{"k":"' + b'\xff\xfe' + b'"}'
+    bad = b'{"k":"' + b"\xff\xfe" + b'"}'
     resp = _FakeResp(bad)
     with mock.patch("urllib.request.urlopen", return_value=resp):
         # replace → çökme yok (yer tutucu karakterle)
         out = net.http_get_json("https://x", errors="replace")
     assert "k" in out
-

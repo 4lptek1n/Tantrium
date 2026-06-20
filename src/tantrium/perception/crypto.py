@@ -15,14 +15,14 @@ NE YAPMAZ:
   Yapıyı OKUMAK ≠ belirli bir anahtarı/yolu ÜRETMEK. Bu araç zayıflık
   tespiti içindir — güçlü şifreleme bu okuyucuya gürültü olarak görünür.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import numpy as np
 
-from tantrium.perception.encode import encode_signal, signal_autocorrelation
-
+from tantrium.perception.encode import encode_signal
 
 # Spektral entropi (μ₁) eşikleri — bayt sinyallerinde ampirik:
 #   düz metin/yapılı:  μ₁ ≲ 0.20
@@ -45,11 +45,12 @@ _ACHILLES_MIN_DEVIATION = 0.25
 @dataclass(frozen=True)
 class AchillesReading:
     """GIMEL ile bulunan Aşil topuğu: yapının en zayıf/sızan ekseni."""
+
     name: str
-    achilles_paradigm: str          # gürültüden en çok sapan paradigma
-    deviation: float                # ideal gürültüden sapma miktarı
-    all_deviations: dict            # her eksenin sapması
-    exploitable: bool               # gerçek bir Aşil topuğu var mı?
+    achilles_paradigm: str  # gürültüden en çok sapan paradigma
+    deviation: float  # ideal gürültüden sapma miktarı
+    all_deviations: dict  # her eksenin sapması
+    exploitable: bool  # gerçek bir Aşil topuğu var mı?
 
     def summary(self) -> str:
         if not self.exploitable:
@@ -58,8 +59,9 @@ class AchillesReading:
                 f"(maks sapma {self.deviation:.4f} < {_ACHILLES_MIN_DEVIATION}).\n"
                 f"  Güçlü: bu okuyucuya saf gürültü; sızan yapısal eksen yok."
             )
-        dev = ", ".join(f"{k}={v:.3f}" for k, v in sorted(
-            self.all_deviations.items(), key=lambda kv: -kv[1]))
+        dev = ", ".join(
+            f"{k}={v:.3f}" for k, v in sorted(self.all_deviations.items(), key=lambda kv: -kv[1])
+        )
         return (
             f"«{self.name}»  AŞİL TOPUĞU → {self.achilles_paradigm} "
             f"(gürültüden sapma {self.deviation:.4f})\n"
@@ -70,22 +72,22 @@ class AchillesReading:
 @dataclass(frozen=True)
 class CryptoReading:
     """Bir bayt dizisinin yapısal okuması."""
+
     name: str
-    spectral_entropy: float       # μ₁ — düşük=yapılı, yüksek=gürültü
-    verdict: str                  # "STRUCTURED" | "WEAK_LEAK" | "STRONG"
-    repeated_blocks: int          # özdeş blok sayısı (ECB imzası)
+    spectral_entropy: float  # μ₁ — düşük=yapılı, yüksek=gürültü
+    verdict: str  # "STRUCTURED" | "WEAK_LEAK" | "STRONG"
+    repeated_blocks: int  # özdeş blok sayısı (ECB imzası)
     block_size: int
     n_bytes: int
 
     def summary(self) -> str:
         flag = {
             "STRUCTURED": "yapılı (şifresiz/açık yapı — okunabilir)",
-            "WEAK_LEAK":  "ZAYIF — şifreli ama yapı sızdırıyor",
-            "STRONG":     "güçlü (gürültü gibi, yapı yok)",
+            "WEAK_LEAK": "ZAYIF — şifreli ama yapı sızdırıyor",
+            "STRONG": "güçlü (gürültü gibi, yapı yok)",
         }[self.verdict]
-        ecb = (
-            f"  ECB blok tekrarı: {self.repeated_blocks} "
-            + ("(ZAFİYET: özdeş bloklar sızıyor)" if self.repeated_blocks > 0 else "(temiz)")
+        ecb = f"  ECB blok tekrarı: {self.repeated_blocks} " + (
+            "(ZAFİYET: özdeş bloklar sızıyor)" if self.repeated_blocks > 0 else "(temiz)"
         )
         return (
             f"«{self.name}»  {self.n_bytes} bayt\n"
@@ -110,7 +112,7 @@ def count_repeated_blocks(data: bytes, block_size: int = 16) -> int:
     n = len(b) // block_size
     seen: dict[bytes, int] = {}
     for i in range(n):
-        blk = b[i * block_size:(i + 1) * block_size]
+        blk = b[i * block_size : (i + 1) * block_size]
         seen[blk] = seen.get(blk, 0) + 1
     return sum(c - 1 for c in seen.values() if c > 1)
 

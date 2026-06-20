@@ -15,11 +15,12 @@ Pipeline:
        ↓
   RDKit ETKDGv3 → 3D SDF dosyası
 """
+
 from __future__ import annotations
 
-import warnings
 import logging
-from dataclasses import dataclass, field
+import warnings
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 logging.getLogger("rdkit").setLevel(logging.CRITICAL)
@@ -27,6 +28,7 @@ warnings.filterwarnings("ignore")
 
 try:
     from rdkit import RDLogger
+
     RDLogger.DisableLog("rdApp.*")
 except Exception:
     pass
@@ -38,10 +40,11 @@ if TYPE_CHECKING:
 @dataclass
 class GenerationCandidate:
     """Tek üretilmiş aday molekül."""
+
     name: str
     smiles: str
     morgan_moments: list[float]
-    moment_distance: float   # hedefe Morgan uzayında mesafe
+    moment_distance: float  # hedefe Morgan uzayında mesafe
     dyadic_score: float
     certified_count: int
     total_paradigms: int
@@ -65,6 +68,7 @@ class GenerationCandidate:
 @dataclass
 class GenerationReport:
     """De novo üretim raporu."""
+
     target: str
     candidates: list[GenerationCandidate]
     best: GenerationCandidate | None
@@ -84,9 +88,7 @@ class GenerationReport:
             "  Sıralama (dyadic transport stabilitesi):",
             "",
         ]
-        for i, c in enumerate(
-            sorted(self.candidates, key=lambda x: -x.combined_score)[:8], 1
-        ):
+        for i, c in enumerate(sorted(self.candidates, key=lambda x: -x.combined_score)[:8], 1):
             lines.append(f"  {i}. {c.summary()}")
             lines.append("")
         if self.best:
@@ -116,97 +118,71 @@ class MoleculeGenerator:
     # EGFR, HER2, KRAS, BCR-ABL, CDK4/6 sınıflarını örtüyor
     _SCAFFOLDS: list[tuple[str, str]] = [
         # ── Quinazoline tabanlı (EGFR 1./2./3. nesil) ──────────────────────
-        ("anilinoquinazoline",
-         "Nc1ccc(F)c(Cl)c1Nc1ncnc2ccc(OCCO)cc12"),
-        ("dimethoxy_quinazoline",
-         "COc1cc2ncnc(N)c2cc1OC"),
-        ("methoxyquinazoline_aniline",
-         "COc1cc2c(Nc3ccccc3)ncnc2cc1OC"),
-        ("egfr_scaffold_core",
-         "c1cnc2ccccc2n1"),
+        ("anilinoquinazoline", "Nc1ccc(F)c(Cl)c1Nc1ncnc2ccc(OCCO)cc12"),
+        ("dimethoxy_quinazoline", "COc1cc2ncnc(N)c2cc1OC"),
+        ("methoxyquinazoline_aniline", "COc1cc2c(Nc3ccccc3)ncnc2cc1OC"),
+        ("egfr_scaffold_core", "c1cnc2ccccc2n1"),
         # ── Pyrimidine tabanlı (osimertinib sınıfı) ────────────────────────
-        ("amino_pyrimidine",
-         "Nc1ncccn1"),
-        ("methyl_pyrimidine_amine",
-         "Cc1ccnc(N)n1"),
-        ("dimethylamino_pyrimidine",
-         "CN(C)c1ccnc(N)n1"),
+        ("amino_pyrimidine", "Nc1ncccn1"),
+        ("methyl_pyrimidine_amine", "Cc1ccnc(N)n1"),
+        ("dimethylamino_pyrimidine", "CN(C)c1ccnc(N)n1"),
         # ── Indole / indazole ──────────────────────────────────────────────
-        ("methyl_indole",
-         "Cc1[nH]c2ccccc2c1"),
-        ("indazole_nh",
-         "c1ccc2[nH]ncc2c1"),
-        ("fluoro_indazole",
-         "Fc1ccc2[nH]ncc2c1"),
+        ("methyl_indole", "Cc1[nH]c2ccccc2c1"),
+        ("indazole_nh", "c1ccc2[nH]ncc2c1"),
+        ("fluoro_indazole", "Fc1ccc2[nH]ncc2c1"),
         # ── Pyrrolo-pyrimidine (JAK/CDK) ───────────────────────────────────
-        ("pyrrolo_pyrimidine",
-         "c1cnc2[nH]ccc2n1"),
-        ("amino_pyrrolo_pyrimidine",
-         "Nc1ncnc2[nH]ccc12"),
+        ("pyrrolo_pyrimidine", "c1cnc2[nH]ccc2n1"),
+        ("amino_pyrrolo_pyrimidine", "Nc1ncnc2[nH]ccc12"),
         # ── Acrylamide warhead (irreversible EGFR) ─────────────────────────
-        ("acrylamide_aniline",
-         "C=CC(=O)Nc1ccccc1"),
-        ("propargylamide_aniline",
-         "C#CC(=O)Nc1ccccc1"),
+        ("acrylamide_aniline", "C=CC(=O)Nc1ccccc1"),
+        ("propargylamide_aniline", "C#CC(=O)Nc1ccccc1"),
         # ── Piperazine / morpholine linkerlar ──────────────────────────────
-        ("piperazino_ethyl",
-         "CCNCCN1CCNCC1"),
-        ("morpholine_methyl",
-         "CN1CCOCC1"),
-        ("dimethylamino_propyl",
-         "CN(C)CCCN"),
+        ("piperazino_ethyl", "CCNCCN1CCNCC1"),
+        ("morpholine_methyl", "CN1CCOCC1"),
+        ("dimethylamino_propyl", "CN(C)CCCN"),
         # ── Halojen farmakoforlar ──────────────────────────────────────────
-        ("chloro_fluoro_aniline",
-         "Nc1ccc(F)c(Cl)c1"),
-        ("bromo_pyridine",
-         "Brc1ccncc1"),
-        ("trifluoromethyl_aniline",
-         "Nc1ccc(C(F)(F)F)cc1"),
+        ("chloro_fluoro_aniline", "Nc1ccc(F)c(Cl)c1"),
+        ("bromo_pyridine", "Brc1ccncc1"),
+        ("trifluoromethyl_aniline", "Nc1ccc(C(F)(F)F)cc1"),
         # ── Sulfonamide / urea farmakoforlar ──────────────────────────────
-        ("methyl_sulfonamide",
-         "CNS(=O)(=O)c1ccccc1"),
-        ("phenyl_urea",
-         "NC(=O)Nc1ccccc1"),
+        ("methyl_sulfonamide", "CNS(=O)(=O)c1ccccc1"),
+        ("phenyl_urea", "NC(=O)Nc1ccccc1"),
         # ── Benzimidazole / imidazole ──────────────────────────────────────
-        ("benzimidazole",
-         "c1ccc2[nH]cnc2c1"),
-        ("methyl_imidazole",
-         "Cn1ccnc1"),
+        ("benzimidazole", "c1ccc2[nH]cnc2c1"),
+        ("methyl_imidazole", "Cn1ccnc1"),
         # ── Aminothiazole ──────────────────────────────────────────────────
-        ("aminothiazole",
-         "Nc1csc(=S)n1"),
-        ("phenyl_aminothiazole",
-         "Nc1csc(-c2ccccc2)n1"),
+        ("aminothiazole", "Nc1csc(=S)n1"),
+        ("phenyl_aminothiazole", "Nc1csc(-c2ccccc2)n1"),
         # ── Karbon iskeleti ────────────────────────────────────────────────
-        ("toluene",          "Cc1ccccc1"),
-        ("fluorobenzene",    "Fc1ccccc1"),
-        ("methoxybenzene",   "COc1ccccc1"),
-        ("cyanobenzene",     "N#Cc1ccccc1"),
+        ("toluene", "Cc1ccccc1"),
+        ("fluorobenzene", "Fc1ccccc1"),
+        ("methoxybenzene", "COc1ccccc1"),
+        ("cyanobenzene", "N#Cc1ccccc1"),
     ]
 
     # Fragment kombinasyon şablonları: (linker, kural)
     _LINKERS: list[tuple[str, str]] = [
-        ("NH",   "{A}Nc1ccc(cc1){B}"),         # anilin bağlantısı
-        ("O",    "{A}Oc1ccc(cc1){B}"),          # eter bağlantısı
-        ("CC",   "{A}CCc1ccccc1{B}"),           # metilen köprüsü
-        ("amide","C(=O)Nc1ccc(cc1){B}"),        # amid bağlantısı
+        ("NH", "{A}Nc1ccc(cc1){B}"),  # anilin bağlantısı
+        ("O", "{A}Oc1ccc(cc1){B}"),  # eter bağlantısı
+        ("CC", "{A}CCc1ccccc1{B}"),  # metilen köprüsü
+        ("amide", "C(=O)Nc1ccc(cc1){B}"),  # amid bağlantısı
     ]
 
     # Bilinen ilaç-hedef SMILES haritası (Morgan bridge için)
     _TARGET_SMILES_MAP: dict[str, list[str]] = {
         "EGFR": [
-            "COCCOC1=CC2=C(C=C1OCCOC)C(=NC=N2)NC1=CC=CC(=C1)C#C",   # Erlotinib
-            "COc1cc2ncnc(Nc3ccc(F)cc3Cl)c2cc1OCCCN1CCOCC1",           # Gefitinib
-            "CN1C=C(c2ccccc21)c1ncnc(Nc2ccc(N(C)CCN(C)C)cc2)n1",      # Osimertinib
-            "CNC(=O)c1cc(Oc2ccc(NC(=O)C=C)cc2)ccn1",                  # Neratinib-like
+            "COCCOC1=CC2=C(C=C1OCCOC)C(=NC=N2)NC1=CC=CC(=C1)C#C",  # Erlotinib
+            "COc1cc2ncnc(Nc3ccc(F)cc3Cl)c2cc1OCCCN1CCOCC1",  # Gefitinib
+            "CN1C=C(c2ccccc21)c1ncnc(Nc2ccc(N(C)CCN(C)C)cc2)n1",  # Osimertinib
+            "CNC(=O)c1cc(Oc2ccc(NC(=O)C=C)cc2)ccn1",  # Neratinib-like
         ],
         "HER2": [
-            "COc1cc2ncnc(Nc3ccc(F)cc3Cl)c2cc1OCCCN1CCOCC1",           # Lapatinib core
-            "CNC(=O)c1cc(Oc2ccc(NC(=O)C=C)cc2)ccn1",                  # Neratinib
+            "COc1cc2ncnc(Nc3ccc(F)cc3Cl)c2cc1OCCCN1CCOCC1",  # Lapatinib core
+            "CNC(=O)c1cc(Oc2ccc(NC(=O)C=C)cc2)ccn1",  # Neratinib
         ],
         "KRAS": [
-            "CC(C)(C)c1nc2c(Cl)cccc2n1CCO",                            # AMG510-like
-            "Cc1cccc(NC(=O)c2cc(F)ccc2NC2CC2)c1",                     # MRTX849-like
+            "CC(C)(C)c1nc2c(Cl)cccc2n1CCO",  # AMG510-like
+            "Cc1cccc(NC(=O)c2cc(F)ccc2NC2CC2)c1",  # MRTX849-like
         ],
         "BCR-ABL": [
             "Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1",  # Imatinib
@@ -216,11 +192,11 @@ class MoleculeGenerator:
             "CC1=C(C(=O)Nc2cccc(F)c2)C(c2ccc(N3CCNCC3)cc2)NC(=O)N1",  # Palbociclib-like
         ],
         "VEGFR": [
-            "CCCOC(=O)c1ccc(NC(=O)Nc2ccc(Cl)c(C(F)(F)F)c2)cc1",       # Sorafenib-like
+            "CCCOC(=O)c1ccc(NC(=O)Nc2ccc(Cl)c(C(F)(F)F)c2)cc1",  # Sorafenib-like
         ],
     }
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
         self._lib: list[tuple[str, str, list[float]]] = []
         self._built = False
@@ -249,6 +225,7 @@ class MoleculeGenerator:
     def _target_morgan_moments(self, target_name: str) -> list[float]:
         """Hedefin Morgan uzayındaki referans momentlerini hesapla."""
         import warnings
+
         from tantrium.core.encoder import encode_smiles as _enc
 
         # 1. Bilinen SMILES haritasından al
@@ -289,6 +266,7 @@ class MoleculeGenerator:
     def _valid_smiles(self, smiles: str) -> bool:
         try:
             from rdkit import Chem
+
             return Chem.MolFromSmiles(smiles) is not None
         except Exception:
             return False
@@ -299,15 +277,13 @@ class MoleculeGenerator:
         self, name_a: str, smiles_a: str, name_b: str, smiles_b: str
     ) -> list[tuple[str, str]]:
         """İki scaffold'u farklı kombinasyonlarla birleştir."""
-        from rdkit import Chem
-        from rdkit.Chem import AllChem
 
         candidates = []
 
         # Direkt kombinasyon şablonları
         templates = [
-            (f"{name_a}+N+{name_b}",  f"{smiles_a}Nc1ccc(cc1){smiles_b}"),
-            (f"{name_a}+O+{name_b}",  f"{smiles_a}Oc1ccc(cc1){smiles_b}"),
+            (f"{name_a}+N+{name_b}", f"{smiles_a}Nc1ccc(cc1){smiles_b}"),
+            (f"{name_a}+O+{name_b}", f"{smiles_a}Oc1ccc(cc1){smiles_b}"),
             (f"{name_a}+C(=O)N+{name_b}", f"{smiles_a}C(=O)N{smiles_b}"),
             (f"{name_a}+CC+{name_b}", f"{smiles_a}CC{smiles_b}"),
         ]
@@ -332,6 +308,7 @@ class MoleculeGenerator:
     ) -> GenerationReport:
         """Hedef → Morgan moment uzayı → fragment kombinasyonu → sertifika → 3D SDF."""
         import time
+
         from tantrium.core.encoder import encode_smiles as _enc_smiles
         from tantrium.domains.certifier import MolecularCertifier
 
@@ -391,6 +368,7 @@ class MoleculeGenerator:
         candidates: list[GenerationCandidate] = []
 
         import warnings as _warnings
+
         for name, smiles in candidate_smiles[:top_k]:
             try:
                 # Morgan encode (RDKit deprecation uyarılarını sustur)
@@ -405,22 +383,26 @@ class MoleculeGenerator:
                 dyadic = certifier._dyadic_transport_score(raw_morgan.moments)
 
                 # 3D sadece en iyi adaya
-                candidates.append(GenerationCandidate(
-                    name=name,
-                    smiles=smiles,
-                    morgan_moments=morgan_moments,
-                    moment_distance=dist,
-                    dyadic_score=dyadic,
-                    certified_count=run.certified_count,
-                    total_paradigms=run.total,
-                ))
+                candidates.append(
+                    GenerationCandidate(
+                        name=name,
+                        smiles=smiles,
+                        morgan_moments=morgan_moments,
+                        moment_distance=dist,
+                        dyadic_score=dyadic,
+                        certified_count=run.certified_count,
+                        total_paradigms=run.total,
+                    )
+                )
             except Exception:
                 continue
 
         # 5. En iyi → 3D SDF
         certified = [c for c in candidates if c.certified_count > 0]
-        best = max(certified, key=lambda x: x.combined_score) if certified else (
-            max(candidates, key=lambda x: x.combined_score) if candidates else None
+        best = (
+            max(certified, key=lambda x: x.combined_score)
+            if certified
+            else (max(candidates, key=lambda x: x.combined_score) if candidates else None)
         )
 
         if best and best.smiles:

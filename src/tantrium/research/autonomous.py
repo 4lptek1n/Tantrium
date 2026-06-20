@@ -4,17 +4,43 @@ ASİ öğrenmez/gözlemlemez; mevcut manifold üzerinde hesaplar. Eski Autonomou
 metin-ilişki çıkarımı ve evren-kapısı (edinme) kaldırıldı. Yalnız saf string normalleştirme
 kaldı (causal_chain/what_if gürültü-suffix temizliği için).
 """
+
 from __future__ import annotations
 
 # Gürültü son-ekleri: "ras pathway" → "ras" (kausal varlık eşleştirmesi için)
 _NOISE_SUFFIXES = (
-    " pathway", " signaling", " cascade", " network", " complex",
-    " receptor", " ligand", " protein", " gene", " family",
-    " system", " process", " activity", " function", " mechanism",
-    " activation", " inhibition", " phosphorylation", " expression",
-    " regulation", " response", " production", " proliferation",
-    " enzyme", " kinase", " factor", " domain", " subunit",
-    " formation", " degradation", " synthesis", " metabolism",
+    " pathway",
+    " signaling",
+    " cascade",
+    " network",
+    " complex",
+    " receptor",
+    " ligand",
+    " protein",
+    " gene",
+    " family",
+    " system",
+    " process",
+    " activity",
+    " function",
+    " mechanism",
+    " activation",
+    " inhibition",
+    " phosphorylation",
+    " expression",
+    " regulation",
+    " response",
+    " production",
+    " proliferation",
+    " enzyme",
+    " kinase",
+    " factor",
+    " domain",
+    " subunit",
+    " formation",
+    " degradation",
+    " synthesis",
+    " metabolism",
 )
 
 

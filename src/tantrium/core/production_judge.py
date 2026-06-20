@@ -15,6 +15,7 @@ production.py üretir; bu modül YARGILAR. İki bağımsız hüküm:
 Sertifika auditlenebilir (RH sertifika yığını gibi): her eksen, kapanış kanıtı,
 gerçeklenebilirlik açığı, 3D yol — hepsi kayıtlı.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -23,7 +24,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
     from tantrium.core.production import ProductionEngine
-    from tantrium.core.quantum_moments import FreeCumulants
 
 # Paradigma-matematik eşiği (45-özellik imza, normalize L1):
 # EGFR-içi çiftler ≤3.43, EGFR-dışı ≥4.25 → 3.8 = ayraç.
@@ -37,32 +37,37 @@ _SPECTRAL_OK_THR = 0.5
 @dataclass
 class AxisVerdict:
     """Tek bir yargı ekseninin HESAPLADIĞI sayı + hükmü (sertifika değil — sayı)."""
-    name: str            # structural|transport|quantum|energy|gimel|grounding
+
+    name: str  # structural|transport|quantum|energy|gimel|grounding
     ok: bool
-    value: float         # eksenin hesapladığı sayı (paradigm_dist, pivot_min, κ, ...)
-    threshold: float     # neyle kıyaslandı (N/A ise inf)
-    detail: str = ""     # "GROUNDED" | "GROUND_STATE" | "nearest=erlotinib" ...
+    value: float  # eksenin hesapladığı sayı (paradigm_dist, pivot_min, κ, ...)
+    threshold: float  # neyle kıyaslandı (N/A ise inf)
+    detail: str = ""  # "GROUNDED" | "GROUND_STATE" | "nearest=erlotinib" ...
 
 
 @dataclass
 class ClosureProof:
     """κ(hastalık ⊞ M) ≈ κ(sağlıklı) VE μ_joint→μ_healthy Sturm-pozitif."""
-    applicable: bool             # yalnız ters/hastalık hedefi bir evren kapatır
-    closure_error: float         # κ_joint.distance(κ_healthy)
+
+    applicable: bool  # yalnız ters/hastalık hedefi bir evren kapatır
+    closure_error: float  # κ_joint.distance(κ_healthy)
     epsilon: float
-    pivot_min: float             # μ_joint → μ_healthy yolunda en küçük Sturm pivotu
+    pivot_min: float  # μ_joint → μ_healthy yolunda en küçük Sturm pivotu
     sturm_ok: bool
-    universe_closes: bool        # closure_error < ε  AND  sturm_ok
+    universe_closes: bool  # closure_error < ε  AND  sturm_ok
     kappa_joint: list[float] = field(default_factory=list)
-    kappa_residual: list[float] = field(default_factory=list)  # κ_joint ⊟ κ_healthy = refine gradyanı
+    kappa_residual: list[float] = field(
+        default_factory=list
+    )  # κ_joint ⊟ κ_healthy = refine gradyanı
 
 
 @dataclass
 class ProductionCertificate:
     """Üretilen ilacın tam auditlenebilir sertifikası."""
+
     # ── hedef kimliği ──
     target: str
-    target_kind: str                       # protein|disease|smiles|combination|invalid
+    target_kind: str  # protein|disease|smiles|combination|invalid
     reference: str = ""
     required_moments: list[float] = field(default_factory=list)
     realizability_gap: float | None = None  # yalnız ters yol; ileride None
@@ -72,7 +77,7 @@ class ProductionCertificate:
     combination: list[str] = field(default_factory=list)  # ≥2 SMILES bölündüyse
     # ── 6 eksen ──
     axes: list[AxisVerdict] = field(default_factory=list)
-    coherent: bool = False                 # 5 HARD eksen anlaşıyor mu
+    coherent: bool = False  # 5 HARD eksen anlaşıyor mu
     # ── evren kapanışı ──
     closure: ClosureProof | None = None
     # ── transport/Sturm (ileri yargı, her zaman) ──
@@ -84,8 +89,8 @@ class ProductionCertificate:
     injected_as: str = ""
     sdf_path: str = ""
     candidates: list = field(default_factory=list)  # sıralı çalışan-molekül kümesi
-    pool_diversity: float = 0.0            # LGV/DPP çeşitlilik sertifikası (aday havuzu kesişmezliği)
-    verdict: str = ""                      # İŞE YARAYABİLİR|İŞE YARAMAZ|KISMÎ|ÜRETİLEMEDİ|GEÇERSİZ
+    pool_diversity: float = 0.0  # LGV/DPP çeşitlilik sertifikası (aday havuzu kesişmezliği)
+    verdict: str = ""  # İŞE YARAYABİLİR|İŞE YARAMAZ|KISMÎ|ÜRETİLEMEDİ|GEÇERSİZ
     note: str = ""
 
     # ── görünümler ──
@@ -107,18 +112,23 @@ class ProductionCertificate:
                 f"    κ(hastalık⊞M)→κ(sağlıklı) hata: {c.closure_error:.4f} (eşik {c.epsilon})",
                 f"    birleşik yol Sturm pivotu: {c.pivot_min:+.4f}",
             ]
-        lines.append(f"  Sturm yol geçidi: {'✓' if self.sturm_path_ok else '✗'}"
-                     f"  (pivot {self.pivot_min:+.4f})   κ-uyum: {self.signature_fit:.4f}")
+        lines.append(
+            f"  Sturm yol geçidi: {'✓' if self.sturm_path_ok else '✗'}"
+            f"  (pivot {self.pivot_min:+.4f})   κ-uyum: {self.signature_fit:.4f}"
+        )
         if self.axes:
             lines.append("  7 eksen:")
             for a in self.axes:
                 mark = "✓" if a.ok else "✗"
-                is_soft = (a.name in ("grounding", "spectral") or
-                           (a.name == "structural" and self.target_kind == "disease"))
+                is_soft = a.name in ("grounding", "spectral") or (
+                    a.name == "structural" and self.target_kind == "disease"
+                )
                 soft = " (yumuşak)" if is_soft else ""
-                lines.append(f"    {mark} {a.name:<11} {a.value:.4f}"
-                             f" / {a.threshold if a.threshold != float('inf') else '—'}"
-                             f"  {a.detail}{soft}")
+                lines.append(
+                    f"    {mark} {a.name:<11} {a.value:.4f}"
+                    f" / {a.threshold if a.threshold != float('inf') else '—'}"
+                    f"  {a.detail}{soft}"
+                )
         if self.realizability_gap is not None:
             lines.append(f"  Gerçeklenebilirlik açığı (ters yol): {self.realizability_gap:.4f}")
         lines += [
@@ -137,13 +147,22 @@ class ProductionCertificate:
     def to_result(self):
         """Eski ProductionResult görünümü (geriye-uyum)."""
         from tantrium.core.production import ProductionResult
+
         return ProductionResult(
-            target=self.target, target_kind=self.target_kind,
-            required_moments=self.required_moments, designed_smiles=self.designed_smiles,
-            n_atoms=self.n_atoms, sturm_path_ok=self.sturm_path_ok,
-            pivot_min=self.pivot_min, signature_fit=self.signature_fit,
-            verdict=self.verdict, reference=self.reference, sdf_path=self.sdf_path,
-            candidates=self.candidates, note=self.note)
+            target=self.target,
+            target_kind=self.target_kind,
+            required_moments=self.required_moments,
+            designed_smiles=self.designed_smiles,
+            n_atoms=self.n_atoms,
+            sturm_path_ok=self.sturm_path_ok,
+            pivot_min=self.pivot_min,
+            signature_fit=self.signature_fit,
+            verdict=self.verdict,
+            reference=self.reference,
+            sdf_path=self.sdf_path,
+            candidates=self.candidates,
+            note=self.note,
+        )
 
     def to_design_dict(self) -> dict:
         """Eski design_drug() dict şekli (sarmalayıcı için)."""
@@ -155,21 +174,36 @@ class ProductionCertificate:
                 "verdict": self.verdict,
                 "sdf_path": self.sdf_path,
                 "paradigm_dist_to_nearest": next(
-                    (a["value"] for a in (self.axes[0].name == "structural"
-                     and [{"value": self.axes[0].value}] or [])
-                     if isinstance(a, dict)), None)
-                    if self.axes else None,
+                    (
+                        a["value"]
+                        for a in (
+                            self.axes[0].name == "structural"
+                            and [{"value": self.axes[0].value}]
+                            or []
+                        )
+                        if isinstance(a, dict)
+                    ),
+                    None,
+                )
+                if self.axes
+                else None,
             }
         return {
-            "protein": self.target, "n_refs": 0,
+            "protein": self.target,
+            "n_refs": 0,
             "reference_ligands": [],
             "verdict": "İŞE YARAYAN ADAY ÜRETİLDİ" if works else self.verdict,
-            "n_candidates": len(self.candidates), "n_works": len(works),
+            "n_candidates": len(self.candidates),
+            "n_works": len(works),
             "best": best_dict,
-            "candidates": [{"smiles": c.get("smiles"), "verdict":
-                            "İŞE YARAYABİLİR" if c.get("coherent") else "İŞE YARAMAZ",
-                            "sdf": c.get("sdf_path", "")}
-                           for c in self.candidates[:10]],
+            "candidates": [
+                {
+                    "smiles": c.get("smiles"),
+                    "verdict": "İŞE YARAYABİLİR" if c.get("coherent") else "İŞE YARAMAZ",
+                    "sdf": c.get("sdf_path", ""),
+                }
+                for c in self.candidates[:10]
+            ],
         }
 
     def to_cure_dict(self) -> dict:
@@ -181,16 +215,25 @@ class ProductionCertificate:
         if self.closure and self.closure.kappa_joint:
             kd = [round(float(x), 3) for x in self.closure.kappa_joint[:6]]
         return {
-            "disease": self.target, "method": "ters paradigma (serbest dekonvolüsyon)",
-            "kappa_disease": kd, "kappa_required": kappa_req,
+            "disease": self.target,
+            "method": "ters paradigma (serbest dekonvolüsyon)",
+            "kappa_disease": kd,
+            "kappa_required": kappa_req,
             "realizability_gap": self.realizability_gap,
             "designed_molecule": self.designed_smiles,
-            "signature_fit": round(self.signature_fit, 4) if self.signature_fit != float("inf") else None,
+            "signature_fit": round(self.signature_fit, 4)
+            if self.signature_fit != float("inf")
+            else None,
             "n_atoms": self.n_atoms,
             "sdf": self.sdf_path,
-            "candidates": [{"smiles": c.get("smiles"), "fit": c.get("kappa_fit"),
-                            "atoms": c.get("smiles") and self._n_atoms_safe(c.get("smiles", ""))}
-                           for c in self.candidates[:6]],
+            "candidates": [
+                {
+                    "smiles": c.get("smiles"),
+                    "fit": c.get("kappa_fit"),
+                    "atoms": c.get("smiles") and self._n_atoms_safe(c.get("smiles", "")),
+                }
+                for c in self.candidates[:6]
+            ],
             "note": self.note,
         }
 
@@ -198,6 +241,7 @@ class ProductionCertificate:
     def _n_atoms_safe(smiles: str) -> int:
         try:
             from rdkit import Chem
+
             mol = Chem.MolFromSmiles(smiles)
             return mol.GetNumAtoms() if mol else 0
         except Exception:
@@ -208,7 +252,7 @@ class ProductionJudge:
     """Üretilen molekülü evren-kapanışı + 6 eksende yargılar. ProductionEngine'in
     yardımcılarını ÇAĞIRIR — sıfır kopya."""
 
-    def __init__(self, engine: "CertificationEngine", pe: "ProductionEngine") -> None:
+    def __init__(self, engine: CertificationEngine, pe: ProductionEngine) -> None:
         self.engine = engine
         self.pe = pe
 
@@ -223,12 +267,19 @@ class ProductionJudge:
         tek imza L0'a iner. κ₅/κ₆ kullanılmadığından roundtrip kaybı yok.
         """
         from tantrium.core.quantum_moments import bounded_kappa_distance
-        return bounded_kappa_distance(
-            ka.to_moments_approx(), kb.to_moments_approx(), include_mean=True)
 
-    def close_universe(self, smiles: str, kappa_disease, kappa_healthy,
-                       mu_required: list[float] | None = None,
-                       epsilon: float = 0.5) -> ClosureProof:
+        return bounded_kappa_distance(
+            ka.to_moments_approx(), kb.to_moments_approx(), include_mean=True
+        )
+
+    def close_universe(
+        self,
+        smiles: str,
+        kappa_disease,
+        kappa_healthy,
+        mu_required: list[float] | None = None,
+        epsilon: float = 0.5,
+    ) -> ClosureProof:
         """κ(hastalık ⊞ M) ≈ κ(sağlıklı) VE M gerçek-ölçü manifoldunda gerekli açığa ulaşıyor mu?
 
         Serbest additivite altında κ_hastalık+κ_M ≈ κ_sağlıklı ⟺ M gerekli açığı
@@ -237,38 +288,61 @@ class ProductionJudge:
         hedefte (κ None) uygulanmaz — orada yargı ligand κ-uyumudur.
         """
         from tantrium.core.quantum_moments import FreeCumulants
+
         if kappa_disease is None or kappa_healthy is None:
-            return ClosureProof(applicable=False, closure_error=float("inf"),
-                                epsilon=epsilon, pivot_min=float("-inf"),
-                                sturm_ok=False, universe_closes=False)
+            return ClosureProof(
+                applicable=False,
+                closure_error=float("inf"),
+                epsilon=epsilon,
+                pivot_min=float("-inf"),
+                sturm_ok=False,
+                universe_closes=False,
+            )
         mu = self.pe._encode(smiles)
         if not mu:
-            return ClosureProof(applicable=True, closure_error=float("inf"),
-                                epsilon=epsilon, pivot_min=float("-inf"),
-                                sturm_ok=False, universe_closes=False)
+            return ClosureProof(
+                applicable=True,
+                closure_error=float("inf"),
+                epsilon=epsilon,
+                pivot_min=float("-inf"),
+                sturm_ok=False,
+                universe_closes=False,
+            )
         kc = FreeCumulants.from_moments(mu)
-        kappa_joint = kappa_disease.add(kc)                  # serbest additivite (tam)
+        kappa_joint = kappa_disease.add(kc)  # serbest additivite (tam)
         closure_error = self._bounded_kappa_error(kappa_joint, kappa_healthy)
         # M gerçeklenebilir gerekli imzaya gerçek-ölçü yolundan ulaşıyor mu (RH geçidi)
-        tgt = mu_required if mu_required else kappa_healthy.subtract(kappa_disease).to_moments_approx()
+        tgt = (
+            mu_required
+            if mu_required
+            else kappa_healthy.subtract(kappa_disease).to_moments_approx()
+        )
         sturm_ok, pivot_min = self.pe._sturm_path_pivot_min(mu, tgt)
-        residual = kappa_joint.subtract(kappa_healthy)       # refine gradyanı
+        residual = kappa_joint.subtract(kappa_healthy)  # refine gradyanı
         return ClosureProof(
-            applicable=True, closure_error=closure_error, epsilon=epsilon,
-            pivot_min=pivot_min, sturm_ok=sturm_ok,
+            applicable=True,
+            closure_error=closure_error,
+            epsilon=epsilon,
+            pivot_min=pivot_min,
+            sturm_ok=sturm_ok,
             universe_closes=(closure_error < epsilon and sturm_ok),
-            kappa_joint=list(kappa_joint.k), kappa_residual=list(residual.k))
+            kappa_joint=list(kappa_joint.k),
+            kappa_residual=list(residual.k),
+        )
 
     # ── 2. 6 eksen tutarlılık ──────────────────────────────────────────────
 
-    def judge_all_axes(self, smiles: str, mu_req: list[float],
-                       profiles: list[list[float]], kappa_thr: float,
-                       ref_smiles: list[str] | None = None,
-                       structural_soft: bool = False
-                       ) -> tuple[list[AxisVerdict], bool]:
+    def judge_all_axes(
+        self,
+        smiles: str,
+        mu_req: list[float],
+        profiles: list[list[float]],
+        kappa_thr: float,
+        ref_smiles: list[str] | None = None,
+        structural_soft: bool = False,
+    ) -> tuple[list[AxisVerdict], bool]:
         """Adayı 6 eksende yargıla. Aday BİR kez encode edilir, yeniden kullanılır.
         coherent = HARD eksenler (grounding YUMUŞAK; structural_soft=True ise structural da yumuşak)."""
-        import math
         from tantrium.core.metric import paradigm_distance
         from tantrium.core.quantum_moments import QuantumSignature
 
@@ -287,68 +361,108 @@ class ProductionJudge:
             rs = self.pe._signature(smi).structure
             if rs is not None:
                 ref_structs.append(rs)
-        if not ref_structs:               # ligand yok → gerekli imzanın yapısı
+        if not ref_structs:  # ligand yok → gerekli imzanın yapısı
             try:
                 ref_structs = [self.engine.encoder.encode(mu_req).structure]
             except Exception:
                 ref_structs = [cand_struct]
-        pd = min((paradigm_distance(cand_struct, rs) for rs in ref_structs),
-                 default=float("inf"))
+        pd = min((paradigm_distance(cand_struct, rs) for rs in ref_structs), default=float("inf"))
         nearest_i = 0
-        axes.append(AxisVerdict("structural", pd < _PARADIGM_WORKS_THR, pd,
-                                _PARADIGM_WORKS_THR,
-                                f"en yakın aktif #{nearest_i}"))
+        axes.append(
+            AxisVerdict(
+                "structural",
+                pd < _PARADIGM_WORKS_THR,
+                pd,
+                _PARADIGM_WORKS_THR,
+                f"en yakın aktif #{nearest_i}",
+            )
+        )
 
         # ── transport (HARD): Sturm yolu gerçek-ölçüde mi ──
         sturm_ok, pmin = self.pe._sturm_path_pivot_min(cand_mu, mu_req)
-        axes.append(AxisVerdict("transport", sturm_ok, pmin, 0.0,
-                                "gerçek-ölçü yolu" if sturm_ok else "yol kırık"))
+        axes.append(
+            AxisVerdict(
+                "transport", sturm_ok, pmin, 0.0, "gerçek-ölçü yolu" if sturm_ok else "yol kırık"
+            )
+        )
 
         # ── quantum (HARD): κ-mesafe + dolanıklık ──
         cand_sig = QuantumSignature.from_moments(cand_mu)
-        kd = min((cand_sig.cumulants.distance(
-                    QuantumSignature.from_moments(p).cumulants)
-                  for p in profiles if p), default=float("inf"))
+        kd = min(
+            (
+                cand_sig.cumulants.distance(QuantumSignature.from_moments(p).cumulants)
+                for p in profiles
+                if p
+            ),
+            default=float("inf"),
+        )
         # tanh-sınırlı yapısal κ (patlayan κ₅/κ₆ atılır) — eşikle aynı ölçek
-        kfit = min((self.pe._structural_kappa_distance(cand_mu, p)
-                    for p in profiles if p), default=float("inf"))
-        entangled = any(cand_sig.is_entangled_with(QuantumSignature.from_moments(p))
-                        for p in profiles if p)
-        axes.append(AxisVerdict("quantum", kfit <= kappa_thr, kfit, kappa_thr,
-                                "dolanık (gizli bağ)" if entangled else f"κ={kd:.3f}"))
+        kfit = min(
+            (self.pe._structural_kappa_distance(cand_mu, p) for p in profiles if p),
+            default=float("inf"),
+        )
+        entangled = any(
+            cand_sig.is_entangled_with(QuantumSignature.from_moments(p)) for p in profiles if p
+        )
+        axes.append(
+            AxisVerdict(
+                "quantum",
+                kfit <= kappa_thr,
+                kfit,
+                kappa_thr,
+                "dolanık (gizli bağ)" if entangled else f"κ={kd:.3f}",
+            )
+        )
 
         # ── energy (HARD): F(T) kritik değil ──
         try:
             from tantrium.meta.synthesis import ConceptSynthesizer
+
             prof = ConceptSynthesizer(self.engine).energy(smiles)
             stable = prof.stability in ("GROUND_STATE", "EXCITED")
-            axes.append(AxisVerdict("energy", stable, prof.free_energy, 0.0,
-                                    prof.stability))
+            axes.append(AxisVerdict("energy", stable, prof.free_energy, 0.0, prof.stability))
         except Exception:
             axes.append(AxisVerdict("energy", True, 0.0, 0.0, "hesaplanamadı→geç"))
 
         # ── gimel (HARD): zayıf bağ yok ──
         gimel_ok = self.pe._chemically_stable(smiles)
-        axes.append(AxisVerdict("gimel", gimel_ok, 1.0 if gimel_ok else 0.0, 0.0,
-                                "kararlı" if gimel_ok else "zayıf bağ"))
+        axes.append(
+            AxisVerdict(
+                "gimel",
+                gimel_ok,
+                1.0 if gimel_ok else 0.0,
+                0.0,
+                "kararlı" if gimel_ok else "zayıf bağ",
+            )
+        )
 
         # ── spektral (SOFT): özdeğer-ölçüsü W2 yakınlığı (TEK spektral motor) ──
         # Aynı imzadan lazy özdeğer ölçüsü; gerekli imzanın spektrumuyla W2.
         try:
             from tantrium.domains.spectral import moments_to_spectral, spectral_distance
+
             tgt_spec = moments_to_spectral(list(mu_req))
             sd = float(spectral_distance(sig.spectral, tgt_spec))
-            axes.append(AxisVerdict("spectral", sd <= _SPECTRAL_OK_THR, sd,
-                                    _SPECTRAL_OK_THR, f"W2={sd:.3f}"))
+            axes.append(
+                AxisVerdict(
+                    "spectral", sd <= _SPECTRAL_OK_THR, sd, _SPECTRAL_OK_THR, f"W2={sd:.3f}"
+                )
+            )
         except Exception:
             axes.append(AxisVerdict("spectral", True, 0.0, _SPECTRAL_OK_THR, "hesaplanamadı→geç"))
 
         # ── grounding (SOFT): kaydedilir, veto YOK ──
         try:
             gc = self.engine.grounder.certify(smiles, moments=cand_mu)
-            axes.append(AxisVerdict("grounding", gc.verdict != "UNGROUNDED",
-                                    float(getattr(gc, "score", 0.0)), float("inf"),
-                                    gc.verdict))
+            axes.append(
+                AxisVerdict(
+                    "grounding",
+                    gc.verdict != "UNGROUNDED",
+                    float(getattr(gc, "score", 0.0)),
+                    float("inf"),
+                    gc.verdict,
+                )
+            )
         except Exception:
             axes.append(AxisVerdict("grounding", False, 0.0, float("inf"), "UNGROUNDED"))
 

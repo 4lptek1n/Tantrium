@@ -13,14 +13,15 @@ iki yapısal yanlış-sinyalini GIMEL'den bağımsız okur:
 growth (akış döngüsü `_verify_consolidate`) ve cognition (batch döngüsü `VerifyPhase`)
 AYNI çekirdeği çağırır — tek tanım, tek davranış (defter ilkesi: parçaları birleştir).
 """
+
 from __future__ import annotations
 
 from typing import Any
 
 # Eşikler (tek tanım — growth da buradan import eder)
-_DEGEN_SPREAD = 0.02     # moment yayılımı bunun altında = dejenere encoding
-_COLLISION_EPS = 0.001   # iki FARKLI kavram bu L1 altında = çakışma şüphesi
-_VERIFY_MAX = 60         # döngü başına denetlenen kavram (maliyet sınırı)
+_DEGEN_SPREAD = 0.02  # moment yayılımı bunun altında = dejenere encoding
+_COLLISION_EPS = 0.001  # iki FARKLI kavram bu L1 altında = çakışma şüphesi
+_VERIFY_MAX = 60  # döngü başına denetlenen kavram (maliyet sınırı)
 _VERIFY_COLLISION_MAX = 20  # çakışma taraması O(N) — daha sıkı sınır
 
 
@@ -72,9 +73,7 @@ def detect_and_correct(
                     new_enc = encoder.encode_adaptive(name)
                     nmu = [float(m) for m in getattr(new_enc, "moments", [])]
                     if nmu and (max(nmu) - min(nmu)) >= _DEGEN_SPREAD:
-                        c.moments = [
-                            Fraction(x).limit_denominator(10 ** 9) for x in new_enc.moments
-                        ]
+                        c.moments = [Fraction(x).limit_denominator(10**9) for x in new_enc.moments]
                         corrected += 1
                         fixed = True
                         logs.append(
@@ -112,10 +111,10 @@ def detect_and_correct(
                         other_c = manifold.concepts.get(other)
                         omu = [float(m) for m in getattr(other_c, "moments", [])] if other_c else []
                         if nmu and omu and len(nmu) == len(omu):
-                            new_d = sum(abs(a - b) for a, b in zip(nmu, omu))
+                            new_d = sum(abs(a - b) for a, b in zip(nmu, omu, strict=False))
                             if new_d >= _COLLISION_EPS:
                                 c.moments = [
-                                    Fraction(x).limit_denominator(10 ** 9) for x in new_enc.moments
+                                    Fraction(x).limit_denominator(10**9) for x in new_enc.moments
                                 ]
                                 resolved_collisions += 1
                                 resolved = True
@@ -155,7 +154,7 @@ _DEFAULT_FACTS: list[tuple[str, str, str]] = [
 _CAUSAL = {"CAUSES", "ACTIVATES", "INHIBITS"}
 
 
-def external_verify(engine: Any, facts: "list[tuple[str, str, str]] | None" = None) -> dict:
+def external_verify(engine: Any, facts: list[tuple[str, str, str]] | None = None) -> dict:
     """Küratörlü bilinen olgulara karşı kausal TAU'yu sına (DIŞ-doğrulama).
 
     İçsel sertifika ≠ dünyada doğru. Bu, sistemin kausal bilgisinin gerçek olgularla
@@ -221,6 +220,7 @@ def computational_verify(engine: Any = None, *, tol: float = 1e-7) -> dict:
     Döner: {score, correct, total, failures, sturm, hankel}.
     """
     import numpy as np
+
     from tantrium.algebra.sturm import normalized_sturm_pivots
 
     correct = 0
@@ -232,6 +232,7 @@ def computational_verify(engine: Any = None, *, tol: float = 1e-7) -> dict:
     sturm_total = 0
     try:
         from sympy import symbols
+
         x = symbols("x")
         for coeffs, expect_hyperbolic, label in _STURM_CASES:
             sturm_total += 1
@@ -241,8 +242,14 @@ def computational_verify(engine: Any = None, *, tol: float = 1e-7) -> dict:
             all_real = bool(np.all(np.abs(roots.imag) < 1e-6))
             # sanity: test etiketi gerçekle uyuşmalı (battery doğru kurulmuş mu)
             if all_real != expect_hyperbolic:
-                failures.append({"case": label, "kind": "battery_mismatch",
-                                 "numpy_all_real": all_real, "expected": expect_hyperbolic})
+                failures.append(
+                    {
+                        "case": label,
+                        "kind": "battery_mismatch",
+                        "numpy_all_real": all_real,
+                        "expected": expect_hyperbolic,
+                    }
+                )
                 continue
             # SİSTEM: Sturm pivotları (taç mekanizma)
             expr = sum(c * x ** (len(coeffs) - 1 - i) for i, c in enumerate(coeffs))
@@ -257,20 +264,28 @@ def computational_verify(engine: Any = None, *, tol: float = 1e-7) -> dict:
                 correct += 1
                 sturm_ok += 1
             else:
-                failures.append({"case": label, "kind": "sturm_hyperbolicity",
-                                 "pivots_all_positive": all_pos, "all_roots_real": all_real,
-                                 "pivots": [round(p, 4) for p in pvals]})
+                failures.append(
+                    {
+                        "case": label,
+                        "kind": "sturm_hyperbolicity",
+                        "pivots_all_positive": all_pos,
+                        "all_roots_real": all_real,
+                        "pivots": [round(p, 4) for p in pvals],
+                    }
+                )
     except Exception as e:
         failures.append({"kind": "sturm_setup_error", "error": str(e)})
 
     # 2) HANKEL moment-dizisi PSD: gerçek ölçü → DAİMA PSD; geçersiz → reddet
     from fractions import Fraction
+
     from tantrium.core.codex import CertifiableObject
+
     hankel_ok = 0
     hankel_total = 0
 
     def _moments_from_measure(support, weights, n=8):
-        return [sum(w * (s ** k) for s, w in zip(support, weights)) for k in range(n)]
+        return [sum(w * (s**k) for s, w in zip(support, weights, strict=False)) for k in range(n)]
 
     hankel_cases: list[tuple[list[float], bool, str]] = [
         (_moments_from_measure([0.2, 0.5, 0.9], [0.3, 0.4, 0.3]), True, "3-atom ölçü"),
@@ -282,15 +297,22 @@ def computational_verify(engine: Any = None, *, tol: float = 1e-7) -> dict:
     for moments, expect_psd, label in hankel_cases:
         hankel_total += 1
         total += 1
-        obj = CertifiableObject(name=label,
-                                moments=[Fraction(x).limit_denominator(10 ** 9) for x in moments])
+        obj = CertifiableObject(
+            name=label, moments=[Fraction(x).limit_denominator(10**9) for x in moments]
+        )
         verdict = obj.is_moment_sequence(size=4)
         if verdict == expect_psd:
             correct += 1
             hankel_ok += 1
         else:
-            failures.append({"case": label, "kind": "hankel_psd",
-                             "system_says_psd": verdict, "truth_psd": expect_psd})
+            failures.append(
+                {
+                    "case": label,
+                    "kind": "hankel_psd",
+                    "system_says_psd": verdict,
+                    "truth_psd": expect_psd,
+                }
+            )
 
     return {
         "score": (correct / total) if total else 0.0,
@@ -308,12 +330,23 @@ def computational_verify(engine: Any = None, *, tol: float = 1e-7) -> dict:
 # ölçülmüş farmakoloji (küratörlü). Leave-one-out: bir ligandı, kendi hedefinin DİĞER
 # ligandlarından kurulan profile + tüm rakip hedeflere κ-fit ile sırala; gerçek hedef
 # tepe-k'de mi? İçsel sertifikanın gerçeği ne kadar öngördüğünün DÜRÜST sayısı.
-_PANEL_TARGETS = ["egfr", "vegfr", "abl", "alk", "kit", "bcr-abl",
-                  "braf", "her2", "cyclooxygenase", "mtor"]
+_PANEL_TARGETS = [
+    "egfr",
+    "vegfr",
+    "abl",
+    "alk",
+    "kit",
+    "bcr-abl",
+    "braf",
+    "her2",
+    "cyclooxygenase",
+    "mtor",
+]
 
 
-def empirical_verify(engine: Any, *, targets: "list[str] | None" = None,
-                     metric: str = "kappa") -> dict:
+def empirical_verify(
+    engine: Any, *, targets: list[str] | None = None, metric: str = "kappa"
+) -> dict:
     """Sertifikanın moleküler ayrımı bilinen ilaç→hedef eşleşmesini geri kazanıyor mu.
 
     Leave-one-out geriye-dönük: her ligand kendi hedefinin DİĞER ligandlarından kurulan
@@ -326,6 +359,7 @@ def empirical_verify(engine: Any, *, targets: "list[str] | None" = None,
     dürüstçe yanıtlar. Lab YOK.
     """
     from tantrium.core.production import ProductionEngine
+
     pe = ProductionEngine(engine)
     panel = targets or _PANEL_TARGETS
 
@@ -360,7 +394,7 @@ def empirical_verify(engine: Any, *, targets: "list[str] | None" = None,
     lig_sets = {t: {s for _, s in tgt_ligs[t]} for t in panel}
     for true_t in panel:
         t_correct1 = t_n = 0
-        for name, smi in tgt_ligs[true_t]:
+        for _name, smi in tgt_ligs[true_t]:
             lig_mu = _mu(smi)
             if not lig_mu:
                 continue
@@ -398,8 +432,9 @@ def empirical_verify(engine: Any, *, targets: "list[str] | None" = None,
             # akraba-isabet: tahmin edilen #1 hedef, gerçek hedefle ligand paylaşıyorsa
             # (imatinib abl'de test edilip kit tahmin → farmakolojik olarak DOĞRU)
             pred = ranked[0]
-            if smi in lig_sets.get(pred, set()) or (lig_sets.get(pred, set())
-                                                    & lig_sets.get(true_t, set())):
+            if smi in lig_sets.get(pred, set()) or (
+                lig_sets.get(pred, set()) & lig_sets.get(true_t, set())
+            ):
                 top1_rel += 1
         if t_n:
             per_target[true_t] = {"top1": t_correct1, "n": t_n}
@@ -413,13 +448,17 @@ def empirical_verify(engine: Any, *, targets: "list[str] | None" = None,
         "n_targets": len(panel),
         "per_target": per_target,
         "metric": metric,
-        "note": (f"[{metric}] {top1}/{tested} ligand gerçek hedefini tepe-1, "
-                 f"{top1_rel}/{tested} akraba-hedef ({len(panel)} hedefli panel, LOO). "
-                 + ("RH-Sturm: yapısal-benzer kinaz-içi seçicilik (egfr) ayrılır; "
-                    "yapısal-farklı sınıf zayıf — κ-yakınlıkla TAMAMLAYICI."
-                    if metric == "sturm" else
-                    "κ-yakınlık: kaba sınıf (NSAID/rapalog) ayrılır; kinaz-içi ince "
-                    "seçicilik AYRILMAZ — RH-Sturm ile TAMAMLAYICI.")),
+        "note": (
+            f"[{metric}] {top1}/{tested} ligand gerçek hedefini tepe-1, "
+            f"{top1_rel}/{tested} akraba-hedef ({len(panel)} hedefli panel, LOO). "
+            + (
+                "RH-Sturm: yapısal-benzer kinaz-içi seçicilik (egfr) ayrılır; "
+                "yapısal-farklı sınıf zayıf — κ-yakınlıkla TAMAMLAYICI."
+                if metric == "sturm"
+                else "κ-yakınlık: kaba sınıf (NSAID/rapalog) ayrılır; kinaz-içi ince "
+                "seçicilik AYRILMAZ — RH-Sturm ile TAMAMLAYICI."
+            )
+        ),
     }
 
 
@@ -438,12 +477,20 @@ def encoder_health(engine: Any, *, n_samples: int = 100) -> dict:
     """
     try:
         from tantrium.core.collision import CollisionHunter
+
         rep = CollisionHunter(engine).hunt(n_samples=n_samples)
     except Exception:
-        return {"collision_rate": 0.0, "collisions": 0, "resolved_by_depth": 0,
-                "resolved_by_labels": 0, "inherent": 0, "pairs_compared": 0}
+        return {
+            "collision_rate": 0.0,
+            "collisions": 0,
+            "resolved_by_depth": 0,
+            "resolved_by_labels": 0,
+            "inherent": 0,
+            "pairs_compared": 0,
+        }
     inherent = sum(
-        1 for c in rep.collisions
+        1
+        for c in rep.collisions
         if not c.resolved_by_depth and not getattr(c, "resolved_by_labels", False)
     )
     # Bu sayaçlar @property (metot değil) — parantezsiz.

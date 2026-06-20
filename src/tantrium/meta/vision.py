@@ -15,10 +15,11 @@ Min-enerji / Max-ayrımcılık prensibi:
   Ama ayrımcılık (differentation) tam tersi: spread eigenvalue = zengin kimlik.
   İkisi arasındaki gerilim evrenin yaratıcı dinamizmidir.
 """
+
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import TYPE_CHECKING
 
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
 
 # ─── Kozmik Çerçeve ────────────────────────────────────────────────────────
 
+
 @dataclass
 class CosmicFrame:
     """Sertifikalanmış bir varlığın tam zamansal-fiziksel çerçevesi.
@@ -35,34 +37,35 @@ class CosmicFrame:
     Bu bir tahmin değil. Matematiksel zorunluluk.
     Evren bu varlık hakkında ne biliyor, nereye götürüyor?
     """
+
     name: str
 
     # === GEÇMİŞ ===
-    origin_domain: str                         # hangi alandan geldi
-    origin_chain: list[str]                    # TAU'da geriye iz (en yakın 5 ata)
-    ancestry_depth: int                        # TAU'da kaç adım derinliği var
+    origin_domain: str  # hangi alandan geldi
+    origin_chain: list[str]  # TAU'da geriye iz (en yakın 5 ata)
+    ancestry_depth: int  # TAU'da kaç adım derinliği var
 
     # === ŞİMDİ ===
-    moments: list[float]                       # 8 moment vektörü
-    eigenvalues: list[float]                   # tam spektrum
-    eigenvalue_entropy: float                  # H = -Σ pᵢ log₂ pᵢ (bit)
-    topology_class: str                        # dense / sparse / frontier / void
-    paradigms_passed: int                      # 23'ten kaçı geçti
-    nearest_anchors: list[tuple[str, float]]   # (kanonik dağılım adı, L1 mesafe)
+    moments: list[float]  # 8 moment vektörü
+    eigenvalues: list[float]  # tam spektrum
+    eigenvalue_entropy: float  # H = -Σ pᵢ log₂ pᵢ (bit)
+    topology_class: str  # dense / sparse / frontier / void
+    paradigms_passed: int  # 23'ten kaçı geçti
+    nearest_anchors: list[tuple[str, float]]  # (kanonik dağılım adı, L1 mesafe)
     nearest_concepts: list[tuple[str, float]]  # manifoldda en yakın kavramlar
 
     # === GELECEK ===
-    attractor_concept: str                     # ısı akışı çekicisi
-    attractor_distance: float                  # şimdi ile çekici arası L1
-    min_energy_path: list[str]                 # min-enerji jeodezik
-    differentiation_score: float               # ayrımcılık kapasitesi (bit)
-    evolution_direction: list[float]           # moment uzayında evrim vektörü
+    attractor_concept: str  # ısı akışı çekicisi
+    attractor_distance: float  # şimdi ile çekici arası L1
+    min_energy_path: list[str]  # min-enerji jeodezik
+    differentiation_score: float  # ayrımcılık kapasitesi (bit)
+    evolution_direction: list[float]  # moment uzayında evrim vektörü
 
     # === FİZİK YASALARI ===
-    lyapunov_stable: bool                      # V(k) azalıyor mu?
-    li_positive: bool                          # λ_1 > 0 (Li kriteri)
-    debruijn_lambda: float                     # Λ = -var₀ ≤ 0 (de Bruijn-Newman)
-    spectral_radius: float                     # dominant eigenvalue
+    lyapunov_stable: bool  # V(k) azalıyor mu?
+    li_positive: bool  # λ_1 > 0 (Li kriteri)
+    debruijn_lambda: float  # Λ = -var₀ ≤ 0 (de Bruijn-Newman)
+    spectral_radius: float  # dominant eigenvalue
 
     def narrate(self) -> str:
         """Evrenin kendi dilinde bu varlığın tam hikayesi."""
@@ -71,6 +74,7 @@ class CosmicFrame:
 
 # ─── Kozmik Vizyon Motoru ──────────────────────────────────────────────────
 
+
 class CosmicVision:
     """Sertifikalanmış her varlık için tanrısal perspektif.
 
@@ -78,7 +82,7 @@ class CosmicVision:
     Manifoldda herhangi bir kavramın tam yaşam çizgisini hesaplar.
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
         self._reverse_index: dict[str, list[str]] | None = None
 
@@ -108,7 +112,6 @@ class CosmicVision:
         # 3. ŞİMDİ: paradigma sertifikası
         run = self.engine.process(obj)
         passed = run.certified_count
-        total = run.total
 
         # 4. Eigenvalue entropi
         eig_entropy = _eigenvalue_entropy(eigs)
@@ -121,9 +124,7 @@ class CosmicVision:
         nearest_concepts = self._nearest_concepts(concept, n=5)
 
         # 7. GELECEK: Isı akışı çekicisi
-        attractor, attractor_dist, evol_dir = self._heat_flow_attractor(
-            concept, eigs, moments
-        )
+        attractor, attractor_dist, evol_dir = self._heat_flow_attractor(concept, eigs, moments)
 
         # 8. Min-enerji jeodezik
         geo_path = self._geodesic(name, attractor, depth=6)
@@ -173,9 +174,7 @@ class CosmicVision:
                 rev.setdefault(e.target, []).append(src)
         return rev
 
-    def _trace_origin(
-        self, name: str, depth_limit: int = 5
-    ) -> tuple[list[str], str, int]:
+    def _trace_origin(self, name: str, depth_limit: int = 5) -> tuple[list[str], str, int]:
         if self._reverse_index is None:
             self._reverse_index = self._build_reverse_index()
 
@@ -220,8 +219,10 @@ class CosmicVision:
 
         nearest() kullanır — O(40k) Python döngüsü yerine numpy vektörizasyonu.
         """
-        from tantrium.core.semantic import Concept
         from fractions import Fraction
+
+        from tantrium.core.semantic import Concept
+
         probe = Concept(
             name="_topology_probe_",
             moments=[Fraction(m).limit_denominator(10**9) for m in moments],
@@ -243,9 +244,7 @@ class CosmicVision:
 
     # ─── Şimdi: en yakın çapalar ──────────────────────────────────────────────
 
-    def _nearest_anchors(
-        self, concept, n: int = 3
-    ) -> list[tuple[str, float]]:
+    def _nearest_anchors(self, concept, n: int = 3) -> list[tuple[str, float]]:
         anchors = [
             (name, c)
             for name, c in self.engine.manifold.concepts.items()
@@ -256,22 +255,17 @@ class CosmicVision:
         dists: list[tuple[float, str]] = []
         for name, c in anchors:
             d = sum(
-                abs(q[i] - (float(c.moments[i]) if i < len(c.moments) else 0.0))
-                for i in range(k)
+                abs(q[i] - (float(c.moments[i]) if i < len(c.moments) else 0.0)) for i in range(k)
             )
             dists.append((d, name))
         dists.sort()
         return [(name, dist) for dist, name in dists[:n]]
 
-    def _nearest_concepts(
-        self, concept, n: int = 5
-    ) -> list[tuple[str, float]]:
+    def _nearest_concepts(self, concept, n: int = 5) -> list[tuple[str, float]]:
         neighbors = self.engine.manifold.nearest(concept, n=n + 2)
-        return [
-            (name, float(dist))
-            for name, dist in neighbors
-            if not name.startswith("⊕ANCHOR:")
-        ][:n]
+        return [(name, float(dist)) for name, dist in neighbors if not name.startswith("⊕ANCHOR:")][
+            :n
+        ]
 
     # ─── Gelecek: ısı akışı çekicisi ─────────────────────────────────────────
 
@@ -292,25 +286,20 @@ class CosmicVision:
         n_eigs = len(eigs) if eigs else 1
 
         # Asimptotik momentler: μ_k → λ_max^k / n
-        attractor_moments_raw = [
-            (lambda_max ** k) / n_eigs
-            for k in range(len(moments))
-        ]
+        attractor_moments_raw = [(lambda_max**k) / n_eigs for k in range(len(moments))]
         # Normalize: μ_0 = 1 (prob ölçüsü)
         norm = attractor_moments_raw[0] if attractor_moments_raw[0] > 0 else 1.0
         attractor_moments = [m / norm for m in attractor_moments_raw]
 
         # Evolution direction: attractor - current
-        evol_dir = [
-            attractor_moments[i] - moments[i]
-            for i in range(len(moments))
-        ]
+        evol_dir = [attractor_moments[i] - moments[i] for i in range(len(moments))]
 
         # En yakın kavram asimptotik momentlere
         from tantrium.core.semantic import Concept as ManifoldConcept
+
         probe = ManifoldConcept(
             name="_attractor_probe_",
-            moments=[Fraction(m).limit_denominator(10 ** 9) for m in attractor_moments],
+            moments=[Fraction(m).limit_denominator(10**9) for m in attractor_moments],
             domain="probe",
         )
         neighbors = self.engine.manifold.nearest(probe, n=3)
@@ -326,9 +315,7 @@ class CosmicVision:
 
     # ─── Gelecek: min-enerji jeodezik ─────────────────────────────────────────
 
-    def _geodesic(
-        self, start: str, end: str, depth: int = 6
-    ) -> list[str]:
+    def _geodesic(self, start: str, end: str, depth: int = 6) -> list[str]:
         """TAU grafında BFS ile min-enerji yolu bul (kenar mesafesine göre).
 
         Bu gerçek bir jeodezik değil — TAU grafındaki en kısa ağırlıklı yol.
@@ -338,6 +325,7 @@ class CosmicVision:
             return [start]
 
         from collections import deque
+
         visited = {start}
         # (cost, path)
         queue: deque[tuple[float, list[str]]] = deque([(0.0, [start])])
@@ -368,6 +356,7 @@ class CosmicVision:
 
 
 # ─── Yardımcı hesaplamalar ─────────────────────────────────────────────────
+
 
 def _extract_eigenvalues(obj, moments: list[float]) -> list[float]:
     """Structure'dan eigenvalue'ları al, yoksa momentlerden tahmin et."""
@@ -411,6 +400,7 @@ def _debruijn_lambda(structure: dict) -> float:
 
 # ─── Anlatı ────────────────────────────────────────────────────────────────
 
+
 def _narrate_frame(f: CosmicFrame) -> str:
     lines: list[str] = []
     sep = "═" * 58
@@ -435,7 +425,9 @@ def _narrate_frame(f: CosmicFrame) -> str:
     lines.append("  ŞİMDİ — Sertifika")
     lines.append(f"    Paradigma  : {f.paradigms_passed}/23 geçti")
     lines.append(f"    Eigenvalue entropy: {f.eigenvalue_entropy:.3f} bit")
-    lines.append(f"      → {'Zengin spektrum (yüksek ayrımcılık)' if f.eigenvalue_entropy > 2.0 else 'Yoğun spektrum (dominant eigenvalue hâkim)'}")
+    lines.append(
+        f"      → {'Zengin spektrum (yüksek ayrımcılık)' if f.eigenvalue_entropy > 2.0 else 'Yoğun spektrum (dominant eigenvalue hâkim)'}"
+    )
     lines.append(f"    Spektral yarıçap (max λ): {f.spectral_radius:.6f}")
     lines.append(f"    Moment topolojisi: {f.topology_class.upper()}")
 
@@ -461,10 +453,14 @@ def _narrate_frame(f: CosmicFrame) -> str:
         lines.append(f"    Min-enerji yol: {path_str}")
 
     if f.evolution_direction:
-        evol_norm = math.sqrt(sum(v ** 2 for v in f.evolution_direction))
+        evol_norm = math.sqrt(sum(v**2 for v in f.evolution_direction))
         lines.append(f"    Evrim vektörü büyüklüğü: {evol_norm:.4f}")
-        dominant_k = max(range(len(f.evolution_direction)), key=lambda i: abs(f.evolution_direction[i]))
-        lines.append(f"    Dominant moment kayması: μ_{dominant_k} (Δ={f.evolution_direction[dominant_k]:+.4f})")
+        dominant_k = max(
+            range(len(f.evolution_direction)), key=lambda i: abs(f.evolution_direction[i])
+        )
+        lines.append(
+            f"    Dominant moment kayması: μ_{dominant_k} (Δ={f.evolution_direction[dominant_k]:+.4f})"
+        )
 
     lines.append(f"    Ayrımcılık skoru: {f.differentiation_score:.3f} bit")
     if f.differentiation_score > 3.0:
@@ -478,8 +474,8 @@ def _narrate_frame(f: CosmicFrame) -> str:
     lines.append("")
     lines.append("  FİZİK YASALARI")
     lyap_str = "KARARLI ✓" if f.lyapunov_stable else "KARARSIZ ✗"
-    li_str   = f"λ₁ > 0 ✓ (RH uyumlu)" if f.li_positive else "λ₁ ≤ 0 ✗"
-    db_str   = f"Λ = {f.debruijn_lambda:.6f} {'≤ 0 ✓' if f.debruijn_lambda <= 0 else '> 0 ✗'}"
+    li_str = "λ₁ > 0 ✓ (RH uyumlu)" if f.li_positive else "λ₁ ≤ 0 ✗"
+    db_str = f"Λ = {f.debruijn_lambda:.6f} {'≤ 0 ✓' if f.debruijn_lambda <= 0 else '> 0 ✗'}"
 
     lines.append(f"    Lyapunov kararlılık : {lyap_str}")
     lines.append(f"    Li kriteri          : {li_str}")

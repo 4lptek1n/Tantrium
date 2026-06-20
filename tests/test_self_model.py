@@ -4,10 +4,11 @@ Bu testler BİLİNCİ ölçmez (fenomenal deneyim doğrulanamaz). İşlevsel
 öz-model'i doğrular: sistem kendisini kendi manifoldunda temsil eder,
 konumlandırır, topraklar ve tek geçişte dört eksende tanır.
 """
+
 import pytest
 
 from tantrium.core.engine import CertificationEngine
-from tantrium.meta.self_model import SelfModel, SelfReflection, SELF_NAME
+from tantrium.meta.self_model import SELF_NAME, SelfModel, SelfReflection
 
 
 @pytest.fixture(scope="module")
@@ -67,9 +68,7 @@ def test_self_attribution_present(model):
 def test_grounding_verdict_known(model):
     """⟨SELF⟩ topraklama yargısı tanımlı bir değer olmalı."""
     r = model.reflect(persist=False)
-    assert r.grounding_verdict in {
-        "GROUNDED", "WEAKLY_GROUNDED", "UNGROUNDED", "UNKNOWN"
-    }
+    assert r.grounding_verdict in {"GROUNDED", "WEAKLY_GROUNDED", "UNGROUNDED", "UNKNOWN"}
 
 
 def test_summary_is_turkish_string(model):
@@ -84,5 +83,5 @@ def test_reflect_stable_across_calls(model):
     """Öz-kimlik iki çağrı arası kararlı olmalı (aynı μ_universal)."""
     r1 = model.reflect(persist=False)
     r2 = model.reflect(persist=False)
-    for a, b in zip(r1.moments, r2.moments):
+    for a, b in zip(r1.moments, r2.moments, strict=False):
         assert abs(a - b) < 1e-9, "Öz-kimlik kararsız — μ_universal değişti"

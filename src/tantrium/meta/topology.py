@@ -12,9 +12,10 @@ Bu manifoldun haritasını çıkar: yoğun bölgeler, frontier'lar, void'ler.
   Frontier = yapısal bilinmeyen — isim verilmiş, keşfedilebilir
   Void      = yapısal imkansızlık — Hankel PSD'nin bu bölgeyi reddettiği alan
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -25,12 +26,12 @@ if TYPE_CHECKING:
 class MathRegion:
     """Moment uzayının bir hücresi (grid bölgesi)."""
 
-    region_id: str              # "R_{i}_{j}"
-    center: list[float]         # bölge merkezinin moment koordinatları (μ₁, μ₂)
-    concept_count: int          # bu hücredeki kavram sayısı
-    concept_names: list[str]    # bu hücredeki / en yakın kavramlar
-    density_class: str          # "dense" | "sparse" | "frontier" | "void"
-    certifiable: bool           # konveks hull argümanıyla PSD türetilebilir mi?
+    region_id: str  # "R_{i}_{j}"
+    center: list[float]  # bölge merkezinin moment koordinatları (μ₁, μ₂)
+    concept_count: int  # bu hücredeki kavram sayısı
+    concept_names: list[str]  # bu hücredeki / en yakın kavramlar
+    density_class: str  # "dense" | "sparse" | "frontier" | "void"
+    certifiable: bool  # konveks hull argümanıyla PSD türetilebilir mi?
 
     @property
     def is_unknown(self) -> bool:
@@ -55,7 +56,7 @@ class MomentTopology:
     Bu, sistemin kendi bilgi sınırlarının matematiksel haritasıdır.
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     # ─── Ana analiz ───────────────────────────────────────────────────────────
@@ -132,14 +133,16 @@ class MomentTopology:
                             if len(nearby) >= 4:
                                 break
 
-                regions.append(MathRegion(
-                    region_id=f"R_{i}_{j}",
-                    center=[cx, cy],
-                    concept_count=count,
-                    concept_names=nearby[:4],
-                    density_class=density,
-                    certifiable=density in ("dense", "sparse", "frontier"),
-                ))
+                regions.append(
+                    MathRegion(
+                        region_id=f"R_{i}_{j}",
+                        center=[cx, cy],
+                        concept_count=count,
+                        concept_names=nearby[:4],
+                        density_class=density,
+                        certifiable=density in ("dense", "sparse", "frontier"),
+                    )
+                )
 
         return regions
 
@@ -211,13 +214,15 @@ class MomentTopology:
         for i in range(grid_n):
             for j in range(grid_n):
                 if (i, j) not in grid:
-                    for di, dj in ((-1,0),(1,0),(0,-1),(0,1)):
-                        if (i+di, j+dj) in grid:
+                    for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                        if (i + di, j + dj) in grid:
                             frontier_cells.add((i, j))
                             break
 
         void_count = sum(
-            1 for i in range(grid_n) for j in range(grid_n)
+            1
+            for i in range(grid_n)
+            for j in range(grid_n)
             if (i, j) not in grid and (i, j) not in frontier_cells
         )
 
@@ -225,7 +230,7 @@ class MomentTopology:
             f"  ══ MOMENT UZAYI HARİTASI ══  [{len(concepts):,} kavram]",
             f"  μ₂ ekseni: [{min1:.4f} → {max1:.4f}]  (yatay)",
             f"  μ₃ ekseni: [{min2:.4f} → {max2:.4f}]  (dikey)",
-            f"  █ yoğun   ▓ orta   ▒░ seyrek   · boş (frontier/void)",
+            "  █ yoğun   ▓ orta   ▒░ seyrek   · boş (frontier/void)",
             "  ┌" + "─" * grid_n + "┐",
         ]
 
@@ -239,7 +244,7 @@ class MomentTopology:
         lines.append("  └" + "─" * grid_n + "┘")
         lines.append(
             f"  Dolu: {len(grid)}  Frontier: {len(frontier_cells)}  "
-            f"Void: {void_count}  Toplam hücre: {grid_n*grid_n}"
+            f"Void: {void_count}  Toplam hücre: {grid_n * grid_n}"
         )
         return "\n".join(lines)
 

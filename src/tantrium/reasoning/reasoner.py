@@ -17,9 +17,10 @@ Zincirleme kuralları (hepsi ses/geçerli):
   Kavram → TAU chain → yeni certified kenarlar → Speaker → certified cümle
   Bu, sistemin TAU'daki bilgiden YENİ certified sonuçlar ÜRETMESINI sağlar.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -31,30 +32,30 @@ if TYPE_CHECKING:
 # (kenar_1, kenar_2, türetilen_kenar)
 # A -e1→ B  ve  B -e2→ C  ise  A -türetilen→ C  çıkar
 _CHAIN_RULES: list[tuple[str, str, str]] = [
-    ("IS_A",      "IS_A",      "IS_A"),
-    ("IS_A",      "ACHIEVES",  "ACHIEVES"),
-    ("IS_A",      "REQUIRES",  "REQUIRES"),
-    ("IS_A",      "USES",      "USES"),
-    ("IS_A",      "CAUSES",    "CAUSES"),
-    ("IS_A",      "INHIBITS",  "INHIBITS"),
-    ("IS_A",      "ACTIVATES", "ACTIVATES"),
-    ("USES",      "ACHIEVES",  "ACHIEVES"),
-    ("USES",      "USES",      "USES"),
-    ("COMPOSED",  "IS_A",      "COMPOSED"),
+    ("IS_A", "IS_A", "IS_A"),
+    ("IS_A", "ACHIEVES", "ACHIEVES"),
+    ("IS_A", "REQUIRES", "REQUIRES"),
+    ("IS_A", "USES", "USES"),
+    ("IS_A", "CAUSES", "CAUSES"),
+    ("IS_A", "INHIBITS", "INHIBITS"),
+    ("IS_A", "ACTIVATES", "ACTIVATES"),
+    ("USES", "ACHIEVES", "ACHIEVES"),
+    ("USES", "USES", "USES"),
+    ("COMPOSED", "IS_A", "COMPOSED"),
     # Nedensel zincirleme
-    ("CAUSES",    "CAUSES",    "CAUSES"),     # A→B→C ⟹ A→C
-    ("CAUSES",    "ACHIEVES",  "ACHIEVES"),   # araç → amaca ulaşır
-    ("ACTIVATES", "CAUSES",    "CAUSES"),     # aktivasyon nedensellik üretir
-    ("ACTIVATES", "ACHIEVES",  "ACHIEVES"),
-    ("INHIBITS",  "CAUSES",    "INHIBITS"),   # inhibisyon nedensel zinciri keser
-    ("USES",      "CAUSES",    "CAUSES"),
+    ("CAUSES", "CAUSES", "CAUSES"),  # A→B→C ⟹ A→C
+    ("CAUSES", "ACHIEVES", "ACHIEVES"),  # araç → amaca ulaşır
+    ("ACTIVATES", "CAUSES", "CAUSES"),  # aktivasyon nedensellik üretir
+    ("ACTIVATES", "ACHIEVES", "ACHIEVES"),
+    ("INHIBITS", "CAUSES", "INHIBITS"),  # inhibisyon nedensel zinciri keser
+    ("USES", "CAUSES", "CAUSES"),
 ]
 
 # Açık-sözlük anlam kümesi (geometrik OLMAYAN her tip) — öğrenilen yeni tipler dahil.
 from tantrium.graph.knowledge_graph import SEMANTIC_PARADIGMS as _SEMANTIC
 
-
 # ─── Veri yapıları ────────────────────────────────────────────────────────────
+
 
 @dataclass
 class ChainStep:
@@ -68,10 +69,11 @@ class ChainStep:
 @dataclass
 class ReasoningResult:
     """Bir kavram hakkında TAU graph'tan türetilen tüm sonuçlar."""
+
     concept: str
     chains: list[ChainStep]
-    new_edges: int          # kaç yeni TAU edge eklendi
-    certified_answer: str   # Speaker ile üretilen özet
+    new_edges: int  # kaç yeni TAU edge eklendi
+    certified_answer: str  # Speaker ile üretilen özet
 
     def by_paradigm(self, paradigm: str) -> list[str]:
         """Belirli paradigmadaki hedefleri listele."""
@@ -84,9 +86,7 @@ class ReasoningResult:
             return "\n".join(lines)
         by_p: dict[str, list[str]] = {}
         for step in self.chains:
-            by_p.setdefault(step.paradigm, []).append(
-                step.target + (" *" if step.derived else "")
-            )
+            by_p.setdefault(step.paradigm, []).append(step.target + (" *" if step.derived else ""))
         for p, targets in by_p.items():
             lines.append(f"  {p:<12}: {', '.join(targets[:5])}")
         if self.new_edges:
@@ -96,6 +96,7 @@ class ReasoningResult:
 
 # ─── Akıl Yürütücü ───────────────────────────────────────────────────────────
 
+
 class GraphReasoner:
     """TAU semantik graf üzerinde forward-chaining inference.
 
@@ -104,7 +105,7 @@ class GraphReasoner:
     chain_all() → TAU'nun tüm transitif kapatmasını hesapla (ağır)
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     # ─── Tek kavram sorgulama ─────────────────────────────────────────────────
@@ -126,15 +127,17 @@ class GraphReasoner:
         new_edges = 0
 
         # Mevcut doğrudan kenarları topla
-        direct = [
-            e for e in tau.edges.get(concept_name, [])
-            if e.paradigm in _SEMANTIC
-        ]
+        direct = [e for e in tau.edges.get(concept_name, []) if e.paradigm in _SEMANTIC]
         for e in direct:
-            steps.append(ChainStep(
-                source=concept_name, paradigm=e.paradigm,
-                target=e.target, via="", derived=False,
-            ))
+            steps.append(
+                ChainStep(
+                    source=concept_name,
+                    paradigm=e.paradigm,
+                    target=e.target,
+                    via="",
+                    derived=False,
+                )
+            )
 
         # Forward chaining (depth kez)
         frontier = {concept_name}
@@ -166,13 +169,15 @@ class GraphReasoner:
                                     added = certify_and_add_edge(
                                         self.engine, concept_name, target, derived_p
                                     )
-                                    steps.append(ChainStep(
-                                        source=concept_name,
-                                        paradigm=derived_p,
-                                        target=target,
-                                        via=mid,
-                                        derived=True,
-                                    ))
+                                    steps.append(
+                                        ChainStep(
+                                            source=concept_name,
+                                            paradigm=derived_p,
+                                            target=target,
+                                            via=mid,
+                                            derived=True,
+                                        )
+                                    )
                                     if added:
                                         new_edges += 1
                                 next_frontier.add(mid)
@@ -223,8 +228,9 @@ class GraphReasoner:
                 continue
             if not any(e.paradigm in _SEMANTIC for e in tau.edges.get(name, [])):
                 continue
-            d = sum(abs(q[i] - (float(c.moments[i]) if i < len(c.moments) else 0.0))
-                    for i in range(k))
+            d = sum(
+                abs(q[i] - (float(c.moments[i]) if i < len(c.moments) else 0.0)) for i in range(k)
+            )
             if len(best) < K:
                 best.append((d, name))
                 if len(best) == K:
@@ -236,10 +242,9 @@ class GraphReasoner:
         neighbors = [(name, d) for d, name in best]
         seen_targets: set[str] = {concept_name}
 
-        for neighbor_name, dist in neighbors:
+        for neighbor_name, _dist in neighbors:
             neighbor_edges = [
-                e for e in tau.edges.get(neighbor_name, [])
-                if e.paradigm in _SEMANTIC
+                e for e in tau.edges.get(neighbor_name, []) if e.paradigm in _SEMANTIC
             ]
             if not neighbor_edges:
                 continue
@@ -250,13 +255,15 @@ class GraphReasoner:
                 if e.target in seen_targets:
                     continue
                 seen_targets.add(e.target)
-                steps.append(ChainStep(
-                    source=concept_name,
-                    paradigm=e.paradigm,
-                    target=e.target,
-                    via=neighbor_name,  # proxy: through this certified neighbor
-                    derived=True,
-                ))
+                steps.append(
+                    ChainStep(
+                        source=concept_name,
+                        paradigm=e.paradigm,
+                        target=e.target,
+                        via=neighbor_name,  # proxy: through this certified neighbor
+                        derived=True,
+                    )
+                )
                 # Inject as a weak edge (moment distance ≈ dist, not exact)
                 added = certify_and_add_edge(self.engine, concept_name, e.target, e.paradigm)
                 if added:
@@ -288,14 +295,14 @@ class GraphReasoner:
             by_p.setdefault(s.paradigm, []).append((s.target, s.derived))
 
         verb_map = {
-            "IS_A":      "bir türüdür",
-            "USES":      "kullanır",
-            "ACHIEVES":  "elde eder / ulaşır",
-            "REQUIRES":  "gerektirir",
-            "DEFINES":   "tanımlar",
-            "COMPOSED":  "bileşenleri",
-            "CAUSES":    "neden olur",
-            "INHIBITS":  "engeller / baskılar",
+            "IS_A": "bir türüdür",
+            "USES": "kullanır",
+            "ACHIEVES": "elde eder / ulaşır",
+            "REQUIRES": "gerektirir",
+            "DEFINES": "tanımlar",
+            "COMPOSED": "bileşenleri",
+            "CAUSES": "neden olur",
+            "INHIBITS": "engeller / baskılar",
             "ACTIVATES": "aktive eder / tetikler",
         }
 
@@ -307,8 +314,7 @@ class GraphReasoner:
         for paradigm, targets in by_p.items():
             verb = verb_map.get(paradigm, paradigm)
             target_str = ", ".join(
-                t + (" [proxy]" if derived else "")
-                for t, derived in targets[:4]
+                t + (" [proxy]" if derived else "") for t, derived in targets[:4]
             )
             lines.append(f"  • {verb}: {target_str}")
 
@@ -324,6 +330,7 @@ class GraphReasoner:
         Yeni kavram manifolda eklenir, TAU'ya kaydedilir.
         """
         from fractions import Fraction
+
         from tantrium.core.semantic import Concept
         from tantrium.graph.relations import certify_and_add_edge
 
@@ -343,6 +350,7 @@ class GraphReasoner:
         b = Fraction(1) - a
 
         from tantrium.core.moment_ops import convex_combine
+
         composed = convex_combine([ca.moments, cb.moments], [a, b], mode="exact")
 
         comp_name = f"{name_a}⊕{name_b}"
@@ -371,7 +379,7 @@ class GraphReasoner:
         lines = [
             f"  Bileşim: '{comp_name}'  (α={float(a):.2f})",
             f"  Moment: μ₁={float(composed[0]):.4f}  μ₂={float(composed[1]):.4f}",
-            f"  Aleph: ✓ (certified — konveks kombinasyon PSD korur)",
+            "  Aleph: ✓ (certified — konveks kombinasyon PSD korur)",
         ]
         if inherited:
             lines.append(f"  Kalıtsal özellikler: {', '.join(inherited[:4])}")

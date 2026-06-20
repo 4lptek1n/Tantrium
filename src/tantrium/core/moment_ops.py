@@ -18,10 +18,11 @@ besleniyor, son-ULP farkı sınırı kaydırabilir. Bu yüzden:
   bunların böl/ham-float aritmetiği float'ta ağırlıklı-toplamdan ayrışabilir,
   korunur.
 """
+
 from __future__ import annotations
 
+from collections.abc import Sequence
 from fractions import Fraction
-from typing import Sequence
 
 
 def convex_combine(
@@ -44,15 +45,12 @@ def convex_combine(
         return []
     k = min(len(m) for m in moment_lists)
     if mode == "exact":
-        return [
-            sum(weights[i] * moment_lists[i][j] for i in range(n))
-            for j in range(k)
-        ]
+        return [sum(weights[i] * moment_lists[i][j] for i in range(n)) for j in range(k)]
     if mode == "frac":
         return [
             Fraction(
                 sum(float(weights[i]) * float(moment_lists[i][j]) for i in range(n))
-            ).limit_denominator(10 ** 9)
+            ).limit_denominator(10**9)
             for j in range(k)
         ]
     raise ValueError(f"Unknown convex_combine mode: {mode!r} (expected 'exact' or 'frac')")

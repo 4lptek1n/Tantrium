@@ -1,12 +1,11 @@
 """Doğruluk ekseni + güven kalibrasyonu + kanonik metrik testleri (Tier 1+2)."""
-import pytest
 
+from tantrium.core.confidence import calibrate
+from tantrium.core.metric import canonical_distance, distance, l1_distance
 from tantrium.core.truth import TruthCertifier
-from tantrium.core.confidence import calibrate, Confidence
-from tantrium.core.metric import canonical_distance, l1_distance, distance
-
 
 # ─── Doğruluk ekseni (3. eksen) ──────────────────────────────────────────────
+
 
 def test_truth_certifier_verdict(ai):
     """Gerçek kavram komşularıyla tutarlı (CONSISTENT) olmalı."""
@@ -26,12 +25,14 @@ def test_truth_score_bounded(ai):
 def test_truth_via_moments(ai):
     """Manifoldda olmayan token momentlerle değerlendirilebilmeli."""
     from tantrium.core.encoder import encode
+
     obj = encode("xqztplmbnv", name="garbage")
     cert = TruthCertifier(ai._engine).certify("xqztplmbnv", moments=list(obj.moments))
     assert cert.verdict in ("CONSISTENT", "CONTESTED", "CONTRADICTORY")
 
 
 # ─── Güven kalibrasyonu ──────────────────────────────────────────────────────
+
 
 def test_confidence_all_high():
     """Tüm eksenler yüksek → yüksek güven."""
@@ -56,20 +57,25 @@ def test_confidence_zero_margin_not_fatal():
 def test_confidence_bounded():
     """Güven her zaman [0,1]."""
     import random
+
     rng = random.Random(0)
     for _ in range(20):
         c = calibrate(
-            coverage=rng.random(), margin=rng.random(),
-            grounding=rng.random(), truth=rng.random(),
+            coverage=rng.random(),
+            margin=rng.random(),
+            grounding=rng.random(),
+            truth=rng.random(),
         )
         assert 0.0 <= c.value <= 1.0
 
 
 # ─── Kanonik metrik ──────────────────────────────────────────────────────────
 
+
 def test_canonical_distance_self_zero():
     """Bir kavramın kendisiyle kanonik mesafesi ~0."""
     from tantrium.core.encoder import encode
+
     mu = list(encode("prime", name="prime").moments)
     d = canonical_distance(mu, mu)
     assert d < 1e-6
@@ -78,6 +84,7 @@ def test_canonical_distance_self_zero():
 def test_canonical_distance_symmetric():
     """Kanonik mesafe simetrik olmalı."""
     from tantrium.core.encoder import encode
+
     a = list(encode("zeta", name="zeta").moments)
     b = list(encode("prime", name="prime").moments)
     assert abs(canonical_distance(a, b) - canonical_distance(b, a)) < 1e-9

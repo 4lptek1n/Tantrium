@@ -1,12 +1,12 @@
 """Tests for KnowledgeGraph, KnowledgeNode, and KnowledgeEdge."""
-import pytest
+
 from fractions import Fraction
 
-from tantrium import KnowledgeGraph, KnowledgeNode, KnowledgeEdge
+from tantrium import KnowledgeEdge, KnowledgeGraph, KnowledgeNode
 from tantrium.core.semantic import Concept
 
-
 # ─── KnowledgeGraph initialization ───────────────────────────────────────────
+
 
 def test_knowledge_graph_initializes():
     g = KnowledgeGraph()
@@ -26,6 +26,7 @@ def test_knowledge_graph_has_empty_edges():
 
 
 # ─── KnowledgeNode ───────────────────────────────────────────────────────────
+
 
 def test_knowledge_node_creation():
     node = KnowledgeNode(name="test", domain="test", source="test", sr=0.5)
@@ -47,6 +48,7 @@ def test_knowledge_node_has_distance_field():
 
 
 # ─── KnowledgeEdge ───────────────────────────────────────────────────────────
+
 
 def test_knowledge_edge_creation():
     edge = KnowledgeEdge(source="a", target="b", distance=1.0, paradigm="ALEPH")
@@ -74,6 +76,7 @@ def test_knowledge_edge_has_paradigm():
 
 
 # ─── add_node() ──────────────────────────────────────────────────────────────
+
 
 def test_add_node_adds_concept():
     """add_node() takes a Concept and registers it under concept.name."""
@@ -118,6 +121,7 @@ def test_add_multiple_nodes():
 
 
 # ─── nearest() ───────────────────────────────────────────────────────────────
+
 
 def test_nearest_returns_list():
     g = KnowledgeGraph()

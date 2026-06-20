@@ -8,12 +8,19 @@ At each node, either a certificate is issued or a named gap is recorded.
 The network KNOWS what it does not know.
 A named gap is not a failure — it is precise knowledge of the boundary.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Iterator
+from collections.abc import Iterator
+from dataclasses import dataclass
 
-from tantrium.core.codex import PARADIGMS, PARADIGM_BY_ID, CertifiableObject, Paradigm, ParadigmResult
+from tantrium.core.codex import (
+    PARADIGM_BY_ID,
+    PARADIGMS,
+    CertifiableObject,
+    Paradigm,
+    ParadigmResult,
+)
 
 # Local aliases used throughout this module
 CODEX = PARADIGMS
@@ -22,6 +29,7 @@ CodexObject = CertifiableObject
 
 
 # ─── Network node ─────────────────────────────────────────────────────────
+
 
 @dataclass
 class NetworkNode:
@@ -44,6 +52,7 @@ class NetworkNode:
 
 # ─── The network ──────────────────────────────────────────────────────────
 
+
 class CertificationPipeline:
     """The 22+1 Aleph-Tekin paradigms as a running DAG.
 
@@ -54,14 +63,12 @@ class CertificationPipeline:
     """
 
     def __init__(self) -> None:
-        self.nodes: dict[str, NetworkNode] = {
-            p.paradigm_id: NetworkNode(paradigm=p) for p in CODEX
-        }
+        self.nodes: dict[str, NetworkNode] = {p.paradigm_id: NetworkNode(paradigm=p) for p in CODEX}
         self._topo_order: list[str] = list(self._topological_sort())
 
     def _topological_sort(self) -> Iterator[str]:
         """Kahn's algorithm — dependency order."""
-        in_degree: dict[str, int] = {pid: 0 for pid in CODEX_BY_ID}
+        in_degree: dict[str, int] = dict.fromkeys(CODEX_BY_ID, 0)
         children: dict[str, list[str]] = {pid: [] for pid in CODEX_BY_ID}
         for p in CODEX:
             for dep in p.depends_on:
@@ -83,7 +90,7 @@ class CertificationPipeline:
             node.result = None
             node.blocked_by_dependency = False
 
-    def run(self, obj: CodexObject) -> "CertificationRun":
+    def run(self, obj: CodexObject) -> CertificationRun:
         """Run the object through all 22+1 paradigms in dependency order.
         Returns a CertificationRun with the full certification record.
         """
@@ -100,13 +107,15 @@ class CertificationPipeline:
             if dep_blocked:
                 node.blocked_by_dependency = True
                 blocking_deps = [
-                    dep for dep in paradigm.depends_on
+                    dep
+                    for dep in paradigm.depends_on
                     if dep in self.nodes and self.nodes[dep].status not in ("CERTIFIED",)
                 ]
                 node.result = ParadigmResult(
-                    pid, "BLOCKED",
+                    pid,
+                    "BLOCKED",
                     evidence=[f"dependency not certified: {blocking_deps}"],
-                    gap_name=f"DEP_NOT_CERTIFIED_{blocking_deps[0]}"
+                    gap_name=f"DEP_NOT_CERTIFIED_{blocking_deps[0]}",
                 )
             else:
                 node.result = paradigm.verify(obj)
@@ -125,13 +134,14 @@ class CertificationPipeline:
         return CertificationRun(obj=obj, nodes=snapshot)
 
     def certified_paradigms(self) -> list[str]:
-        return [pid for pid, node in self.nodes.items()
-                if node.status == "CERTIFIED"]
+        return [pid for pid, node in self.nodes.items() if node.status == "CERTIFIED"]
 
     def blocked_paradigms(self) -> list[tuple[str, str | None]]:
-        return [(pid, node.result.gap_name if node.result else None)
-                for pid, node in self.nodes.items()
-                if node.status in ("BLOCKED", "DEP_BLOCKED")]
+        return [
+            (pid, node.result.gap_name if node.result else None)
+            for pid, node in self.nodes.items()
+            if node.status in ("BLOCKED", "DEP_BLOCKED")
+        ]
 
     def knowledge_frontier(self) -> list[str]:
         """The exact boundary of what the system knows.
@@ -139,12 +149,14 @@ class CertificationPipeline:
         are all certified — the real open questions, not cascades.
         """
         return [
-            pid for pid, node in self.nodes.items()
+            pid
+            for pid, node in self.nodes.items()
             if node.status == "BLOCKED" and not node.blocked_by_dependency
         ]
 
 
 # ─── A single run of the network ────────────────────────────────────────────
+
 
 @dataclass
 class CertificationRun:
@@ -154,6 +166,7 @@ class CertificationRun:
     Every claim the system makes is backed by a certificate or a named gap.
     The system cannot say more than this record allows.
     """
+
     obj: CodexObject
     nodes: dict[str, NetworkNode]
 
@@ -172,7 +185,8 @@ class CertificationRun:
     def knowledge_frontier(self) -> list[str]:
         """Paradigms that are genuinely blocked (not by cascade)."""
         return [
-            pid for pid, node in self.nodes.items()
+            pid
+            for pid, node in self.nodes.items()
             if node.status == "BLOCKED" and not node.blocked_by_dependency
         ]
 
@@ -200,8 +214,7 @@ class CertificationRun:
         else:
             lines.append("  (none — all paradigms certified or cascade-blocked)")
 
-        dep_blocked = [pid for pid, n in self.nodes.items()
-                       if n.blocked_by_dependency]
+        dep_blocked = [pid for pid, n in self.nodes.items() if n.blocked_by_dependency]
         if dep_blocked:
             lines.append("")
             lines.append("─── CASCADE-BLOCKED (blocked by dependency) ───")
@@ -225,7 +238,5 @@ class CertificationRun:
                     "evidence": node.result.evidence if node.result else [],
                 }
                 for pid, node in self.nodes.items()
-            }
+            },
         }
-
-

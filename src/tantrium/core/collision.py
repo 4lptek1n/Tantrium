@@ -17,6 +17,7 @@ Strateji (adversarial arama):
 Bu, sistemin kendi temelini test etmesidir — dünyada başka hiçbir model
 kendi ayırt-etme gücünü böyle ölçmez.
 """
+
 from __future__ import annotations
 
 import random
@@ -26,14 +27,15 @@ from dataclasses import dataclass, field
 @dataclass
 class Collision:
     """8 momentte çakışan ama yapısı farklı iki girdi."""
+
     input_a: str
     input_b: str
-    moment_distance: float          # L1(μ_A, μ_B) — 8 momentte ne kadar yakın
-    deep_distance: float | None     # derin momentlerde (16) mesafe
-    resolved_by_depth: bool         # derinlik artınca ayrıştı mı?
-    structural_diff: float          # girdilerin gerçek yapısal farkı (0..1)
+    moment_distance: float  # L1(μ_A, μ_B) — 8 momentte ne kadar yakın
+    deep_distance: float | None  # derin momentlerde (16) mesafe
+    resolved_by_depth: bool  # derinlik artınca ayrıştı mı?
+    structural_diff: float  # girdilerin gerçek yapısal farkı (0..1)
     label_aware_distance: float | None = None  # label-aware kodlamada mesafe
-    resolved_by_labels: bool = False           # label-aware ayrıştırıyor mu?
+    resolved_by_labels: bool = False  # label-aware ayrıştırıyor mu?
 
     def summary(self) -> str:
         if self.resolved_by_labels:
@@ -55,6 +57,7 @@ class Collision:
 @dataclass
 class CollisionReport:
     """Çakışma avı raporu — çekirdek iddianın durumu."""
+
     samples_tested: int
     pairs_compared: int
     collisions: list[Collision] = field(default_factory=list)
@@ -92,11 +95,15 @@ class CollisionReport:
         if not self.collisions:
             verdict = "VAAT TUTUYOR — 8 moment yapıyı ayırıyor (çakışma yok)"
         elif self.claim_holds:
-            verdict = ("VAAT TUTUYOR — çakışmalar label-aware/derinlik ile ayrışıyor; "
-                       "çekirdek matematik sağlam, etiket-körlük çözülebilir")
+            verdict = (
+                "VAAT TUTUYOR — çakışmalar label-aware/derinlik ile ayrışıyor; "
+                "çekirdek matematik sağlam, etiket-körlük çözülebilir"
+            )
         else:
-            verdict = ("VAAT KISMÎ — varsayılan metin kodlaması etiket-kör "
-                       "(permütasyon yapıları çakışır); label-aware mod çözer")
+            verdict = (
+                "VAAT KISMÎ — varsayılan metin kodlaması etiket-kör "
+                "(permütasyon yapıları çakışır); label-aware mod çözer"
+            )
         lines = [
             "═══ ÇAKIŞMA AVI ═══",
             f"Örnek: {self.samples_tested}  |  karşılaştırma: {self.pairs_compared:,}",
@@ -144,6 +151,7 @@ class CollisionHunter:
 
     def _encode_moments(self, inp, depth: int) -> list[float]:
         from tantrium.core.encoder import encode as enc
+
         obj = enc(inp, num_moments=depth)
         return [float(m) for m in obj.moments]
 
@@ -152,8 +160,10 @@ class CollisionHunter:
         if not isinstance(inp, str):
             return None
         from tantrium.core.encoder import (
-            _text_to_bigram_matrix, _spectral_moments,
+            _spectral_moments,
+            _text_to_bigram_matrix,
         )
+
         try:
             A = _text_to_bigram_matrix(inp, label_aware=True)
             return [float(m) for m in _spectral_moments(A, depth)]
@@ -230,12 +240,18 @@ class CollisionHunter:
                     la_dist = sum(abs(la_i[t] - la_j[t]) for t in range(kk))
                     resolved_labels = la_dist >= epsilon * 2
 
-                collisions.append(Collision(
-                    input_a=str(si), input_b=str(sj),
-                    moment_distance=dist, deep_distance=deep_dist,
-                    resolved_by_depth=resolved, structural_diff=sdiff,
-                    label_aware_distance=la_dist, resolved_by_labels=resolved_labels,
-                ))
+                collisions.append(
+                    Collision(
+                        input_a=str(si),
+                        input_b=str(sj),
+                        moment_distance=dist,
+                        deep_distance=deep_dist,
+                        resolved_by_depth=resolved,
+                        structural_diff=sdiff,
+                        label_aware_distance=la_dist,
+                        resolved_by_labels=resolved_labels,
+                    )
+                )
 
         return CollisionReport(
             samples_tested=len(sigs),

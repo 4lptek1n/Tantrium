@@ -3,6 +3,7 @@
 Orijinal 4 metot (find_manifold_gaps/blind_spots/scan_frontier/analyze) DOKUNULMADI;
 GapFinder additive facade — her sinyal native çağrılabilir, Gap.raw orijinali taşır.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -13,6 +14,7 @@ from tantrium.reasoning.gap_finder import Gap, GapFinder
 @pytest.fixture(scope="module")
 def ai():
     import tantrium
+
     return tantrium.AI()
 
 
@@ -30,6 +32,7 @@ def test_gapfinder_anchor_signal(ai):
 def test_gapfinder_anchor_matches_native(ai):
     """GapFinder anchor sinyali native blind_spots ile aynı sayıda boşluk verir."""
     from tantrium.meta.paradigm import MetaParadigm
+
     native = MetaParadigm(ai._engine).blind_spots(threshold=5)
     via_finder = GapFinder(ai._engine).find(signal="anchor", threshold=5)
     assert len(via_finder) == len(native), "facade native ile aynı boşlukları görmeli"
@@ -74,6 +77,7 @@ def test_gapfinder_all_fail_open(ai):
     gf = GapFinder(ai._engine)
     # _recorded'ı patlat — all yine de diğer sinyallerden Gap döndürmeli
     import unittest.mock as mock
+
     with mock.patch.object(gf, "_recorded", side_effect=RuntimeError("boom")):
         gaps = gf.find(signal="all", threshold=5, grid_n=8)
     assert isinstance(gaps, list)

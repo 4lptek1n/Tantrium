@@ -8,6 +8,7 @@ toplamı (= r 'mod' / gizli operatörün r özdeğeri). Yapılı sinyal düşük
 Encoder'ın 8-moment sıkıştırması bunu siler (8 moment hep ~4 atoma çöker) — bu modül HAM
 veriden okur, içeriğe bakmadan. Saf numpy.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -15,16 +16,17 @@ from dataclasses import dataclass, field
 
 @dataclass
 class StructuralReading:
-    n: int                       # gözlem uzunluğu
-    rank: int                    # üreten mod sayısı = GERÇEK karmaşıklık (Hankel rank)
-    modes: list = field(default_factory=list)        # üreten poller (Prony özdeğerleri)
+    n: int  # gözlem uzunluğu
+    rank: int  # üreten mod sayısı = GERÇEK karmaşıklık (Hankel rank)
+    modes: list = field(default_factory=list)  # üreten poller (Prony özdeğerleri)
     singular_values: list = field(default_factory=list)  # normalize tekil-değer spektrumu
-    structured: bool = False     # rank ≪ n/2 → gizli düzen var
-    sv_gap: float = 0.0          # rank'taki spektral boşluk (kesinlik göstergesi)
+    structured: bool = False  # rank ≪ n/2 → gizli düzen var
+    sv_gap: float = 0.0  # rank'taki spektral boşluk (kesinlik göstergesi)
 
 
-def structural_decomposition(samples, tol: float = 1e-6,
-                             max_modes: int | None = None) -> "StructuralReading":
+def structural_decomposition(
+    samples, tol: float = 1e-6, max_modes: int | None = None
+) -> StructuralReading:
     """Ham gözlemden üreten yapıyı çıkar: Hankel rank + Prony modları + tekil-değer spektrumu.
 
     rank = üreten mod sayısı (Kronecker). structured = rank gözlem boyutunun yarısından
@@ -48,7 +50,7 @@ def structural_decomposition(samples, tol: float = 1e-6,
     rank = max(1, min(rank, m))
     # rank'taki spektral boşluk: çöküş ne kadar keskin (kesin yapı göstergesi)
     sv_gap = float(svn[rank - 1] - (svn[rank] if rank < len(svn) else 0.0))
-    structured = bool(rank < m * 0.75)   # tam-rank'ın belirgin altı = gizli düzen
+    structured = bool(rank < m * 0.75)  # tam-rank'ın belirgin altı = gizli düzen
 
     # Prony modları: shifted Hankel genelleştirilmiş özdeğer (rank-kesilmiş)
     modes: list = []
@@ -63,8 +65,12 @@ def structural_decomposition(samples, tol: float = 1e-6,
         modes = []
 
     return StructuralReading(
-        n=N, rank=rank, modes=modes, singular_values=[round(v, 6) for v in svn],
-        structured=structured, sv_gap=round(sv_gap, 6),
+        n=N,
+        rank=rank,
+        modes=modes,
+        singular_values=[round(v, 6) for v in svn],
+        structured=structured,
+        sv_gap=round(sv_gap, 6),
     )
 
 
@@ -76,6 +82,7 @@ def fit_recurrence(samples, order: int | None = None, max_order: int = 12):
     (sinyal/gürültü sınırı) ile otomatik. Döner: (c, order, residual_std).
     """
     import numpy as np
+
     x = np.asarray([float(s) for s in samples], dtype=float)
     N = len(x)
     if N < 4:
@@ -88,7 +95,7 @@ def fit_recurrence(samples, order: int | None = None, max_order: int = 12):
             ratios = sv[:-1] / np.maximum(sv[1:], 1e-12)
             order = int(np.argmax(ratios[:max_order])) + 1
     p = max(1, min(int(order), max_order, N // 2 - 1))
-    rows = [x[n - p:n][::-1] for n in range(p, N)]
+    rows = [x[n - p : n][::-1] for n in range(p, N)]
     b = x[p:N]
     try:
         c, *_ = np.linalg.lstsq(np.array(rows), b, rcond=None)
@@ -120,15 +127,18 @@ def anomaly_scan(samples, order: int | None = None, z: float = 3.0):
     Döner: (anomalies[{index,residual,z}], residual_std).
     """
     import numpy as np
+
     c, p, sigma = fit_recurrence(samples, order)
     if not c:
         return [], 0.0
     x = [float(s) for s in samples]
-    resids = [x[n] - sum(ci * x[n - (i + 1)] for i, ci in enumerate(c))
-              for n in range(p, len(x))]
+    resids = [x[n] - sum(ci * x[n - (i + 1)] for i, ci in enumerate(c)) for n in range(p, len(x))]
     s = float(np.std(resids)) or 1.0
-    anomalies = [{"index": k + p, "residual": round(r, 5), "z": round(abs(r) / s, 2)}
-                 for k, r in enumerate(resids) if abs(r) > z * s]
+    anomalies = [
+        {"index": k + p, "residual": round(r, 5), "z": round(abs(r) / s, 2)}
+        for k, r in enumerate(resids)
+        if abs(r) > z * s
+    ]
     return anomalies, s
 
 
@@ -137,6 +147,7 @@ def _poly_features(z, degree: int):
     """Gecikme-vektörü z'nin TÜM monomları (derece ≤ degree), sabit dahil. Koopman
     sözlüğü: nonlineer dinamik lifted uzayda lineerleşir (Takens gömme + polinom)."""
     from itertools import combinations_with_replacement
+
     feats = [1.0]
     for deg in range(1, degree + 1):
         for combo in combinations_with_replacement(range(len(z)), deg):
@@ -155,10 +166,11 @@ def nonlinear_fit(samples, degree: int = 2, embed: int = 2):
     Döner: (w, embed, degree, residual_std).
     """
     import numpy as np
+
     x = [float(s) for s in samples]
     N = len(x)
     e = max(1, min(int(embed), N // 3))
-    rows = [_poly_features(x[n - e:n], degree) for n in range(e, N)]
+    rows = [_poly_features(x[n - e : n], degree) for n in range(e, N)]
     b = x[e:N]
     try:
         w, *_ = np.linalg.lstsq(np.array(rows), np.array(b), rcond=None)
@@ -176,9 +188,7 @@ def nonlinear_forecast(samples, steps: int = 8, degree: int = 2, embed: int = 2)
     for _ in range(int(steps)):
         if not w:
             break
-        nxt = sum(wi * fi for wi, fi in zip(w, _poly_features(seq[-e:], d)))
+        nxt = sum(wi * fi for wi, fi in zip(w, _poly_features(seq[-e:], d), strict=False))
         seq.append(nxt)
         out.append(nxt)
     return out, (w, e, d), sigma
-
-

@@ -2,38 +2,45 @@
 
 Kapsam: _extract_relations, _normalize_entity, causal_chain() API.
 """
-import pytest
 
+import pytest
 
 # ─── _normalize_entity testleri ─────────────────────────────────────────────
 
+
 def test_normalize_strips_pathway():
     from tantrium.research.autonomous import _normalize_entity
+
     assert _normalize_entity("ras pathway") == "ras"
 
 
 def test_normalize_strips_activation():
     from tantrium.research.autonomous import _normalize_entity
+
     assert _normalize_entity("mek activation") == "mek"
 
 
 def test_normalize_strips_enzyme():
     from tantrium.research.autonomous import _normalize_entity
+
     assert _normalize_entity("cox enzyme") == "cox"
 
 
 def test_normalize_strips_kinase():
     from tantrium.research.autonomous import _normalize_entity
+
     assert _normalize_entity("egfr kinase") == "egfr"
 
 
 def test_normalize_strips_proliferation():
     from tantrium.research.autonomous import _normalize_entity
+
     assert _normalize_entity("tumor cell proliferation") == "tumor cell"
 
 
 def test_normalize_unchanged_short():
     from tantrium.research.autonomous import _normalize_entity
+
     assert _normalize_entity("ras") == "ras"
     assert _normalize_entity("egfr") == "egfr"
 
@@ -42,21 +49,26 @@ def test_normalize_unchanged_short():
 
 # ─── causal_chain testleri ──────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module")
 def ai_with_causal():
     import tantrium
     from tests._seed import seed_relations
+
     # İZOLE adlar (gerçek 107k manifoldla çakışmasın) — erlotinib/egfr gerçek düğümler,
     # kendi gerçek kenarlarıyla BFS'i kirletirdi. Uydurma adlar yalnız tohumlanan zinciri verir.
     ai = tantrium.AI()
-    seed_relations(ai, [
-        ("zdrugx", "INHIBITS", "zgenea"),
-        ("zgenea", "ACTIVATES", "zpathb"),
-        ("zpathb", "CAUSES", "zkinc"),
-        ("zkinc", "CAUSES", "zkind"),
-        ("zkind", "CAUSES", "zdiseasee"),
-        ("zaspirinx", "INHIBITS", "zcoxy"),
-    ])
+    seed_relations(
+        ai,
+        [
+            ("zdrugx", "INHIBITS", "zgenea"),
+            ("zgenea", "ACTIVATES", "zpathb"),
+            ("zpathb", "CAUSES", "zkinc"),
+            ("zkinc", "CAUSES", "zkind"),
+            ("zkind", "CAUSES", "zdiseasee"),
+            ("zaspirinx", "INHIBITS", "zcoxy"),
+        ],
+    )
     return ai
 
 
@@ -95,21 +107,25 @@ def test_causal_chain_case_insensitive(ai_with_causal):
 
 def test_causal_chain_returns_dict_keys(ai_with_causal):
     r = ai_with_causal.causal_chain("zkind", depth=4)
-    assert set(["goal", "chains", "actionable", "n_paths", "note"]).issubset(set(r.keys()))
+    assert {"goal", "chains", "actionable", "n_paths", "note"}.issubset(set(r.keys()))
 
 
 def test_multiple_intervention_points():
     """Ayrı bir AI nesnesiyle izolasyon sağla."""
     import tantrium
     from tests._seed import seed_relations
+
     ai = tantrium.AI()
-    seed_relations(ai, [
-        ("drugalpha", "INHIBITS", "targetx"),
-        ("targetx", "ACTIVATES", "targety"),
-        ("targety", "CAUSES", "diseasez"),
-        ("drugbeta", "INHIBITS", "targetw"),
-        ("targetw", "CAUSES", "targety"),
-    ])
+    seed_relations(
+        ai,
+        [
+            ("drugalpha", "INHIBITS", "targetx"),
+            ("targetx", "ACTIVATES", "targety"),
+            ("targety", "CAUSES", "diseasez"),
+            ("drugbeta", "INHIBITS", "targetw"),
+            ("targetw", "CAUSES", "targety"),
+        ],
+    )
     r = ai.causal_chain("diseasez", depth=8)
     # En az 2 müdahale noktası: DrugAlpha ve DrugBeta
     assert len(r["actionable"]) >= 2

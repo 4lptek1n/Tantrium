@@ -1,15 +1,18 @@
 """Tests for InverseTransport — inverse molecular design via W2 metric."""
+
 import pytest
 
 
 @pytest.fixture(scope="module")
 def ai():
     import tantrium
+
     return tantrium.AI()
 
 
 def test_design_returns_design_result(ai):
     from tantrium import DesignResult
+
     r = ai.design("EGFR", top_k=4, n_fragment_rounds=1)
     assert isinstance(r, DesignResult)
 
@@ -64,6 +67,7 @@ def test_design_result_str(ai):
 
 def test_design_fast_enough(ai):
     import time
+
     t0 = time.time()
     ai.design("EGFR", top_k=4, n_fragment_rounds=1)
     elapsed = time.time() - t0
@@ -72,6 +76,7 @@ def test_design_fast_enough(ai):
 
 def test_inverse_transport_manifold_search(ai):
     from tantrium import InverseTransport
+
     inv = InverseTransport(ai.engine)
     m, t = inv._encode_target("EGFR")
     hits = inv._search_manifold(m, n=5)
@@ -85,6 +90,7 @@ def test_inverse_transport_manifold_search(ai):
 
 def test_inverse_transport_encode_smiles(ai):
     from tantrium import InverseTransport
+
     inv = InverseTransport(ai.engine)
     m, t = inv._encode_target("c1ccccc1")
     assert t == "smiles"

@@ -15,6 +15,7 @@ Rules implemented (all sound, no completeness claim):
   - SPECTRAL_ZAYIN  : diag(G_A) ≥ 0 + diag(G_B) ≥ 0  →  diag(G_A + G_B) ≥ 0
   - DISTINCT_KAF    : injective(A) + injective(B) + disjoint ranges  →  injective(A∪B)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -22,7 +23,7 @@ from datetime import datetime, timezone
 from fractions import Fraction
 from typing import Any
 
-from tantrium.core.codex import CertifiableObject as CodexObject, ParadigmResult
+from tantrium.core.codex import CertifiableObject as CodexObject
 from tantrium.core.network import CertificationRun as NetworkRun
 
 
@@ -32,12 +33,14 @@ def _now() -> str:
 
 # ─── A single derived claim ────────────────────────────────────────────────
 
+
 @dataclass
 class InferenceResult:
     """A claim derived by sound inference from two certified runs."""
+
     rule_id: str
     conclusion: str
-    derived_from: list[str]    # names of source objects
+    derived_from: list[str]  # names of source objects
     evidence: list[str]
     certificate: dict[str, Any] = field(default_factory=dict)
     timestamp: str = field(default_factory=_now)
@@ -50,6 +53,7 @@ class InferenceResult:
 
 # ─── Inference rules ────────────────────────────────────────────────────────
 
+
 @dataclass
 class InferenceRule:
     """A sound inference rule over pairs of NetworkRuns.
@@ -57,6 +61,7 @@ class InferenceRule:
     preconditions: list of paradigm IDs that must be CERTIFIED in BOTH runs.
     apply() returns an InferenceResult or None if preconditions fail.
     """
+
     rule_id: str
     name: str
     preconditions_a: list[str]
@@ -65,8 +70,7 @@ class InferenceRule:
 
     def _check(self, run: NetworkRun, pids: list[str]) -> bool:
         return all(
-            run.nodes.get(pid) is not None and run.nodes[pid].status == "CERTIFIED"
-            for pid in pids
+            run.nodes.get(pid) is not None and run.nodes[pid].status == "CERTIFIED" for pid in pids
         )
 
     def apply(self, run_a: NetworkRun, run_b: NetworkRun) -> InferenceResult | None:
@@ -81,8 +85,9 @@ class ComposePSDRule(InferenceRule):
     """
 
     def apply(self, run_a: NetworkRun, run_b: NetworkRun) -> InferenceResult | None:
-        if not (self._check(run_a, self.preconditions_a) and
-                self._check(run_b, self.preconditions_b)):
+        if not (
+            self._check(run_a, self.preconditions_a) and self._check(run_b, self.preconditions_b)
+        ):
             return None
         name_a, name_b = run_a.obj.name, run_b.obj.name
         m_a = run_a.obj.moments
@@ -120,8 +125,9 @@ class TransferInfoRule(InferenceRule):
     """
 
     def apply(self, run_a: NetworkRun, run_b: NetworkRun) -> InferenceResult | None:
-        if not (self._check(run_a, self.preconditions_a) and
-                self._check(run_b, self.preconditions_b)):
+        if not (
+            self._check(run_a, self.preconditions_a) and self._check(run_b, self.preconditions_b)
+        ):
             return None
         name_a, name_b = run_a.obj.name, run_b.obj.name
         transforms_a = run_a.obj.structure.get("transformations", [])
@@ -154,8 +160,9 @@ class ChainFixedPointRule(InferenceRule):
     """
 
     def apply(self, run_a: NetworkRun, run_b: NetworkRun) -> InferenceResult | None:
-        if not (self._check(run_a, self.preconditions_a) and
-                self._check(run_b, self.preconditions_b)):
+        if not (
+            self._check(run_a, self.preconditions_a) and self._check(run_b, self.preconditions_b)
+        ):
             return None
         name_a, name_b = run_a.obj.name, run_b.obj.name
         fp_a = run_a.obj.structure.get("fixed_point_iterations", [])
@@ -190,8 +197,9 @@ class UnionConsistencyRule(InferenceRule):
     """
 
     def apply(self, run_a: NetworkRun, run_b: NetworkRun) -> InferenceResult | None:
-        if not (self._check(run_a, self.preconditions_a) and
-                self._check(run_b, self.preconditions_b)):
+        if not (
+            self._check(run_a, self.preconditions_a) and self._check(run_b, self.preconditions_b)
+        ):
             return None
         name_a, name_b = run_a.obj.name, run_b.obj.name
         contra_a = run_a.obj.structure.get("contradictions", [])
@@ -226,8 +234,9 @@ class BoundLyapunovRule(InferenceRule):
     """
 
     def apply(self, run_a: NetworkRun, run_b: NetworkRun) -> InferenceResult | None:
-        if not (self._check(run_a, self.preconditions_a) and
-                self._check(run_b, self.preconditions_b)):
+        if not (
+            self._check(run_a, self.preconditions_a) and self._check(run_b, self.preconditions_b)
+        ):
             return None
         name_a, name_b = run_a.obj.name, run_b.obj.name
         lv_a = run_a.obj.structure.get("lyapunov_values", [])
@@ -265,8 +274,9 @@ class SpectralPathSumRule(InferenceRule):
     """
 
     def apply(self, run_a: NetworkRun, run_b: NetworkRun) -> InferenceResult | None:
-        if not (self._check(run_a, self.preconditions_a) and
-                self._check(run_b, self.preconditions_b)):
+        if not (
+            self._check(run_a, self.preconditions_a) and self._check(run_b, self.preconditions_b)
+        ):
             return None
         name_a, name_b = run_a.obj.name, run_b.obj.name
         pw_a = run_a.obj.structure.get("path_weights", [])
@@ -304,8 +314,9 @@ class CausalNecessityRule(InferenceRule):
     """
 
     def apply(self, run_a: NetworkRun, run_b: NetworkRun) -> InferenceResult | None:
-        if not (self._check(run_a, self.preconditions_a) and
-                self._check(run_b, self.preconditions_b)):
+        if not (
+            self._check(run_a, self.preconditions_a) and self._check(run_b, self.preconditions_b)
+        ):
             return None
         name_a, name_b = run_a.obj.name, run_b.obj.name
         m_a = run_a.obj.moments
@@ -393,6 +404,7 @@ _RULES: list[InferenceRule] = [
 
 # ─── The inference chain engine ──────────────────────────────────────────────
 
+
 class InferenceChain:
     """Derives new certified claims from pairs of NetworkRuns via sound rules.
 
@@ -442,10 +454,12 @@ class InferenceChain:
         The composition uses tensor product moments (convolution).
         Returns None if either object fails ALEPH.
         """
-        if (run_a.nodes.get("ALEPH") is None or
-                run_a.nodes["ALEPH"].status != "CERTIFIED" or
-                run_b.nodes.get("ALEPH") is None or
-                run_b.nodes["ALEPH"].status != "CERTIFIED"):
+        if (
+            run_a.nodes.get("ALEPH") is None
+            or run_a.nodes["ALEPH"].status != "CERTIFIED"
+            or run_b.nodes.get("ALEPH") is None
+            or run_b.nodes["ALEPH"].status != "CERTIFIED"
+        ):
             return None
 
         m_a = run_a.obj.moments
@@ -474,13 +488,14 @@ class InferenceChain:
     def register(
         self,
         results: list[InferenceResult],
-        knowledge_path: "str | Path | None" = None,
+        knowledge_path: str | Path | None = None,  # noqa: F821
     ) -> None:
         """Append derived inferences to the knowledge store."""
         if not results or knowledge_path is None:
             return
         import json
         from pathlib import Path
+
         path = Path(knowledge_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as f:
@@ -498,9 +513,9 @@ class InferenceChain:
 
     def run_all(
         self,
-        knowledge_path: "str | Path",
+        knowledge_path: str | Path,  # noqa: F821
         write_back: bool = True,
-        engine: "object | None" = None,
+        engine: object | None = None,
     ) -> list[InferenceResult]:
         """Run inference over ALL pairs in the knowledge store.
 
@@ -513,6 +528,7 @@ class InferenceChain:
         """
         import json
         from pathlib import Path
+
         from tantrium.core.codex import CertifiableObject as CodexObject
         from tantrium.core.network import CertificationPipeline as AlephTekinNetwork
 
@@ -562,21 +578,27 @@ class InferenceChain:
             if obj is None:
                 # Son çare: geometrik seri + minimal yapı
                 moments = [Fraction(1, 2) ** k for k in range(8)]
-                obj = CodexObject(name=name, moments=moments, structure={
-                    "from_history": True,
-                    "eigenvalues": [1.0, 0.5, 0.25],
-                    "lyapunov_values": [1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125],
-                    "path_weights": [Fraction(1, 2), Fraction(1, 4)],
-                    "determinant": Fraction(1, 8),
-                    "is_running": True,
-                    "fixed_point_iterations": [0.5, 0.75, 0.875, 1.0],
-                    "sensor_hash": name[:16],
-                    "certificate_hash": name[:16],
-                    "transformations": [{"name": "history_fallback", "information_loss": 0}],
-                    "schur_psd": True, "tau_all_nonneg": True,
-                    "li_positive": True, "li_coefficients": [0.5, 0.75, 0.875, 1.0],
-                    "frobenius_preserved": True,
-                })
+                obj = CodexObject(
+                    name=name,
+                    moments=moments,
+                    structure={
+                        "from_history": True,
+                        "eigenvalues": [1.0, 0.5, 0.25],
+                        "lyapunov_values": [1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125],
+                        "path_weights": [Fraction(1, 2), Fraction(1, 4)],
+                        "determinant": Fraction(1, 8),
+                        "is_running": True,
+                        "fixed_point_iterations": [0.5, 0.75, 0.875, 1.0],
+                        "sensor_hash": name[:16],
+                        "certificate_hash": name[:16],
+                        "transformations": [{"name": "history_fallback", "information_loss": 0}],
+                        "schur_psd": True,
+                        "tau_all_nonneg": True,
+                        "li_positive": True,
+                        "li_coefficients": [0.5, 0.75, 0.875, 1.0],
+                        "frobenius_preserved": True,
+                    },
+                )
             run = net.run(obj)
             proxy_runs.append(run)
 
@@ -584,7 +606,7 @@ class InferenceChain:
         all_results: list[InferenceResult] = []
         seen_pairs: set[tuple[str, str]] = set()
         for i, run_a in enumerate(proxy_runs):
-            for run_b in proxy_runs[i + 1:]:
+            for run_b in proxy_runs[i + 1 :]:
                 pair_key = (run_a.obj.name, run_b.obj.name)
                 if pair_key in seen_pairs:
                     continue

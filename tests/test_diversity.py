@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from tantrium.core.diversity import gram_kernel, diversity_volume, diverse_select
+from tantrium.core.diversity import diverse_select, diversity_volume, gram_kernel
 
 
 def _identical(n, dim=8):

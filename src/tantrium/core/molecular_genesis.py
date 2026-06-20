@@ -9,17 +9,19 @@ Bu benzerlik araması değil — TÜREV.
 Hamburger Teoremi: momentler ölçüyü tek biçimde belirler.
 Sistem hedefin matematiksel zorunluluğunu okur, molekülü oradan kurar.
 """
+
 from __future__ import annotations
 
 import logging
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 warnings.filterwarnings("ignore")
 logging.getLogger("rdkit").setLevel(logging.CRITICAL)
 try:
     from rdkit import RDLogger
+
     RDLogger.DisableLog("rdApp.*")
 except Exception:
     pass
@@ -29,7 +31,12 @@ if TYPE_CHECKING:
 
 # Ekleme adayları: (atom_sembolü, atomik_numara)
 _ATOMS = [
-    ("C", 6), ("N", 7), ("O", 8), ("S", 16), ("F", 9), ("Cl", 17),
+    ("C", 6),
+    ("N", 7),
+    ("O", 8),
+    ("S", 16),
+    ("F", 9),
+    ("Cl", 17),
 ]
 
 # Bağ tipleri denenecek
@@ -50,12 +57,13 @@ class GenesisCandidate:
 @dataclass
 class SimStep:
     """Evren simülasyonunda tek bir transport-sertifikalı ilerleme adımı."""
+
     smiles: str
     n_atoms: int
-    certified: bool          # dyadic ∧ sturm — tam gerçek adım
+    certified: bool  # dyadic ∧ sturm — tam gerçek adım
     dyadic: bool
     sturm: bool
-    zeta: float              # Riemann ζ ailesine derinlik
+    zeta: float  # Riemann ζ ailesine derinlik
     cost: float
 
 
@@ -65,11 +73,12 @@ class SimulationReport:
 
     Hafıza araması yok — her adım CertifiedTransport ile yargılandı.
     """
+
     seed: str
-    lineage: list[SimStep]                 # tohum→son: ilerleme yolu
-    frontier: list[SimStep]                # son beam (sürdürülebilir uçlar)
-    best: SimStep | None                   # en düşük-ζ sertifikalı uç
-    certified_steps: int                   # kaç adım dyadic∧sturm geçti
+    lineage: list[SimStep]  # tohum→son: ilerleme yolu
+    frontier: list[SimStep]  # son beam (sürdürülebilir uçlar)
+    best: SimStep | None  # en düşük-ζ sertifikalı uç
+    certified_steps: int  # kaç adım dyadic∧sturm geçti
     total_steps: int
     duration_s: float
 
@@ -121,7 +130,7 @@ class GenesisReport:
         for i, c in enumerate(self.candidates[:8]):
             cert = "✓" if c.paradigms_passed >= c.paradigms_total - 1 else "~"
             lines.append(
-                f"  {i+1:2}. {cert} W2={c.w2:.4f}  "
+                f"  {i + 1:2}. {cert} W2={c.w2:.4f}  "
                 f"[{c.paradigms_passed}/{c.paradigms_total}]  "
                 f"{c.n_atoms} atom  {c.steps} adım"
             )
@@ -145,7 +154,7 @@ class MolecularGenesis:
     Bu 'benzerine bak' değil — 'matematiğin zorunlu kıldığı yapıyı kur'.
     """
 
-    def __init__(self, engine: "CertificationEngine"):
+    def __init__(self, engine: CertificationEngine):
         self.engine = engine
 
     # ── Ana giriş noktası ────────────────────────────────────────────────────
@@ -158,6 +167,7 @@ class MolecularGenesis:
         beam_width: int = 4,
     ) -> GenesisReport:
         import time
+
         t0 = time.time()
 
         target_moments, target_type = self._encode_target(target)
@@ -165,6 +175,7 @@ class MolecularGenesis:
         target_spec = self._target_spec(target)
         if target_spec is None:
             from tantrium.domains.spectral import moments_to_spectral
+
             target_spec = moments_to_spectral(target_moments, name=target[:20])
 
         # Spektral imzadan başlangıç kılavuzu çıkar + serbest kümülant takviyesi
@@ -211,7 +222,7 @@ class MolecularGenesis:
         toward: str | None = None,
         toward_profile: list[list[float]] | None = None,
         seeds: list[str] | None = None,
-    ) -> "SimulationReport":
+    ) -> SimulationReport:
         """Makineyi çalıştırarak molekülü transport ile diz — hafıza araması YOK.
 
         Her atom-ekleme adımı CertifiedTransport ile yargılanır:
@@ -229,10 +240,12 @@ class MolecularGenesis:
         gerçeklik geçidi, κ-profil yön. Böylece makine 'işe yarayan bölgeye' ilerler.
         """
         import time
-        from tantrium.core.encoder import encode
-        from tantrium.core.transport import CertifiedTransport
-        from tantrium.core.quantum_moments import FreeCumulants
+
         from rdkit import Chem
+
+        from tantrium.core.encoder import encode
+        from tantrium.core.quantum_moments import FreeCumulants
+        from tantrium.core.transport import CertifiedTransport
 
         t0 = time.time()
         ct = CertifiedTransport(self.engine)
@@ -254,6 +267,7 @@ class MolecularGenesis:
                     continue
 
         from tantrium.core.metric import canonical_distance
+
         _enc_cache: dict[str, object] = {}
 
         def _enc(smi: str):
@@ -272,9 +286,12 @@ class MolecularGenesis:
                 m = Chem.MolFromSmiles(ext_smi)
                 n_atoms = m.GetNumAtoms() if m else 0
                 return SimStep(
-                    smiles=ext_smi, n_atoms=n_atoms,
-                    certified=tc.certified, dyadic=tc.dyadic_verified,
-                    sturm=tc.sturm_verified, zeta=tc.zeta_distance,
+                    smiles=ext_smi,
+                    n_atoms=n_atoms,
+                    certified=tc.certified,
+                    dyadic=tc.dyadic_verified,
+                    sturm=tc.sturm_verified,
+                    zeta=tc.zeta_distance,
                     cost=tc.transport_cost,
                 )
             except Exception:
@@ -289,8 +306,7 @@ class MolecularGenesis:
             v = _kp_cache.get(smi)
             if v is None:
                 try:
-                    kc = FreeCumulants.from_moments(
-                        [float(x) for x in _enc(smi).moments])
+                    kc = FreeCumulants.from_moments([float(x) for x in _enc(smi).moments])
                     v = min(kc.distance(pk) for pk in profile_kappa)
                 except Exception:
                     v = float("inf")
@@ -304,7 +320,8 @@ class MolecularGenesis:
                 if tw is None:
                     try:
                         tw = canonical_distance(
-                            [float(x) for x in _enc(s.smiles).moments], toward_moments)
+                            [float(x) for x in _enc(s.smiles).moments], toward_moments
+                        )
                     except Exception:
                         tw = 0.0
                     _tw_cache[s.smiles] = tw
@@ -325,9 +342,17 @@ class MolecularGenesis:
         seen: set[str] = set()
         for sd in seed_list:
             seen.add(sd)
-            beam.append(SimStep(
-                smiles=sd, n_atoms=Chem.MolFromSmiles(sd).GetNumAtoms(),
-                certified=True, dyadic=True, sturm=True, zeta=0.0, cost=0.0))
+            beam.append(
+                SimStep(
+                    smiles=sd,
+                    n_atoms=Chem.MolFromSmiles(sd).GetNumAtoms(),
+                    certified=True,
+                    dyadic=True,
+                    sturm=True,
+                    zeta=0.0,
+                    cost=0.0,
+                )
+            )
         # κ-profil varsa tohumları da profile yakınlığa göre sırala
         if profile_kappa:
             beam.sort(key=lambda s: _kappa_to_profile(s.smiles))
@@ -340,7 +365,8 @@ class MolecularGenesis:
             for base in beam:
                 base_obj = _enc(base.smiles)
                 exts = self._get_extensions(
-                    base.smiles, base.n_atoms, ring_content=True, needs_hetero=True)
+                    base.smiles, base.n_atoms, ring_content=True, needs_hetero=True
+                )
                 total_steps += len(exts)
                 for ext in exts:
                     if ext in seen:
@@ -359,6 +385,7 @@ class MolecularGenesis:
             # Beam çeşitliliği: en iyi N + en iyi hetero + en iyi halka uçları
             def _has_hetero(smi: str) -> bool:
                 return any(c in smi for c in "NOSFnos") or "Cl" in smi
+
             def _has_ring(smi: str) -> bool:
                 return any(ch.isdigit() for ch in smi)
 
@@ -393,8 +420,10 @@ class MolecularGenesis:
 
     def _encode_target(self, target: str) -> tuple[list[float], str]:
         from tantrium.core.encoder import encode
+
         try:
             from rdkit import Chem
+
             if Chem.MolFromSmiles(target) is not None:
                 obj = encode(target)
                 return [float(m) for m in obj.moments], "smiles"
@@ -413,6 +442,7 @@ class MolecularGenesis:
         try:
             from tantrium.core.encoder import encode_smiles
             from tantrium.domains.spectral import SpectralMeasure
+
             obj = encode_smiles(smiles)
             eigs = obj.structure.get("eigenvalues", [])
             if not eigs:
@@ -428,6 +458,7 @@ class MolecularGenesis:
         """Hedef spektral ölçü — SMILES ise moleküler, değilse metin Gram."""
         try:
             from rdkit import Chem
+
             if Chem.MolFromSmiles(target) is not None:
                 return MolecularGenesis._mol_spec(target)
         except Exception:
@@ -435,6 +466,7 @@ class MolecularGenesis:
         try:
             from tantrium.core.encoder import encode
             from tantrium.domains.spectral import moments_to_spectral
+
             obj = encode(target)
             return moments_to_spectral([float(m) for m in obj.moments], name=target[:20])
         except Exception:
@@ -443,6 +475,7 @@ class MolecularGenesis:
     @staticmethod
     def _w2(spec_a, spec_b) -> float:
         from tantrium.domains.spectral import spectral_distance
+
         if spec_a is None or spec_b is None:
             return float("inf")
         return spectral_distance(spec_a, spec_b)
@@ -458,6 +491,7 @@ class MolecularGenesis:
         spectral_rank → efektif bileşen sayısı = karmaşıklık
         """
         from tantrium.core.reconstruct import reconstruct_measure
+
         try:
             meas = reconstruct_measure(moments)
             rank = meas.rank
@@ -466,8 +500,8 @@ class MolecularGenesis:
         except Exception:
             rank, support, weights = 2, [0.5, 1.0], [0.5, 0.5]
 
-        mu1 = moments[0] if moments else 1.0
-        mu2 = moments[1] if len(moments) > 1 else 1.0
+        moments[0] if moments else 1.0
+        moments[1] if len(moments) > 1 else 1.0
 
         # Spektral yayılım: yüksekse heteroatom/aromatik
         spread = float(max(support) - min(support)) if support else 1.0
@@ -504,6 +538,7 @@ class MolecularGenesis:
         """
         try:
             from tantrium.core.quantum_moments import FreeCumulants
+
             kappa = FreeCumulants.from_moments(moments)
             return {
                 "ring_content": kappa.ring_indicator() > 0.08,
@@ -524,6 +559,7 @@ class MolecularGenesis:
         w2 = self._w2(spec, target_spec)
         try:
             from tantrium.core.quantum_moments import FreeCumulants
+
             mu_smi = [spec.moment(k) for k in range(min(8, len(target_moments)))]
             kd = FreeCumulants.from_moments(mu_smi).distance(
                 FreeCumulants.from_moments(target_moments)
@@ -548,7 +584,6 @@ class MolecularGenesis:
         Her adımda beam_width en iyi parçayı tut.
         """
         from rdkit import Chem
-        from rdkit.Chem import RWMol, Atom, BondType
 
         # Başlangıç: CC (2 atom) — en küçük anlamlı moleküler Laplacian
         start_smi = "CC"
@@ -557,6 +592,7 @@ class MolecularGenesis:
             start_spec = self._mol_spec(start_smi)
             if start_spec is None:
                 from tantrium.domains.spectral import SpectralMeasure
+
                 start_spec = SpectralMeasure(eigenvalues=[1.0], weights=[1.0], name="CC")
             start_w2 = self._w2(start_spec, target_spec)
 
@@ -573,7 +609,7 @@ class MolecularGenesis:
         prev_best_w2 = start_w2
         stagnant = 0
 
-        for step in range(max_atoms):
+        for _step in range(max_atoms):
             next_beam: list[tuple[str, float, int]] = []
 
             for base_smi, base_w2, base_steps in beam:
@@ -620,8 +656,11 @@ class MolecularGenesis:
                     break
 
             # Atom sayısı hedefine ulaşıldıysa dur
-            if beam and Chem.MolFromSmiles(beam[0][0]) and \
-               Chem.MolFromSmiles(beam[0][0]).GetNumAtoms() >= n_target:
+            if (
+                beam
+                and Chem.MolFromSmiles(beam[0][0])
+                and Chem.MolFromSmiles(beam[0][0]).GetNumAtoms() >= n_target
+            ):
                 break
 
         # Son beam adaylarını da ekle
@@ -629,14 +668,14 @@ class MolecularGenesis:
 
         # En iyi top_k * 3'ü seç
         completed.sort(key=lambda x: x[1])
-        return completed[:top_k * 3], total_steps
+        return completed[: top_k * 3], total_steps
 
     def _get_extensions(
         self, smiles: str, n_atoms: int, ring_content: bool, needs_hetero: bool
     ) -> list[str]:
         """Mevcut molekülü genişletecek tüm geçerli SMILES'ları üret."""
         from rdkit import Chem
-        from rdkit.Chem import RWMol, Atom
+        from rdkit.Chem import Atom
 
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
@@ -732,14 +771,16 @@ class MolecularGenesis:
             except Exception:
                 pass
 
-            candidates.append(GenesisCandidate(
-                smiles=canon,
-                moments=[],
-                w2=w2,
-                paradigms_passed=paradigms_passed,
-                paradigms_total=paradigms_total,
-                n_atoms=n_atoms,
-                steps=steps,
-            ))
+            candidates.append(
+                GenesisCandidate(
+                    smiles=canon,
+                    moments=[],
+                    w2=w2,
+                    paradigms_passed=paradigms_passed,
+                    paradigms_total=paradigms_total,
+                    n_atoms=n_atoms,
+                    steps=steps,
+                )
+            )
 
         return candidates

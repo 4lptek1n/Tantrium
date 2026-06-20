@@ -1,6 +1,7 @@
 """Serbest kümülantlar ve kuantum imza testleri."""
+
 import math
-import pytest
+
 from tantrium.core.quantum_moments import (
     FreeCumulants,
     QuantumSignature,
@@ -8,9 +9,8 @@ from tantrium.core.quantum_moments import (
     free_entropy,
 )
 
-
 MU_SIMPLE = [1.0, 0.3, 0.15, 0.08, 0.04, 0.02, 0.01, 0.005]
-MU_ZERO   = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+MU_ZERO = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
 def test_k1_equals_mu1():
@@ -41,8 +41,7 @@ def test_add_additivity():
     kb = FreeCumulants.from_moments(mu2)
     k_sum = ka.add(kb)
     for i in range(6):
-        assert abs(k_sum.k[i] - (ka.k[i] + kb.k[i])) < 1e-12, \
-            f"κ_sum[{i}] ≠ κ_a[{i}] + κ_b[{i}]"
+        assert abs(k_sum.k[i] - (ka.k[i] + kb.k[i])) < 1e-12, f"κ_sum[{i}] ≠ κ_a[{i}] + κ_b[{i}]"
 
 
 def test_distance_nonneg():
@@ -105,10 +104,10 @@ def test_k4_free_nc_mobius():
     k = FreeCumulants.from_moments(MU_SIMPLE)
     # El ile hesap: NC formula
     m = MU_SIMPLE
-    expected = m[4] - 4*m[1]*m[3] - 2*m[2]**2 + 10*m[1]**2*m[2] - 5*m[1]**4
+    expected = m[4] - 4 * m[1] * m[3] - 2 * m[2] ** 2 + 10 * m[1] ** 2 * m[2] - 5 * m[1] ** 4
     assert abs(k.k[3] - expected) < 1e-12, f"κ₄={k.k[3]:.8f} ≠ NC expected {expected:.8f}"
     # Klasik formülden farklı olmalı (-3*m2^2 değil -2*m2^2)
-    classical = m[4] - 4*m[1]*m[3] - 3*m[2]**2 + 12*m[1]**2*m[2] - 6*m[1]**4
+    classical = m[4] - 4 * m[1] * m[3] - 3 * m[2] ** 2 + 12 * m[1] ** 2 * m[2] - 6 * m[1] ** 4
     assert abs(k.k[3] - classical) > 1e-6, "NC ve klasik κ₄ bu momentler için aynı olmamalı"
 
 
@@ -145,7 +144,7 @@ def test_R_transform_add_linearity():
 def test_free_entropy_positive_for_spread():
     """Geniş dağılım (yüksek κ₂) daha yüksek serbest entropi üretmeli."""
     mu_narrow = [1.0, 0.1, 0.02, 0.005, 0.001, 0.0003, 0.0001, 0.00003]
-    mu_wide   = [1.0, 0.3, 0.15, 0.08, 0.04, 0.02, 0.01, 0.005]
+    mu_wide = [1.0, 0.3, 0.15, 0.08, 0.04, 0.02, 0.01, 0.005]
     assert free_entropy(mu_wide) > free_entropy(mu_narrow)
 
 
@@ -205,14 +204,17 @@ def test_bounded_kappa_distance_freecumulant_roundtrip():
     # Doğrudan κ uzayında (eski yol) vs μ-roundtrip (yeni kanonik yol)
     direct = sum(abs(math.tanh(ka.k[i]) - math.tanh(kb.k[i])) for i in range(4))
     via_mu = bounded_kappa_distance(
-        ka.to_moments_approx(), kb.to_moments_approx(), include_mean=True)
+        ka.to_moments_approx(), kb.to_moments_approx(), include_mean=True
+    )
     assert abs(direct - via_mu) < 1e-9, f"roundtrip κ₁..κ₄ kaybı: {direct} ≠ {via_mu}"
 
 
 def test_nearest_quantum_metric_wired():
     """SemanticManifold.nearest(metric='quantum') → _nearest_quantum_vec yönlenir."""
     from fractions import Fraction
+
     from tantrium.core.semantic import Concept, SemanticManifold
+
     m = SemanticManifold()
     m.add(Concept(name="a", moments=[1.0, 0.3, 0.15, 0.08], domain="test", source="t"))
     m.add(Concept(name="b", moments=[1.0, 0.31, 0.16, 0.09], domain="test", source="t"))

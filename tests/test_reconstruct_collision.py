@@ -1,12 +1,11 @@
 """Ters rekonstrüksiyon + çakışma avı testleri (Tier 1 — çekirdek iddia)."""
-import pytest
 
-from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
 from tantrium.core.collision import CollisionHunter
 from tantrium.core.encoder import encode
-
+from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
 
 # ─── Rekonstrüksiyon: moment → ölçü → moment sadakati ────────────────────────
+
 
 def test_reconstruct_recovers_moments():
     """Geri kurulan ölçünün momentleri orijinalle eşleşmeli (düşük hata)."""
@@ -48,6 +47,7 @@ def test_reconstruct_empty_moments():
 
 # ─── Çakışma avı: çekirdek iddianın ampirik testi ────────────────────────────
 
+
 def test_collision_hunt_runs():
     """Çakışma avı çalışmalı ve tutarlı rapor üretmeli."""
     report = CollisionHunter().hunt(n_samples=40, epsilon=1e-4, seed=3)
@@ -70,8 +70,7 @@ def test_collision_claim_holds_via_labels():
 
 def test_identical_inputs_not_collision():
     """Aynı girdiler çakışma sayılmaz (yapısal fark eşiği)."""
-    report = CollisionHunter().hunt(n_samples=30, epsilon=1e-4, seed=7,
-                                    min_structural_diff=0.99)
+    report = CollisionHunter().hunt(n_samples=30, epsilon=1e-4, seed=7, min_structural_diff=0.99)
     # Çok yüksek yapısal fark eşiği → neredeyse hiç çakışma
     for c in report.collisions:
         assert c.structural_diff >= 0.99

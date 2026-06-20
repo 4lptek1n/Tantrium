@@ -8,6 +8,7 @@ The central invariant is simple:
 All arithmetic is rational. CSV files remain useful artifacts, but the durable
 mathematical object is a Certificate.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -22,7 +23,9 @@ def Q(value: Any) -> Fraction:
 
 
 def qstr(value: Fraction) -> str:
-    return str(value.numerator) if value.denominator == 1 else f"{value.numerator}/{value.denominator}"
+    return (
+        str(value.numerator) if value.denominator == 1 else f"{value.numerator}/{value.denominator}"
+    )
 
 
 @dataclass(frozen=True)
@@ -34,7 +37,7 @@ class Cell:
     coords: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def make(cls, cell_id: str, mass: Any, **coords: Any) -> "Cell":
+    def make(cls, cell_id: str, mass: Any, **coords: Any) -> Cell:
         return cls(cell_id=cell_id, mass=Q(mass), coords=dict(coords))
 
 
@@ -51,7 +54,7 @@ class TransportEdge:
 
     @property
     def beta(self) -> Fraction:
-        return Fraction(1, 2 ** self.half_power)
+        return Fraction(1, 2**self.half_power)
 
     @classmethod
     def make(
@@ -61,13 +64,13 @@ class TransportEdge:
         raw_source_used: Any,
         half_power: int,
         map_name: str = "dyadic",
-    ) -> "TransportEdge":
+    ) -> TransportEdge:
         raw = Q(raw_source_used)
         return cls(
             source_id=source_id,
             target_id=target_id,
             raw_source_used=raw,
-            delivered=raw * Fraction(1, 2 ** half_power),
+            delivered=raw * Fraction(1, 2**half_power),
             half_power=half_power,
             map_name=map_name,
         )

@@ -8,25 +8,62 @@ NL görev → deterministik eşleşme (operasyon adı/docstring anahtarları), s
 COMPOSE + VERIFY eder. Çalıştıkça öğrenir (corpus büyür). LLM aynı stdlib'i eğitimden bilir; biz
 introspection'dan grounded biliriz + DOĞRULARIZ.
 """
+
 from __future__ import annotations
 
 import builtins
 import inspect
-import keyword
 import re
 
 # Tek-argüman üzerinde COMPOSE edilebilen operasyonlar (şablon: {c} = aday ifade).
 # Her biri GERÇEK Python — introspection'la doğrulanır, çalıştırılarak sertifikalanır.
 _BUILTIN_OPS = {
-    "sum": "sum({c})", "len": "len({c})", "max": "max({c})", "min": "min({c})",
-    "sorted": "sorted({c})", "abs": "abs({c})", "round": "round({c})",
-    "reversed": "list(reversed({c}))", "list": "list({c})", "set": "set({c})",
-    "any": "any({c})", "all": "all({c})", "str": "str({c})", "tuple": "tuple({c})",
+    "sum": "sum({c})",
+    "len": "len({c})",
+    "max": "max({c})",
+    "min": "min({c})",
+    "sorted": "sorted({c})",
+    "abs": "abs({c})",
+    "round": "round({c})",
+    "reversed": "list(reversed({c}))",
+    "list": "list({c})",
+    "set": "set({c})",
+    "any": "any({c})",
+    "all": "all({c})",
+    "str": "str({c})",
+    "tuple": "tuple({c})",
 }
-_STR_METHODS = ("upper", "lower", "strip", "lstrip", "rstrip", "title", "capitalize",
-                "swapcase", "casefold", "split", "isdigit", "isalpha", "isupper", "islower")
-_MATH_FUNCS = ("sqrt", "factorial", "floor", "ceil", "log", "log2", "log10", "exp",
-               "isqrt", "gcd", "degrees", "radians", "trunc")
+_STR_METHODS = (
+    "upper",
+    "lower",
+    "strip",
+    "lstrip",
+    "rstrip",
+    "title",
+    "capitalize",
+    "swapcase",
+    "casefold",
+    "split",
+    "isdigit",
+    "isalpha",
+    "isupper",
+    "islower",
+)
+_MATH_FUNCS = (
+    "sqrt",
+    "factorial",
+    "floor",
+    "ceil",
+    "log",
+    "log2",
+    "log10",
+    "exp",
+    "isqrt",
+    "gcd",
+    "degrees",
+    "radians",
+    "trunc",
+)
 
 # Generic introspection ile grounding edilecek GÜVENLİ modüller (I/O yok) — yüzlerce operasyon.
 # Çok-argümanlı olanlar sentezde eval-prune olur (zararsız); relevant_primitives task'a göre filtreler.
@@ -54,24 +91,35 @@ def ground_stdlib_operations() -> dict:
     for name, tmpl in _BUILTIN_OPS.items():
         f = getattr(builtins, name, None)
         doc = (inspect.getdoc(f) or "").splitlines()[0] if f else ""
-        ops[name] = {"template": tmpl, "keywords": _doc_keywords(name, doc),
-                     "kind": "builtin", "needs_import": None}
+        ops[name] = {
+            "template": tmpl,
+            "keywords": _doc_keywords(name, doc),
+            "kind": "builtin",
+            "needs_import": None,
+        }
     for m in _STR_METHODS:
         f = getattr(str, m, None)
         doc = (inspect.getdoc(f) or "").splitlines()[0] if f else ""
-        ops["str." + m] = {"template": "({c})." + m + "()",
-                           "keywords": _doc_keywords(m, doc) | {"string", "text"},
-                           "kind": "str_method", "needs_import": None}
+        ops["str." + m] = {
+            "template": "({c})." + m + "()",
+            "keywords": _doc_keywords(m, doc) | {"string", "text"},
+            "kind": "str_method",
+            "needs_import": None,
+        }
     try:
         import math
+
         for fn in _MATH_FUNCS:
             f = getattr(math, fn, None)
             if f is None:
                 continue
             doc = (inspect.getdoc(f) or "").splitlines()[0]
-            ops["math." + fn] = {"template": "math." + fn + "({c})",
-                                 "keywords": _doc_keywords(fn, doc) | {"math"},
-                                 "kind": "math", "needs_import": "math"}
+            ops["math." + fn] = {
+                "template": "math." + fn + "({c})",
+                "keywords": _doc_keywords(fn, doc) | {"math"},
+                "kind": "math",
+                "needs_import": "math",
+            }
     except Exception:
         pass
     # GENERIC INTROSPECTION — güvenli modüllerden YÜZLERCE operasyon (elle liste DEĞİL).
@@ -88,6 +136,7 @@ def _ground_module(modname: str, ops: dict) -> int:
     çağrılamaz) ve yüksek-mertebe (functools.reduce — tek-arg değil) sentezde eval-prune ile elenir;
     burada yalnız callable filtresi. Döner: eklenen YENİ op sayısı."""
     import importlib
+
     try:
         mod = importlib.import_module(modname)
     except Exception:
@@ -104,9 +153,12 @@ def _ground_module(modname: str, ops: dict) -> int:
             continue
         doc = (inspect.getdoc(f) or "").splitlines()
         doc0 = doc[0] if doc else ""
-        ops[op_id] = {"template": modname + "." + fn + "({c})",
-                      "keywords": _doc_keywords(fn, doc0) | {modname},
-                      "kind": modname, "needs_import": modname}
+        ops[op_id] = {
+            "template": modname + "." + fn + "({c})",
+            "keywords": _doc_keywords(fn, doc0) | {modname},
+            "kind": modname,
+            "needs_import": modname,
+        }
         added += 1
     return added
 
@@ -155,12 +207,17 @@ def _discover_modules_web(keyword: str) -> list:
     """Operasyonu internetten araştır (_research_deep deseni): tanım metnini çek, içinde geçen
     GÜVENLİ allowlist modül-adlarını + `mod.func` token'larını çıkar. Fail-open (ağ yoksa boş)."""
     from tantrium.core.code_synthesis import _SAFE_RESEARCH_ALLOWLIST
+
     try:
-        from tantrium.research.net import http_get_json
         import urllib.parse as _up
+
+        from tantrium.research.net import http_get_json
+
         q = _up.quote(keyword + " python")
-        url = ("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts"
-               "&explaintext=1&redirects=1&exintro=1&titles=" + q)
+        url = (
+            "https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts"
+            "&explaintext=1&redirects=1&exintro=1&titles=" + q
+        )
         data = http_get_json(url, errors="replace", timeout=10.0)
         text = ""
         for _pid, page in data.get("query", {}).get("pages", {}).items():
@@ -184,6 +241,7 @@ def research_operation(keyword: str, *, use_web: bool = True) -> dict:
     yalnız gerçek-import-edilebilen allowlist modülleri girer. Döner: {grounded, modules, new_ops}.
     """
     from tantrium.core.code_synthesis import register_safe_module
+
     ops = ground_stdlib_operations()
     before = len(ops)
     # Anahtar zaten doğrudan grounded mı (ad eşleşmesi)?
@@ -195,16 +253,21 @@ def research_operation(keyword: str, *, use_web: bool = True) -> dict:
         mods = _discover_modules_web(keyword)
     grounded_mods: list = []
     for mod in mods:
-        if register_safe_module(mod) is None:      # allowlist DIŞI → atla (güvenlik geçidi)
+        if register_safe_module(mod) is None:  # allowlist DIŞI → atla (güvenlik geçidi)
             continue
         if _ground_module(mod, ops) > 0 or any(k.startswith(mod + ".") for k in ops):
             grounded_mods.append(mod)
-    return {"grounded": bool(grounded_mods), "modules": grounded_mods,
-            "new_ops": len(ops) - before, "already": False}
+    return {
+        "grounded": bool(grounded_mods),
+        "modules": grounded_mods,
+        "new_ops": len(ops) - before,
+        "already": False,
+    }
 
 
-def relevant_primitives(task: str = "", examples=None, *, top_k: int = 24,
-                        research: bool = False, use_web: bool = True) -> tuple:
+def relevant_primitives(
+    task: str = "", examples=None, *, top_k: int = 24, research: bool = False, use_web: bool = True
+) -> tuple:
     """Göreve İLGİLİ grounded operasyonları DETERMİNİSTİK seç (anlam-eşleşme).
 
     NL anahtarları operasyon anahtarlarıyla örtüşene öncelik; örnek tipine göre filtre.

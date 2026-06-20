@@ -13,13 +13,14 @@ DÜRÜST MİMARİ SINIR — neden AYRI dosya, neden Concept'e gömülmüyor:
 Akış ekseni (`flow` = Li gradyanı) burada ilk kez kalıcı: 8 statik momentin sahip
 olmadığı dinamik boyut — kavramın spektral deformasyon yörüngesi.
 """
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from tantrium.core.meaning_pipeline import measure, MeaningSignature
-from tantrium.core.topology_encode import TopologyEncoder, _SEMANTIC_PARADIGMS
+from tantrium.core.meaning_pipeline import MeaningSignature, measure
+from tantrium.core.topology_encode import _SEMANTIC_PARADIGMS, TopologyEncoder
 
 _CACHE_PATH = "results/agi/meaning_cache.json"
 
@@ -58,7 +59,7 @@ class MeaningStore:
 
     # ─── Kalıcılık ─────────────────────────────────────────────────────────
     @classmethod
-    def load(cls, path: str = _CACHE_PATH) -> "MeaningStore":
+    def load(cls, path: str = _CACHE_PATH) -> MeaningStore:
         p = Path(path)
         if not p.exists():
             return cls()
@@ -71,8 +72,7 @@ class MeaningStore:
     def save(self, path: str = _CACHE_PATH) -> str:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps({"signatures": self.sigs}, ensure_ascii=False),
-                     encoding="utf-8")
+        p.write_text(json.dumps({"signatures": self.sigs}, ensure_ascii=False), encoding="utf-8")
         return str(p)
 
 
@@ -89,8 +89,9 @@ def _semantic_outdegree(engine) -> dict[str, int]:
     return out
 
 
-def refresh_meaning_cache(engine, store: MeaningStore, *, limit: int = 30,
-                          max_neighbors: int = 24) -> int:
+def refresh_meaning_cache(
+    engine, store: MeaningStore, *, limit: int = 30, max_neighbors: int = 24
+) -> int:
     """En-köklü ÖLÇÜLMEMİŞ kavramları ölç + cache'e ekle (bounded, fail-open).
 
     Köklülük = semantik çıkan-derece. Cache'te olmayan en bağlı `limit` kavram
@@ -99,11 +100,10 @@ def refresh_meaning_cache(engine, store: MeaningStore, *, limit: int = 30,
     """
     outdeg = _semantic_outdegree(engine)
     # cache'te olmayan, en yüksek çıkan-dereceli adaylar
-    ranked = sorted((nm for nm in outdeg if nm not in store.sigs),
-                    key=lambda k: -outdeg[k])
+    ranked = sorted((nm for nm in outdeg if nm not in store.sigs), key=lambda k: -outdeg[k])
     te = TopologyEncoder(engine)
     added = 0
-    for nm in ranked[:limit * 3]:           # 3× tara: bazıları min-komşu eşiğini geçmez
+    for nm in ranked[: limit * 3]:  # 3× tara: bazıları min-komşu eşiğini geçmez
         if added >= limit:
             break
         try:

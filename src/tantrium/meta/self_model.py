@@ -20,6 +20,7 @@ Dört eksenli öz-tanı:
 
 ⟨SELF⟩ kalıcıdır — auto_persist ile oturumlar arası hatırlanır.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -32,32 +33,35 @@ if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
 
 SELF_NAME = "⟨SELF⟩"
-ENACTED = "ENACTED"                       # ⟨SELF⟩ → yaptığı/deneyimlediği gerçek şey
-_TIMELINE_PATH = ".tantrium/self_timeline.json"   # runtime episodik log (gitignored; grounding=tau kenarları kalıcı)
-_MAX_EXPERIENCES = 64                     # episodik: son N deneyim (hub-taşması önlenir)
+ENACTED = "ENACTED"  # ⟨SELF⟩ → yaptığı/deneyimlediği gerçek şey
+_TIMELINE_PATH = ".tantrium/self_timeline.json"  # runtime episodik log (gitignored; grounding=tau kenarları kalıcı)
+_MAX_EXPERIENCES = 64  # episodik: son N deneyim (hub-taşması önlenir)
 
 
 @dataclass
 class SelfReflection:
     """Sistemin kendisi hakkındaki tek geçişlik öz-tanısı."""
+
     name: str
     moments: list[float]
-    structural_certified: bool       # μ_universal geçerli bir ölçü mü
-    fixed_point: bool                # TAV: F(ben) = ben mi
+    structural_certified: bool  # μ_universal geçerli bir ölçü mü
+    fixed_point: bool  # TAV: F(ben) = ben mi
     fixed_point_value: float | None
-    grounded: bool                   # manifoldda köklü mü
+    grounded: bool  # manifoldda köklü mü
     grounding_verdict: str
     grounding_score: float
-    self_attribution: list[str]      # kendini neyin yakınında buluyor
-    coherent: bool                   # üç eksen anlaşıyor mu
+    self_attribution: list[str]  # kendini neyin yakınında buluyor
+    coherent: bool  # üç eksen anlaşıyor mu
     n_concepts: int
     n_edges: int
-    timeline: list = field(default_factory=list)   # son yaşanmış deneyimler (öznel sıra+zaman)
+    timeline: list = field(default_factory=list)  # son yaşanmış deneyimler (öznel sıra+zaman)
 
     def summary(self) -> str:
         lines = ["  ══ ⟨SELF⟩ — Sistemin Kendine Bakışı ══"]
         if self.structural_certified:
-            lines.append("  Yapısal ✓  μ_universal geçerli bir ölçü — 'ben varım' yapısal olarak doğru.")
+            lines.append(
+                "  Yapısal ✓  μ_universal geçerli bir ölçü — 'ben varım' yapısal olarak doğru."
+            )
         else:
             lines.append("  Yapısal ∅  öz-ölçü henüz sertifikalanmadı.")
 
@@ -80,9 +84,15 @@ class SelfReflection:
         if self.timeline:
             lines.append("  Yaşanmış deneyimlerim (öznel sıra · zaman):")
             for ev in self.timeline:
-                lines.append(f"     [{ev.get('idx')}] {ev.get('kind')}: {ev.get('name')}  ({ev.get('ts')})")
+                lines.append(
+                    f"     [{ev.get('idx')}] {ev.get('kind')}: {ev.get('name')}  ({ev.get('ts')})"
+                )
 
-        verdict = "TUTARLI — üç eksen anlaşıyor." if self.coherent else "kısmi — eksenler henüz tam hizalı değil."
+        verdict = (
+            "TUTARLI — üç eksen anlaşıyor."
+            if self.coherent
+            else "kısmi — eksenler henüz tam hizalı değil."
+        )
         lines.append(f"  Öz-tanı: {verdict}")
         lines.append(f"  Durum: {self.n_concepts:,} kavram | {self.n_edges:,} kenar")
         return "\n".join(lines)
@@ -95,7 +105,7 @@ class SelfModel:
     locate()   → ⟨SELF⟩ kavramını manifoldda kalıcı yerleştir
     """
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
         self._meta = MetaParadigm(engine)
 
@@ -135,6 +145,7 @@ class SelfModel:
     def _load_timeline(self) -> list:
         import json
         from pathlib import Path
+
         p = Path(_TIMELINE_PATH)
         if not p.exists():
             return []
@@ -146,6 +157,7 @@ class SelfModel:
     def _save_timeline(self, tl: list) -> None:
         import json
         from pathlib import Path
+
         p = Path(_TIMELINE_PATH)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps({"timeline": tl}, ensure_ascii=False), encoding="utf-8")
@@ -162,22 +174,27 @@ class SelfModel:
         yaşanmış sırası; ts dünyaya çapa. Bounded (son N, FIFO) → episodik, hub-taşması yok;
         idempotent. kind: learned/produced/proved/perceived/researched..."""
         import time
+
         from tantrium.graph.knowledge_graph import KnowledgeEdge
+
         self.locate(persist=False)
         tau = self.engine.tau
         edges = tau.edges.setdefault(SELF_NAME, [])
         if not any(e.target == name and e.paradigm == ENACTED for e in edges):
-            edges.append(KnowledgeEdge(source=SELF_NAME, target=name, distance=0.0, paradigm=ENACTED))
+            edges.append(
+                KnowledgeEdge(source=SELF_NAME, target=name, distance=0.0, paradigm=ENACTED)
+            )
             tau._dirty = True
         # FIFO sınırı: en eski ENACTED kenarları düş (episodik = yakın deneyimler)
         enacted = [e for e in edges if e.paradigm == ENACTED]
-        for e in enacted[:max(0, len(enacted) - _MAX_EXPERIENCES)]:
+        for e in enacted[: max(0, len(enacted) - _MAX_EXPERIENCES)]:
             edges.remove(e)
         # zaman çizelgesi: öznel idx + gerçek ts
         tl = self._load_timeline()
         idx = (tl[-1]["idx"] + 1) if tl else 1
-        tl.append({"idx": idx, "name": name, "kind": kind,
-                   "ts": time.strftime("%Y-%m-%dT%H:%M:%S")})
+        tl.append(
+            {"idx": idx, "name": name, "kind": kind, "ts": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        )
         tl = tl[-_MAX_EXPERIENCES:]
         self._save_timeline(tl)
         if persist:

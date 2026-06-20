@@ -5,9 +5,12 @@ komşuluğunda. Bu testler kanıtlar: anlam kanalı harflerin yapamadığı ayr�
 (protein~enzyme < protein~algorithm) — VE dürüst sınırı belgeler (semantik-topraksız
 kavram None döner, yüzeye düşer).
 """
-import pytest
-import tantrium
+
 from fractions import Fraction
+
+import pytest
+
+import tantrium
 from tantrium.core.topology_encode import TopologyEncoder
 
 
@@ -22,10 +25,11 @@ def te(ai):
 
 
 def _l1(oa, ob):
-    return sum(abs(float(x) - float(y)) for x, y in zip(oa.moments, ob.moments))
+    return sum(abs(float(x) - float(y)) for x, y in zip(oa.moments, ob.moments, strict=False))
 
 
 # ── Temel sözleşme ───────────────────────────────────────────────────────────
+
 
 def test_moments_hausdorff_regime(te):
     """Topolojik momentler [0,1] Hausdorff: μ₀=1, μ_k ∈ [0,1]."""
@@ -51,6 +55,7 @@ def test_deterministic(te):
 
 # ── Dürüst sınır: semantik-topraksız kavram ──────────────────────────────────
 
+
 def test_sparse_concept_returns_none(te):
     """Semantik kenarı olmayan kavram → None (yüzey kodlamasına düşer)."""
     # 'pointer'/'glucose' gerçek grafta tipli kenar taşımıyor (yalnız geometrik).
@@ -65,6 +70,7 @@ def test_min_neighbors_threshold(te):
 
 
 # ── Anlam ayrımı: harflerin yapamadığı ─────────────────────────────────────
+
 
 def test_abstract_cluster_close(te):
     """intelligence ~ reasoning yakın (aynı anlam-kümesi)."""
@@ -97,6 +103,7 @@ def test_intelligence_reasoning_vs_protein_ordering(te):
 
 
 # ── ai facade ────────────────────────────────────────────────────────────────
+
 
 def test_ai_meaning_returns_object(ai):
     o = ai.meaning("intelligence")

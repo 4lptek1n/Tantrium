@@ -6,10 +6,10 @@
 
 Ana iddia: ilaç keşfi = makine self-simülasyonu + dürüst yargı, benzer arama değil.
 """
-import tantrium
 
 
 # ─── simulate: transport-sürücülü üretim ─────────────────────────────────────
+
 
 def test_simulate_returns_report(ai):
     rep = ai.simulate(seed="CC", max_steps=4, beam_width=3)
@@ -44,6 +44,7 @@ def test_simulate_tracks_certified(ai):
 
 
 # ─── judge_binding: protein kuantum yargısı ──────────────────────────────────
+
 
 def test_judge_known_inhibitor_works(ai):
     """Gerçek EGFR inhibitörü 'işe yarayabilir' yargısı almalı."""
@@ -82,10 +83,12 @@ def test_judge_returns_keys(ai):
 
 # ─── Paradigma-matematik imzası: 'geçti' değil, hesaplanan SAYILAR ───────────
 
+
 def test_paradigm_signature_intensive(ai):
     """Paradigma imzası farklı boyuttaki moleküller için karşılaştırılabilir vektör."""
     from tantrium.core.encoder import encode
     from tantrium.core.metric import paradigm_signature
+
     s1 = paradigm_signature(encode("CCO").structure)
     s2 = paradigm_signature(encode("c1ccccc1").structure)
     assert len(s1) == len(s2) and len(s1) > 10
@@ -95,6 +98,7 @@ def test_paradigm_distance_same_class_closer(ai):
     """İki kinaz inhibitörü, kinaz-dışı bir molekülden paradigma-matematik olarak yakın."""
     from tantrium.core.encoder import encode
     from tantrium.core.metric import paradigm_distance
+
     erlotinib = encode("C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1").structure
     gefitinib = encode("COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1").structure
     ethanol = encode("CCO").structure
@@ -118,6 +122,7 @@ def test_judge_generalizes_to_class(ai):
 
 # ─── Kapalı döngü: design_drug ───────────────────────────────────────────────
 
+
 def test_design_drug_unknown_protein(ai):
     r = ai.design_drug("nonexistent_protein_xyz_999", max_steps=2, beam_width=2)
     assert r["verdict"] == "BİLİNMİYOR"
@@ -132,13 +137,15 @@ def test_design_drug_resolves_refs(ai):
 
 # ─── Ters paradigma: serbest dekonvolüsyon + cure ────────────────────────────
 
+
 def test_free_deconvolution_inverts_add():
     """subtract additivity'nin tersi: (A⊞B)⊟B = A."""
     from tantrium.core.quantum_moments import FreeCumulants
+
     a = FreeCumulants([0.5, 0.3, 0.1, 0.05, 0.0, 0.0])
     b = FreeCumulants([0.2, 0.1, 0.05, 0.02, 0.0, 0.0])
     back = a.add(b).subtract(b)
-    assert all(abs(x - y) < 1e-9 for x, y in zip(back.k, a.k))
+    assert all(abs(x - y) < 1e-9 for x, y in zip(back.k, a.k, strict=False))
 
 
 def test_cure_runs_and_designs(ai):
@@ -157,41 +164,46 @@ def test_cure_reports_realizability(ai):
 
 # ─── Tek homojen enerji: produce (üretim+yargı tek Sturm-pozitiflik ekseni) ──
 
+
 def test_produce_reads_target_kind(ai):
     """produce hedef tipini otomatik okur: protein / hastalık / SMILES."""
     from tantrium.core.production import ProductionEngine
+
     pe = ProductionEngine(ai.engine)
     kind_p, _, _, _ = pe._read_target("egfr")
     kind_s, _, _, _ = pe._read_target("c1ccc2ncnc(N)c2c1")
-    assert kind_p == "protein"        # bilinen ligandı var
-    assert kind_s == "smiles"         # geçerli SMILES
+    assert kind_p == "protein"  # bilinen ligandı var
+    assert kind_s == "smiles"  # geçerli SMILES
 
 
 def test_produce_judges_on_sturm_axis(ai):
     """Üretim ve yargı tek eksen — referans→molekül yolunun Sturm pivot pozitifliği."""
     from tantrium.core.production import ProductionEngine
+
     pe = ProductionEngine(ai.engine)
     _, mu_req, profiles, _ = pe._read_target("egfr")
     erlotinib = "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1"
     ok, pmin, fit = pe._judge_on_axis(erlotinib, mu_req)
-    assert ok is True                 # gerçek inhibitör: yol gerçek-ölçüde
-    assert pmin >= -1e-6              # Sturm pivotu pozitif (hiperbolik)
+    assert ok is True  # gerçek inhibitör: yol gerçek-ölçüde
+    assert pmin >= -1e-6  # Sturm pivotu pozitif (hiperbolik)
 
 
 def test_produce_discriminates_structural(ai):
     """Yapısal κ: gerçek EGFR inhibitörü, alakasız molekülden YAKIN olmalı."""
     from tantrium.core.production import ProductionEngine
+
     pe = ProductionEngine(ai.engine)
     _, mu_req, _, _ = pe._read_target("egfr")
     erlotinib = "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1"
     _, _, fit_real = pe._judge_on_axis(erlotinib, mu_req)
     _, _, fit_junk = pe._judge_on_axis("CCO", mu_req)
-    assert fit_real < fit_junk        # erlotinib etanolden yapısal yakın
+    assert fit_real < fit_junk  # erlotinib etanolden yapısal yakın
 
 
 def test_produce_rejects_unstable_motifs(ai):
     """GIMEL Aşil topuğu: peroksit/poliokso zinciri kimyasal kararlılık geçidinden geçmez."""
     from tantrium.core.production import ProductionEngine
+
     assert ProductionEngine._chemically_stable("c1ccccc1") is True
     assert ProductionEngine._chemically_stable("OCc1c2c[nH]c1OO2") is False  # peroksit
 
@@ -204,12 +216,14 @@ def test_produce_full_flow(ai):
     assert r.verdict in ("İŞE YARAYABİLİR", "İŞE YARAMAZ")
     # üretilen molekül kimyasal kararlılık geçidinden geçmiş olmalı
     from tantrium.core.production import ProductionEngine
+
     assert ProductionEngine._chemically_stable(r.designed_smiles)
 
 
 def test_produce_unknown_protein_falls_to_disease(ai):
     """Bilinmeyen hedef ligand bulamazsa hastalık (ters dekonvolüsyon) yoluna düşer."""
     from tantrium.core.production import ProductionEngine
+
     pe = ProductionEngine(ai.engine)
     kind, mu_req, _, ref = pe._read_target("nonexistent_xyz_protein_999")
     assert kind == "disease"

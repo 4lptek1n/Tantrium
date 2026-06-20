@@ -8,6 +8,7 @@ transport katmanı tek yere indi.
 İstisnalar YUTULMAZ — her caller fallback'i kendi yönetir (researcher boş liste
 döner, ingest/growth dış try/except'e bırakır).
 """
+
 from __future__ import annotations
 
 import json

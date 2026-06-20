@@ -22,12 +22,13 @@ sonra kanonik W2 ile sıralanır. L1 bir OPTİMİZASYON, hüküm mercii DEĞİL.
 Tüm anlamsal hükümler (en yakın komşu, tutarlılık, köprü) kanonik metriği
 kullanmalı. Bu modül o tek giriş noktasıdır.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.core.semantic import Concept
+    pass
 
 # Kanonik metrik adı — tüm anlamsal hükümlerin kullanması gereken
 CANONICAL = "spectral_w2"
@@ -40,6 +41,7 @@ def canonical_distance(moments_a, moments_b) -> float:
     gerçek taşıma maliyeti — koordinat (L1) artefaktı değil.
     """
     from tantrium.domains.spectral import moments_to_spectral, spectral_distance
+
     mu_a = [float(m) for m in moments_a]
     mu_b = [float(m) for m in moments_b]
     spec_a = moments_to_spectral(mu_a, name="_a")
@@ -72,6 +74,7 @@ def distance(moments_a, moments_b, metric: str = CANONICAL) -> float:
 # MDL, Achilles marjini, serbest kümülantlar…) tek normalize vektörde toplar.
 # İki nesnenin "aynı tür" olması = paradigmaların KENDİ matematiğinde yakın.
 
+
 def paradigm_signature(structure: dict) -> list[float]:
     """Tüm 23 paradigmanın sayısal çıktılarından ölçek-bağımsız imza vektörü.
 
@@ -79,6 +82,7 @@ def paradigm_signature(structure: dict) -> list[float]:
     Tüm özellikler intensive/normalize: farklı boyuttaki nesneler karşılaştırılabilir.
     """
     import math
+
     s = structure or {}
     feats: list[float] = []
 
@@ -114,14 +118,14 @@ def paradigm_signature(structure: dict) -> list[float]:
     feats += lya + [0.0] * (4 - len(lya))
 
     # ── ZAYIN (L2): τ-determinantlar + Schur ──────────────────────────────────
-    feats.append(math.tanh(_sf(s.get("schur_min_eigenvalue"))))   # Schur min
-    feats.append(math.tanh(_sf(s.get("Q_hidden_trace"))))         # H(t) gizli faktörü
+    feats.append(math.tanh(_sf(s.get("schur_min_eigenvalue"))))  # Schur min
+    feats.append(math.tanh(_sf(s.get("Q_hidden_trace"))))  # H(t) gizli faktörü
     taus = s.get("tau_determinants") or {}
     tau_ref = max(abs(_sf(taus.get("tau_1_0"), 1.0)), 1e-9)
     for tk in ("tau_1_0", "tau_1_1", "tau_1_2"):
         feats.append(math.tanh(_sf(taus.get(tk)) / tau_ref))
     for tk in ("tau_2_0", "tau_2_1"):
-        feats.append(math.tanh(_sf(taus.get(tk)) / (tau_ref ** 2 + 1e-15)))
+        feats.append(math.tanh(_sf(taus.get(tk)) / (tau_ref**2 + 1e-15)))
 
     # ── HET (L3): Li katsayıları (toplamına normalize) + akış gradyanları ──────
     li = [float(x) for x in s.get("li_coefficients", [])][:4]

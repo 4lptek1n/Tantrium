@@ -25,6 +25,7 @@ Sonuç dürüst bir yargıdır:
 
 Sistem artık her şeye 23/23 damgası vurmaz; bildiğini gürültüden ayırır.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -51,15 +52,16 @@ _RESONANCE_MIN_GROUNDED = 4
 @dataclass
 class GroundingCertificate:
     """Bir nesnenin topraklama yargısı — yapısal sertifikadan ayrı eksen."""
+
     token: str
-    verdict: str                       # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
-    direct_edges: int                  # token'ın doğrudan TAU kenar sayısı
-    in_manifold: bool                  # token doğrudan manifoldda mı
-    grounded_neighbors: int            # köklü komşu sayısı (rezonans)
-    neighbor_coherence: float          # baskın domain'in komşu oranı [0,1]
-    dominant_domain: str               # komşuluğun baskın domain'i
+    verdict: str  # GROUNDED | WEAKLY_GROUNDED | UNGROUNDED
+    direct_edges: int  # token'ın doğrudan TAU kenar sayısı
+    in_manifold: bool  # token doğrudan manifoldda mı
+    grounded_neighbors: int  # köklü komşu sayısı (rezonans)
+    neighbor_coherence: float  # baskın domain'in komşu oranı [0,1]
+    dominant_domain: str  # komşuluğun baskın domain'i
     nearest_grounded: list[str] = field(default_factory=list)  # köklü komşular
-    score: float = 0.0                 # birleşik topraklama skoru [0,1]
+    score: float = 0.0  # birleşik topraklama skoru [0,1]
 
     @property
     def is_grounded(self) -> bool:
@@ -68,24 +70,32 @@ class GroundingCertificate:
     def summary(self) -> str:
         if self.verdict == "GROUNDED":
             if self.direct_edges > 0:
-                return (f"Topraklı — {self.token} TAU grafında köklü bir düğüm "
-                        f"({self.direct_edges} ilişki).")
+                return (
+                    f"Topraklı — {self.token} TAU grafında köklü bir düğüm "
+                    f"({self.direct_edges} ilişki)."
+                )
             joined = ", ".join(self.nearest_grounded[:3])
-            return (f"Topraklı — {self.token} bilinen bir token değil ama "
-                    f"'{self.dominant_domain}' bölgesindeki köklü kavramlara "
-                    f"rezonans veriyor ({joined}).")
+            return (
+                f"Topraklı — {self.token} bilinen bir token değil ama "
+                f"'{self.dominant_domain}' bölgesindeki köklü kavramlara "
+                f"rezonans veriyor ({joined})."
+            )
         if self.verdict == "WEAKLY_GROUNDED":
             tek = self.nearest_grounded[0] if self.nearest_grounded else "tek bir kavram"
-            return (f"Zayıf topraklı — {self.token} yalnızca '{tek}' kavramına yakın, "
-                    f"tutarlı bir kümeye oturmuyor. Yapısal olarak geçerli, anlamı belirsiz.")
-        return (f"Topraksız — {self.token} yapısal olarak geçerli bir moment "
-                f"dizisi ama bildiğim hiçbir şeye bağlı değil. Anlamsız bir nokta.")
+            return (
+                f"Zayıf topraklı — {self.token} yalnızca '{tek}' kavramına yakın, "
+                f"tutarlı bir kümeye oturmuyor. Yapısal olarak geçerli, anlamı belirsiz."
+            )
+        return (
+            f"Topraksız — {self.token} yapısal olarak geçerli bir moment "
+            f"dizisi ama bildiğim hiçbir şeye bağlı değil. Anlamsız bir nokta."
+        )
 
 
 class GroundingCertifier:
     """Topraklama eksenini hesaplar: token bilinen referanslara bağlı mı?"""
 
-    def __init__(self, engine: "CertificationEngine") -> None:
+    def __init__(self, engine: CertificationEngine) -> None:
         self.engine = engine
 
     # ── Doğrudan topraklama: TAU düğüm + kenar ───────────────────────────────
@@ -98,22 +108,25 @@ class GroundingCertifier:
         """
         tau = self.engine.tau
         token_lower = token.lower()
-        edges_out = (len(tau.edges.get(token, [])) +
-                     (len(tau.edges.get(token_lower, [])) if token_lower != token else 0))
+        edges_out = len(tau.edges.get(token, [])) + (
+            len(tau.edges.get(token_lower, [])) if token_lower != token else 0
+        )
         edges_in = 0
         for _src, edge_list in tau.edges.items():
             for e in edge_list:
                 if e.target == token or e.target == token_lower:
                     edges_in += 1
         # Manifold: orijinal VEYA lowercase kayıtlı mı?
-        in_manifold = (token in self.engine.manifold.concepts or
-                       token_lower in self.engine.manifold.concepts)
+        in_manifold = (
+            token in self.engine.manifold.concepts or token_lower in self.engine.manifold.concepts
+        )
         return in_manifold, edges_out + edges_in
 
     # ── Rezonans topraklama: komşuluğun topraklanmışlığı + tutarlılığı ────────
 
     def _resonance_grounding(
-        self, concept: "Concept",
+        self,
+        concept: Concept,
     ) -> tuple[int, float, str, list[str]]:
         """Bilinmeyen token için: köklü, tutarlı bir kümeye mi düşüyor?
 
