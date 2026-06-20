@@ -1,0 +1,7 @@
+# Default owner for everything in the repo.
+* @4lptek1n
+
+# The math/positivity kernel is the moat — require owner review on changes.
+/src/tantrium/core/ @4lptek1n
+/src/tantrium/proof/ @4lptek1n
+/src/tantrium/algebra/ @4lptek1n

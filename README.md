@@ -1,13 +1,17 @@
 # Tantrium
 
+[![CI](https://github.com/4lptek1n/tantrium/actions/workflows/ci.yml/badge.svg)](https://github.com/4lptek1n/tantrium/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/4lptek1n/tantrium/actions/workflows/codeql.yml/badge.svg)](https://github.com/4lptek1n/tantrium/actions/workflows/codeql.yml)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+
 Structure-first symbolic discovery framework. Every physical object — DNA, molecules, sentences, prime numbers, EEG signals — is already a mathematical object. Tantrium reads that structure directly.
 
 ```python
 import tantrium
 
 ai = tantrium.AI()
-r  = ai.ask("EGFR")          # 23-paradigm certification
-tc = ai.transport("CCO", "aspirin", use_smiles=True)  # certified dyadic transport
+cert = ai.certify_all("EGFR")          # 4-axis certification (paradigms + grounding + truth + confidence)
+tc   = ai.transport("CCO", "aspirin", use_smiles=True)  # certified dyadic transport
 print(tc.summary())           # CERTIFIED | dyadic=✓ | sturm=✓ | ζ-dist=2.09
 ```
 
@@ -129,7 +133,7 @@ it simply skips the 3D `.sdf` step instead of failing.
 import tantrium
 ai = tantrium.AI()                          # loads 44k concepts + 677k edges (~13s)
 
-ai.ask("EGFR").certified                    # True  — 23/23 structural certificate
+ai.certify_all("EGFR").paradigms_passed     # 23   — structural certificate
 ai.grounding("florbglomp").verdict          # UNGROUNDED — garbage is rejected, honestly
 ai.grounding("protein").verdict             # GROUNDED   — known concept, real edges
 ai.design("EGFR", top_k=3)                  # target → drug candidates → 3D .sdf

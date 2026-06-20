@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use Tantrium in your research, please cite it as below."
+title: "Tantrium: a structure-first symbolic discovery framework"
+authors:
+  - name: "Tantrium maintainers"
+repository-code: "https://github.com/4lptek1n/tantrium"
+version: "0.1.0"
+date-released: "2026-06-20"
+keywords:
+  - symbolic
+  - moments
+  - spectral
+  - certification
+  - riemann-hypothesis

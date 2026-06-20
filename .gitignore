@@ -74,3 +74,11 @@ eeg_data/
 
 # Yeniden-üretilebilir önbellekler (runner üretir, kod değil)
 results/agi/*_cache.json
+
+# Python build artifacts
+build/
+*.egg-info/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
