@@ -803,7 +803,11 @@ class ProductionEngine:
         coh_best = best.get("coherent", False)
         closes_best = best.get("closure", {}).get("universe_closes", False)
 
-        if kind in ("disease",):
+        if kind in ("disease", "findings"):
+            # TERS yol (hastalık-adı VEYA ölçülen-bulgu): yargı EVREN-KAPANIŞIDIR.
+            # 'findings' de κ_required = κ_healthy ⊟ κ_disease ile ters dekonvolüsyondur;
+            # ileri-stil (sturm+κ_fit) yargı KULLANMAZ — yoksa kapanmasa bile 'İŞE YARAYABİLİR'
+            # yalanı doğar (EGFR: universe_closes=✗ ama eski yol İŞE YARAYABİLİR diyordu).
             works = closes_best and coh_best
             verdict = "İŞE YARAYABİLİR" if works else "KISMÎ" if coh_best else "İŞE YARAMAZ"
         else:

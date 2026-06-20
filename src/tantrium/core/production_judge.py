@@ -353,13 +353,20 @@ class ProductionJudge:
         depth, rungs = positivity_depth(mu, tgt)
         _so, pivot_min = self.pe._sturm_path_pivot_min(mu, tgt)
         residual = kappa_joint.subtract(kappa_healthy)  # refine gradyanı
-        # universe_closes = (A) kapanış (closure_error < ε)  AND  (B1) joint geçerli ölçü.
-        # baseline_error (ilaçsız mesafe) RAPORLANIR ama kapıyı BLOKLAMAZ: ayrımı SIRALAMA
-        # (argmin closure_error) taşır; ikili kapıyı baseline'a bağlamak, kapanmayan hastalık
-        # üretiminde pahalı refine/genesis çağlayanını tetikleyip süiti yavaşlatıyordu. İlerleme
-        # sinyali (closure_error vs baseline_error) sertifikada okunabilir kalır, veto etmez.
-        improves_on_baseline = closure_error < baseline_error  # şeffaflık için kaydedilir
-        universe_closes = joint_is_measure and closure_error < epsilon
+        # DÜRÜST KAPI: evren ANCAK ilaç gerçekten yardım ediyorsa kapanır —
+        #   (A) joint geçerli ölçü (Hankel ⪰ 0),
+        #   (B) ilaç ilaçsıza göre İLERLEME (closure_error < baseline_error): hastalığı
+        #       sağlıklıya, "hiçbir şey yapmamaya" göre DAHA YAKIN getiriyor mu,
+        #   (C) mutlak tavan (closure_error < ε).
+        # 'closure_error < ε' TEK BAŞINA yetmez: baseline küçükse (gerçek κ_disease ≈ κ_healthy,
+        # ör. EGFR'de moment-uzayı hastalık sinyali ~0) herhangi bir küçük molekül ε'yi geçer ama
+        # HİÇBİR ŞEY kapatmaz → 'İŞE YARAYABİLİR' yalanı doğar. improves_on_baseline veto eder.
+        # Refine çağlayanı artık wall-clock bütçesiyle sınırlı (production._REFINE_BUDGET_S),
+        # bu yüzden dürüst kapı süiti kilitlemez.
+        improves_on_baseline = closure_error < baseline_error
+        universe_closes = (
+            joint_is_measure and improves_on_baseline and closure_error < epsilon
+        )
         return ClosureProof(
             applicable=True,
             closure_error=closure_error,
