@@ -59,6 +59,8 @@ class ClosureProof:
     kappa_residual: list[float] = field(
         default_factory=list
     )  # κ_joint ⊟ κ_healthy = refine gradyanı
+    depth: int = -1  # TAM RH zinciri derinliği (0–3): Hankel∧Newton∧Sturm/Jensen. 3 = kritik hatta.
+    rungs: dict = field(default_factory=dict)  # {hankel, newton, sturm} basamak raporu
 
 
 @dataclass
@@ -311,23 +313,39 @@ class ProductionJudge:
         kc = FreeCumulants.from_moments(mu)
         kappa_joint = kappa_disease.add(kc)  # serbest additivite (tam)
         closure_error = self._bounded_kappa_error(kappa_joint, kappa_healthy)
-        # M gerçeklenebilir gerekli imzaya gerçek-ölçü yolundan ulaşıyor mu (RH geçidi)
+        # ── TAM RH POZİTİFLİK ZİNCİRİ (yakınlık/grounding/TAU DEĞİL) ──
+        # İlaç üretimi = RH çözüm zincirini TERSTEN koşturmak. Tedavi edilmiş durum
+        # (hastalık ⊞ M) eksiksiz "kritik hatta" mı? `positivity_depth` tam zinciri ölçer:
+        #   1. Hankel-PSD (D-pozitiflik)  — joint geçerli bir ölçü mü (H ⪰ 0)
+        #   2. Newton log-konkavlık       — μ_k² ≥ μ_{k-1}μ_{k+1} (hiperbolik şekil)
+        #   3. tüm konveks yol sağlıklı→joint Sturm-pozitif (Jensen hiperbolisitesi)
+        # depth==3 ⟺ tüm pozitiflik zinciri GERİ KURULDU. Tek pivot kontrolü DEĞİL —
+        # eksiksiz kriter (kullanıcı: "RH kriterleri eksiksiz alınmalı, çözüm yollarından geçmeli").
+        from tantrium.core.positivity_ladder import positivity_depth
+
+        mu_joint = kappa_joint.to_moments_approx()
+        mu_healthy = kappa_healthy.to_moments_approx()
+        depth, rungs = positivity_depth(mu_healthy, mu_joint)
+        full_chain_ok = depth >= 3
+        # pivot raporu (en küçük yol özdeğeri — denetlenebilirlik için)
         tgt = (
             mu_required
             if mu_required
             else kappa_healthy.subtract(kappa_disease).to_moments_approx()
         )
-        sturm_ok, pivot_min = self.pe._sturm_path_pivot_min(mu, tgt)
+        _so, pivot_min = self.pe._sturm_path_pivot_min(mu, tgt)
         residual = kappa_joint.subtract(kappa_healthy)  # refine gradyanı
         return ClosureProof(
             applicable=True,
             closure_error=closure_error,
             epsilon=epsilon,
             pivot_min=pivot_min,
-            sturm_ok=sturm_ok,
-            universe_closes=(closure_error < epsilon and sturm_ok),
+            sturm_ok=full_chain_ok,
+            universe_closes=(full_chain_ok and closure_error < epsilon),
             kappa_joint=list(kappa_joint.k),
             kappa_residual=list(residual.k),
+            depth=depth,
+            rungs=rungs,
         )
 
     # ── 2. 6 eksen tutarlılık ──────────────────────────────────────────────
