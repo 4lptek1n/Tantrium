@@ -315,6 +315,11 @@ class ProductionJudge:
         kc = FreeCumulants.from_moments(mu)
         kappa_joint = kappa_disease.add(kc)  # serbest additivite (tam)
         closure_error = self._bounded_kappa_error(kappa_joint, kappa_healthy)
+        # ÖLÇÜMDEN TÜRETİLEN gerçeklenebilirlik sınırı (sabit ε değil — ayar değil):
+        # ilaçsız mesafe = κ(hastalık) ↔ κ(sağlıklı). İlaç ANCAK hastalığı sağlıklıya
+        # "hiçbir şey yapmamaya" göre DAHA YAKIN getiriyorsa evreni kapatır. Bu sınır
+        # her hastalığın kendi geometrisinden çıkar; geçilen ε yalnız mutlak tavan.
+        baseline_error = self._bounded_kappa_error(kappa_disease, kappa_healthy)
         # ── RH POZİTİFLİK ZİNCİRİ — GERÇEK ÖLÇÜLER üzerinde (yakınlık/grounding/TAU DEĞİL) ──
         # İlaç üretimi = RH çözüm zincirini TERSTEN koşturmak. İki bağımsız, MATEMATİKSEL
         # kriter (eksiksiz, çözüm yollarından geçen):
@@ -343,8 +348,10 @@ class ProductionJudge:
         depth, rungs = positivity_depth(mu, tgt)
         _so, pivot_min = self.pe._sturm_path_pivot_min(mu, tgt)
         residual = kappa_joint.subtract(kappa_healthy)  # refine gradyanı
-        # universe_closes = (A) kapanış  AND  (B1) joint geçerli ölçü
-        universe_closes = joint_is_measure and closure_error < epsilon
+        # universe_closes = (A) ilaç gerçek bir İLERLEME mi (closure_error < ilaçsız mesafe,
+        # ölçümden türetilen sınır)  AND  (B1) joint geçerli ölçü  AND  mutlak tavanı geçmiyor.
+        gap_gate = closure_error < baseline_error
+        universe_closes = joint_is_measure and gap_gate and closure_error < epsilon
         return ClosureProof(
             applicable=True,
             closure_error=closure_error,
