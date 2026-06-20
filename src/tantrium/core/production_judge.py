@@ -281,6 +281,7 @@ class ProductionJudge:
         kappa_healthy,
         mu_required: list[float] | None = None,
         epsilon: float = 0.5,
+        mol_scale: bool = False,
     ) -> ClosureProof:
         """κ(hastalık ⊞ M) ≈ κ(sağlıklı) VE M gerçek-ölçü manifoldunda gerekli açığa ulaşıyor mu?
 
@@ -300,9 +301,11 @@ class ProductionJudge:
                 sturm_ok=False,
                 universe_closes=False,
             )
-        # ÖLÇEK-TUTARLI molekül momenti: κ_disease/κ_healthy ile AYNI normalize [0,1] rejimi
-        # (yoksa serbest-additivite patlayan κ_M ile bozulur → su/etanol kazanır). Bkz _mol_mu.
-        mu = self.pe._mol_mu(smiles)
+        # ÖLÇEK-TUTARLI molekül momenti — YALNIZ ters (hastalık/bulgu) yolunda: orada κ_disease
+        # de molekül-ölçekli, serbest-additivite ancak aynı normalize [0,1] rejiminde anlamlı
+        # (yoksa patlayan κ_M → su/etanol kazanır). İleri (protein/SMILES) hedefte κ_disease
+        # zaten farklı rejimde; orada eski _encode KORUNUR (regresyon yok, kapanış ikincil eksen).
+        mu = self.pe._mol_mu(smiles) if mol_scale else self.pe._encode(smiles)
         if not mu:
             return ClosureProof(
                 applicable=True,

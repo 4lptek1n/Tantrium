@@ -578,7 +578,9 @@ class ProductionEngine:
         # ── 3. Evren kapanışı (ters hedefte) ───────────────────────────
         if kd is not None and kh is not None:
             for c in scored[:top_k]:
-                proof = judge.close_universe(c["smiles"], kd, kh, mu_req, epsilon)
+                proof = judge.close_universe(
+                    c["smiles"], kd, kh, mu_req, epsilon, mol_scale=(kind in ("disease", "findings"))
+                )
                 c["closure"] = {
                     "applicable": proof.applicable,
                     "universe_closes": proof.universe_closes,
@@ -618,7 +620,9 @@ class ProductionEngine:
                         "axes": [],
                     }
                     if kd is not None and kh is not None:
-                        proof = judge.close_universe(smi, kd, kh, mu_req, epsilon)
+                        proof = judge.close_universe(
+                            smi, kd, kh, mu_req, epsilon, mol_scale=(kind in ("disease", "findings"))
+                        )
                         c["closure"] = {
                             "applicable": proof.applicable,
                             "universe_closes": proof.universe_closes,
