@@ -1,4 +1,4 @@
-"""Certified Dyadic Transport Engine — the real AGI motor.
+"""Certified Dyadic Transport Engine — the certification engine.
 
 Every object encodes to a spectral measure (eigenvalue distribution of its Gram matrix).
 Moving from source measure to target measure is not nearest-neighbor search —
@@ -82,7 +82,7 @@ class TransportRanking:
 
 
 class CertifiedTransport:
-    """Core AGI motor: certified dyadic transport between spectral measures.
+    """Core certification engine: certified dyadic transport between spectral measures.
 
     Replaces nearest-neighbor search in discover() with a full proof chain.
     Only certified paths produce valid drug candidates.

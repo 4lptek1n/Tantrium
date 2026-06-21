@@ -57,7 +57,7 @@ from ._rh import RHMixin
 # ─── Ana AI sınıfı ───────────────────────────────────────────────────────────
 
 class AI(CertifyMixin, RHMixin, DynamicsMixin, MolecularMixin, _AIBase):
-    """Tantrium AGI — Native SDK.
+    """Tantrium — Native SDK (durumsuz saf matematik).
 
     Her metot Aleph sertifikalı çıktı döndürür.
     Hiçbir şey tahmin değil, türetim.

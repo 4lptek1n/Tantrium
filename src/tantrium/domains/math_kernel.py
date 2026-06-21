@@ -1,16 +1,9 @@
-"""Math Kernel → AGI Bridge.
+"""Math Kernel → manifold köprüsü (DURUMSUZ makinede NO-OP).
 
-Layer 0 (RH kanıt sistemi) ile Layer 3 (AGI manifoldu) arasındaki köprü.
-
-tantrium/theorem_graph/theorem_graph.yaml içindeki certified teoremler
-AGI manifolduna kavram olarak, bağımlılık ilişkileri TAU kenarı olarak girer.
-
-Çıktı:
-  - Her certified teorem → Concept (domain="math_kernel")
-  - A depends_on B   → A REQUIRES B  (TAU edge)
-  - A proves C       → A ACHIEVES C  (TAU edge)
-  - RH/zeta teoremler ↔ ZETA_ZEROS anchor → SPECTRAL_BRIDGE
-  - D-pozitiflik teoremler ↔ PRIME_GAPS anchor → SPECTRAL_BRIDGE
+Tarihsel: RH kanıt sistemindeki (theorem_graph.yaml) certified teoremleri öğrenilen
+bir manifolda Concept + TAU kenarı olarak enjekte ederdi. Bu makine durumsuz olduğundan
+(manifold/graf YOK) `inject_math_kernel` artık güvenli no-op döndürür; modül,
+`InjectionResult` tipi ve `inject_computational_math_objects` (saf Concept üretimi) için korunur.
 """
 from __future__ import annotations
 
@@ -67,7 +60,7 @@ class InjectionResult:
 
     def summary(self) -> str:
         return (
-            f"Math kernel → AGI: "
+            f"Math kernel: "
             f"{self.concepts_added} kavram, "
             f"{self.edges_added} kenar, "
             f"{self.bridges_added} spektral köprü "

@@ -1,10 +1,10 @@
-"""SemanticBridge: theorem graph ↔ AGI paradigm mapping.
+"""SemanticBridge: theorem graph ↔ paradigm mapping.
 
 The 22+1 Aleph-Tekin paradigms are not abstract — each one corresponds to
 a specific theorem in the Tantrium proof graph. This package is the dictionary
 that connects them.
 
-When the AGI engine certifies ZAYIN, it is certifying the LGV lemma.
+When the engine certifies ZAYIN, it is certifying the LGV lemma.
 When it certifies DALET, it is certifying Jensen hyperbolicity.
 When it certifies TAV, it is certifying RH_CLOSURE — the proof is complete.
 
@@ -14,7 +14,7 @@ of the Riemann Hypothesis proof.
 
 Without this bridge, the two worlds (universal encoder / RH proof graph) are
 mechanically connected but semantically blind. With it, every certification
-in the AGI network is simultaneously a step in the RH proof chain.
+in the certification network is simultaneously a step in the RH proof chain.
 
 Layout:
   _data.py    — paradigm↔theorem tables + theorem→CertifiableObject conversion

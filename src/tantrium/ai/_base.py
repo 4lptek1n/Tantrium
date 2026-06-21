@@ -7,7 +7,7 @@ from __future__ import annotations
 
 
 class _AIBase:
-    """Tantrium AGI — taban: engine kurulumu + paylaşılan yardımcılar.
+    """Tantrium — taban: engine kurulumu + paylaşılan yardımcılar.
 
     Mixin'ler bu sınıfın `self._engine`'ini ve private metotlarını kullanır.
     """

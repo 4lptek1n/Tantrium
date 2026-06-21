@@ -29,7 +29,7 @@ jobs:
           pip install rdkit || echo "rdkit unavailable — molecular tests will skip/fail-soft"
 
       - name: Lint (ruff)
-        run: ruff check src tests || true
+        run: ruff check src tests
 
       - name: Test
         run: pytest -q --maxfail=5
@@ -42,8 +42,11 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e .
+      - run: pip install -e ".[dev]"
       - name: Import + certify smoke
         run: |
           python -c "import tantrium; ai = tantrium.AI(); c = ai.certify_all('EGFR'); print(c); assert c.sealed_hash"
           python -c "import tantrium; print(tantrium.AI().rh_certificate('aspirin').summary())"
+      - name: Type-check (mypy, non-blocking — rdkit'siz ortam)
+        continue-on-error: true
+        run: mypy src || true

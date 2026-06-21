@@ -1,4 +1,4 @@
-"""The AGI network: 22 paradigms as nodes in a dependency graph.
+"""The certification network: 22 paradigms as nodes in a dependency graph.
 
 The network is not a neural network. It has no weights.
 It is a DAG where each node is a verified mathematical operator.

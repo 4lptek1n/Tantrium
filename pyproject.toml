@@ -20,8 +20,8 @@ dependencies = [
 chem = ["rdkit>=2023.3"]
 # REST API sunucusu (python -m tantrium.serve).
 server = ["fastapi>=0.110", "uvicorn>=0.27", "pydantic>=2.0"]
-# Test + lint.
-dev = ["pytest>=8.0", "ruff>=0.6"]
+# Test + lint + tip-kontrolü.
+dev = ["pytest>=8.0", "ruff>=0.6", "mypy>=1.8"]
 
 [project.scripts]
 tantrium-serve = "tantrium.serve:main"
@@ -42,3 +42,16 @@ select = ["E", "F", "I", "W"]
 # E501 satır-uzunluğu, E741 tek-harf, E731 lambda-atama (özet metotlarında bilinçli),
 # E402 koşullu-import (FastAPI/opsiyonel bağımlılık guard'ı sonrası), E702 noktalı-virgül
 ignore = ["E501", "E741", "E731", "E402", "E702"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true   # numpy/sympy/rdkit/fastapi stub'sız
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = false      # kod tam-tipli değil — kademeli benimseme
+disable_error_code = ["annotation-unchecked"]
+
+[[tool.mypy.overrides]]
+module = ["rdkit.*"]            # rdkit-stubs kendi içinde bozuk → atla
+follow_imports = "skip"
+ignore_errors = true

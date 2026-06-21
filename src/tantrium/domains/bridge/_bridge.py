@@ -1,4 +1,4 @@
-"""SemanticBridge: the bridge object between theorem graph and AGI paradigms.
+"""SemanticBridge: the bridge object between the theorem graph and the paradigm network.
 
 Data tables and the theorem→CertifiableObject conversion live in `_data`; this
 module holds only the stateful bridge class that loads the theorem graph and
@@ -22,13 +22,13 @@ from ._data import (
 # ─── SemanticBridge ────────────────────────────────────────────────────────
 
 class SemanticBridge:
-    """The bridge between the theorem graph and the AGI paradigm network.
+    """The bridge between the theorem graph and the paradigm network.
 
     Provides:
       - theorem_id → paradigm_id(s) mapping
       - paradigm_id → theorem_id(s) mapping
       - theorem node → CertifiableObject conversion
-      - Semantic sync: AGI certification → enrich existing theorem nodes
+      - Semantic sync: certification → enrich existing theorem nodes
       - Manifold bootstrap: proven nodes → Concept objects
     """
 
@@ -99,10 +99,10 @@ class SemanticBridge:
             if tid in graph.nodes:
                 node = graph.nodes[tid]
                 note = (
-                    f"AGI certified {paradigm_id} for '{obj_name}' — "
+                    f"certified {paradigm_id} for '{obj_name}' — "
                     f"provides evidence for this theorem"
                     if certified else
-                    f"AGI gap in {paradigm_id} for '{obj_name}' — "
+                    f"gap in {paradigm_id} for '{obj_name}' — "
                     f"does not contradict this theorem"
                 )
                 if note not in node.notes:
