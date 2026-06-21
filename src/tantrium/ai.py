@@ -1475,8 +1475,22 @@ class AI:
             print(r.hamburger_certified)
         """
         from tantrium.core.rh_criteria import rh_criteria as _rh
-        obj = self._engine.encoder.encode(query, name=str(query)[:64])
-        return _rh(obj.moments)
+        from tantrium.core.encoder import _try_power_moments, _spectral_moments
+        # 16-derinlik genişletilmiş moment (encoder._extract_structure ile aynı mantık)
+        ext = _try_power_moments(query, 16)
+        if ext is None:
+            A = self._engine.encoder._to_matrix(query)
+            ext = _spectral_moments(A, 16)
+        return _rh(ext)
+
+    def rh_distance(self, a, b) -> float:
+        """İki nesne arası RH-kriter mesafesi (ayırt edici: pivot+cross-ratio+kümülant+rank).
+
+        Saf moment-L1'in göremediği yüksek-yapı farkını yakalar — momentleri yakın ama
+        Sturm-pivot/Stieltjes profili farklı nesneleri ayırır.
+        """
+        from tantrium.core.rh_criteria import criteria_distance
+        return criteria_distance(self.rh_criteria(a), self.rh_criteria(b))
 
     def paradigms(self, query: str) -> dict:
         """Her paradigmanın durumunu ve kanıt detayını döndür.

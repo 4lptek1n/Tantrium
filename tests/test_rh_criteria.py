@@ -20,12 +20,48 @@ def test_exact_fraction():
 
 
 def test_eight_moments_gives_four_taus():
-    """8 moment → a+b≤7 → τ_0..τ_3 (4 determinant)."""
+    """8 moment → a+b≤7 → τ_0..τ_3 (4 determinant). Cross-ratio rank'a kadar."""
     r = rh_criteria([1.0, 0.6, 0.4, 0.3, 0.24, 0.2, 0.17, 0.15])
     assert len(r.hankel_dets) == 4
     assert r.max_level == 3
-    # cross-ratio: j=2,3 → 2 adet
-    assert len(r.cross_ratios) == 2
+    # cross-ratio ve pivot rank'a kadar (degenere sınır sıfırları hariç)
+    assert len(r.cross_ratios) == max(0, r.rank - 1)
+    assert len(r.pivots) == r.rank + 1
+
+
+def test_rank_discriminates():
+    """RH-kriter rank'ı ayırt edici: simetrik/dejenere → düşük rank, zengin → yüksek."""
+    import tantrium
+    ai = tantrium.AI()
+    benzene = ai.rh_criteria("c1ccccc1").rank   # simetrik halka → düşük rank
+    aspirin = ai.rh_criteria("CC(=O)Oc1ccccc1C(=O)O").rank
+    assert aspirin > benzene
+
+
+def test_full_criteria_fields():
+    """Genişletilmiş kriter alanları mevcut ve tutarlı."""
+    import tantrium
+    r = tantrium.AI().rh_criteria("aspirin")
+    assert len(r.cumulants) >= 2          # κ_1..κ_4
+    assert r.lambda_dbn <= 0              # de Bruijn-Newman Λ = −var₀ ≤ 0
+    assert 0.0 <= r.grade() <= 1.0
+    assert isinstance(r.stieltjes_certified, bool)
+
+
+def test_rh_distance_discriminates():
+    """rh_distance: aynı nesne 0, farklı nesne > 0."""
+    import tantrium
+    ai = tantrium.AI()
+    assert ai.rh_distance("EGFR", "EGFR") == 0.0
+    assert ai.rh_distance("EGFR", "c1ccccc1") > 0.0
+
+
+def test_certify_all_has_rh_axis():
+    """UnifiedCertificate RH eksenini taşır."""
+    import tantrium
+    c = tantrium.AI().certify_all("aspirin")
+    assert hasattr(c, "rh_grade") and 0.0 <= c.rh_grade <= 1.0
+    assert hasattr(c, "rh_stieltjes")
 
 
 def test_hilbert_moments_are_hamburger_certified():

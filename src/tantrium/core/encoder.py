@@ -535,11 +535,17 @@ class UniversalEncoder:
             ).k
         except Exception:
             pass
-        # RH-kriter katmanı: momentlerden τ/pivot/cross-ratio (exact Fraction).
+        # RH-kriter katmanı: momentlerden τ/pivot/cross-ratio/Stieltjes/kümülant/Λ.
         # tce-collapse-engine ispat zincirinin moment-hesaplanabilir çekirdeği.
+        # 8 kanonik moment bozulmaz; kriterler 16-derinlik genişletilmiş momentten
+        # hesaplanır (daha çok moment = daha derin τ_j). Yola uygun: numeric→power,
+        # matris→spektral (kanonik momentlerle aynı tanım).
         try:
             from tantrium.core.rh_criteria import rh_criteria
-            state["rh_criteria"] = rh_criteria(moments).as_dict()
+            ext = _try_power_moments(input, 16)
+            if ext is None:
+                ext = _spectral_moments(A, 16)
+            state["rh_criteria"] = rh_criteria(ext).as_dict()
         except Exception:
             pass
         return state

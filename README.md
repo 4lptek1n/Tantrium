@@ -75,6 +75,27 @@ değil — evren yolun gerçek olup olmadığını söylüyor.
 
 ---
 
+## RH-Kriter Katmanı (8 moment + tam RH kriterleri)
+
+8 moment, RH ispat zincirinin (`tce-collapse-engine`) moment-hesaplanabilir çekirdeğiyle
+**zenginleştirilir** — hepsi aynı exact-Fraction borusunda, 16-derinlik:
+
+```
+τ_j  = det[μ_{a+b}]_{0..j}      Hankel/subdiscriminant   (τ_j>0 ⇔ hiperbolik ölçü)
+τ'_j = det[μ_{a+b+1}]_{0..j}    Stieltjes (half-line; G=AᵀA spektrumu ≥0)
+d_k  = τ_k/τ_{k-1}              LDLᵀ/Sturm pivot          (Hamburger sertifikası)
+ρ_j  = τ_{j-2}τ_j/τ_{j-1}²      cross-ratio (log-konkavlık)
+κ_k, Λ = −var₀ ≤ 0             log-det kümülant + de Bruijn-Newman
+rank = en yüksek τ_j>0          spektral atom sayısı  ← AYIRT EDİCİ
+```
+
+`rank` gerçek bir ayırt edici: **benzene rank≈1** (simetrik halka, dejenere) vs
+**aspirin rank≈6** (zengin yapı) — 23 paradigmanın (hepsi PSD geçer) göremediği fark.
+`ai.rh_distance(a, b)` bu vektör (rank + pivot + κ) üzerinden ayırt edici mesafe verir;
+`certify_all` çıktısı `rh_grade` + `rh_stieltjes` eksenini taşır.
+
+---
+
 ## SDK Yüzeyi (yalın matematik)
 
 ```python
@@ -86,6 +107,10 @@ ai.certify_all("EGFR")          # UnifiedCertificate: tek geçiş
 ai.paradigms("c1ccccc1")        # 23 paradigma dökümü
 ai.sturm("x^3 - 3*x + 1")       # Sturm zinciri
 ai.positivity("x^2 + 1")        # Hankel PSD kontrolü
+
+# RH-kriter (tce-collapse RH zincirinin moment-çekirdeği — ayırt edici)
+ai.rh_criteria("EGFR")          # τ/pivot/cross-ratio/Stieltjes/κ/Λ/rank (exact)
+ai.rh_distance("EGFR", "c1ccccc1")  # rank+pivot+κ ayırt edici mesafe
 
 # Transport & molekül (matematiğe indirgenen domainler)
 ai.transport("CCO", "CC(=O)O")  # sertifikalı geçiş

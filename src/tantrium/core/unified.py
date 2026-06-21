@@ -51,13 +51,19 @@ class UnifiedCertificate:
     # Zengin evidence (isteğe bağlı)
     evidence: dict = field(default_factory=dict)
 
+    # Eksen 5: RH-kriter (ayırt edici — τ/pivot/Stieltjes; PSD-otomatik DEĞİL)
+    rh_grade: float = 1.0          # [0,1] sağlanan pozitiflik kriteri oranı
+    rh_stieltjes: bool = True      # [0,∞) ölçü sertifikası (Hilbert-Pólya operatörü)
+    rh_summary: str = ""
+
     def __str__(self) -> str:
         cert = "✓" if self.coherent else "✗"
         g = {"GROUNDED": "⏚", "WEAKLY_GROUNDED": "≈", "UNGROUNDED": "∅"}.get(
             self.grounding, "?")
         return (
             f"{cert} {self.name} [{self.paradigms_passed}/{self.paradigms_total}] "
-            f"{g} {self.truth} conf={self.confidence:.2f} [{self.confidence_level}]"
+            f"{g} {self.truth} conf={self.confidence:.2f} [{self.confidence_level}] "
+            f"RH={self.rh_grade:.2f}{'⊕' if self.rh_stieltjes else '⊝'}"
         )
 
 
@@ -107,6 +113,20 @@ class CoreMachine:
         from tantrium.core.reconstruct import reconstruction_fidelity as _recon_fid
         recon = _recon_fid(moments)
 
+        # ─── AXIS 5: RH-KRİTER (ayırt edici) ──────────────────────────────────
+        # encoder structure'ında hazır; yoksa momentlerden hesapla.
+        rh_grade, rh_stieltjes, rh_summary = 1.0, True, ""
+        try:
+            from tantrium.core.rh_criteria import rh_criteria as _rh
+            rc = getattr(obj, "structure", {}).get("rh_criteria") if hasattr(obj, "structure") else None
+            if rc is not None:
+                rh_grade = float(rc.get("grade", 1.0))
+                rh_stieltjes = bool(rc.get("stieltjes_certified", True))
+            crit = _rh(moments)
+            rh_grade, rh_stieltjes, rh_summary = crit.grade(), crit.stieltjes_certified, crit.summary()
+        except Exception:
+            pass
+
         # ─── AXIS 4: CONFIDENCE ───────────────────────────────────────────────
         from tantrium.core.confidence import calibrate
         achilles_margin = 0.0
@@ -146,6 +166,9 @@ class CoreMachine:
             coherent=coherent,
             # gcert: ask() özet metni için yeniden kullanır (çift grounding hesabı YOK)
             evidence={"run": run, "grounding_cert": gcert},
+            rh_grade=rh_grade,
+            rh_stieltjes=rh_stieltjes,
+            rh_summary=rh_summary,
         )
 
     def _encode_adaptive(self, input_data: object, name: str) -> object:

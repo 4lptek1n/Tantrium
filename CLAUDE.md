@@ -40,6 +40,10 @@ src/tantrium/
     engine.py          ← CertificationEngine (DURUMSUZ) + engine.core (CoreMachine lazy)
     unified.py         ← CoreMachine — tek geçiş sertifika
     concept.py         ← Concept + moment_distance (saf moment L1)
+    rh_criteria.py     ← RH-kriter katmanı: momentlerden τ/pivot/cross-ratio/Stieltjes/
+                          kümülant/Λ (tce-collapse RH zinciri, exact). 16-derinlik; encoder
+                          her çıktıya structure["rh_criteria"] ekler. rank = AYIRT EDİCİ
+                          (benzene rank≈1, aspirin rank≈6). criteria_distance = rh_distance.
     metric.py          ← canonical_distance (spectral W2), l1_distance
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
     collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
@@ -111,6 +115,8 @@ ai.paradigms("c1ccccc1")          # 23 paradigma dökümü
 ai.transport("CCO", "CC(=O)O")    # TransportCertificate
 ai.sturm("x^3 - 3*x + 1")         # Sturm zinciri
 ai.positivity("x^2 + 1")          # Hankel PSD
+ai.rh_criteria("EGFR")            # RH-kriter: τ/pivot/cross-ratio/Stieltjes/κ/Λ/rank
+ai.rh_distance("EGFR", "c1ccccc1")# RH-kriter ayırt edici mesafe (rank+pivot+κ)
 ai.reconstruct([1,1,2,3,5,8])     # momentlerden ölçü
 ai.reverse_engineer(gözlem)       # gizli üreten yapı
 ai.discover_law(seri)             # yönetici yasa + tahmin (Koopman/EDMD)
@@ -151,7 +157,9 @@ Pólya'nın aradığı operatör türünden. RH bağlantıları kodda CANLI:
    imza-momentine (pozisyon+codepoint hash) gider. Bu DİL DEĞİL — yakınlık/anlam/nearest
    katmanı silindi; yalnız "string→sayı" deterministik dönüşüm.
 4. **23 paradigma tek başına ayırt edici DEĞİL** (G=AᵀA daima PSD → her şey "geçer"). Eski
-   sistemde grounding ekseni elerdi; o silindi. Gerçek ayrım transport'ta (Sturm/dyadic).
+   sistemde grounding ekseni elerdi; o silindi. Gerçek ayrım transport'ta (Sturm/dyadic)
+   VE **RH-kriter rank/pivot/cross-ratio vektöründe** (`rh_criteria.py`): pozitiflik
+   verdictleri çoğu girdide geçer ama VEKTÖR (rank, pivot değerleri, κ) ayırt eder.
 5. **8 moment ile temsil** (Hamburger tekliği sonsuz limitte tam). `collision.py` teklik/çakışma testi yapar.
 6. `transport.py` → `tantrium.proof.dyadic_flow` import eder.
 7. `math_kernel.inject_math_kernel` durumsuz makinede no-op (manifold yok).
