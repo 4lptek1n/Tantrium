@@ -1,73 +1,27 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
-
-# compiled output
-dist
-tmp
-out-tsc
-*.tsbuildinfo
-.expo
-.expo-shared
-
-# dependencies
-node_modules
-
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
-.DS_Store
-Thumbs.db
-
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
 # Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.egg-info/
-.tantrium/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
 
-# Runtime outputs (not source code)
-results/agi/knowledge.jsonl
-results/agi/goals/
-results/agi/sessions/
-results/atlas/
-results/certificates/
-results/formalization/
-results/molecules/
-results/research_os/
-archive/
-infra/
+# Generated outputs (not source — the machine produces these on demand)
+results/
+*.sdf
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
 
 # Replit
 .cache/
 .local/
 replit.md
-
-# EEG / raw data files
-*.edf
-eeg_data/

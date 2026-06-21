@@ -159,11 +159,11 @@ if _FASTAPI_OK:
         return _get_ai().verify(req.sealed)
 
 
-# CLI entry point
-if __name__ == "__main__":
+def main() -> None:
+    """CLI giriş noktası (tantrium-serve)."""
     import argparse
     if not _FASTAPI_OK:
-        print("FastAPI kurulu değil. Kurmak için: pip install fastapi uvicorn")
+        print("FastAPI kurulu değil. Kurmak için: pip install 'tantrium[server]'")
         raise SystemExit(1)
     import uvicorn
     parser = argparse.ArgumentParser(description="Tantrium API Sunucusu")
@@ -173,3 +173,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(f"Tantrium API başlatılıyor: http://{args.host}:{args.port}")
     uvicorn.run("tantrium.serve:app", host=args.host, port=args.port, reload=args.reload)
+
+
+if __name__ == "__main__":
+    main()
