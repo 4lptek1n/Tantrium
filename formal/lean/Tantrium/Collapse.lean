@@ -91,4 +91,30 @@ theorem dpositivity_of_weightpreserving_injection
   rw [hweight a ha]
   exact mag_le_of_split_growth (w a) (hw a ha) (bl a)
 
+/-- **Sorted / Hall form of the collapse keystone** (corrects the greedy
+construction). Index the negative magnitudes by `neg : Fin k → ℚ` and the
+positive magnitudes by `pos : Fin m → ℚ`, both sorted descending. If `k ≤ m`
+and the *pointwise* domination `neg i ≤ pos (castLE i)` holds for every `i`
+(the i-th largest negative is dominated by the i-th largest positive), then the
+negative mass is bounded by the positive mass, hence `D ≥ 0`.
+
+This is the CORRECT hypothesis behind the greedy matching: total capacity
+`∑ pos ≥ ∑ neg` is **not** sufficient (e.g. `neg = (10,10)`, `pos = (100)`:
+total `100 ≥ 20` but two negatives cannot inject into one positive). The
+threshold/Hall condition encoded by the pointwise inequality is exactly what is
+needed — and it is exactly what remains to be proved for the cumulant terms,
+uniformly in `r, ℓ`. -/
+theorem neg_le_pos_of_sorted_pointwise
+    {k m : ℕ} (hkm : k ≤ m) (neg : Fin k → ℚ) (pos : Fin m → ℚ)
+    (hpos : ∀ j, 0 ≤ pos j)
+    (hpt : ∀ i : Fin k, neg i ≤ pos (Fin.castLE hkm i)) :
+    (∑ i, neg i) ≤ (∑ j, pos j) :=
+  neg_le_pos_of_dominating_injection
+    (N := (Finset.univ : Finset (Fin k))) (P := (Finset.univ : Finset (Fin m)))
+    (fun j _ => hpos j)
+    (Fin.castLE hkm)
+    (fun a _ => Finset.mem_univ _)
+    (fun x _ y _ h => Fin.castLE_injective hkm h)
+    (fun a _ => hpt a)
+
 end Tantrium.Collapse
