@@ -16,5 +16,23 @@ Quot.sound}`, no `sorryAx`), built against Mathlib:
   — `tau = subdiscriminant` (principal case): the Hankel determinant of the
   Newton power sums equals the discriminant `∏_{i<j}(x j - x i)²`.
 
-The general-`j` subdiscriminant identity still needs a Cauchy–Binet formula,
-which Mathlib does not yet provide; that part remains `PENDING`.
+- `VandermondeLayer.seed_vandermonde` — chain step 2: Vandermonde reindexing
+  `D a · binom(n+q,a) = ∑_{p+s=a} D a · binom(n,p) binom(q,s)`
+- `VandermondeLayer.newtonLayer_nonneg` — chain step 3: nonnegative D-seeds give a
+  nonnegative Newton layer `∑_a D a · binom(n+q,a)`
+- `RHChain.tantrium_conditional_closure` — honest conditional assembly of
+  `docs/FINAL_RH_PROOF_CHAIN.md` §9 (depends on **no** axioms): the open links
+  (D-positivity, LGV path positivity, Sturm ⟹ hyperbolicity, Pólya–Jensen) are
+  explicit hypotheses, not `sorry`/`True`.
+
+The general-`j` subdiscriminant identity still needs a Cauchy–Binet formula
+(absent from Mathlib), and the analytic chain links above remain genuinely
+open — they are stated as hypotheses, never asserted as proven.
+
+## What is NOT proven
+
+The Riemann Hypothesis is **not** proved here. The `RHChain` assembly is
+conditional, and its load-bearing inputs — D-seed positivity (only finite
+numerical evidence), the LGV path-positivity model, and Sturm ⟹ hyperbolicity —
+are open. They are surfaced as explicit theorem hypotheses precisely so that no
+vacuous `True`/`sorry` hides the remaining mathematical work.

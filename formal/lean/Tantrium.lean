@@ -6,6 +6,7 @@ import Tantrium.Sturm
 import Tantrium.DyadicTransport
 import Tantrium.DPositivity
 import Tantrium.AGLGV
+import Tantrium.VandermondeLayer
 import Tantrium.RHChain
 import Tantrium.GateA
 import Tantrium.GateB
