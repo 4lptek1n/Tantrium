@@ -154,13 +154,16 @@ class CoreMachine:
         )
 
         # ─── COHERENT BOOLEAN ─────────────────────────────────────────────────
-        # Reconstruction fidelity: adaptive depth seçimi için (blocking değil).
-        # Coherent = tüm yapısal, toraklama, gerçek eksenleri anlaşıyor.
+        # Coherent = tüm eksenler anlaşıyor. RH-Stieltjes ayırt edici filtre:
+        # G=AᵀA spektrumu ≥0 → gerçek nesnede geçer, ama geçersiz/artefakt moment
+        # dizisini (Hankel-PSD-olmayan) eler. PSD-otomatik 23 paradigmadan FARKLI —
+        # gerçek bir reddetme kapısı. (Hausdorff KATILMAZ: çoğu gerçek spektrum [0,1] dışı.)
         coherent = (
             paradigms_passed >= paradigms_total - 1
             and grounding != "UNGROUNDED"
             and truth != "CONTRADICTORY"
             and conf.value >= 0.40
+            and rh_stieltjes
         )
 
         return UnifiedCertificate(
