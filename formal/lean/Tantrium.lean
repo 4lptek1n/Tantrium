@@ -1,5 +1,6 @@
 import Tantrium.Basic
 import Tantrium.Tau
+import Tantrium.TauSubdiscriminant
 import Tantrium.Subdiscriminant
 import Tantrium.Sturm
 import Tantrium.DyadicTransport
