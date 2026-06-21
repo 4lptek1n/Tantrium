@@ -165,4 +165,25 @@ theorem dpos_of_asymptotic_finite
   neg_le_pos_of_sorted_pointwise hkm magNeg magPos hpos
     (pointwise_le_of_asymptotic_finite hkm magNeg magPos ub lb i₀ hub hlb hcross hfin)
 
+/-- **Arithmetic heart of the proposed domination (Step 2).**
+For `a ≥ 1` and any `d`, `2^d · a! ≤ (a+d)!`. With `a = |π| − 1` (so `a ≥ 1`
+exactly because a negative term has an even block count `|π| ≥ 2`) and
+`d = |π_pos| − |π|`, the factorial ratio `(|π_pos|−1)!/(|π|−1)!` is a product of
+`d` consecutive integers each `≥ a + 1 ≥ 2`, hence `≥ 2^d`. This is the genuine,
+provable core of the claimed inequality
+`(|π_pos|−1)!/(|π|−1)! ≥ 2^{|h|−j}` (taking `d ≥ |h|−j`). -/
+theorem factorial_two_pow_le (a : ℕ) (ha : 1 ≤ a) (d : ℕ) :
+    2 ^ d * a.factorial ≤ (a + d).factorial := by
+  induction d with
+  | zero => simp
+  | succ d ih =>
+      have hstep : a + (d + 1) = (a + d) + 1 := by ring
+      rw [hstep, Nat.factorial_succ]
+      calc 2 ^ (d + 1) * a.factorial
+          = 2 * (2 ^ d * a.factorial) := by ring
+        _ ≤ 2 * (a + d).factorial := by
+              exact Nat.mul_le_mul_left 2 ih
+        _ ≤ (a + d + 1) * (a + d).factorial := by
+              exact Nat.mul_le_mul_right _ (by omega)
+
 end Tantrium.Collapse
