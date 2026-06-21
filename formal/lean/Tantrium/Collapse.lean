@@ -117,4 +117,52 @@ theorem neg_le_pos_of_sorted_pointwise
     (fun x _ y _ h => Fin.castLE_injective hkm h)
     (fun a _ => hpt a)
 
+/-- **Asymptotic + finite ⟹ pointwise domination** (the proposed proof
+architecture, made rigorous). To get `magNeg i ≤ magPos (castLE i)` for every
+rank `i`, it suffices to have:
+* `hub`  : a rank upper bound `magNeg i ≤ ub i` (the "negative decay" leg),
+* `hlb`  : a rank lower bound `lb i ≤ magPos (castLE i)` (the "positive ramp" leg),
+* `hcross` : the bounds cross past `i₀`, i.e. `ub i ≤ lb i` for `i ≥ i₀`,
+* `hfin` : a finite check `magNeg i ≤ magPos (castLE i)` for `i < i₀`.
+
+The combination logic is proved here. The *content* — establishing `hub`, `hlb`,
+`hcross`, `hfin` for the actual cumulant magnitudes (uniformly in `r, ℓ`) —
+remains the open obligation, and these four named hypotheses isolate it exactly.
+(Caveat already flagged: a genuine proof must index `ub/lb` by sorted rank `i`,
+not by diagonal depth `m`, and must not assume the still-open Diagonal Residue
+Theorem; `hfin` must hold for all `r, ℓ`, not just a finite numerical window.) -/
+theorem pointwise_le_of_asymptotic_finite
+    {k m : ℕ} (hkm : k ≤ m)
+    (magNeg : Fin k → ℚ) (magPos : Fin m → ℚ)
+    (ub lb : ℕ → ℚ) (i₀ : ℕ)
+    (hub : ∀ i : Fin k, magNeg i ≤ ub i)
+    (hlb : ∀ i : Fin k, lb i ≤ magPos (Fin.castLE hkm i))
+    (hcross : ∀ i : Fin k, i₀ ≤ (i : ℕ) → ub i ≤ lb i)
+    (hfin : ∀ i : Fin k, (i : ℕ) < i₀ → magNeg i ≤ magPos (Fin.castLE hkm i)) :
+    ∀ i : Fin k, magNeg i ≤ magPos (Fin.castLE hkm i) := by
+  intro i
+  rcases lt_or_ge (i : ℕ) i₀ with h | h
+  · exact hfin i h
+  · calc magNeg i ≤ ub i := hub i
+      _ ≤ lb i := hcross i h
+      _ ≤ magPos (Fin.castLE hkm i) := hlb i
+
+/-- **Conditional D-positivity from the asymptotic+finite bounds.**
+Chaining `pointwise_le_of_asymptotic_finite` into `neg_le_pos_of_sorted_pointwise`:
+the four bound hypotheses give `∑ magNeg ≤ ∑ magPos`, i.e. `D ≥ 0`. This is the
+honest, fully-proved skeleton of the proposed argument; only the four analytic
+bounds remain to be supplied. -/
+theorem dpos_of_asymptotic_finite
+    {k m : ℕ} (hkm : k ≤ m)
+    (magNeg : Fin k → ℚ) (magPos : Fin m → ℚ)
+    (hpos : ∀ j, 0 ≤ magPos j)
+    (ub lb : ℕ → ℚ) (i₀ : ℕ)
+    (hub : ∀ i : Fin k, magNeg i ≤ ub i)
+    (hlb : ∀ i : Fin k, lb i ≤ magPos (Fin.castLE hkm i))
+    (hcross : ∀ i : Fin k, i₀ ≤ (i : ℕ) → ub i ≤ lb i)
+    (hfin : ∀ i : Fin k, (i : ℕ) < i₀ → magNeg i ≤ magPos (Fin.castLE hkm i)) :
+    (∑ i, magNeg i) ≤ (∑ j, magPos j) :=
+  neg_le_pos_of_sorted_pointwise hkm magNeg magPos hpos
+    (pointwise_le_of_asymptotic_finite hkm magNeg magPos ub lb i₀ hub hlb hcross hfin)
+
 end Tantrium.Collapse
