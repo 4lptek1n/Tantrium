@@ -315,4 +315,27 @@ theorem transportPhi_injective (s : Shell) (t : Top) (f : Flag) :
     Function.Injective (transportPhi (Beta := Beta) s t f) :=
   ((splitPairMap_injective f).comp (rootTopMap_injective t)).comp (wrapMap_injective s)
 
+/-! ## The capacity half: residual `S_m ≥ 0`
+
+Given the injection `Φ : P_m^conv ↪ P_{m+1}` and the per-element weight domination
+coming from the three conservative half-weights
+(`wt(Φ P) ≥ c · wt^conv(P)`, here `c = 8^{-1}` after `W·R·B`), the residual
+`S_m = C_{m+1} − c · C_m^conv = (∑_{P_{m+1}} wt) − c·(∑_{P_m^conv} wt^conv)` is `≥ 0`:
+the injected, dominated source weight cannot exceed the total next-family weight. -/
+theorem residual_capacity_nonneg {ι κ : Type*} [DecidableEq κ]
+    (s : Finset ι) (nextFam : Finset κ) (Φ : ι → κ)
+    (hmem : ∀ x ∈ s, Φ x ∈ nextFam) (hinj : Set.InjOn Φ s)
+    (wsrc : ι → ℝ) (wt : κ → ℝ) (htnn : ∀ y ∈ nextFam, 0 ≤ wt y)
+    (c : ℝ) (hdom : ∀ x ∈ s, c * wsrc x ≤ wt (Φ x)) :
+    0 ≤ (∑ y ∈ nextFam, wt y) - c * ∑ x ∈ s, wsrc x := by
+  have h2 : ∑ x ∈ s, c * wsrc x ≤ ∑ x ∈ s, wt (Φ x) := Finset.sum_le_sum hdom
+  have h3 : ∑ x ∈ s, wt (Φ x) = ∑ y ∈ s.image Φ, wt y :=
+    (Finset.sum_image (fun x hx y hy h => hinj hx hy h)).symm
+  have h4 : s.image Φ ⊆ nextFam := by
+    intro y hy; rw [Finset.mem_image] at hy; obtain ⟨x, hx, rfl⟩ := hy; exact hmem x hx
+  have h5 : ∑ y ∈ s.image Φ, wt y ≤ ∑ y ∈ nextFam, wt y :=
+    Finset.sum_le_sum_of_subset_of_nonneg h4 (fun y hy _ => htnn y hy)
+  rw [Finset.mul_sum]
+  linarith
+
 end Tantrium.Collapse
