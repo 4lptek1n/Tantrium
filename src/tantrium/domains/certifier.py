@@ -145,7 +145,6 @@ class MolecularCertifier:
         top_k: kaç aday değerlendirilsin
         """
         from tantrium.core.concept import Concept, moment_distance
-        from tantrium.graph.relations import certify_and_add_edge
         from tantrium.graph.anchors import nearest_anchor
 
         t0 = time.time()
@@ -200,9 +199,6 @@ class MolecularCertifier:
                     )
                     self.engine.manifold.add_unchecked(c)
                     self.engine.tau.add_node(c)
-
-                certify_and_add_edge(self.engine, name, target_name, "ACHIEVES")
-                certify_and_add_edge(self.engine, name, "inhibitor", "IS_A")
 
             except Exception:
                 continue

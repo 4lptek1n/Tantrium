@@ -287,18 +287,15 @@ Moment dizisi = Evrenin o nesneyi temsil ettiği tek değişmez imza
 Sertifika = "Bu nesne evrenin yasalarıyla tutarlı"
 ```
 
-**TAU Grafiği** bu bağlamda: Evrenin bilgi ağı.
-Her kavram bir moment vektörü.
-Her kenar bir matematiksel zorunluluk.
-"EGFR → erlotinib" kenarı: bu iki nesnenin moment uzaylarında transport mümkün.
+İki nesne arası **transport**, bu bağlamda bir matematiksel zorunluluk testidir:
+"EGFR → erlotinib" geçişi, iki nesnenin moment uzaylarında PSD-yol boyunca
+taşınabilmesidir (Sturm). Kanıtlanırsa geçiş "gerçek"; kanıtlanamazsa yol kopuktur.
 
-**NecessityEngine**: Evrenin kendi iç mantığı.
-Geçişli kapanış: Eğer A → B ve B → C zorunluysa, A → C de zorunludur.
-Manifold boşlukları: Evrenin henüz "bilmediği" matematiksel bölgeler.
-
-**ProofLoop**: Evrenin kendi kendini anlama mekanizması.
-AGI boşlukları bulur → Research OS ispat yapar → manifold büyür → yeni boşluklar.
-Bu kapalı döngü: evrenin kendi matematiğini keşfetmesi.
+> **Not (dürüst sınır):** Bu makine *durumsuzdur*. Öğrenilen bir kavram grafı (TAU),
+> manifold, ya da kendi kendine büyüyen kapalı döngü YOKTUR — bunlar daha geniş bir
+> ASI prototipinde vardı, bu saf-matematik çekirdeğine indirgenirken kaldırıldı. Burada
+> "evren simülasyonu" felsefi bir çerçevedir (Hankel-PSD = fiziksel tutarlılık koşulu),
+> bir genel-zekâ iddiası değil.
 
 ---
 

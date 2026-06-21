@@ -77,124 +77,12 @@ class InjectionResult:
 
 
 def inject_math_kernel(engine: "CertificationEngine") -> InjectionResult:
-    """Theorem graph'ı oku, certified teoremler → AGI manifoldu + TAU.
+    """Teorem→manifold injection devre dışı (graph.* + theorem_graph silindi).
 
-    Idempotent — zaten manifoldda olanları atlar.
+    Durumsuz saf-matematik makinesinde kalıcı manifold/TAU yok → bu köprünün
+    iliştireceği hedef yok. Güvenli no-op: çağrılırsa boş sonuç döner, patlamaz.
     """
-    from tantrium.core.concept import Concept
-    from tantrium.graph.knowledge_graph import KnowledgeNode, KnowledgeEdge
-    from tantrium.graph.relations import certify_and_add_edge
-
-    path = _GRAPH_PATH if _GRAPH_PATH.exists() else _GRAPH_PATH_ALT
-    if not path.exists():
-        return InjectionResult(0, 0, 0, 0)
-
-    with open(path) as f:
-        graph = json.load(f)
-
-    nodes: dict = graph.get("nodes", {})
-    concepts_added = 0
-    edges_added = 0
-    bridges_added = 0
-    skipped = 0
-
-    # ── 1. Certified teoremler → Concept ─────────────────────────────────────
-    for node_id, node in nodes.items():
-        status = node.get("proof_status") or node.get("status") or ""
-        if status not in _CERTIFIED_STATUSES:
-            skipped += 1
-            continue
-
-        concept_name = f"theorem:{node_id}"
-        if concept_name in engine.manifold.concepts:
-            skipped += 1
-            continue
-
-        # Teorem ifadesini encode et
-        statement = node.get("statement") or node.get("title") or node_id
-        raw = engine.encoder.encode(statement, name=concept_name)
-        concept = Concept(
-            name=concept_name,
-            moments=list(raw.moments),
-            domain="math_kernel",
-            source="theorem_graph",
-        )
-
-        if not concept.is_real():
-            skipped += 1
-            continue
-
-        engine.manifold.add_unchecked(concept)
-        engine.tau.nodes[concept_name] = KnowledgeNode(
-            name=concept_name,
-            domain="math_kernel",
-            source="theorem_graph",
-            sr=float(raw.moments[0]) if raw.moments else 1.0,
-        )
-        concepts_added += 1
-
-    # ── 2. Bağımlılık ilişkileri → TAU edge ──────────────────────────────────
-    for node_id, node in nodes.items():
-        status = node.get("proof_status") or node.get("status") or ""
-        if status not in _CERTIFIED_STATUSES:
-            continue
-
-        src = f"theorem:{node_id}"
-        if src not in engine.manifold.concepts:
-            continue
-
-        # depends_on → REQUIRES
-        for dep in node.get("depends_on", []):
-            tgt = f"theorem:{dep}"
-            if tgt in engine.manifold.concepts:
-                added = certify_and_add_edge(engine, src, tgt, "REQUIRES")
-                if added:
-                    edges_added += 1
-
-        # proves → ACHIEVES
-        for proved in node.get("proves", []):
-            tgt = f"theorem:{proved}"
-            if tgt in engine.manifold.concepts:
-                added = certify_and_add_edge(engine, src, tgt, "ACHIEVES")
-                if added:
-                    edges_added += 1
-
-    # ── 3. Anchor köprüleri → SPECTRAL_BRIDGE ────────────────────────────────
-    _ANCHOR_PREFIX = "⊕ANCHOR:"
-    tau_edges = engine.tau.edges
-
-    for node_id, anchors in _THEOREM_ANCHORS.items():
-        theorem_name = f"theorem:{node_id}"
-        if theorem_name not in engine.manifold.concepts:
-            continue
-
-        for anchor_short in anchors:
-            anchor_full = f"{_ANCHOR_PREFIX}{anchor_short}"
-
-            # Anchor TAU'da yoksa oluştur
-            if anchor_full not in engine.tau.nodes:
-                continue
-
-            # Köprü kenarı ekle
-            existing = {e.target for e in tau_edges.get(theorem_name, [])}
-            if anchor_full not in existing:
-                from tantrium.graph.knowledge_graph import KnowledgeEdge
-                tau_edges.setdefault(theorem_name, []).append(
-                    KnowledgeEdge(source=theorem_name, target=anchor_full,
-                            distance=0.01, paradigm="SPECTRAL_BRIDGE")
-                )
-                tau_edges.setdefault(anchor_full, []).append(
-                    KnowledgeEdge(source=anchor_full, target=theorem_name,
-                            distance=0.01, paradigm="SPECTRAL_BRIDGE")
-                )
-                bridges_added += 1
-
-    engine.tau._dirty = True
-
-    # Sayısal encode güncelle
-    inject_computational_math_objects(engine)
-
-    return InjectionResult(concepts_added, edges_added, bridges_added, skipped)
+    return InjectionResult(0, 0, 0, 0)
 
 
 # ── Matematiksel nesnelerin sayısal encode edilmesi ──────────────────────────

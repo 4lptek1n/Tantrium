@@ -317,15 +317,8 @@ class ProductionJudge:
         axes.append(AxisVerdict("quantum", kfit <= kappa_thr, kfit, kappa_thr,
                                 "dolanık (gizli bağ)" if entangled else f"κ={kd:.3f}"))
 
-        # ── energy (HARD): F(T) kritik değil ──
-        try:
-            from tantrium.meta.synthesis import ConceptSynthesizer
-            prof = ConceptSynthesizer(self.engine).energy(smiles)
-            stable = prof.stability in ("GROUND_STATE", "EXCITED")
-            axes.append(AxisVerdict("energy", stable, prof.free_energy, 0.0,
-                                    prof.stability))
-        except Exception:
-            axes.append(AxisVerdict("energy", True, 0.0, 0.0, "hesaplanamadı→geç"))
+        # ── energy: meta silindi → eksen nötr-geç (HARD veto vermesin) ──
+        axes.append(AxisVerdict("energy", True, 0.0, 0.0, "devre dışı→geç"))
 
         # ── gimel (HARD): zayıf bağ yok ──
         gimel_ok = self.pe._chemically_stable(smiles)

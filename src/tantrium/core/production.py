@@ -372,16 +372,6 @@ class ProductionEngine:
         kh = self._canonical_kappa()
         mu_req, gap = self._deconvolve_to_target(kd, kh)
 
-        if network:
-            try:
-                from tantrium.research.ingest import fetch_uniprot
-                uni = fetch_uniprot(target)
-                if uni:
-                    kuni = FreeCumulants.from_moments(self._encode(uni))
-                    kh = FreeCumulants([(a + b) / 2 for a, b in zip(kh.k, kuni.k)])
-            except Exception:
-                pass
-
         return "disease", mu_req, [mu_req], "kanonik sağlıklı denge (ζ + wild-type)", gap, kd, kh
 
     def _deconvolve_to_target(self, kd, kh) -> tuple[list[float], float]:
@@ -790,13 +780,8 @@ class ProductionEngine:
         elif isinstance(healthy, (list, tuple)) and healthy and all(
                 isinstance(x, (int, float)) for x in healthy):
             kh = FreeCumulants.from_moments([float(x) for x in healthy])
-        else:                                    # DNA dizisi → gerçek biyofiziksel form
-            try:
-                from tantrium.perception.encode import encode_dna
-                kh = FreeCumulants.from_moments(
-                    [float(m) for m in encode_dna(str(healthy)).moments])
-            except Exception:
-                kh = self._canonical_kappa()
+        else:                                    # ad/dizi → kanonik sağlıklı denge
+            kh = self._canonical_kappa()
         # κ_drug = κ_healthy ⊟ κ_disease (serbest dekonvolüsyon) + gerçeklenebilir μ'ye düş
         mu_drug, gap = self._deconvolve_to_target(kd, kh)
         k_drug = FreeCumulants.from_moments(mu_drug)
@@ -878,13 +863,9 @@ class ProductionEngine:
 
         mu_drug = self._encode(str(drug))
         k_drug = FreeCumulants.from_moments(mu_drug) if mu_drug else FreeCumulants([0.0] * 6)
-        # DNA GERÇEK matematiksel formunda (EIIP biyofiziksel sinyal spektrumu) — metin
-        # yolu değil. Genomun dizi yapısını (periyodiklik/kompozisyon) ölçer → kişiler ayrılır.
-        try:
-            from tantrium.perception.encode import encode_dna
-            mu_dna = [float(m) for m in encode_dna(str(dna)).moments]
-        except Exception:
-            mu_dna = self._encode(str(dna))
+        # DNA ad/dizi → kanonik encode (kişinin sağlıklı tabanı). Genomun dizi yapısını
+        # (kompozisyon) moment uzayına çeker → kişiler ayrılır.
+        mu_dna = self._encode(str(dna))
         k_dna = FreeCumulants.from_moments(mu_dna) if mu_dna else FreeCumulants([0.0] * 6)
         mu_dna_full = k_dna.to_moments_approx()
 
@@ -1119,13 +1100,7 @@ class ProductionEngine:
             self.engine.manifold.add(c)
             return label
         except Exception:
-            try:
-                from tantrium.meta.synthesis import ConceptSynthesizer
-                cs = ConceptSynthesizer(self.engine)
-                cs.emanate(label)
-                return label
-            except Exception:
-                return ""
+            return ""
 
     # ── Yargı = üretimle aynı eksen ────────────────────────────────────────
 
@@ -1351,7 +1326,8 @@ class ProductionEngine:
         try:
             import json
             from pathlib import Path
-            from tantrium.research.proof_loop import _INJECTED_STATUSES
+            _INJECTED_STATUSES = {"PROVEN_BY_CERTIFICATE",
+                                  "RECURRENCE_VERIFIED_FINITE", "CERTIFIED_LOCAL"}
             graph_path = (Path(__file__).resolve().parents[4]
                           / "tantrium" / "theorem_graph" / "theorem_graph.yaml")
             if not graph_path.exists():
