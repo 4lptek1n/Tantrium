@@ -25,13 +25,13 @@ exact `Fraction` (yuvarlama yok, bit-bit tekrarlanabilir = denetlenebilir sertif
 
 ---
 
-## Proje Yapısı (47 .py)
+## Proje Yapısı (50 .py)
 
 ```
 src/tantrium/
   ai.py                ← tantrium.AI() — durumsuz SDK girişi (~48 matematik metodu)
   serve.py             ← opsiyonel FastAPI REST
-  core/                ← 28 dosya
+  core/                ← 32 dosya
     encoder.py         ← girdi→moment (domain-kör). String: geçerli SMILES→bigram,
                           diğer string→deterministik imza-hash (math, YAKINLIK/ANLAM YOK)
     codex.py           ← 23 paradigma (verify() okur, hesaplamaz)
@@ -44,6 +44,13 @@ src/tantrium/
                           kümülant/Λ (tce-collapse RH zinciri, exact). 16-derinlik; encoder
                           her çıktıya structure["rh_criteria"] ekler. rank = AYIRT EDİCİ
                           (benzene rank≈1, aspirin rank≈6). criteria_distance = rh_distance.
+    jensen.py          ← Jensen-Pólya hiperbolisite (RH'nin HEDEF kriteri): J^{d,n} hiperbolik
+                          mi = Laguerre-Pólya sınıfı. Turán/Laguerre eşitsizlikleri. PSD gibi
+                          OTOMATİK DEĞİL. NOT: momentlere uygulanmaz (log-konveks).
+    free_probability.py← Voiculescu: free_entropy χ (logaritmik enerji, konkav), R-dönüşümü,
+                          serbest konvolüsyon ⊞, yarı-daire (Wigner) mesafesi.
+    verifier.py        ← mühürlü sertifika: seal→SHA-256 içerik-hash, verify→tamper-tespiti,
+                          adversarial_control (geçersiz diziyi dürüstçe eler — negatif kontrol).
     metric.py          ← canonical_distance (spectral W2), l1_distance
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
     collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
@@ -117,6 +124,11 @@ ai.sturm("x^3 - 3*x + 1")         # Sturm zinciri
 ai.positivity("x^2 + 1")          # Hankel PSD
 ai.rh_criteria("EGFR")            # RH-kriter: τ/pivot/cross-ratio/Stieltjes/κ/Λ/rank
 ai.rh_distance("EGFR", "c1ccccc1")# RH-kriter ayırt edici mesafe (rank+pivot+κ)
+ai.jensen([1,4,6,4,1])            # Jensen-Pólya: Laguerre-Pólya (RH-tipi) sertifikası
+ai.hyperbolic([2,-3,1])           # polinom tüm kökleri gerçek mi
+ai.free_entropy("EGFR")           # serbest entropi χ (logaritmik enerji)
+ai.semicircle_distance("EGFR")    # yarı-daireye (Wigner) κ-mesafesi
+ai.seal("EGFR") / ai.verify(s)    # mühürlü SHA-256 sertifika + tamper-tespiti
 ai.reconstruct([1,1,2,3,5,8])     # momentlerden ölçü
 ai.reverse_engineer(gözlem)       # gizli üreten yapı
 ai.discover_law(seri)             # yönetici yasa + tahmin (Koopman/EDMD)
@@ -180,5 +192,5 @@ Bunlara referans gören kod kalıntısı = hata; temizlenmeli.
 ---
 
 ## Mevcut Durum
-- 47 .py modül, ~108+ test geçiyor. Durumsuz, saf matematik.
+- 50 .py modül, ~150+ test geçiyor. Durumsuz, saf matematik.
 - Theorem candidate dokümanları: `docs/`, `theorems/`. Tam RH ispatı: `tce-collapse-engine` branch.

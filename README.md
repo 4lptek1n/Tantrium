@@ -94,6 +94,17 @@ rank = en yüksek τ_j>0          spektral atom sayısı  ← AYIRT EDİCİ
 `ai.rh_distance(a, b)` bu vektör (rank + pivot + κ) üzerinden ayırt edici mesafe verir;
 `certify_all` çıktısı `rh_grade` + `rh_stieltjes` eksenini taşır.
 
+Üç ek cevher (ispatın çekirdeğinden):
+
+- **Jensen-Pólya hiperbolisite** (`ai.jensen`) — RH'nin HEDEF kriteri: bir dizinin Jensen
+  polinomları `J^{d,n}=Σ C(d,j)γ_{n+j}X^j` hiperbolik mi (= Laguerre-Pólya sınıfı). PSD
+  gibi otomatik DEĞİL; log-konkav/ξ-benzeri diziler için gerçek pozitiflik testi.
+- **Serbest olasılık** (`ai.free_entropy`, `semicircle_distance`) — Voiculescu serbest
+  entropi χ (logaritmik enerji, konkav), R-dönüşümü, serbest konvolüsyon ⊞, yarı-daire.
+- **Mühürlü sertifika** (`ai.seal` / `ai.verify`) — her çıktıyı SHA-256 içerik-hash'iyle
+  mühürler; `verify` dışarıdan yeniden-hesaplayıp **tamper'ı tespit eder**. `adversarial_control`
+  geçersiz diziyi dürüstçe eler (negatif kontrol) — makine her şeyi "geçirmez".
+
 ---
 
 ## SDK Yüzeyi (yalın matematik)
@@ -111,6 +122,11 @@ ai.positivity("x^2 + 1")        # Hankel PSD kontrolü
 # RH-kriter (tce-collapse RH zincirinin moment-çekirdeği — ayırt edici)
 ai.rh_criteria("EGFR")          # τ/pivot/cross-ratio/Stieltjes/κ/Λ/rank (exact)
 ai.rh_distance("EGFR", "c1ccccc1")  # rank+pivot+κ ayırt edici mesafe
+ai.jensen([1,4,6,4,1])          # Jensen-Pólya: Laguerre-Pólya (RH-tipi) hiperbolisite
+ai.hyperbolic([2,-3,1])         # polinom tüm kökleri gerçek mi
+ai.free_entropy("EGFR")         # serbest entropi χ (logaritmik enerji, konkav)
+ai.semicircle_distance("EGFR")  # yarı-daireye (Wigner) κ-mesafesi
+s = ai.seal("EGFR"); ai.verify(s)   # mühürlü SHA-256 sertifika + tamper-tespiti
 
 # Transport & molekül (matematiğe indirgenen domainler)
 ai.transport("CCO", "CC(=O)O")  # sertifikalı geçiş

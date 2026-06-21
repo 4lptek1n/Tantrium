@@ -1492,6 +1492,47 @@ class AI:
         from tantrium.core.rh_criteria import criteria_distance
         return criteria_distance(self.rh_criteria(a), self.rh_criteria(b))
 
+    # ── Jensen-Pólya / Laguerre-Pólya (RH-tipi hiperbolisite) ────────────────
+    def jensen(self, sequence, max_degree: int = 4) -> "object":
+        """Dizinin Jensen polinomları → Laguerre-Pólya (RH-tipi) sertifikası.
+
+        J^{d,n}(X)=Σ C(d,j)γ_{n+j}X^j hiperbolik mi (tüm kök gerçek). LP-sınıfı = RH-tipi
+        koşul. NOT: momentlere uygulanmaz (log-konveks) — ξ-benzeri/log-konkav diziler için.
+        """
+        from tantrium.core.jensen import laguerre_polya_test
+        return laguerre_polya_test(list(sequence), max_degree=max_degree)
+
+    def hyperbolic(self, poly_coeffs) -> bool:
+        """Polinom (artan kuvvet katsayıları) hiperbolik mi = tüm kökleri gerçek."""
+        from tantrium.core.jensen import is_hyperbolic
+        return is_hyperbolic(list(poly_coeffs))
+
+    # ── Serbest olasılık (Voiculescu) ────────────────────────────────────────
+    def free_entropy(self, query) -> float:
+        """Girdinin spektral ölçüsünün serbest entropisi χ (logaritmik enerji, konkav)."""
+        from tantrium.core.free_probability import free_entropy as _fe
+        obj = self._engine.encoder.encode(query, name=str(query)[:64])
+        return _fe(list(obj.moments))
+
+    def semicircle_distance(self, query) -> float:
+        """Girdinin yarı-daireye (serbest-CLT çekici, Wigner) κ-mesafesi."""
+        from tantrium.core.free_probability import semicircle_distance as _sd
+        obj = self._engine.encoder.encode(query, name=str(query)[:64])
+        return _sd(list(obj.moments))
+
+    # ── Mühürlü, dışarıdan-denetlenebilir sertifika ──────────────────────────
+    def seal(self, query) -> dict:
+        """Girdiyi RH-kriterleriyle mühürle → SHA-256 içerik-hash'li sertifika (artifact)."""
+        from tantrium.core.verifier import seal as _seal
+        obj = self._engine.encoder.encode(query, name=str(query)[:64])
+        crit = self.rh_criteria(query)
+        return _seal(str(query)[:64], str(query), list(obj.moments), crit.as_dict())
+
+    def verify(self, sealed: dict) -> dict:
+        """Mühürlü sertifikayı bağımsız doğrula: hash + verdict tutarlılığı (tamper-tespiti)."""
+        from tantrium.core.verifier import verify as _verify
+        return _verify(sealed)
+
     def paradigms(self, query: str) -> dict:
         """Her paradigmanın durumunu ve kanıt detayını döndür.
 
