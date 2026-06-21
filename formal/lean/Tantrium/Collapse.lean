@@ -58,4 +58,37 @@ theorem signed_total_nonneg_of_dominating_injection
   have h := neg_le_pos_of_dominating_injection hmagP f hf_into hf_inj hdom
   linarith
 
+/-- **Domination from factorial growth (the `kappa_s` capacity leg).**
+A cumulant term with `b` blocks has magnitude `(b-1)! · w` where
+`w = A(π,h) · 2^{-|h|} ≥ 0` is the (weight-preserved) atom factor. The split map
+`iota` raises the block count `b-1 → b` while preserving `w`, sending the
+magnitude `(b-1)!·w` to `b!·w`. Since `b ≥ 1`, this dominates:
+`(b-1)!·w ≤ b!·w`. This is `theorems/D_POSITIVITY_THEOREM.md`'s claim
+`C(kappa_s(α)) = |π|·|C(α)| ≥ |C(α)|`, proved for real. -/
+theorem mag_le_of_split_growth (w : ℚ) (hw : 0 ≤ w) (b : ℕ) :
+    (Nat.factorial (b - 1) : ℚ) * w ≤ (Nat.factorial b : ℚ) * w := by
+  apply mul_le_mul_of_nonneg_right _ hw
+  exact_mod_cast Nat.factorial_le (Nat.sub_le b 1)
+
+/-- **Reduction of D-positivity to injectivity alone.**
+If the split map `f` is weight-preserving (each negative term `n` of block count
+`bl n` has magnitude `(bl n - 1)! · w n`, and its image has magnitude
+`(bl n)! · w n` with `w n ≥ 0`) and maps injectively into the positive set `P`,
+then D-positivity holds. The capacity/domination leg is discharged by
+`mag_le_of_split_growth`; the *only* remaining hypothesis is the injection's
+existence and injectivity — the genuine open keystone. -/
+theorem dpositivity_of_weightpreserving_injection
+    {α β : Type*} [DecidableEq β]
+    {N : Finset α} {P : Finset β} {bl : α → ℕ} {w : α → ℚ} {magP : β → ℚ}
+    (hw : ∀ a ∈ N, 0 ≤ w a)
+    (hmagP : ∀ b ∈ P, 0 ≤ magP b)
+    (f : α → β)
+    (hf_into : ∀ a ∈ N, f a ∈ P)
+    (hf_inj : ∀ x ∈ N, ∀ y ∈ N, f x = f y → x = y)
+    (hweight : ∀ a ∈ N, magP (f a) = (Nat.factorial (bl a) : ℚ) * w a) :
+    (∑ n ∈ N, (Nat.factorial (bl n - 1) : ℚ) * w n) ≤ (∑ p ∈ P, magP p) := by
+  refine neg_le_pos_of_dominating_injection hmagP f hf_into hf_inj (fun a ha => ?_)
+  rw [hweight a ha]
+  exact mag_le_of_split_growth (w a) (hw a ha) (bl a)
+
 end Tantrium.Collapse
