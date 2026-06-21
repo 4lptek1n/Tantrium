@@ -59,15 +59,15 @@ def test_canonical_distance_symmetric():
 
 
 def test_new_api_methods_exist(ai):
-    """Yeni API metodları mevcut olmalı."""
+    """Yalın matematik yüzeyinin çekirdek metodları mevcut olmalı."""
     assert hasattr(ai, "certify_all")
-    assert hasattr(ai, "manifold_gaps")
-    assert hasattr(ai, "destiny")
-    assert hasattr(ai, "genealogy")
-    assert hasattr(ai, "signal")
-    assert hasattr(ai, "dna")
-    assert hasattr(ai, "crypto")
-    assert hasattr(ai, "inject_english")
+    assert hasattr(ai, "reconstruct")
+    assert hasattr(ai, "discover_law")
+    assert hasattr(ai, "forecast")
+    assert hasattr(ai, "transport")
+    assert hasattr(ai, "quantum_distance")
+    assert hasattr(ai, "sturm")
+    assert hasattr(ai, "positivity")
 
 
 def test_engine_core_property(ai):
