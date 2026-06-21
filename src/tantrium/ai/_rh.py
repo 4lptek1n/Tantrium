@@ -11,6 +11,16 @@ from tantrium.core.rh_criteria import RHCriteria
 class RHMixin:
     """Riemann-Hipotezi türevli pozitiflik kriterleri + serbest olasılık + mühür."""
 
+    def self_reference(self, seed=None, max_iter: int = 64, tol: float = 1e-6) -> "object":
+        """Makineyi kendi üzerine katla → öz-gönderim sabit noktası μ* (strange loop, exact).
+
+        μ → certify_rh(μ) → öz-portre → encode (G=AᵀA, kendine) → μ_next. Sabit nokta:
+        makine kendine baktığında kendini geri veren öz-tutarlı nesne. Tohumdan bağımsız
+        evrensel öz-imge. (Self-modeling'in BİÇİMİ — kendisi değil; ölçen ölçtüğüdür.)
+        """
+        from tantrium.core.fixed_point import self_reference_orbit
+        return self_reference_orbit(seed=seed, max_iter=max_iter, tol=tol)
+
     def rh_criteria(self, query) -> "RHCriteria":
         """Girdinin RH-türevli pozitiflik kriterleri (τ/pivot/cross-ratio, exact Fraction).
 

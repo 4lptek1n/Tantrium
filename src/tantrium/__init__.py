@@ -19,6 +19,7 @@ from tantrium.core.concept import Concept, moment_distance
 from tantrium.core.confidence import Confidence, calibrate
 from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
 from tantrium.core.engine import CertificationEngine
+from tantrium.core.fixed_point import SelfReferenceResult, self_map, self_reference_orbit
 from tantrium.core.free_probability import (
     free_convolution,
     free_entropy,
@@ -81,6 +82,9 @@ __all__ = [
     "certify_rh",
     "RHCertificate",
     "hausdorff",
+    "self_reference_orbit",
+    "self_map",
+    "SelfReferenceResult",
     "laguerre_polya_test",
     "is_hyperbolic",
     "turan",
