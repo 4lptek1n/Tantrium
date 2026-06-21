@@ -25,17 +25,17 @@ exact `Fraction` (yuvarlama yok, bit-bit tekrarlanabilir = denetlenebilir sertif
 
 ---
 
-## Proje Yapısı (52 .py)
+## Proje Yapısı (79 .py — büyük modüller paketlere bölündü)
 
 ```
 src/tantrium/
-  ai.py                ← tantrium.AI() — durumsuz SDK girişi (~48 matematik metodu)
+  ai/                  ← tantrium.AI() — SDK (mixin paketi: _certify/_rh/_dynamics/_molecular/_base)
   serve.py             ← opsiyonel FastAPI REST
-  core/                ← 34 dosya
-    encoder.py         ← girdi→moment (domain-kör). String: geçerli SMILES→bigram,
+  core/                ← 34 modül (büyükler paket: paradigms/ encoder/ pipeline/ production/ molecular_derivation/)
+    encoder/           ← girdi→moment (paket: _linalg/_text/_encoder). SMILES→bigram,
                           diğer string→deterministik imza-hash (math, YAKINLIK/ANLAM YOK)
-    codex.py           ← 23 paradigma (verify() okur, hesaplamaz)
-    pipeline.py        ← run_pipeline() L0-L7 sıralı hesap
+    paradigms/         ← 23 paradigma (paket: base/core/aux; verify() okur, hesaplamaz)
+    pipeline/          ← run_pipeline() L0-L7 (paket: _stages_low/_stages_high/_run)
     network.py         ← CertificationPipeline (topolojik DAG)
     engine.py          ← CertificationEngine (DURUMSUZ) + engine.core (CoreMachine lazy)
     unified.py         ← CoreMachine — tek geçiş sertifika
@@ -67,13 +67,13 @@ src/tantrium/
     moment_ops.py      ← convex_combine konveks moment çekirdeği
     inverse.py         ← InverseTransport — hedef→W2-minimal moleküller→3D SDF
     molecular_space.py ← MolecularSpace (arrange/morph/lineage)
-    molecular_genesis.py ← saf matematiksel molekül türevi
+    molecular_derivation/ ← saf matematiksel molekül türevi (paket: _types/_helpers/_genesis)
     molecular_3d.py    ← embed_3d_sdf() (RDKit ETKDGv3)
-    production.py / production_judge.py ← produce/produce_math + 6-eksen yargı
-    positivity_ladder.py · diversity.py · certificate.py · primitive_invention.py
+    production/        ← produce/produce_math (paket) + production_judge.py 6-eksen yargı
+    positivity_ladder.py · diversity.py · certificate.py · primitive_discovery.py
   algebra/             ← sturm.py, positivity.py, sheffer.py
   proof/               ← dyadic_flow.py (solve_greedy, Fraction), certificate.py (Cell)
-  domains/             ← bridge, certifier, generator, math_kernel*, spectral
+  domains/             ← bridge/ (paket), certifier, generator, math_kernel*, spectral
   graph/
     anchors.py         ← 10 kanonik dağılım (ZETA_ZEROS, GUE, Gauss, ...) — saf matematik
 
