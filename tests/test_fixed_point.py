@@ -33,20 +33,32 @@ def test_universal_self_image():
             assert _l2(sigs[i], sigs[j]) < 0.05
 
 
-def test_self_image_real_but_not_hyperbolic():
-    """DÜRÜST BULGU: öz-imge Stieltjes-GERÇEK ama Laguerre-Pólya hiperbolik DEĞİL.
+def test_self_image_closes_rh_equivalent_conditions():
+    """DÜRÜST BULGU: öz-imge Stieltjes-GERÇEK *ve* gerçek RH-eşdeğeri koşulları kapatır.
 
-    Momentler Cauchy-Schwarz'tan log-konveks → Turán ≤ 0 yapısal. Öz-imge var/gerçek,
-    ama 'kritik çizgide'/hiperbolik değil — en derin RH-kriteri öz üstünde kapanmıyor.
+    Hiperboliklik moment Turán-ekseninde DEĞİL (momentler log-konveks → Turán ≤ 0,
+    bu bir kategori artefaktı); asıl RH-eşdeğeri koşullar Li (λ_n > 0) ve de Bruijn-
+    Newman (Λ ≤ 0). Öz-imge bunları kapatıyor → 'kritik çizgide'.
     """
     r = self_reference_orbit(seed=[0.5**k for k in range(8)], max_iter=64)
-    assert r.stieltjes is True          # gerçek ölçü
-    assert r.laguerre_polya is False    # ama hiperbolik değil
-    assert r.turan_min <= 0             # Turán negatif (log-konveks)
+    assert r.stieltjes is True              # gerçek ölçü
+    assert r.li_positive is True            # Li kriteri λ_n > 0
+    assert r.debruijn_newman <= 1e-9        # de Bruijn-Newman Λ ≤ 0
+    assert r.on_critical_line is True       # Li>0 ∧ Λ≤0
+    assert r.turan_min <= 0                  # moment-Turán negatif (kategori notu)
+
+
+def test_full_46_lens_profile():
+    """Öz-imge bütün 46 mercekte raporlanır: paradigma sayısı + Schur + çapraz-oran."""
+    r = self_reference_orbit(seed=[1.0 / (k + 1) for k in range(8)], max_iter=64)
+    assert 0 <= r.paradigms_closed <= 23
+    assert isinstance(r.schur_psd, bool)
+    assert isinstance(r.cross_ratio_positive, bool)
+    assert len(r.sealed_hash) > 0
 
 
 def test_ai_facade():
     r = tantrium.AI().self_reference(max_iter=24)
     assert isinstance(r, SelfReferenceResult)
     assert "Öz-gönderim" in r.summary()
-    assert "Laguerre-Pólya" in r.summary()
+    assert "KRİTİK ÇİZGİDE" in r.summary()

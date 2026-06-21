@@ -10,6 +10,7 @@ from __future__ import annotations
 import sys
 import time
 
+
 def main():
     target = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "EGFR"
     top_k = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else 8
@@ -28,7 +29,7 @@ def main():
 
     t0 = time.time()
     print(f"  [1] Hedef kodlanıyor: '{target}'")
-    print(f"  [2] Manifold araması + fragment mutasyonu başlıyor...")
+    print("  [2] Manifold araması + fragment mutasyonu başlıyor...")
     print()
 
     r = ai.design(target, top_k=top_k, n_fragment_rounds=2)

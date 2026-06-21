@@ -26,7 +26,6 @@ from typing import Any
 
 import tantrium
 
-
 # ── Kanonik girdiler ─────────────────────────────────────────────────────────
 DRUGS = {
     "aspirin": "CC(=O)Oc1ccccc1C(=O)O",
