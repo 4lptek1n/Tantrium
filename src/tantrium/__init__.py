@@ -50,6 +50,7 @@ from tantrium.core.transport import CertifiedTransport, TransportCertificate, Tr
 from tantrium.core.truth import TruthCertificate, TruthCertifier
 from tantrium.core.unified import CoreMachine, UnifiedCertificate
 from tantrium.core.verifier import adversarial_control, seal, tamper_test, verify
+from tantrium.cosmos import Epoch, Lifecycle, run_cosmos
 from tantrium.domains.spectral import (
     SpectralMeasure,
     dna_measure,
@@ -85,6 +86,9 @@ __all__ = [
     "self_reference_orbit",
     "self_map",
     "SelfReferenceResult",
+    "run_cosmos",
+    "Lifecycle",
+    "Epoch",
     "laguerre_polya_test",
     "is_hyperbolic",
     "turan",

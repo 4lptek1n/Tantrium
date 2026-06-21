@@ -21,6 +21,19 @@ class RHMixin:
         from tantrium.core.fixed_point import self_reference_orbit
         return self_reference_orbit(seed=seed, max_iter=max_iter, tol=tol)
 
+    def cosmos(self, seed=None, inflation_steps: int = 40) -> "object":
+        """Bir tohumun TÜM evren ömrü: T₁ yaratılış → T₁₀ son, çağ çağ, mühürlü.
+
+        Makinenin bütün organlarını tek zaman okuna dizer (encode→Ouroboros→23
+        paradigma→madde→kendini örgütleme→kritik çizgi→Achilles→mühür→serbest
+        kümülant→μ*/patlama). Çıktı tek bir yaşam-döngüsü sertifikası.
+
+        Örnek:
+            print(ai.cosmos("EGFR").summary())
+        """
+        from tantrium.cosmos import run_cosmos
+        return run_cosmos(seed=seed, inflation_steps=inflation_steps)
+
     def rh_criteria(self, query) -> "RHCriteria":
         """Girdinin RH-türevli pozitiflik kriterleri (τ/pivot/cross-ratio, exact Fraction).
 
