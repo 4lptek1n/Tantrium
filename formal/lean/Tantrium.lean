@@ -1,4 +1,5 @@
 import Tantrium.Basic
+import Tantrium.Collapse
 import Tantrium.Ell2Residue
 import Tantrium.Tau
 import Tantrium.TauSubdiscriminant
