@@ -125,16 +125,4 @@ Pólya'nın aradığı operatör türünden. Kodda canlı bağlantılar:
 - `quantum_moments.py`: Voiculescu serbest kümülant κ-additivite
 
 Tam RH ispat zinciri (D-pozitiflik → Sturm pivot → Jensen hiperbolisitesi → RH, Lean 4)
-ayrı branch'te: `tce-collapse-engine` (`external_formalization: PENDING` — iddia abartılmıyor).
-
----
-
-## Dürüst Sınırlar
-
-1. **8 moment kayıplı sıkıştırma** (Hamburger tekliği sonsuz-moment limitinde). `collision.py`
-   adversarial olarak çakışma oranını test eder.
-2. **23 paradigma tek başına ayırt edici değil** (G=AᵀA daima PSD → her şey "geçer"). Gerçek
-   ayrım transport'ta (Sturm/dyadic). Eski sistemde grounding ekseni elerdi — o silindi.
-3. **`truth`/`grounding` = N/A** (öğrenilen manifold/komşu yok).
-4. **`math_kernel.inject_math_kernel` = no-op** (manifold yok).
-5. **AGI/ASI değildir** — dil, ajans, öğrenme, genel problem çözme yoktur.
+ayrı branch'te: `tce-collapse-engine` (`external_formalization: PENDING`).

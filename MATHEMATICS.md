@@ -291,12 +291,6 @@ Sertifika = "Bu nesne evrenin yasalarıyla tutarlı"
 "EGFR → erlotinib" geçişi, iki nesnenin moment uzaylarında PSD-yol boyunca
 taşınabilmesidir (Sturm). Kanıtlanırsa geçiş "gerçek"; kanıtlanamazsa yol kopuktur.
 
-> **Not (dürüst sınır):** Bu makine *durumsuzdur*. Öğrenilen bir kavram grafı (TAU),
-> manifold, ya da kendi kendine büyüyen kapalı döngü YOKTUR — bunlar daha geniş bir
-> ASI prototipinde vardı, bu saf-matematik çekirdeğine indirgenirken kaldırıldı. Burada
-> "evren simülasyonu" felsefi bir çerçevedir (Hankel-PSD = fiziksel tutarlılık koşulu),
-> bir genel-zekâ iddiası değil.
-
 ---
 
 ## Momentlerin Gerçek Gücü

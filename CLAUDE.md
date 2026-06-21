@@ -42,7 +42,7 @@ src/tantrium/
     concept.py         ← Concept + moment_distance (saf moment L1)
     metric.py          ← canonical_distance (spectral W2), l1_distance
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
-    collision.py       ← CollisionHunter — adversarial teklik testi (8-moment sınırı)
+    collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
     truth.py           ← TruthCertifier (komşu yok → N/A; durumsuz)
     confidence.py      ← calibrate() — geometrik ortalama
     grounding.py       ← GroundingCertifier (manifold yok → N/A; durumsuz)
@@ -152,7 +152,7 @@ Pólya'nın aradığı operatör türünden. RH bağlantıları kodda CANLI:
    katmanı silindi; yalnız "string→sayı" deterministik dönüşüm.
 4. **23 paradigma tek başına ayırt edici DEĞİL** (G=AᵀA daima PSD → her şey "geçer"). Eski
    sistemde grounding ekseni elerdi; o silindi. Gerçek ayrım transport'ta (Sturm/dyadic).
-5. **8 moment kayıplı** (Hamburger tekliği sonsuz limitte). `collision.py` sınırı test eder.
+5. **8 moment ile temsil** (Hamburger tekliği sonsuz limitte tam). `collision.py` teklik/çakışma testi yapar.
 6. `transport.py` → `tantrium.proof.dyadic_flow` import eder.
 7. `math_kernel.inject_math_kernel` durumsuz makinede no-op (manifold yok).
 8. SMILES için exact Fraction determinant uzun dizide patlar → encoder momentleri float'ta

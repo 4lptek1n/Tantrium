@@ -75,18 +75,6 @@ değil — evren yolun gerçek olup olmadığını söylüyor.
 
 ---
 
-## Ne DEĞİLDİR (dürüst sınır)
-
-- **AGI/ASI değildir.** Dil anlama, ajans, öğrenme, genel problem çözme yoktur.
-- **Durumsuzdur.** Öğrenilen kavram grafı / manifold / hafıza yoktur. Her çağrı, girdiyi
-  saf matematik olarak işler; oturumlar arası bir şey "biriktirmez".
-- **İstatistiksel tahmin motoru değildir.** Güçlü yanı doğrulukta LLM'i yenmek değil;
-  **kanıtlanabilirlik** sunarak onun yapamadığı yeri doldurmaktır.
-- 8 moment kayıplı bir sıkıştırmadır (Hamburger tekliği sonsuz-moment limitinde);
-  `collision.py` bu sınırı adversarial test eder.
-
----
-
 ## SDK Yüzeyi (yalın matematik)
 
 ```python
