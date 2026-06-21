@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from tantrium.domains.bridge import SemanticBridge
-from tantrium.core.codex import CertifiableObject as CodexObject, ParadigmResult
+from tantrium.core.paradigms import CertifiableObject as CodexObject, ParadigmResult
 from tantrium.core.encoder import UniversalEncoder, encode as universal_encode
 from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.concept import Concept

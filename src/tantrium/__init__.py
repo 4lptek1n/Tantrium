@@ -32,12 +32,11 @@ from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
 from tantrium.domains.spectral import SpectralMeasure, gram_spectrum, spectral_distance, dna_measure, moments_to_spectral
 from tantrium.core.inverse import InverseTransport, DesignCandidate, DesignReport
 from tantrium.core.molecular_space import MolecularSpace, MolPoint, ArrangementResult, MorphResult
-from tantrium.core.molecular_genesis import MolecularGenesis, GenesisCandidate, GenesisReport as MolGenesisReport
+from tantrium.core.molecular_derivation import MolecularGenesis, GenesisCandidate, GenesisReport as MolGenesisReport
 from tantrium.core.quantum_moments import (
     FreeCumulants,
     QuantumSignature,
     bounded_kappa_distance,
-    free_entropy,
 )
 
 __all__ = [
@@ -123,6 +122,5 @@ __all__ = [
     # Quantum moments (free probability)
     "FreeCumulants",
     "QuantumSignature",
-    "free_entropy",
     "bounded_kappa_distance",
 ]

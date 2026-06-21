@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Any
 
-from tantrium.core.codex import CertifiableObject as CodexObject
+from tantrium.core.paradigms import CertifiableObject as CodexObject
 
 
 # ─── Paradigm → theorem graph node mapping ────────────────────────────────

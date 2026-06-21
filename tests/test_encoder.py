@@ -4,7 +4,7 @@ from fractions import Fraction
 import pytest
 
 from tantrium.core.encoder import encode, encode_smiles
-from tantrium.core.codex import CertifiableObject
+from tantrium.core.paradigms import CertifiableObject
 
 
 # ─── encode() ────────────────────────────────────────────────────────────────

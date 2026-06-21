@@ -755,7 +755,7 @@ class ProductionEngine:
         """
         from tantrium.core.quantum_moments import FreeCumulants
         from tantrium.core.reconstruct import reconstruct_measure
-        from tantrium.core.codex import CertifiableObject
+        from tantrium.core.paradigms import CertifiableObject
         from fractions import Fraction
 
         # κ_disease: saf sayıdan (moment) ya da ölçülen bulgudan (serbest-toplam)
@@ -844,7 +844,7 @@ class ProductionEngine:
         """
         from tantrium.core.quantum_moments import (
             FreeCumulants, bounded_kappa_distance)
-        from tantrium.core.codex import CertifiableObject
+        from tantrium.core.paradigms import CertifiableObject
         from fractions import Fraction
 
         # κ_disease (sayı/bulgu/isim), κ_drug (SMILES), κ_dna (kişinin dizisi)
@@ -928,7 +928,7 @@ class ProductionEngine:
 
         # 1. Genesis (birincil): Sturm geçidi içinde büyü
         try:
-            from tantrium.core.molecular_genesis import MolecularGenesis
+            from tantrium.core.molecular_derivation import MolecularGenesis
             rep = MolecularGenesis(self.engine).simulate(
                 seeds=_PRIMITIVES, max_steps=max_steps, beam_width=beam_width,
                 toward_profile=profiles)
@@ -997,7 +997,7 @@ class ProductionEngine:
             rec = reconstruct_measure(mu_req, max_atoms=4)
             if rec.support and rec.reconstruction_error < 0.5:
                 mu_clean = [float(m) for m in rec.reconstructed_moments][:8]
-                from tantrium.core.molecular_genesis import MolecularGenesis
+                from tantrium.core.molecular_derivation import MolecularGenesis
                 rep = MolecularGenesis(self.engine).simulate(
                     seeds=_PRIMITIVES, max_steps=max_steps, beam_width=beam_width,
                     toward_profile=[mu_clean])
@@ -1042,7 +1042,7 @@ class ProductionEngine:
         new_target = [0.5 * (mu_best[i] + mu_req[i]) for i in range(
             min(len(mu_best), len(mu_req)))]
         try:
-            from tantrium.core.molecular_genesis import MolecularGenesis
+            from tantrium.core.molecular_derivation import MolecularGenesis
             rep = MolecularGenesis(self.engine).simulate(
                 seeds=[best_smi] + _PRIMITIVES[:3],
                 max_steps=max(4, max_steps // 2), beam_width=beam_width,
@@ -1067,7 +1067,7 @@ class ProductionEngine:
         mu_half = k_half.to_moments_approx()
         if mu_half and mu_half[0] > 0:
             try:
-                from tantrium.core.molecular_genesis import MolecularGenesis
+                from tantrium.core.molecular_derivation import MolecularGenesis
                 rep1 = MolecularGenesis(self.engine).simulate(
                     seeds=_PRIMITIVES[:3], max_steps=max(4, max_steps // 2),
                     beam_width=max(2, beam_width // 2), toward_profile=[mu_half])

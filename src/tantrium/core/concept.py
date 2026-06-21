@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Callable, Sequence
 
-from tantrium.core.codex import (
+from tantrium.core.paradigms import (
     CertifiableObject as CodexObject,
     PositivityParadigm as AlephParadigm,
     ParadigmResult,

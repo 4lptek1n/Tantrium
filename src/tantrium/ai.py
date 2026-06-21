@@ -451,7 +451,7 @@ class AI:
         Döner: UniverseReconstruction (.modes = üreten yapı, .summary()).
         """
         from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
-        from tantrium.core.codex import CertifiableObject
+        from tantrium.core.paradigms import CertifiableObject
         from fractions import Fraction
 
         # SAYISAL GÖZLEM (sinyal/ölçüm/dizi) → HAM matematik (Kronecker/Prony Hankel rank).
@@ -898,7 +898,7 @@ class AI:
         """
         import warnings
         warnings.filterwarnings("ignore")
-        from tantrium.core.molecular_genesis import MolecularGenesis
+        from tantrium.core.molecular_derivation import MolecularGenesis
         gen = MolecularGenesis(self.engine)
         return gen.generate(target, top_k=top_k, max_atoms=max_atoms, beam_width=beam_width)
 
@@ -1084,7 +1084,7 @@ class AI:
 
         seed: başlangıç SMILES   toward: opsiyonel yön (gradyan, eşleşme değil)
         """
-        from tantrium.core.molecular_genesis import MolecularGenesis
+        from tantrium.core.molecular_derivation import MolecularGenesis
         return MolecularGenesis(self.engine).simulate(
             seed=seed, max_steps=max_steps, beam_width=beam_width, toward=toward)
 
@@ -1276,7 +1276,7 @@ class AI:
                        seed: str = "G") -> dict:
         """ASI Pilar C — DETERMİNİSTİK BİYOPOLİMER (peptit) TASARIMI, kalıntı-kalıntı Sturm-certified.
 
-        molecular_genesis'in atom-atom Sturm-certified büyümesini AMİNO ASİDE taşır: her AA ekleme
+        molecular_derivation'in atom-atom Sturm-certified büyümesini AMİNO ASİDE taşır: her AA ekleme
         `CertifiedTransport.certify(fast_sturm=True)` ile sertifikalı (Sturm SERT geçit = gerçek-ölçü
         yolu); skor hedef-spektruma (`encode_protein` Kyte-Doolittle moment) yakınlık. Deterministik
         beam (random YOK) → aynı hedef birebir aynı peptit.

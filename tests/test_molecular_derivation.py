@@ -19,13 +19,13 @@ def engine():
 
 @pytest.fixture(scope="module")
 def genesis(engine):
-    from tantrium.core.molecular_genesis import MolecularGenesis
+    from tantrium.core.molecular_derivation import MolecularGenesis
     return MolecularGenesis(engine)
 
 
 def test_generate_returns_report(genesis):
     r = genesis.generate("CCCO", top_k=3, max_atoms=6, beam_width=2)
-    from tantrium.core.molecular_genesis import GenesisReport
+    from tantrium.core.molecular_derivation import GenesisReport
     assert isinstance(r, GenesisReport)
 
 

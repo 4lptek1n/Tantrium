@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterator
 
-from tantrium.core.codex import PARADIGMS, PARADIGM_BY_ID, CertifiableObject, Paradigm, ParadigmResult
+from tantrium.core.paradigms import PARADIGMS, PARADIGM_BY_ID, CertifiableObject, Paradigm, ParadigmResult
 
 # Local aliases used throughout this module
 CODEX = PARADIGMS

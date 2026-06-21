@@ -1,7 +1,7 @@
-"""Tests for paradigm definitions in tantrium.core.codex."""
+"""Tests for paradigm definitions in tantrium.core.paradigms."""
 import pytest
 
-from tantrium.core.codex import (
+from tantrium.core.paradigms import (
     PARADIGMS,
     PARADIGM_BY_ID,
     CertifiableObject,
