@@ -1,5 +1,8 @@
 import Mathlib.LinearAlgebra.Vandermonde
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Mathlib.LinearAlgebra.Matrix.PosDef
+import Mathlib.Data.Real.Basic
+import Mathlib.Algebra.Order.Star.Real
 
 /-!
 # tau = subdiscriminant (principal case)
@@ -46,5 +49,17 @@ theorem det_momentMatrix (x : Fin n → R) :
     (momentMatrix x).det = (∏ i : Fin n, ∏ j ∈ Ioi i, (x j - x i)) ^ 2 := by
   rw [momentMatrix_eq_vandermonde, det_mul, det_transpose, det_vandermonde]
   ring
+
+/-- **G = AᵀA is positive semidefinite.** Over `ℝ`, the Hankel moment matrix
+`H = VᵀV` (with `V = vandermonde x`) is positive semidefinite — for any vector
+`y`, `yᵀ H y = ‖V y‖² ≥ 0`. This is the rigorous heart of moment/Hankel
+positivity: it holds *because* the moments come from real points `x` (so the
+matrix genuinely is a real Gram matrix `AᵀA`). -/
+theorem momentMatrix_posSemidef (x : Fin n → ℝ) :
+    (momentMatrix x).PosSemidef := by
+  have h : momentMatrix x = (vandermonde x)ᴴ * (vandermonde x) := by
+    rw [momentMatrix_eq_vandermonde, ← Matrix.conjTranspose_eq_transpose_of_trivial]
+  rw [h]
+  exact Matrix.posSemidef_conjTranspose_mul_self _
 
 end Tantrium
