@@ -173,7 +173,7 @@ def test_produce_judges_on_sturm_axis(ai):
     pe = ProductionEngine(ai.engine)
     _, mu_req, profiles, _ = pe._read_target("egfr")
     erlotinib = "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1"
-    ok, pmin, fit = pe._judge_on_axis(erlotinib, mu_req)
+    ok, pmin, fit, _ = pe._judge_on_axis(erlotinib, mu_req)
     assert ok is True                 # gerçek inhibitör: yol gerçek-ölçüde
     assert pmin >= -1e-6              # Sturm pivotu pozitif (hiperbolik)
 
