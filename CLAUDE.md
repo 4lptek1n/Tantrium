@@ -25,13 +25,13 @@ exact `Fraction` (yuvarlama yok, bit-bit tekrarlanabilir = denetlenebilir sertif
 
 ---
 
-## Proje Yapısı (50 .py)
+## Proje Yapısı (52 .py)
 
 ```
 src/tantrium/
   ai.py                ← tantrium.AI() — durumsuz SDK girişi (~48 matematik metodu)
   serve.py             ← opsiyonel FastAPI REST
-  core/                ← 32 dosya
+  core/                ← 34 dosya
     encoder.py         ← girdi→moment (domain-kör). String: geçerli SMILES→bigram,
                           diğer string→deterministik imza-hash (math, YAKINLIK/ANLAM YOK)
     codex.py           ← 23 paradigma (verify() okur, hesaplamaz)
@@ -40,13 +40,17 @@ src/tantrium/
     engine.py          ← CertificationEngine (DURUMSUZ) + engine.core (CoreMachine lazy)
     unified.py         ← CoreMachine — tek geçiş sertifika
     concept.py         ← Concept + moment_distance (saf moment L1)
-    rh_criteria.py     ← RH-kriter katmanı: momentlerden τ/pivot/cross-ratio/Stieltjes/
-                          kümülant/Λ (tce-collapse RH zinciri, exact). 16-derinlik; encoder
-                          her çıktıya structure["rh_criteria"] ekler. rank = AYIRT EDİCİ
-                          (benzene rank≈1, aspirin rank≈6). criteria_distance = rh_distance.
+    rh_certificate.py  ← ★ BİRLEŞİK RH bundle (mimari omurga): TÜM moment-RH matematiği
+                          tek nesnede — rh_criteria + Hausdorff + Turán + free_entropy +
+                          yarı-daire + SHA-256 mühür. certify_rh(moments). encoder her
+                          çıktıya structure["rh"], CoreMachine UnifiedCertificate'e bundle+mühür.
+    rh_criteria.py     ← τ/pivot/cross-ratio/Stieltjes/kümülant/Λ/rank (exact, 16-derinlik).
+                          rank = AYIRT EDİCİ (benzene rank≈1, aspirin rank≈6).
     jensen.py          ← Jensen-Pólya hiperbolisite (RH'nin HEDEF kriteri): J^{d,n} hiperbolik
-                          mi = Laguerre-Pólya sınıfı. Turán/Laguerre eşitsizlikleri. PSD gibi
-                          OTOMATİK DEĞİL. NOT: momentlere uygulanmaz (log-konveks).
+                          mi = Laguerre-Pólya. Turán/Laguerre. PSD gibi OTOMATİK DEĞİL.
+                          NOT: momentlere uygulanmaz (log-konveks); genel dizi/polinom aracı.
+    bezoutian.py       ← polinom makinesi: Bezoutian gizli faktörler H_{d,j}, Lah-pivot
+                          referans (d−j)², Gate-B merdiven yasası, ilk-beş-pivot. (math/pivots)
     free_probability.py← Voiculescu: free_entropy χ (logaritmik enerji, konkav), R-dönüşümü,
                           serbest konvolüsyon ⊞, yarı-daire (Wigner) mesafesi.
     verifier.py        ← mühürlü sertifika: seal→SHA-256 içerik-hash, verify→tamper-tespiti,
@@ -122,13 +126,16 @@ ai.paradigms("c1ccccc1")          # 23 paradigma dökümü
 ai.transport("CCO", "CC(=O)O")    # TransportCertificate
 ai.sturm("x^3 - 3*x + 1")         # Sturm zinciri
 ai.positivity("x^2 + 1")          # Hankel PSD
+ai.rh_certificate("EGFR")         # ★ BİRLEŞİK RH bundle (kriter+Hausdorff+χ+mühür)
 ai.rh_criteria("EGFR")            # RH-kriter: τ/pivot/cross-ratio/Stieltjes/κ/Λ/rank
-ai.rh_distance("EGFR", "c1ccccc1")# RH-kriter ayırt edici mesafe (rank+pivot+κ)
+ai.rh_distance("EGFR", "c1ccccc1")# tam RH-sertifika ayırt edici mesafe (metric="rh")
 ai.jensen([1,4,6,4,1])            # Jensen-Pólya: Laguerre-Pólya (RH-tipi) sertifikası
 ai.hyperbolic([2,-3,1])           # polinom tüm kökleri gerçek mi
+ai.bezoutian([-6,11,-6,1])        # Bezoutian gizli faktör + Lah pivot + ilk-beş-pivot
 ai.free_entropy("EGFR")           # serbest entropi χ (logaritmik enerji)
 ai.semicircle_distance("EGFR")    # yarı-daireye (Wigner) κ-mesafesi
 ai.seal("EGFR") / ai.verify(s)    # mühürlü SHA-256 sertifika + tamper-tespiti
+# certify_all artık her sertifikaya RH bundle + SHA-256 mühür taşır (dışarıdan denetlenebilir)
 ai.reconstruct([1,1,2,3,5,8])     # momentlerden ölçü
 ai.reverse_engineer(gözlem)       # gizli üreten yapı
 ai.discover_law(seri)             # yönetici yasa + tahmin (Koopman/EDMD)
@@ -192,5 +199,5 @@ Bunlara referans gören kod kalıntısı = hata; temizlenmeli.
 ---
 
 ## Mevcut Durum
-- 50 .py modül, ~150+ test geçiyor. Durumsuz, saf matematik.
+- 52 .py modül, ~170+ test geçiyor. Durumsuz, saf matematik. RH bundle mimariye gömülü (mühürlü).
 - Theorem candidate dokümanları: `docs/`, `theorems/`. Tam RH ispatı: `tce-collapse-engine` branch.

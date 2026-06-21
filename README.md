@@ -94,7 +94,12 @@ rank = en yüksek τ_j>0          spektral atom sayısı  ← AYIRT EDİCİ
 `ai.rh_distance(a, b)` bu vektör (rank + pivot + κ) üzerinden ayırt edici mesafe verir;
 `certify_all` çıktısı `rh_grade` + `rh_stieltjes` eksenini taşır.
 
-Üç ek cevher (ispatın çekirdeğinden):
+**Birleşik kablolama:** Tüm bunlar tek `RHCertificate`'te toplanır (`certify_rh`) ve
+**mimariye gömülüdür** — encoder her çıktıya `structure["rh"]` ekler, `certify_all`
+(CoreMachine) her sertifikaya RH bundle + **SHA-256 mühür** taşır (`ai.verify` ile
+dışarıdan denetlenebilir), `metric="rh"` ayırt edici mesafeyi verir. Parça değil, omurga.
+
+Ek cevherler (ispatın çekirdeğinden):
 
 - **Jensen-Pólya hiperbolisite** (`ai.jensen`) — RH'nin HEDEF kriteri: bir dizinin Jensen
   polinomları `J^{d,n}=Σ C(d,j)γ_{n+j}X^j` hiperbolik mi (= Laguerre-Pólya sınıfı). PSD
@@ -122,8 +127,10 @@ ai.positivity("x^2 + 1")        # Hankel PSD kontrolü
 # RH-kriter (tce-collapse RH zincirinin moment-çekirdeği — ayırt edici)
 ai.rh_criteria("EGFR")          # τ/pivot/cross-ratio/Stieltjes/κ/Λ/rank (exact)
 ai.rh_distance("EGFR", "c1ccccc1")  # rank+pivot+κ ayırt edici mesafe
+ai.rh_certificate("EGFR")       # ★ BİRLEŞİK RH bundle (kriterler+Hausdorff+χ+mühür)
 ai.jensen([1,4,6,4,1])          # Jensen-Pólya: Laguerre-Pólya (RH-tipi) hiperbolisite
 ai.hyperbolic([2,-3,1])         # polinom tüm kökleri gerçek mi
+ai.bezoutian([-6,11,-6,1])      # Bezoutian gizli faktör + Lah pivot + ilk-beş-pivot
 ai.free_entropy("EGFR")         # serbest entropi χ (logaritmik enerji, konkav)
 ai.semicircle_distance("EGFR")  # yarı-daireye (Wigner) κ-mesafesi
 s = ai.seal("EGFR"); ai.verify(s)   # mühürlü SHA-256 sertifika + tamper-tespiti

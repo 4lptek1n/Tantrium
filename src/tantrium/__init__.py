@@ -17,11 +17,15 @@ from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
 from tantrium.core.concept import Concept, moment_distance
 from tantrium.core.rh_criteria import rh_criteria, RHCriteria, criteria_distance
+from tantrium.core.rh_certificate import certify_rh, RHCertificate, hausdorff
 from tantrium.core.jensen import laguerre_polya_test, is_hyperbolic, turan, JensenReport
 from tantrium.core.free_probability import (
     free_entropy, r_transform, free_convolution, semicircle_distance,
 )
 from tantrium.core.verifier import seal, verify, adversarial_control, tamper_test
+from tantrium.core.bezoutian import (
+    analyze as bezoutian_analyze, lah_pivot_reference, staircase_top_coeff, BezoutianReport,
+)
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
 from tantrium.proof.certificate import Cell, Certificate, TransportEdge
 from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
@@ -55,6 +59,9 @@ __all__ = [
     "rh_criteria",
     "RHCriteria",
     "criteria_distance",
+    "certify_rh",
+    "RHCertificate",
+    "hausdorff",
     "laguerre_polya_test",
     "is_hyperbolic",
     "turan",
@@ -67,6 +74,10 @@ __all__ = [
     "verify",
     "adversarial_control",
     "tamper_test",
+    "bezoutian_analyze",
+    "lah_pivot_reference",
+    "staircase_top_coeff",
+    "BezoutianReport",
     # Transport
     "CertifiedTransport",
     "TransportCertificate",

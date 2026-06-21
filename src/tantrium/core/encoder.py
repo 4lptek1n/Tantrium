@@ -535,17 +535,18 @@ class UniversalEncoder:
             ).k
         except Exception:
             pass
-        # RH-kriter katmanı: momentlerden τ/pivot/cross-ratio/Stieltjes/kümülant/Λ.
-        # tce-collapse-engine ispat zincirinin moment-hesaplanabilir çekirdeği.
-        # 8 kanonik moment bozulmaz; kriterler 16-derinlik genişletilmiş momentten
-        # hesaplanır (daha çok moment = daha derin τ_j). Yola uygun: numeric→power,
-        # matris→spektral (kanonik momentlerle aynı tanım).
+        # RH sertifika bundle: tce-collapse'in TÜM moment-RH matematiği tek bütünde
+        # (τ/pivot/cross-ratio/Stieltjes/kümülant/Λ/rank + Hausdorff + Turán + yarı-daire
+        # + mühür). 8 kanonik moment bozulmaz; 16-derinlik genişletilmiş momentten. Yola
+        # uygun: numeric→power, matris→spektral. heavy=False (free_entropy hot-path'te atlanır).
         try:
-            from tantrium.core.rh_criteria import rh_criteria
+            from tantrium.core.rh_certificate import certify_rh
             ext = _try_power_moments(input, 16)
             if ext is None:
                 ext = _spectral_moments(A, 16)
-            state["rh_criteria"] = rh_criteria(ext).as_dict()
+            cert = certify_rh(ext, name=str(getattr(self, "_last_name", "rh")), heavy=False)
+            state["rh"] = cert.as_dict()
+            state["rh_criteria"] = cert.criteria.as_dict()  # geriye uyum
         except Exception:
             pass
         return state

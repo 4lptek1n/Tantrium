@@ -59,9 +59,13 @@ def distance(moments_a, moments_b, metric: str = CANONICAL) -> float:
     """Tek giriş noktası. metric=CANONICAL (varsayılan) → spektral W2.
 
     metric="l1" yalnızca hız gereken ön-eleme için.
+    metric="rh" → RH-sertifika mesafesi (rank+pivot+κ+Hausdorff; en ayırt edici).
     """
     if metric == "l1":
         return l1_distance(moments_a, moments_b)
+    if metric == "rh":
+        from tantrium.core.rh_certificate import rh_distance as _rd
+        return _rd(moments_a, moments_b)
     return canonical_distance(moments_a, moments_b)
 
 

@@ -1483,14 +1483,28 @@ class AI:
             ext = _spectral_moments(A, 16)
         return _rh(ext)
 
+    def _ext_moments(self, query):
+        """16-derinlik genişletilmiş moment (encoder._extract_structure ile aynı mantık)."""
+        from tantrium.core.encoder import _try_power_moments, _spectral_moments
+        ext = _try_power_moments(query, 16)
+        if ext is None:
+            ext = _spectral_moments(self._engine.encoder._to_matrix(query), 16)
+        return ext
+
+    def rh_certificate(self, query) -> "object":
+        """Girdinin TAM RH sertifikası: kriterler + Hausdorff + Turán + serbest entropi +
+        yarı-daire + SHA-256 mühür (tek bütün, tce-collapse moment-matematiği)."""
+        from tantrium.core.rh_certificate import certify_rh
+        return certify_rh(self._ext_moments(query), name=str(query)[:64], heavy=True)
+
     def rh_distance(self, a, b) -> float:
-        """İki nesne arası RH-kriter mesafesi (ayırt edici: pivot+cross-ratio+kümülant+rank).
+        """İki nesne arası TAM RH-sertifika mesafesi (rank+pivot+κ+Hausdorff+entropi).
 
         Saf moment-L1'in göremediği yüksek-yapı farkını yakalar — momentleri yakın ama
-        Sturm-pivot/Stieltjes profili farklı nesneleri ayırır.
+        Sturm-pivot/Stieltjes/Hausdorff profili farklı nesneleri ayırır.
         """
-        from tantrium.core.rh_criteria import criteria_distance
-        return criteria_distance(self.rh_criteria(a), self.rh_criteria(b))
+        from tantrium.core.rh_certificate import rh_distance as _rd
+        return _rd(self._ext_moments(a), self._ext_moments(b))
 
     # ── Jensen-Pólya / Laguerre-Pólya (RH-tipi hiperbolisite) ────────────────
     def jensen(self, sequence, max_degree: int = 4) -> "object":
@@ -1506,6 +1520,12 @@ class AI:
         """Polinom (artan kuvvet katsayıları) hiperbolik mi = tüm kökleri gerçek."""
         from tantrium.core.jensen import is_hyperbolic
         return is_hyperbolic(list(poly_coeffs))
+
+    def bezoutian(self, poly_coeffs) -> "object":
+        """Polinomun Bezoutian/Sturm analizi: gizli faktörler H_{d,j}, Lah-pivot sapması
+        (ρ_j=(d−j)²), ilk-beş-pivot pozitifliği, hiperboliklik (tce-collapse math/pivots)."""
+        from tantrium.core.bezoutian import analyze
+        return analyze(list(poly_coeffs))
 
     # ── Serbest olasılık (Voiculescu) ────────────────────────────────────────
     def free_entropy(self, query) -> float:

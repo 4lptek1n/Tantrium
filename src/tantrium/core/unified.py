@@ -51,10 +51,15 @@ class UnifiedCertificate:
     # Zengin evidence (isteğe bağlı)
     evidence: dict = field(default_factory=dict)
 
-    # Eksen 5: RH-kriter (ayırt edici — τ/pivot/Stieltjes; PSD-otomatik DEĞİL)
-    rh_grade: float = 1.0          # [0,1] sağlanan pozitiflik kriteri oranı
+    # Eksen 5: RH-sertifika bundle (ayırt edici — PSD-otomatik DEĞİL)
+    rh_grade: float = 1.0          # [0,1] birleşik RH-derece
     rh_stieltjes: bool = True      # [0,∞) ölçü sertifikası (Hilbert-Pólya operatörü)
+    rh_hausdorff: bool = True      # [0,1] tam-monoton ölçü
+    rh_rank: int = 0               # spektral atom sayısı (AYIRT EDİCİ)
+    rh_free_entropy: float = 0.0   # serbest entropi χ (logaritmik enerji)
+    rh_semicircle: float = 0.0     # yarı-daireye (Wigner) mesafe
     rh_summary: str = ""
+    sealed_hash: str = ""          # SHA-256 içerik-hash — dışarıdan denetlenebilir
 
     def __str__(self) -> str:
         cert = "✓" if self.coherent else "✗"
@@ -63,7 +68,8 @@ class UnifiedCertificate:
         return (
             f"{cert} {self.name} [{self.paradigms_passed}/{self.paradigms_total}] "
             f"{g} {self.truth} conf={self.confidence:.2f} [{self.confidence_level}] "
-            f"RH={self.rh_grade:.2f}{'⊕' if self.rh_stieltjes else '⊝'}"
+            f"RH={self.rh_grade:.2f}{'⊕' if self.rh_stieltjes else '⊝'} "
+            f"rank={self.rh_rank} seal={self.sealed_hash[:8]}"
         )
 
 
@@ -113,17 +119,25 @@ class CoreMachine:
         from tantrium.core.reconstruct import reconstruction_fidelity as _recon_fid
         recon = _recon_fid(moments)
 
-        # ─── AXIS 5: RH-KRİTER (ayırt edici) ──────────────────────────────────
-        # encoder structure'ında hazır; yoksa momentlerden hesapla.
-        rh_grade, rh_stieltjes, rh_summary = 1.0, True, ""
+        # ─── AXIS 5: RH-SERTİFİKA BUNDLE (ayırt edici, mühürlü) ───────────────
+        # encoder structure["rh"] (16-derinlik, hafif) hazır; free_entropy burada (heavy).
+        rh_grade, rh_stieltjes, rh_hausdorff = 1.0, True, True
+        rh_rank, rh_free_entropy, rh_semicircle, rh_summary, sealed_hash = 0, 0.0, 0.0, "", ""
         try:
-            from tantrium.core.rh_criteria import rh_criteria as _rh
-            rc = getattr(obj, "structure", {}).get("rh_criteria") if hasattr(obj, "structure") else None
-            if rc is not None:
-                rh_grade = float(rc.get("grade", 1.0))
-                rh_stieltjes = bool(rc.get("stieltjes_certified", True))
-            crit = _rh(moments)
-            rh_grade, rh_stieltjes, rh_summary = crit.grade(), crit.stieltjes_certified, crit.summary()
+            rh = getattr(obj, "structure", {}).get("rh") if hasattr(obj, "structure") else None
+            if rh is not None:
+                rh_grade = float(rh.get("grade", 1.0))
+                cr = rh.get("criteria", {})
+                rh_stieltjes = bool(cr.get("stieltjes_certified", True))
+                rh_rank = int(cr.get("rank", 0))
+                rh_hausdorff = bool(rh.get("hausdorff_certified", True))
+                rh_semicircle = float(rh.get("semicircle_distance", 0.0))
+                sealed_hash = rh.get("sealed_hash", "")
+            from tantrium.core.free_probability import free_entropy as _fe
+            rh_free_entropy = float(_fe(moments))
+            rh_summary = (f"RH grade={rh_grade:.2f} rank={rh_rank} "
+                          f"Stieltjes:{'✓' if rh_stieltjes else '✗'} "
+                          f"Hausdorff:{'✓' if rh_hausdorff else '✗'} χ={rh_free_entropy:+.3g}")
         except Exception:
             pass
 
@@ -168,7 +182,12 @@ class CoreMachine:
             evidence={"run": run, "grounding_cert": gcert},
             rh_grade=rh_grade,
             rh_stieltjes=rh_stieltjes,
+            rh_hausdorff=rh_hausdorff,
+            rh_rank=rh_rank,
+            rh_free_entropy=rh_free_entropy,
+            rh_semicircle=rh_semicircle,
             rh_summary=rh_summary,
+            sealed_hash=sealed_hash,
         )
 
     def _encode_adaptive(self, input_data: object, name: str) -> object:
