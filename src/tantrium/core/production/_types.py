@@ -220,7 +220,7 @@ class MoleculeSignature:
     """
     smiles: str
     mu: list[float]
-    structure: dict = None        # CodexObject.structure (paradigma alanları, özdeğerler)
+    structure: dict = None        # CertifiableObject.structure (paradigma alanları, özdeğerler)
     _kappa: object = None
     _spectral: object = None
     _free_entropy: object = None

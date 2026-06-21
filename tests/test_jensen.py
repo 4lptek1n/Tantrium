@@ -2,7 +2,12 @@
 from fractions import Fraction
 
 from tantrium.core.jensen import (
-    jensen_coeffs, real_root_count, is_hyperbolic, turan, laguerre_polya_test, JensenReport,
+    JensenReport,
+    is_hyperbolic,
+    jensen_coeffs,
+    laguerre_polya_test,
+    real_root_count,
+    turan,
 )
 
 

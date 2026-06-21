@@ -6,7 +6,7 @@ design_peptide.
 """
 from __future__ import annotations
 
-from ._results import MolResult, DiscoverResult, DesignResult
+from ._results import DesignResult, DiscoverResult, MolResult
 
 
 class MolecularMixin:
@@ -45,7 +45,7 @@ class MolecularMixin:
             tgt_obj = _enc(target, name=target[:64])
 
         ct = CertifiedTransport(self._engine)
-        # Pass full CodexObjects so transport uses eigenvalue spectrum (pipeline output)
+        # Pass full CertifiableObjects so transport uses eigenvalue spectrum (pipeline output)
         return ct.certify(src_obj, tgt_obj)
 
     def discover(
@@ -58,7 +58,6 @@ class MolecularMixin:
         import warnings
         warnings.filterwarnings("ignore")
 
-        from tantrium.domains.generator import MoleculeGenerator
 
         gen = self._get_mol_gen()
         report = gen.generate(target, top_k=top_k, out_dir=out_dir)
@@ -304,8 +303,8 @@ class MolecularMixin:
         Protein word-encode EDİLMEZ — ligandları gerçek SMILES'a çözümlenir.
         candidate: SMILES   protein: hedef adı (egfr, bcr-abl, ...)
         """
-        from tantrium.core.quantum_moments import QuantumSignature
         from tantrium.core.metric import paradigm_distance
+        from tantrium.core.quantum_moments import QuantumSignature
 
         ref_smiles = self._protein_reference_ligands(protein, top_refs)
         if not ref_smiles:

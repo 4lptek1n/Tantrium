@@ -9,7 +9,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Any
 
-
 # ─── L4 – TAV: de Bruijn-Newman heat-flow ────────────────────────────────────
 
 def stage_l4_tav_heatflow(state: dict) -> None:
@@ -210,8 +209,9 @@ def stage_ancillary(
     # Araki-Lieb üçgen eşitsizliği |S(A)−S(B)| ≤ S(AB) ≤ S(A)+S(B) doğrulanır.
     # Ayrıca her entropi fiziksel sınırda olmalı: 0 ≤ S ≤ log(dim).
     try:
-        import numpy as _rnp
         import math as _rmath
+
+        import numpy as _rnp
         _rng = len(G)
         _rgnp = _rnp.array([[float(G[i][j]) for j in range(_rng)] for i in range(_rng)])
         _reigs = [max(0.0, _e) for _e in _rnp.linalg.eigvalsh(_rgnp).tolist()]
@@ -258,7 +258,8 @@ def stage_ancillary(
     # Hamburger: ölçü momentleriyle tam belirlenir; truncation bilgi kaybeder
     # (kalan momentler residual'e eklenir), bu yüzden tam model genelde minimal.
     try:
-        import zlib as _zlib, json as _json
+        import json as _json
+        import zlib as _zlib
         _raw_str = str(raw_input)[:2000]
         _raw_compressed = len(_zlib.compress(_raw_str.encode("utf-8", errors="replace"), level=9))
         _mu_full = [float(m) for m in moments]

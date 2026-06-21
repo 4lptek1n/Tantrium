@@ -18,6 +18,7 @@ from ._types import MathDrug, MoleculeSignature
 
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
+    from tantrium.core.production_judge import ProductionCertificate
 
 
 class ProductionEngine(_TargetReadingMixin, _PoolMixin, _JudgeMixin,
@@ -58,7 +59,7 @@ class ProductionEngine(_TargetReadingMixin, _PoolMixin, _JudgeMixin,
             (AD aranmaz), ilaç = κ_healthy ⊟ κ_disease'i kapatan M. Bellekte OLMAYAN
             hastalık için tek dürüst giriş — yakın ad söylemek DEĞİL, kendi bulgusu ölçülür.
         """
-        from tantrium.core.production_judge import ProductionJudge, ProductionCertificate
+        from tantrium.core.production_judge import ProductionCertificate, ProductionJudge
         from tantrium.core.quantum_moments import FreeCumulants
 
         self._sync_transport_epsilon()
@@ -250,7 +251,7 @@ class ProductionEngine(_TargetReadingMixin, _PoolMixin, _JudgeMixin,
         # çeşitliliğe göre yeniden dizilir — yakın-kopya israfı biter. best KORUNUR.
         pool_diversity = 0.0
         try:
-            from tantrium.core.diversity import diversity_volume, diverse_select
+            from tantrium.core.diversity import diverse_select, diversity_volume
             judged = scored[:top_k]
             sigs = [self._signature(c["smiles"]).mu for c in judged]
             pool_diversity = float(diversity_volume(sigs))
@@ -370,10 +371,11 @@ class ProductionEngine(_TargetReadingMixin, _PoolMixin, _JudgeMixin,
           (molekül) kur (genesis/havuz + Sturm yargısı). Harf yalnız burada çıkar. Böylece
           ölçülen hastalık (sayı) → gerçek ilaç (yapı) baştan sona TEK akış.
         """
+        from fractions import Fraction
+
+        from tantrium.core.paradigms import CertifiableObject
         from tantrium.core.quantum_moments import FreeCumulants
         from tantrium.core.reconstruct import reconstruct_measure
-        from tantrium.core.paradigms import CertifiableObject
-        from fractions import Fraction
 
         # κ_disease: saf sayıdan (moment) ya da ölçülen bulgudan (serbest-toplam)
         if isinstance(disease, (list, tuple)) and disease and all(

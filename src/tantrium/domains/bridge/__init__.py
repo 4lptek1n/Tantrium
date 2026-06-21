@@ -17,7 +17,7 @@ mechanically connected but semantically blind. With it, every certification
 in the AGI network is simultaneously a step in the RH proof chain.
 
 Layout:
-  _data.py    — paradigm↔theorem tables + theorem→CodexObject conversion
+  _data.py    — paradigm↔theorem tables + theorem→CertifiableObject conversion
   _bridge.py  — the SemanticBridge class
 """
 from __future__ import annotations

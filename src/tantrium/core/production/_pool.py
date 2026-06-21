@@ -56,7 +56,7 @@ class _PoolMixin:
 
         # 4. Morph (ilaç kütüphanesi arası ara noktalar)
         try:
-            from tantrium.core.molecular_space import MolecularSpace, DRUG_LIBRARY
+            from tantrium.core.molecular_space import DRUG_LIBRARY, MolecularSpace
             ms = MolecularSpace(self.engine)
             seeds_mol = [smi for _, smi, _ in DRUG_LIBRARY[:4]]
             for src in seeds_mol[:2]:
@@ -135,7 +135,7 @@ class _PoolMixin:
         if not mu_best:
             return []
         # Kalıntı = gerekli - mevcut (yeni gradyan yönü)
-        residual = [mu_req[i] - mu_best[i] if i < len(mu_best) else mu_req[i]
+        [mu_req[i] - mu_best[i] if i < len(mu_best) else mu_req[i]
                     for i in range(len(mu_req))]
         new_target = [0.5 * (mu_best[i] + mu_req[i]) for i in range(
             min(len(mu_best), len(mu_req)))]

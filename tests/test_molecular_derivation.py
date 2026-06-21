@@ -1,5 +1,6 @@
 """Moleküler Genesis — beam search ve W2 yakınsama testleri."""
 import time
+
 import pytest
 
 try:

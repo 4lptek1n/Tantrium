@@ -1,6 +1,6 @@
 """SemanticBridge: the bridge object between theorem graph and AGI paradigms.
 
-Data tables and the theorem→CodexObject conversion live in `_data`; this
+Data tables and the theorem→CertifiableObject conversion live in `_data`; this
 module holds only the stateful bridge class that loads the theorem graph and
 exposes mapping / sync / bootstrap operations.
 """
@@ -8,17 +8,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from tantrium.core.paradigms import CertifiableObject as CodexObject
+from tantrium.core.paradigms import CertifiableObject
 
 from ._data import (
+    _ELL_AUTO_PARADIGMS,
     PARADIGM_TO_THEOREMS,
     THEOREM_TO_PARADIGMS,
-    _ELL_AUTO_PARADIGMS,
     _theorem_moments,
     is_proven,
     theorem_to_codex_object,
 )
-
 
 # ─── SemanticBridge ────────────────────────────────────────────────────────
 
@@ -28,7 +27,7 @@ class SemanticBridge:
     Provides:
       - theorem_id → paradigm_id(s) mapping
       - paradigm_id → theorem_id(s) mapping
-      - theorem node → CodexObject conversion
+      - theorem node → CertifiableObject conversion
       - Semantic sync: AGI certification → enrich existing theorem nodes
       - Manifold bootstrap: proven nodes → Concept objects
     """
@@ -61,8 +60,8 @@ class SemanticBridge:
         """Which theorem nodes evidence this paradigm?"""
         return PARADIGM_TO_THEOREMS.get(paradigm_id, [])
 
-    def proven_theorem_objects(self) -> list[CodexObject]:
-        """All proven/certified theorem nodes as CodexObjects."""
+    def proven_theorem_objects(self) -> list[CertifiableObject]:
+        """All proven/certified theorem nodes as CertifiableObjects."""
         graph = self._load_graph()
         objects = []
         for node_id, node in graph.get("nodes", {}).items():
@@ -70,8 +69,8 @@ class SemanticBridge:
                 objects.append(theorem_to_codex_object(node_id, node))
         return objects
 
-    def all_theorem_objects(self) -> list[CodexObject]:
-        """All theorem nodes as CodexObjects (including conjectural/blocked)."""
+    def all_theorem_objects(self) -> list[CertifiableObject]:
+        """All theorem nodes as CertifiableObjects (including conjectural/blocked)."""
         graph = self._load_graph()
         return [
             theorem_to_codex_object(node_id, node)

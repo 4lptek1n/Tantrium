@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Callable, Iterable
 
-from tantrium.proof.certificate import Cell, Certificate, TransportEdge, Q
+from tantrium.proof.certificate import Cell, Certificate, Q, TransportEdge
 
 
 @dataclass(frozen=True)

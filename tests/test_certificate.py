@@ -4,7 +4,9 @@ Meta-sentezin kabul kapısı budur; dağınık 5 kopyanın tek arayüzü. Golden
 buna delege eder, davranış birebir korunur.
 """
 from tantrium.core.certificate import (
-    certify_transition, certify_generalization, CertResult,
+    CertResult,
+    certify_generalization,
+    certify_transition,
 )
 
 

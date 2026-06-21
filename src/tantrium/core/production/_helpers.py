@@ -6,11 +6,16 @@ _sync_transport_epsilon / scan_production_gaps / _canonical_kappa.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ._types import (
     _DISEASE_DRIVER_MAP,
     _PROTEIN_DIRECT_MAP,
     MoleculeSignature,
 )
+
+if TYPE_CHECKING:
+    from tantrium.core.production_judge import ProductionCertificate
 
 
 class _HelpersMixin:

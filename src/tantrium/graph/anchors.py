@@ -22,7 +22,7 @@ Bunlar eklendikten sonra:
   "zeta GUE'ye mi yoksa Poisson'a mı yakın?" → spektral karar
 
 Çapalar domain="anchor" ile işaretlenir, Aleph filtresinden geçer (gerçek
-ölçüler), manifold.json'a normal kavram gibi kaydedilir.
+ölçüler).
 """
 from __future__ import annotations
 
@@ -31,7 +31,6 @@ import random
 from fractions import Fraction
 
 from tantrium.core.concept import Concept
-
 
 _ANCHOR_PREFIX = "⊕ANCHOR:"  # çapa isimlerinin ortak öneki (filtrelenebilir)
 

@@ -5,7 +5,6 @@ import sympy as sp
 
 from tantrium.core import bezoutian as bz
 
-
 # (x-1)(x-2)(x-3) = x^3 - 6x^2 + 11x - 6  ; artan kuvvet katsayılar
 HYPERBOLIC_CUBIC = [-6, 11, -6, 1]
 NON_HYPERBOLIC = [1, 0, 1]  # x^2 + 1

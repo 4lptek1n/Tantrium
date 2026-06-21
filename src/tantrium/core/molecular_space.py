@@ -10,10 +10,9 @@ design(target):   manifold + kütüphane + mutasyon → minimal W2 adaylar
 """
 from __future__ import annotations
 
-import os
 import logging
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 warnings.filterwarnings("ignore")
@@ -40,7 +39,7 @@ DRUG_LIBRARY: list[tuple[str, str, str]] = [
     ("afatinib",        "CN(C)C/C=C/C(=O)Nc1cc2c(Nc3ccc(F)c(Cl)c3)ncnc2cc1OCC",  "kinase"),
     ("imatinib",        "Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1", "kinase"),
     ("sorafenib",       "CNC(=O)c1cc(Oc2ccc(NC(=O)Nc3ccc(Cl)c(C(F)(F)F)c3)cc2)ccn1", "kinase"),
-    ("sunitinib",       "CCN(CC)CCNC(=O)c1c(C)[nH]c(/C=C2\C(=O)Nc3ccc(F)cc32)c1C", "kinase"),
+    ("sunitinib",       r"CCN(CC)CCNC(=O)c1c(C)[nH]c(/C=C2\C(=O)Nc3ccc(F)cc32)c1C", "kinase"),
     ("crizotinib",      "Cl.OC(CN1CCNCC1)c1ccc(F)cc1",                            "kinase"),
     ("ibrutinib",       "O=C(/C=C/c1ccccc1)N1CCC[C@@H]1c1ncnc2[nH]ccc12",        "kinase"),
     ("vemurafenib",     "CCCS(=O)(=O)Nc1ccc(F)c(C(=O)c2c[nH]c3ncc(-c4ccc(Cl)cc4)cc23)c1", "kinase"),

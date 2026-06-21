@@ -12,10 +12,10 @@ Algoritma:
 """
 from __future__ import annotations
 
-import os
 import logging
+import os
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 warnings.filterwarnings("ignore")
@@ -210,9 +210,9 @@ class InverseTransport:
 
     def _search_manifold(self, target_moments: list[float], n: int) -> list[dict]:
         """Manifolda L1 ön-filtre → W2 yeniden sıralama ile en yakın kavramları bul."""
-        from tantrium.core.metric import l1_distance, canonical_distance
-        from tantrium.core.concept import Concept
         from fractions import Fraction
+
+        from tantrium.core.concept import Concept
 
         manifold = self.engine.manifold
         if not manifold or not manifold.concepts:
@@ -309,7 +309,7 @@ class InverseTransport:
         """Tek SMILES'tan RDKit substituent ekleme/değiştirme ile varyantlar üret."""
         try:
             from rdkit import Chem
-            from rdkit.Chem import AllChem, rdMolDescriptors
+            from rdkit.Chem import rdMolDescriptors
 
             mol = Chem.MolFromSmiles(smiles)
             if mol is None:
@@ -346,7 +346,6 @@ class InverseTransport:
         """Aromatik halkaya substituent ekle."""
         try:
             from rdkit import Chem
-            from rdkit.Chem import AllChem
 
             mol = Chem.MolFromSmiles(smiles)
             if mol is None:
@@ -438,7 +437,6 @@ class InverseTransport:
             except Exception:
                 pass
 
-            has_smiles = smiles is not None
             candidates.append(DesignCandidate(
                 name=name,
                 smiles=smiles or "",

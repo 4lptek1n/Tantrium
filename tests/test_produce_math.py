@@ -4,7 +4,7 @@ Her adım bir RH parçası, hepsi sayı uzayında: κ_disease → κ_healthy ⊟
 = κ_drug → μ_drug → özdeğer ölçüsü (ilaç) → Hankel-PSD ∧ Sturm pivot = RH sertifikası.
 """
 import tantrium
-from tantrium.core.production import ProductionEngine, MathDrug
+from tantrium.core.production import MathDrug, ProductionEngine
 
 
 def _pe():

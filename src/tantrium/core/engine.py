@@ -11,16 +11,15 @@ from the input alone.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from tantrium.domains.bridge import SemanticBridge
-from tantrium.core.paradigms import CertifiableObject as CodexObject, ParadigmResult
-from tantrium.core.encoder import UniversalEncoder, encode as universal_encode
-from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.concept import Concept
+from tantrium.core.encoder import UniversalEncoder
+from tantrium.core.network import CertificationPipeline, CertificationRun
+from tantrium.core.paradigms import CertifiableObject
+from tantrium.domains.bridge import SemanticBridge
 
 
 def _now() -> str:
@@ -50,7 +49,7 @@ class CertificationEngine:
     """The Aleph-Tekin certification engine — stateless.
 
     What it does:
-      - Take any CodexObject (or raw input) and run all 22+1 paradigms
+      - Take any CertifiableObject (or raw input) and run all 22+1 paradigms
       - Certify what is certifiable; name every gap precisely
       - Expose the 4-axis CoreMachine (certification + transport + confidence;
         grounding/truth are N/A without a learned manifold)
@@ -89,7 +88,7 @@ class CertificationEngine:
         return self.core.certify(input_data, name=name, adaptive=adaptive)
 
     # ─── Core: process any object ──────────────────────────────────────────
-    def process(self, obj: CodexObject) -> CertificationRun:
+    def process(self, obj: CertifiableObject) -> CertificationRun:
         """Run any object through the 22+1 paradigms. Returns the full record."""
         self._run_count += 1
         return self.network.run(obj)

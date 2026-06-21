@@ -17,9 +17,9 @@ Pipeline:
 """
 from __future__ import annotations
 
-import warnings
 import logging
-from dataclasses import dataclass, field
+import warnings
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 logging.getLogger("rdkit").setLevel(logging.CRITICAL)
@@ -249,6 +249,7 @@ class MoleculeGenerator:
     def _target_morgan_moments(self, target_name: str) -> list[float]:
         """Hedefin Morgan uzayındaki referans momentlerini hesapla."""
         import warnings
+
         from tantrium.core.encoder import encode_smiles as _enc
 
         # 1. Bilinen SMILES haritasından al
@@ -299,8 +300,6 @@ class MoleculeGenerator:
         self, name_a: str, smiles_a: str, name_b: str, smiles_b: str
     ) -> list[tuple[str, str]]:
         """İki scaffold'u farklı kombinasyonlarla birleştir."""
-        from rdkit import Chem
-        from rdkit.Chem import AllChem
 
         candidates = []
 
@@ -332,6 +331,7 @@ class MoleculeGenerator:
     ) -> GenerationReport:
         """Hedef → Morgan moment uzayı → fragment kombinasyonu → sertifika → 3D SDF."""
         import time
+
         from tantrium.core.encoder import encode_smiles as _enc_smiles
         from tantrium.domains.certifier import MolecularCertifier
 

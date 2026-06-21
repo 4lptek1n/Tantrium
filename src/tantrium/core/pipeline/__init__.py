@@ -19,21 +19,21 @@ Public yüzey eski monolitik `pipeline.py` ile BİT-BİT aynıdır:
 """
 from __future__ import annotations
 
-from ._stages_low import (
-    _update_bet_entropy,
-    stage_l05_bet_infocon,
-    stage_l15_he_lyapunov,
-    stage_l2_zayin_hankel,
-    stage_l25_dalet_spectrum,
-    stage_l3_het_li,
-)
+from ._run import run_pipeline
 from ._stages_high import (
     stage_ancillary,
     stage_l4_tav_heatflow,
     stage_l5_gimel_admission,
     stage_l6_emet_certificate,
 )
-from ._run import run_pipeline
+from ._stages_low import (
+    _update_bet_entropy,
+    stage_l05_bet_infocon,
+    stage_l2_zayin_hankel,
+    stage_l3_het_li,
+    stage_l15_he_lyapunov,
+    stage_l25_dalet_spectrum,
+)
 
 __all__ = [
     "run_pipeline",

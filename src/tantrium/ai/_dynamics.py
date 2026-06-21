@@ -5,7 +5,7 @@ quantum_distance / synthesize / entangle / spectrum.
 """
 from __future__ import annotations
 
-from ._results import UniverseReconstruction, LawDiscovery
+from ._results import LawDiscovery, UniverseReconstruction
 
 
 class DynamicsMixin:
@@ -37,9 +37,10 @@ class DynamicsMixin:
         observations: ham gözlem — sayı listesi (ölçüm) / SMILES / DNA / sinyal / metin.
         Döner: UniverseReconstruction (.modes = üreten yapı, .summary()).
         """
-        from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
-        from tantrium.core.paradigms import CertifiableObject
         from fractions import Fraction
+
+        from tantrium.core.paradigms import CertifiableObject
+        from tantrium.core.reconstruct import reconstruct_measure, reconstruction_fidelity
 
         # SAYISAL GÖZLEM (sinyal/ölçüm/dizi) → HAM matematik (Kronecker/Prony Hankel rank).
         # Encoder'ın 8-moment sıkıştırmasından GEÇİRMEYİZ (yapıyı siler: 8 moment hep ~4 atom).
@@ -49,7 +50,7 @@ class DynamicsMixin:
             from tantrium.core.structure import structural_decomposition
             x = [float(v) for v in observations]
             sd = structural_decomposition(x, max_modes=max_modes)
-            real_modes = [m.real for m in sd.modes if abs(m.imag) < 1e-6]
+            [m.real for m in sd.modes if abs(m.imag) < 1e-6]
             return UniverseReconstruction(
                 name=str(name),
                 signature=[round(v, 6) for v in x[:8]],
@@ -99,7 +100,10 @@ class DynamicsMixin:
         holdout     : son kaç değer SAKLANSIN (yasa onları tahmin edip doğrulayacak).
         Döner: LawDiscovery (.summary(); .recurrence = yasa; .forecast = tahmin).
         """
-        import numpy as np, math
+        import math
+
+        import numpy as np
+
         from tantrium.core.structure import structural_decomposition
         x = [float(v) for v in observations]
         h = max(0, min(holdout, len(x) - 4))
@@ -125,7 +129,7 @@ class DynamicsMixin:
                     desc = "sabit mod (λ≈1)"
                 elif rate > 0:
                     desc = (f"büyüme oranı λ={rate:.5f}"
-                            + (f"  (= altın oran φ!)" if abs(rate - (1 + 5 ** .5) / 2) < 1e-3 else ""))
+                            + ("  (= altın oran φ!)" if abs(rate - (1 + 5 ** .5) / 2) < 1e-3 else ""))
                     if rate < 1:
                         desc = f"üstel bozunum λ={rate:.5f} (sabit={-math.log(rate):.4f})"
                 else:
@@ -172,7 +176,8 @@ class DynamicsMixin:
         Domain-kör; sertifika: holdout hatası + reliable. Döner: {forecast, model, order,
         residual_std, holdout_error, reliable}.
         """
-        from tantrium.core.structure import (forecast as _fc, nonlinear_forecast as _nl)
+        from tantrium.core.structure import forecast as _fc
+        from tantrium.core.structure import nonlinear_forecast as _nl
         x = [float(v) for v in series]
         h = max(1, min(int(steps), len(x) // 4))
 
@@ -267,8 +272,8 @@ class DynamicsMixin:
         Klasik mesafe yüksek + κ-mesafe düşük → gizli matematiksel bağlantı.
         Döner: {classical_dist, quantum_dist, kappa_dist, entangled, note}
         """
-        from tantrium.core.quantum_moments import QuantumSignature
         from tantrium.core.metric import l1_distance
+        from tantrium.core.quantum_moments import QuantumSignature
         mu_a = [float(m) for m in self.engine.encoder.encode(concept_a).moments]
         mu_b = [float(m) for m in self.engine.encoder.encode(concept_b).moments]
         sig_a = QuantumSignature.from_moments(mu_a)

@@ -85,9 +85,9 @@ class TruthCertifier:
 
         name manifoldda yoksa moments verilebilir (ya da encode edilir).
         """
-        from tantrium.core.transport import CertifiedTransport
         from tantrium.core.concept import Concept
         from tantrium.core.encoder import encode as enc
+        from tantrium.core.transport import CertifiedTransport
 
         # Stateless machine: no learned manifold → truth-by-neighbour axis is N/A.
         if not getattr(self.engine, "manifold", None) or not self.engine.manifold.concepts:

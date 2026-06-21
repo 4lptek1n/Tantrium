@@ -22,8 +22,7 @@ Neden kritik:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from fractions import Fraction
+from dataclasses import dataclass
 
 
 @dataclass

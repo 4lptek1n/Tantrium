@@ -55,7 +55,7 @@ class InformationConservationParadigm(Paradigm):
         entropy = obj.structure.get("spectral_entropy", 0.0)
         rank = next((t.get("rank", 0) for t in transforms if "rank" in t), 0)
         frob = next((t.get("frobenius_sq") for t in transforms if "frobenius_sq" in t), None)
-        evidence = [f"||A||²_F = Tr(G) ✓ (Frobenius identity)"]
+        evidence = ["||A||²_F = Tr(G) ✓ (Frobenius identity)"]
         if frob is not None:
             evidence.append(f"H(λ) = {entropy:.4f} nats, rank = {rank}")
         return ParadigmResult(pid, "CERTIFIED",
@@ -120,7 +120,7 @@ class SeparabilityParadigm(Paradigm):
             return ParadigmResult(pid, "UNKNOWN", gap_name="NO_PAIRS_TO_SEPARATE")
         insep = [p for p in pairs if not p.get("separating_measurement")]
         if insep:
-            dists = [p.get("gram_distance", 0.0) for p in insep]
+            [p.get("gram_distance", 0.0) for p in insep]
             return ParadigmResult(pid, "BLOCKED",
                 gap_name="INSEPARABLE_GRAM_ROWS",
                 evidence=[f"{len(insep)} pairs with gram_distance=0 — spectrally identical"],
@@ -307,7 +307,7 @@ class PathSumParadigm(Paradigm):
             return ParadigmResult(pid, "CERTIFIED",
                 evidence=[
                     f"Schur A−Q_hidden ≥ 0 (min_eig={schur_min:.4f})",
-                    f"τ-determinants all ≥ 0",
+                    "τ-determinants all ≥ 0",
                     f"Q_hidden_trace={q_hidden:.4f}",
                 ],
                 certificate={

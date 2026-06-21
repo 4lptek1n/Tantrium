@@ -22,7 +22,6 @@ import math
 from dataclasses import dataclass, field
 from fractions import Fraction
 
-
 # ─── Jacobi özdeğer algoritması (saf Python, float) ──────────────────────────
 
 def _jacobi_eigvals(

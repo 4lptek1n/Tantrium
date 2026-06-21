@@ -5,8 +5,6 @@ ai.* metotlarının döndürdüğü tüm yapılandırılmış sonuç tipleri bur
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
-
 
 # ─── Sonuç tipleri ──────────────────────────────────────────────────────────
 

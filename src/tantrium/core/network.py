@@ -10,15 +10,21 @@ A named gap is not a failure — it is precise knowledge of the boundary.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Iterator
 
-from tantrium.core.paradigms import PARADIGMS, PARADIGM_BY_ID, CertifiableObject, Paradigm, ParadigmResult
+from tantrium.core.paradigms import (
+    PARADIGM_BY_ID,
+    PARADIGMS,
+    CertifiableObject,
+    Paradigm,
+    ParadigmResult,
+)
 
 # Local aliases used throughout this module
 CODEX = PARADIGMS
 CODEX_BY_ID = PARADIGM_BY_ID
-CodexObject = CertifiableObject
+CertifiableObject = CertifiableObject
 
 
 # ─── Network node ─────────────────────────────────────────────────────────
@@ -83,7 +89,7 @@ class CertificationPipeline:
             node.result = None
             node.blocked_by_dependency = False
 
-    def run(self, obj: CodexObject) -> "CertificationRun":
+    def run(self, obj: CertifiableObject) -> "CertificationRun":
         """Run the object through all 22+1 paradigms in dependency order.
         Returns a CertificationRun with the full certification record.
         """
@@ -154,7 +160,7 @@ class CertificationRun:
     Every claim the system makes is backed by a certificate or a named gap.
     The system cannot say more than this record allows.
     """
-    obj: CodexObject
+    obj: CertifiableObject
     nodes: dict[str, NetworkNode]
 
     @property

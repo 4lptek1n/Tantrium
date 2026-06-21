@@ -6,9 +6,9 @@ additivite), semicircle_distance ve dejenere-ölçü clamp davranışını kapsa
 import math
 
 from tantrium.core.free_probability import (
+    free_convolution,
     free_entropy,
     r_transform,
-    free_convolution,
     semicircle_distance,
 )
 from tantrium.core.quantum_moments import FreeCumulants

@@ -4,7 +4,9 @@ Halüsinasyonu engelleyen şey: sapan adım pozitifliği bozar (depth düşer). 
 kümülatif (Hankel → Newton → Sturm/Jensen); 3 = tam kritik hatta, 0 = sapma.
 """
 from tantrium.core.positivity_ladder import (
-    positivity_depth, _hankel_min_eig, _newton_log_concave, _path_hankel_min_eig,
+    _hankel_min_eig,
+    _newton_log_concave,
+    positivity_depth,
 )
 
 

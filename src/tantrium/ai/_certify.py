@@ -142,8 +142,6 @@ class CertifyMixin:
         warnings.filterwarnings("ignore")
 
         from tantrium.core.encoder import encode_smiles
-        from tantrium.domains.certifier import MolecularCertifier
-
         from tantrium.core.transport import CertifiedTransport
 
         certifier = self._get_certifier()
@@ -151,7 +149,7 @@ class CertifyMixin:
         run = self._engine.network.run(raw)
         gaps = [pid for pid, node in run.nodes.items() if node.status == "BLOCKED"]
 
-        # Dyadic transport score: use eigenvalue-based cells via full CodexObject
+        # Dyadic transport score: use eigenvalue-based cells via full CertifiableObject
         ct = CertifiedTransport(self._engine)
         if target and target in self._engine.manifold.concepts:
             tgt_concept = self._engine.manifold.concepts[target]
@@ -239,8 +237,8 @@ class CertifyMixin:
     def status(self) -> str:
         """Kısa durum özeti."""
         return (
-            f"Tantrium AI  |  durumsuz saf-matematik makinesi  |  "
-            f"Aleph-Tekin 23 paradigma"
+            "Tantrium AI  |  durumsuz saf-matematik makinesi  |  "
+            "Aleph-Tekin 23 paradigma"
         )
 
     def save(self) -> int:

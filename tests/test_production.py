@@ -4,13 +4,15 @@ Tüm testler küçük max_steps/beam_width ile hızlı; ağ testleri skipif işa
 """
 from __future__ import annotations
 
-import math
 import pytest
 
 import tantrium
 from tantrium.core.production import ProductionEngine
 from tantrium.core.production_judge import (
-    ProductionJudge, ProductionCertificate, ClosureProof, AxisVerdict,
+    AxisVerdict,
+    ClosureProof,
+    ProductionCertificate,
+    ProductionJudge,
 )
 from tantrium.core.quantum_moments import FreeCumulants
 
@@ -141,7 +143,7 @@ class TestSixAxes:
         ref_smiles = [smi for _, smi in pe._reference_ligands("egfr")[:4]]
         axes, coherent = judge.judge_all_axes(ERLOTINIB, mu_req, profiles,
                                               kappa_thr, ref_smiles)
-        grnd = next(a for a in axes if a.name == "grounding")
+        next(a for a in axes if a.name == "grounding")
         # Erlotinib yeni molekül → UNGROUNDED olabilir ama coherent yine True
         hard_axes = [a for a in axes if a.name != "grounding"]
         assert all(a.ok for a in hard_axes) == coherent

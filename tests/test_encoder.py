@@ -1,11 +1,8 @@
 """Tests for the UniversalEncoder in tantrium.core.encoder."""
 from fractions import Fraction
 
-import pytest
-
 from tantrium.core.encoder import encode, encode_smiles
 from tantrium.core.paradigms import CertifiableObject
-
 
 # ─── encode() ────────────────────────────────────────────────────────────────
 
@@ -156,7 +153,7 @@ def test_short_text_certifies():
     """Kısa kelimeler (DNA/ATP, az karakter) regülarizasyonla ALEPH-PSD geçer."""
     for w in ("DNA", "ATP", "RNA", "cat"):
         obj = encode(w)
-        H = obj.hankel(4)
+        obj.hankel(4)
         # Sylvester: lider asal minörler ≥ 0 (PSD)
         assert obj.is_moment_sequence(), f"{w} geçerli moment dizisi (Hankel PSD) olmalı"
 

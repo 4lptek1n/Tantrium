@@ -36,24 +36,23 @@ dataclass'ları geriye dönük uyumlu olarak buradan dışa verilir.
 """
 from __future__ import annotations
 
-from ._results import (
-    AskResult,
-    MolResult,
-    GenResult,
-    ReasonResult,
-    DiscoverResult,
-    DesignResult,
-    CompositeSignature,
-    GroundingSignature,
-    UniverseReconstruction,
-    LawDiscovery,
-)
 from ._base import _AIBase
 from ._certify import CertifyMixin
-from ._rh import RHMixin
 from ._dynamics import DynamicsMixin
 from ._molecular import MolecularMixin
-
+from ._results import (
+    AskResult,
+    CompositeSignature,
+    DesignResult,
+    DiscoverResult,
+    GenResult,
+    GroundingSignature,
+    LawDiscovery,
+    MolResult,
+    ReasonResult,
+    UniverseReconstruction,
+)
+from ._rh import RHMixin
 
 # ─── Ana AI sınıfı ───────────────────────────────────────────────────────────
 

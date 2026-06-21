@@ -1,7 +1,7 @@
-"""SemanticBridge data tables + theorem→CodexObject conversion.
+"""SemanticBridge data tables + theorem→CertifiableObject conversion.
 
 Paradigm↔theorem mappings, proven-status set, and the helpers that turn a
-theorem graph node into a CodexObject with distinguishing moments and
+theorem graph node into a CertifiableObject with distinguishing moments and
 paradigm-specific structure fields. The SemanticBridge class (in `_bridge`)
 consumes everything defined here.
 """
@@ -10,8 +10,7 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Any
 
-from tantrium.core.paradigms import CertifiableObject as CodexObject
-
+from tantrium.core.paradigms import CertifiableObject
 
 # ─── Paradigm → theorem graph node mapping ────────────────────────────────
 #
@@ -128,7 +127,7 @@ for _pid, _nodes in PARADIGM_TO_THEOREMS.items():
 _ELL_AUTO_PARADIGMS = ["ALEPH", "DALET"]
 
 
-# ─── Theorem node → CodexObject conversion ────────────────────────────────
+# ─── Theorem node → CertifiableObject conversion ────────────────────────────────
 
 _PROVEN_STATUSES = {
     "proven", "certified_local", "PROVEN_BY_CERTIFICATE",
@@ -177,8 +176,8 @@ def _theorem_moments(node_id: str, node: dict) -> list[Fraction]:
     return moments
 
 
-def theorem_to_codex_object(node_id: str, node: dict) -> CodexObject:
-    """Convert a theorem graph node to a CodexObject.
+def theorem_to_codex_object(node_id: str, node: dict) -> CertifiableObject:
+    """Convert a theorem graph node to a CertifiableObject.
 
     Moments are derived from the theorem's actual content (id hash + dependency
     structure + paradigm coverage) — each theorem gets a unique spectral signature.
@@ -205,7 +204,7 @@ def theorem_to_codex_object(node_id: str, node: dict) -> CodexObject:
         **_paradigm_structure_for(node_id, paradigms, status),
     }
 
-    return CodexObject(name=node_id, moments=moments, structure=structure)
+    return CertifiableObject(name=node_id, moments=moments, structure=structure)
 
 
 def _paradigm_structure_for(
@@ -213,7 +212,7 @@ def _paradigm_structure_for(
 ) -> dict[str, Any]:
     """Generate paradigm-specific structure fields for a theorem node."""
     result: dict[str, Any] = {}
-    proven = is_proven(status)
+    is_proven(status)
 
     if "ALEPH" in paradigms:
         result["eigenvalues"] = [Fraction(1), Fraction(1, 2), Fraction(1, 4)]

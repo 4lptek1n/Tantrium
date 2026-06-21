@@ -44,7 +44,9 @@ def test_different_phenomena_different_structure():
 
 def test_raw_hankel_reads_structure():
     """HAM matematik (Kronecker/Prony): yapılı sinyal düşük rank, gürültü tam rank."""
-    import math, random
+    import math
+    import random
+
     from tantrium.core.structure import structural_decomposition
     random.seed(1)
     structured = [math.sin(0.3 * t) + 0.5 * math.sin(0.7 * t) + 0.3 * math.sin(1.3 * t)
@@ -61,6 +63,7 @@ def test_raw_hankel_reads_structure():
 def test_reverse_engineer_detects_tampering():
     """Manipülasyon yapıyı bozar → düzen kaybolur (sahtelik/anomali okuma)."""
     import math
+
     import tantrium
     ai = tantrium.AI()
     structured = [math.sin(0.3 * t) + 0.5 * math.sin(0.7 * t) for t in range(64)]

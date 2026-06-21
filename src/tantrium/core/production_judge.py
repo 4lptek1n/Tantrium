@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
     from tantrium.core.production import ProductionEngine
-    from tantrium.core.quantum_moments import FreeCumulants
 
 # Paradigma-matematik eşiği (45-özellik imza, normalize L1):
 # EGFR-içi çiftler ≤3.43, EGFR-dışı ≥4.25 → 3.8 = ayraç.
@@ -268,7 +267,6 @@ class ProductionJudge:
                        ) -> tuple[list[AxisVerdict], bool]:
         """Adayı 6 eksende yargıla. Aday BİR kez encode edilir, yeniden kullanılır.
         coherent = HARD eksenler (grounding YUMUŞAK; structural_soft=True ise structural da yumuşak)."""
-        import math
         from tantrium.core.metric import paradigm_distance
         from tantrium.core.quantum_moments import QuantumSignature
 

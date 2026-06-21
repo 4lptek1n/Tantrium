@@ -11,7 +11,6 @@ import pytest
 
 from tantrium.core.moment_ops import convex_combine
 
-
 CA = [Fraction(1), Fraction(1, 2), Fraction(1, 4), Fraction(1, 8)]
 CB = [Fraction(1), Fraction(1, 3), Fraction(1, 9), Fraction(1, 27)]
 

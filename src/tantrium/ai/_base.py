@@ -126,7 +126,7 @@ class _AIBase:
 
     def _ext_moments(self, query):
         """16-derinlik genişletilmiş moment (encoder._extract_structure ile aynı mantık)."""
-        from tantrium.core.encoder import _try_power_moments, _spectral_moments
+        from tantrium.core.encoder import _spectral_moments, _try_power_moments
         ext = _try_power_moments(query, 16)
         if ext is None:
             ext = _spectral_moments(self._engine.encoder._to_matrix(query), 16)

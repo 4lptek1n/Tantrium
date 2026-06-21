@@ -152,7 +152,8 @@ class CollisionHunter:
         if not isinstance(inp, str):
             return None
         from tantrium.core.encoder import (
-            _text_to_bigram_matrix, _spectral_moments,
+            _spectral_moments,
+            _text_to_bigram_matrix,
         )
         try:
             A = _text_to_bigram_matrix(inp, label_aware=True)

@@ -8,12 +8,12 @@ Pipeline:
 """
 from __future__ import annotations
 
+import json
+import logging
 import time
 import urllib.request
-import json
 import warnings
-import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 logging.getLogger("rdkit").setLevel(logging.CRITICAL)
@@ -55,7 +55,7 @@ class MoleculeReport:
 
     def summary(self) -> str:
         bar = "█" * self.certified_count + "░" * (self.total_paradigms - self.certified_count)
-        gap_str = ", ".join(self.gaps) if self.gaps else "yok"
+        ", ".join(self.gaps) if self.gaps else "yok"
         tc_str = self.transport_cert.summary() if self.transport_cert else "—"
         return (
             f"  {self.name:<20} [{bar}] {self.certified_count}/{self.total_paradigms}\n"
@@ -76,15 +76,15 @@ class CertificationReport:
 
     def summary(self) -> str:
         lines = [
-            f"",
-            f"  ══════════════════════════════════════════════════",
-            f"  Tantrium Molecular Certification Report",
+            "",
+            "  ══════════════════════════════════════════════════",
+            "  Tantrium Molecular Certification Report",
             f"  Hedef: {self.target}",
             f"  Aday: {len(self.candidates)} molekül  |  "
             f"Certified: {sum(1 for c in self.candidates if c.certified)}",
             f"  Süre: {self.duration_s:.2f}s",
-            f"  ══════════════════════════════════════════════════",
-            f"",
+            "  ══════════════════════════════════════════════════",
+            "",
         ]
 
         if not self.candidates:
@@ -102,13 +102,13 @@ class CertificationReport:
             lines.append("")
 
         if self.best:
-            lines.append(f"  ══════════════════════════════════════════════════")
+            lines.append("  ══════════════════════════════════════════════════")
             lines.append(f"  EN İYİ ADAY: {self.best.name}")
             lines.append(f"  SMILES: {self.best.smiles[:80]}{'...' if len(self.best.smiles) > 80 else ''}")
             lines.append(f"  Sertifika: {self.best.certified_count}/23 paradigma")
             if self.sdf_path:
                 lines.append(f"  3D yapı: {self.sdf_path}")
-            lines.append(f"  ══════════════════════════════════════════════════")
+            lines.append("  ══════════════════════════════════════════════════")
 
         return "\n".join(lines)
 
@@ -144,8 +144,7 @@ class MolecularCertifier:
         auto_fetch: True → PubChem'den otomatik çek
         top_k: kaç aday değerlendirilsin
         """
-        from tantrium.core.concept import Concept, moment_distance
-        from tantrium.graph.anchors import nearest_anchor
+        from tantrium.core.concept import Concept
 
         t0 = time.time()
 

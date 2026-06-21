@@ -91,8 +91,8 @@ class _GenesisHelpers:
         except Exception:
             rank, support, weights = 2, [0.5, 1.0], [0.5, 0.5]
 
-        mu1 = moments[0] if moments else 1.0
-        mu2 = moments[1] if len(moments) > 1 else 1.0
+        moments[0] if moments else 1.0
+        moments[1] if len(moments) > 1 else 1.0
 
         # Spektral yayılım: yüksekse heteroatom/aromatik
         spread = float(max(support) - min(support)) if support else 1.0
@@ -173,7 +173,6 @@ class _GenesisHelpers:
         Her adımda beam_width en iyi parçayı tut.
         """
         from rdkit import Chem
-        from rdkit.Chem import RWMol, Atom, BondType
 
         # Başlangıç: CC (2 atom) — en küçük anlamlı moleküler Laplacian
         start_smi = "CC"
@@ -261,7 +260,7 @@ class _GenesisHelpers:
     ) -> list[str]:
         """Mevcut molekülü genişletecek tüm geçerli SMILES'ları üret."""
         from rdkit import Chem
-        from rdkit.Chem import RWMol, Atom
+        from rdkit.Chem import Atom
 
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:

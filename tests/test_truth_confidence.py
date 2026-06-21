@@ -1,10 +1,8 @@
 """Doğruluk ekseni + güven kalibrasyonu + kanonik metrik testleri (Tier 1+2)."""
-import pytest
 
+from tantrium.core.confidence import calibrate
+from tantrium.core.metric import canonical_distance, distance, l1_distance
 from tantrium.core.truth import TruthCertifier
-from tantrium.core.confidence import calibrate, Confidence
-from tantrium.core.metric import canonical_distance, l1_distance, distance
-
 
 # ─── Doğruluk ekseni (3. eksen) ──────────────────────────────────────────────
 

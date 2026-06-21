@@ -2,7 +2,7 @@
 from fractions import Fraction
 
 import tantrium
-from tantrium.core.rh_criteria import rh_criteria, RHCriteria
+from tantrium.core.rh_criteria import RHCriteria, rh_criteria
 
 
 def test_returns_rhcriteria():

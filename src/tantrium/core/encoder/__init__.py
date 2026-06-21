@@ -1,11 +1,11 @@
-"""Universal encoder: any input → CodexObject via spectral moments.
+"""Universal encoder: any input → CertifiableObject via spectral moments.
 
 The encoder is domain-blind. It does not know if the input is a sentence,
 a number sequence, a graph, or a physical measurement. It only does this:
 
     input → non-negative matrix representation A
            → spectral moments μ_k = Tr(A^k) / n
-           → CodexObject with those moments
+           → CertifiableObject with those moments
 
 This works because:
 1. Every compact-support non-negative measure is uniquely determined by its moments
@@ -25,6 +25,13 @@ importable from ``tantrium.core.encoder`` before still is.
 """
 from __future__ import annotations
 
+from ._encoder import (
+    _DEFAULT_ENCODER,
+    UniversalEncoder,
+    _infer_name,
+    encode,
+    encode_smiles,
+)
 from ._linalg import (
     _gram,
     _mat_mul,
@@ -55,13 +62,6 @@ from ._text import (
     _text_to_signature_moments,
     _tokens_to_cooccurrence_matrix,
     _try_power_moments,
-)
-from ._encoder import (
-    _DEFAULT_ENCODER,
-    UniversalEncoder,
-    _infer_name,
-    encode,
-    encode_smiles,
 )
 
 __all__ = [

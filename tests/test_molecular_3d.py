@@ -68,7 +68,6 @@ def test_remove_hs_smaller_block(tmp_path):
 
 def test_caller_equivalence_inverse(tmp_path):
     """inverse._make_3d util ile aynı sonucu üretir (delege doğrulaması)."""
-    from tantrium.core.inverse import InverseTransport
     direct = embed_3d_sdf("CCO", "x", str(tmp_path),
                          props={"SMILES": "CCO"}, remove_hs=True)
     # InverseTransport._make_3d aynı util'i çağırır → aynı dosya adı/içerik

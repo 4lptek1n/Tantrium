@@ -31,7 +31,7 @@ class _JudgeMixin:
         # Spektral W2: adayın CACHE'li spektrumu vs hedef spektrumu (bir kez hesaplanır).
         sfit = 0.0
         try:
-            from tantrium.domains.spectral import spectral_distance, moments_to_spectral
+            from tantrium.domains.spectral import moments_to_spectral, spectral_distance
             if getattr(self, "_target_spec_mu", None) != mu_req:
                 self._target_spec = moments_to_spectral(list(mu_req))
                 self._target_spec_mu = list(mu_req)

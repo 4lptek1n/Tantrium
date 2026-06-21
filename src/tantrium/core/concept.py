@@ -17,11 +17,12 @@ from fractions import Fraction
 from typing import Callable, Sequence
 
 from tantrium.core.paradigms import (
-    CertifiableObject as CodexObject,
-    PositivityParadigm as AlephParadigm,
+    CertifiableObject,
     ParadigmResult,
 )
-
+from tantrium.core.paradigms import (
+    PositivityParadigm as AlephParadigm,
+)
 
 # ─── A concept in any domain ───────────────────────────────────────────────
 
@@ -57,8 +58,8 @@ class Concept:
         """Build a concept from exact rational moments."""
         return cls(name=name, moments=list(moments), domain=domain, source="rational")
 
-    def to_codex_object(self) -> CodexObject:
-        return CodexObject(
+    def to_codex_object(self) -> CertifiableObject:
+        return CertifiableObject(
             name=self.name,
             moments=list(self.moments),
             structure={

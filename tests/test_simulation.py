@@ -6,7 +6,6 @@
 
 Ana iddia: ilaç keşfi = makine self-simülasyonu + dürüst yargı, benzer arama değil.
 """
-import tantrium
 
 
 # ─── simulate: transport-sürücülü üretim ─────────────────────────────────────

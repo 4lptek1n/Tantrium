@@ -4,6 +4,7 @@ Yasa-keşfinin gürültü-dayanıklı gerçek-dünya genişlemesi: herhangi zama
 yineleme + gelecek tahmini (holdout sertifikalı) + yapısal anomali/sahtelik tespiti.
 """
 import numpy as np
+
 import tantrium
 
 

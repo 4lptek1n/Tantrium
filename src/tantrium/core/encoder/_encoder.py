@@ -1,4 +1,4 @@
-"""The universal encoder: any input → CodexObject via spectral moments.
+"""The universal encoder: any input → CertifiableObject via spectral moments.
 
 Domain-blind. It never asks "what kind of thing is this?" — it only asks
 "what is the spectral distribution of this thing's matrix?". That question has
@@ -10,7 +10,7 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Any
 
-from tantrium.core.paradigms import CertifiableObject as CodexObject
+from tantrium.core.paradigms import CertifiableObject
 
 from ._linalg import _gram, _sequence_to_hankel_matrix, _spectral_moments
 from ._text import (
@@ -27,7 +27,7 @@ from ._text import (
 
 
 class UniversalEncoder:
-    """Domain-blind encoder: any input → CodexObject via spectral moments.
+    """Domain-blind encoder: any input → CertifiableObject via spectral moments.
 
     The encoder never asks "what kind of thing is this?"
     It only asks "what is the spectral distribution of this thing's matrix?"
@@ -39,8 +39,8 @@ class UniversalEncoder:
     def __init__(self, num_moments: int = 8) -> None:
         self.num_moments = num_moments
 
-    def encode(self, input: Any, name: str | None = None) -> CodexObject:
-        """Encode any input to a CodexObject with auto-extracted structure.
+    def encode(self, input: Any, name: str | None = None) -> CertifiableObject:
+        """Encode any input to a CertifiableObject with auto-extracted structure.
 
         Computes spectral moments AND auto-populates structure fields
         for as many paradigms as possible from the raw input alone.
@@ -68,7 +68,7 @@ class UniversalEncoder:
                 "num_moments": self.num_moments,
                 "moment_path": "power_moments_fast",
             })
-            return CodexObject(name=obj_name, moments=moments, structure=structure)
+            return CertifiableObject(name=obj_name, moments=moments, structure=structure)
 
         # Saf-matematik makinesi: girdi sayı/dizi/matris/dict veya molekül (SMILES).
         # Dil/kod/biyo-dizi modaliteleri kaldırıldı. Bir string ya geçerli SMILES'tir
@@ -87,7 +87,7 @@ class UniversalEncoder:
                     "num_moments": self.num_moments,
                     "moment_path": "text_signature",
                 })
-                return CodexObject(name=obj_name, moments=sig_moments, structure=structure)
+                return CertifiableObject(name=obj_name, moments=sig_moments, structure=structure)
 
         A = self._to_matrix(input)
         G = _gram(A)
@@ -99,7 +99,7 @@ class UniversalEncoder:
             "input_type": type(input).__name__,
             "num_moments": self.num_moments,
         })
-        return CodexObject(name=obj_name, moments=moments, structure=structure)
+        return CertifiableObject(name=obj_name, moments=moments, structure=structure)
 
     def _extract_structure(
         self,
@@ -162,7 +162,7 @@ class UniversalEncoder:
             return _numbers_to_matrix([input])
         return _text_to_bigram_matrix(str(input), label_aware=True)
 
-    def encode_batch(self, inputs: list[Any], names: list[str] | None = None) -> list[CodexObject]:
+    def encode_batch(self, inputs: list[Any], names: list[str] | None = None) -> list[CertifiableObject]:
         """Encode multiple inputs in one call."""
         if names is None:
             names = [None] * len(inputs)
@@ -175,7 +175,7 @@ class UniversalEncoder:
         base_depth: int = 8,
         max_depth: int = 16,
         fidelity_target: float = 0.999,
-    ) -> CodexObject:
+    ) -> CertifiableObject:
         """Adaptif derinlikli kodlama — belirsiz girdide tohumu derinleştir.
 
         8 sabit moment darboğazdır: iki farklı yapı 8'de çakışabilir.
@@ -224,15 +224,15 @@ def _infer_name(input: Any) -> str:
 _DEFAULT_ENCODER = UniversalEncoder()
 
 
-def encode(input: Any, name: str | None = None, num_moments: int = 8) -> CodexObject:
+def encode(input: Any, name: str | None = None, num_moments: int = 8) -> CertifiableObject:
     """One-call universal encoding. No domain knowledge required."""
     if num_moments != 8:
         return UniversalEncoder(num_moments).encode(input, name)
     return _DEFAULT_ENCODER.encode(input, name)
 
 
-def encode_smiles(smiles: str, name: str | None = None, num_moments: int = 8) -> CodexObject:
-    """SMILES → Hausdorff descriptor moments → Gram → CodexObject.
+def encode_smiles(smiles: str, name: str | None = None, num_moments: int = 8) -> CertifiableObject:
+    """SMILES → Hausdorff descriptor moments → Gram → CertifiableObject.
 
     12 RDKit physicochemical descriptors (MW, logP, HBA, HBD, TPSA, RotBonds,
     Rings, AroRings, HeavyAtoms, CSP3, AliRings, Heteroatoms) each normalized
@@ -263,4 +263,4 @@ def encode_smiles(smiles: str, name: str | None = None, num_moments: int = 8) ->
         "smiles":     smiles[:100],
         "input_type": "smiles",
     })
-    return CodexObject(name=name or smiles[:40], moments=moments, structure=structure)
+    return CertifiableObject(name=name or smiles[:40], moments=moments, structure=structure)

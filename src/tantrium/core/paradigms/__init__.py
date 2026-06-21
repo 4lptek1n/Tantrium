@@ -15,6 +15,20 @@ PARADIGMS and PARADIGM_BY_ID).
 """
 from __future__ import annotations
 
+from .aux import (
+    PARADIGM_BY_ID,
+    PARADIGMS,
+    CenterSymmetryParadigm,
+    ConservedIndexParadigm,
+    ConsistencyParadigm,
+    FixedPointParadigm,
+    LyapunovParadigm,
+    OptimalActionParadigm,
+    RepairCostParadigm,
+    SemanticMappingParadigm,
+    SensorCertParadigm,
+    SpectralParadigm,
+)
 from .base import (
     CertifiableObject,
     Paradigm,
@@ -35,20 +49,6 @@ from .core import (
     PositivityParadigm,
     SeparabilityParadigm,
     TensorCompositionParadigm,
-)
-from .aux import (
-    PARADIGM_BY_ID,
-    PARADIGMS,
-    CenterSymmetryParadigm,
-    ConservedIndexParadigm,
-    ConsistencyParadigm,
-    FixedPointParadigm,
-    LyapunovParadigm,
-    OptimalActionParadigm,
-    RepairCostParadigm,
-    SemanticMappingParadigm,
-    SensorCertParadigm,
-    SpectralParadigm,
 )
 
 __all__ = [

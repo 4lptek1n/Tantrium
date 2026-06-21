@@ -8,7 +8,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Sequence
 
-
 # ─── Matrix operations (exact rational arithmetic) ──────────────────────────
 
 def _mat_mul(A: list[list[Fraction]], B: list[list[Fraction]]) -> list[list[Fraction]]:

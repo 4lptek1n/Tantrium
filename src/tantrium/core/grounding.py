@@ -31,8 +31,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.core.engine import CertificationEngine
     from tantrium.core.concept import Concept
+    from tantrium.core.engine import CertificationEngine
 
 
 # Bir komşunun "köklü" sayılması için gereken minimum TAU kenar sayısı

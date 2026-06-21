@@ -20,10 +20,10 @@ class _CrossMixin:
         UYUMLULUK: κ(ilaç ⊞ DNA) gerçeklenebilir mi (Hankel-PSD + pürüzsüz Sturm = advers yok).
         Aynı hastalık+ilaç, farklı DNA → farklı yargı (kişiselleştirilmiş).
         """
-        from tantrium.core.quantum_moments import (
-            FreeCumulants, bounded_kappa_distance)
-        from tantrium.core.paradigms import CertifiableObject
         from fractions import Fraction
+
+        from tantrium.core.paradigms import CertifiableObject
+        from tantrium.core.quantum_moments import FreeCumulants, bounded_kappa_distance
 
         # κ_disease (sayı/bulgu/isim), κ_drug (SMILES), κ_dna (kişinin dizisi)
         if isinstance(disease, (list, tuple)) and disease and all(

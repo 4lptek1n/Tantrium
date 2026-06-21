@@ -13,7 +13,6 @@ from typing import Any, Sequence
 
 from ._linalg import _sequence_to_hankel_matrix
 
-
 # ─── Numeric sequence helpers ──────────────────────────────────────────────
 
 def _text_to_bigram_matrix(text: str, label_aware: bool = False) -> list[list[Fraction]]:
@@ -358,8 +357,8 @@ def _smiles_to_graph_moments(smiles: str, num_moments: int = 8) -> list[Fraction
       - Benzer topoloji → benzer spektrum → transport sertifikası
     """
     try:
-        from rdkit import Chem
         import numpy as np
+        from rdkit import Chem
 
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
@@ -418,8 +417,8 @@ def _smiles_full_eigenvalues(smiles: str) -> list[float] | None:
     (15 atoms) produce genuinely different cell lists for dyadic transport.
     """
     try:
-        from rdkit import Chem
         import numpy as np
+        from rdkit import Chem
 
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:

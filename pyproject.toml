@@ -39,4 +39,6 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
-ignore = ["E501", "E741"]
+# E501 satır-uzunluğu, E741 tek-harf, E731 lambda-atama (özet metotlarında bilinçli),
+# E402 koşullu-import (FastAPI/opsiyonel bağımlılık guard'ı sonrası), E702 noktalı-virgül
+ignore = ["E501", "E741", "E731", "E402", "E702"]

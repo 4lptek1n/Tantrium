@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Sequence
 
-from tantrium.core.rh_criteria import rh_criteria, RHCriteria, criteria_distance
+from tantrium.core.rh_criteria import RHCriteria, criteria_distance, rh_criteria
 
 
 def _as_fractions(seq: Sequence) -> list[Fraction]:

@@ -14,7 +14,6 @@ Bir girdi, bir encode, bir process, 4 eksen — hepsi ortak durumdan.
 """
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 
 
@@ -196,8 +195,8 @@ class CoreMachine:
     def _encode_adaptive(self, input_data: object, name: str) -> object:
         """8→16 moment derinliği, rekonstrüksiyon kalitesi düşükse."""
         try:
-            from tantrium.core.reconstruct import reconstruction_fidelity as _rf
             from tantrium.core.encoder import UniversalEncoder
+            from tantrium.core.reconstruct import reconstruction_fidelity as _rf
             obj = self._engine.encoder.encode(input_data, name=name)
             fidelity = _rf(list(obj.moments))
             if fidelity < 0.999 and len(obj.moments) < 16:

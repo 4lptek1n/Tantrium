@@ -25,7 +25,6 @@ import json
 from fractions import Fraction
 from typing import Any, Callable, Sequence
 
-
 SEAL_VERSION = "tantrium-seal-1"
 
 

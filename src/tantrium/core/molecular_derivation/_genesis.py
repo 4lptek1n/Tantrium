@@ -12,8 +12,8 @@ import logging
 import warnings
 from typing import TYPE_CHECKING
 
-from ._types import GenesisReport, SimStep, SimulationReport
 from ._helpers import _GenesisHelpers
+from ._types import GenesisReport, SimStep, SimulationReport
 
 warnings.filterwarnings("ignore")
 logging.getLogger("rdkit").setLevel(logging.CRITICAL)
@@ -119,10 +119,12 @@ class MolecularGenesis(_GenesisHelpers):
         gerçeklik geçidi, κ-profil yön. Böylece makine 'işe yarayan bölgeye' ilerler.
         """
         import time
-        from tantrium.core.encoder import encode
-        from tantrium.core.transport import CertifiedTransport
-        from tantrium.core.quantum_moments import FreeCumulants
+
         from rdkit import Chem
+
+        from tantrium.core.encoder import encode
+        from tantrium.core.quantum_moments import FreeCumulants
+        from tantrium.core.transport import CertifiedTransport
 
         t0 = time.time()
         ct = CertifiedTransport(self.engine)

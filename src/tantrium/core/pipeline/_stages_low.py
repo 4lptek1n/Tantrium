@@ -9,7 +9,6 @@ from __future__ import annotations
 import math
 from fractions import Fraction
 
-
 # ─── L0.5 – BET: Frobenius kimliği ve von Neumann entropi ───────────────────
 
 def stage_l05_bet_infocon(

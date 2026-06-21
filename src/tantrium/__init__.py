@@ -5,39 +5,59 @@ Pure, stateless mathematics. Input (number / matrix / molecule / signal-as-numbe
 / law discovery. No language layer, no learned graph, no autonomous growth — only
 the RH-derived positivity machine and the domains that reduce to it.
 """
-from tantrium.ai import AI, AskResult, MolResult, DiscoverResult, DesignResult
-from tantrium.core.engine import CertificationEngine
-from tantrium.core.unified import CoreMachine, UnifiedCertificate
-from tantrium.core.reconstruct import ReconstructedMeasure, reconstruct_measure, reconstruction_fidelity
-from tantrium.core.truth import TruthCertifier, TruthCertificate
-from tantrium.core.confidence import Confidence, calibrate
-from tantrium.core.metric import canonical_distance, l1_distance, distance as metric_distance
-from tantrium.core.collision import CollisionHunter, CollisionReport
-from tantrium.core.network import CertificationPipeline, CertificationRun
-from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
-from tantrium.core.concept import Concept, moment_distance
-from tantrium.core.rh_criteria import rh_criteria, RHCriteria, criteria_distance
-from tantrium.core.rh_certificate import certify_rh, RHCertificate, hausdorff
-from tantrium.core.jensen import laguerre_polya_test, is_hyperbolic, turan, JensenReport
-from tantrium.core.free_probability import (
-    free_entropy, r_transform, free_convolution, semicircle_distance,
-)
-from tantrium.core.verifier import seal, verify, adversarial_control, tamper_test
+from tantrium.ai import AI, AskResult, DesignResult, DiscoverResult, MolResult
 from tantrium.core.bezoutian import (
-    analyze as bezoutian_analyze, lah_pivot_reference, staircase_top_coeff, BezoutianReport,
+    BezoutianReport,
+    lah_pivot_reference,
+    staircase_top_coeff,
 )
-from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
-from tantrium.proof.certificate import Cell, Certificate, TransportEdge
-from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
-from tantrium.domains.spectral import SpectralMeasure, gram_spectrum, spectral_distance, dna_measure, moments_to_spectral
-from tantrium.core.inverse import InverseTransport, DesignCandidate, DesignReport
-from tantrium.core.molecular_space import MolecularSpace, MolPoint, ArrangementResult, MorphResult
-from tantrium.core.molecular_derivation import MolecularGenesis, GenesisCandidate, GenesisReport as MolGenesisReport
+from tantrium.core.bezoutian import (
+    analyze as bezoutian_analyze,
+)
+from tantrium.core.collision import CollisionHunter, CollisionReport
+from tantrium.core.concept import Concept, moment_distance
+from tantrium.core.confidence import Confidence, calibrate
+from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
+from tantrium.core.engine import CertificationEngine
+from tantrium.core.free_probability import (
+    free_convolution,
+    free_entropy,
+    r_transform,
+    semicircle_distance,
+)
+from tantrium.core.inverse import DesignCandidate, DesignReport, InverseTransport
+from tantrium.core.jensen import JensenReport, is_hyperbolic, laguerre_polya_test, turan
+from tantrium.core.metric import canonical_distance, l1_distance
+from tantrium.core.metric import distance as metric_distance
+from tantrium.core.molecular_derivation import GenesisCandidate, MolecularGenesis
+from tantrium.core.molecular_derivation import GenesisReport as MolGenesisReport
+from tantrium.core.molecular_space import ArrangementResult, MolecularSpace, MolPoint, MorphResult
+from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.quantum_moments import (
     FreeCumulants,
     QuantumSignature,
     bounded_kappa_distance,
 )
+from tantrium.core.reconstruct import (
+    ReconstructedMeasure,
+    reconstruct_measure,
+    reconstruction_fidelity,
+)
+from tantrium.core.rh_certificate import RHCertificate, certify_rh, hausdorff
+from tantrium.core.rh_criteria import RHCriteria, criteria_distance, rh_criteria
+from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
+from tantrium.core.truth import TruthCertificate, TruthCertifier
+from tantrium.core.unified import CoreMachine, UnifiedCertificate
+from tantrium.core.verifier import adversarial_control, seal, tamper_test, verify
+from tantrium.domains.spectral import (
+    SpectralMeasure,
+    dna_measure,
+    gram_spectrum,
+    moments_to_spectral,
+    spectral_distance,
+)
+from tantrium.proof.certificate import Cell, Certificate, TransportEdge
+from tantrium.proof.dyadic_flow import FlowPolicy, solve_greedy
 
 __all__ = [
     # SDK

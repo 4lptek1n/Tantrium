@@ -1,18 +1,15 @@
 """Tests for paradigm definitions in tantrium.core.paradigms."""
-import pytest
 
+from tantrium.core.encoder import encode
 from tantrium.core.paradigms import (
-    PARADIGMS,
     PARADIGM_BY_ID,
-    CertifiableObject,
+    PARADIGMS,
+    ConsistencyParadigm,
+    FixedPointParadigm,
     ParadigmResult,
     PositivityParadigm,
     SpectralParadigm,
-    FixedPointParadigm,
-    ConsistencyParadigm,
 )
-from tantrium.core.encoder import encode
-
 
 # ─── PARADIGMS list ───────────────────────────────────────────────────────────
 

@@ -5,6 +5,8 @@ free_entropy / semicircle_distance / seal / verify.
 """
 from __future__ import annotations
 
+from tantrium.core.rh_criteria import RHCriteria
+
 
 class RHMixin:
     """Riemann-Hipotezi türevli pozitiflik kriterleri + serbest olasılık + mühür."""
@@ -21,8 +23,8 @@ class RHMixin:
             print(r.summary())          # τ/pivot/cross-ratio işaretleri
             print(r.hamburger_certified)
         """
+        from tantrium.core.encoder import _spectral_moments, _try_power_moments
         from tantrium.core.rh_criteria import rh_criteria as _rh
-        from tantrium.core.encoder import _try_power_moments, _spectral_moments
         # 16-derinlik genişletilmiş moment (encoder._extract_structure ile aynı mantık)
         ext = _try_power_moments(query, 16)
         if ext is None:

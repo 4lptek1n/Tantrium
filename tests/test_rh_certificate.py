@@ -2,8 +2,8 @@
 from fractions import Fraction
 
 import tantrium
-from tantrium.core.rh_certificate import certify_rh, hausdorff, rh_distance, RHCertificate
 from tantrium.core.metric import distance
+from tantrium.core.rh_certificate import RHCertificate, certify_rh, hausdorff
 
 
 def test_certify_rh_returns_bundle():

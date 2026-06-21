@@ -23,8 +23,6 @@ Endpoint'ler (hepsi saf matematik, durumsuz):
 """
 from __future__ import annotations
 
-from typing import Any
-
 try:
     from fastapi import FastAPI
     from pydantic import BaseModel

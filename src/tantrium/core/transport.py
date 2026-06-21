@@ -103,18 +103,18 @@ class CertifiedTransport:
     ) -> TransportCertificate:
         """Certify transport from source to target.
 
-        source/target: CodexObject (from pipeline) OR list of moments (fallback).
+        source/target: CertifiableObject (from pipeline) OR list of moments (fallback).
 
         Three-layer proof:
           1. Dyadic: solve_greedy on eigenvalue spectral cells (pipeline output)
           2. Sturm: H(t) stays PSD throughout transport path
           3. Zeta: target spectral family membership
 
-        When CodexObjects are passed, dyadic cells are built from the eigenvalue
+        When CertifiableObjects are passed, dyadic cells are built from the eigenvalue
         spectrum (pipeline L2.5 output), not raw moments. This makes transport
         sensitive to the actual spectral structure of each object.
         """
-        from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
+        from tantrium.proof.dyadic_flow import FlowPolicy, solve_greedy
 
         src_cells = self._obj_to_cells(source, "src")
         tgt_cells = self._obj_to_cells(target, "tgt")
@@ -214,7 +214,7 @@ class CertifiedTransport:
     # ── Spectral decomposition ───────────────────────────────────────────────
 
     def _obj_to_cells(self, obj, prefix: str) -> list:
-        """CodexObject → Cell objects from eigenvalue spectrum (pipeline output).
+        """CertifiableObject → Cell objects from eigenvalue spectrum (pipeline output).
 
         Pipeline L2.5 (DALET) computes the eigenvalue spectrum σ(G).
         Each eigenvalue = one spectral mode of the object:
@@ -231,7 +231,7 @@ class CertifiedTransport:
         """
         from tantrium.proof.certificate import Cell
 
-        # Extract eigenvalues from CodexObject structure (set by pipeline)
+        # Extract eigenvalues from CertifiableObject structure (set by pipeline)
         eigenvalues: list[float] = []
         if hasattr(obj, "structure") and obj.structure:
             eigenvalues = [e for e in obj.structure.get("eigenvalues", []) if e > 1e-10]
@@ -326,6 +326,7 @@ class CertifiedTransport:
         """
         try:
             import sympy as sp
+
             from tantrium.algebra.sturm import normalized_sturm_pivots
         except ImportError:
             # sympy unavailable — fall back to numpy PSD check
