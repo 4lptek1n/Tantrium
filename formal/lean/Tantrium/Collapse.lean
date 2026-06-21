@@ -186,4 +186,53 @@ theorem factorial_two_pow_le (a : ℕ) (ha : 1 ≤ a) (d : ℕ) :
         _ ≤ (a + d + 1) * (a + d).factorial := by
               exact Nat.mul_le_mul_right _ (by omega)
 
+open Finset in
+/-- **Sign-reversing involution principle — the "hidden responsibility" mechanism.**
+
+If a finite term set `s` carries a real value `v` and an involution `φ` on `s`
+that, on its non-fixed points, reverses sign while preserving magnitude
+(`v (φ x) = − v x`), and whose fixed points are nonnegative (`0 ≤ v x`), then the
+signed total `∑ v` is nonnegative.
+
+This is exactly the user's idea "every positive has a hidden responsibility over
+a negative": pair each `+`/`−` term with its unique partner of equal magnitude
+and opposite sign; the pairs cancel and only the nonnegative fixed points (the
+positive surplus) remain. Because `φ` is an involution it is automatically
+injective, so this route bypasses the separate injectivity obligation. It is the
+classical technique behind moment/Hankel/LGV positivity, and reduces D-positivity
+to *exhibiting* one such involution on the cumulant terms. -/
+theorem signed_sum_nonneg_of_involution {ι : Type*}
+    (s : Finset ι) (v : ι → ℝ) (φ : ι → ι)
+    (hmem : ∀ x ∈ s, φ x ∈ s)
+    (hinv : ∀ x ∈ s, φ (φ x) = x)
+    (hpair : ∀ x ∈ s, φ x ≠ x → v (φ x) = - v x)
+    (hfix : ∀ x ∈ s, φ x = x → 0 ≤ v x) :
+    0 ≤ ∑ x ∈ s, v x := by
+  classical
+  have hsplit := Finset.sum_filter_add_sum_filter_not s (fun x => φ x = x) v
+  have hNsum : ∑ x ∈ s.filter (fun x => ¬ φ x = x), v x = 0 := by
+    refine Finset.sum_involution (fun a _ => φ a) ?_ ?_ ?_ ?_
+    · intro a ha
+      rw [Finset.mem_filter] at ha
+      have := hpair a ha.1 ha.2
+      linarith
+    · intro a ha _
+      rw [Finset.mem_filter] at ha
+      exact ha.2
+    · intro a ha
+      rw [Finset.mem_filter] at ha ⊢
+      refine ⟨hmem a ha.1, ?_⟩
+      rw [hinv a ha.1]
+      exact fun h => ha.2 h.symm
+    · intro a ha
+      rw [Finset.mem_filter] at ha
+      exact hinv a ha.1
+  have hFsum : 0 ≤ ∑ x ∈ s.filter (fun x => φ x = x), v x := by
+    refine Finset.sum_nonneg ?_
+    intro x hx
+    rw [Finset.mem_filter] at hx
+    exact hfix x hx.1 hx.2
+  rw [← hsplit, hNsum]
+  linarith
+
 end Tantrium.Collapse
