@@ -27,7 +27,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tantrium.core.semantic import Concept
+    from tantrium.core.concept import Concept
 
 # Kanonik metrik adı — tüm anlamsal hükümlerin kullanması gereken
 CANONICAL = "spectral_w2"

@@ -479,7 +479,7 @@ class SemanticBridge:
         Converts each proven node to a Concept and adds it to the manifold.
         Returns the number of concepts added.
         """
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
         graph = self._load_graph()
         added = 0
         for node_id, node in graph.get("nodes", {}).items():

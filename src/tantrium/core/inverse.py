@@ -211,7 +211,7 @@ class InverseTransport:
     def _search_manifold(self, target_moments: list[float], n: int) -> list[dict]:
         """Manifolda L1 ön-filtre → W2 yeniden sıralama ile en yakın kavramları bul."""
         from tantrium.core.metric import l1_distance, canonical_distance
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
         from fractions import Fraction
 
         manifold = self.engine.manifold

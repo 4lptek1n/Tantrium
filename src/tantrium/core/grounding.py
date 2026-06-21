@@ -32,7 +32,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from tantrium.core.engine import CertificationEngine
-    from tantrium.core.semantic import Concept
+    from tantrium.core.concept import Concept
 
 
 # Bir komşunun "köklü" sayılması için gereken minimum TAU kenar sayısı
@@ -159,7 +159,15 @@ class GroundingCertifier:
         moments verilmezse token encode edilir. Yargı: doğrudan köklülük VEYA
         tutarlı köklü kümeye rezonans → GROUNDED.
         """
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
+
+        # Stateless machine: no learned manifold → grounding axis is N/A.
+        if not getattr(self.engine, "manifold", None) or not self.engine.manifold.concepts:
+            return GroundingCertificate(
+                token=token, verdict="N/A", direct_edges=0, in_manifold=False,
+                grounded_neighbors=0, neighbor_coherence=1.0, dominant_domain="",
+                nearest_grounded=[], score=1.0,
+            )
 
         in_manifold, direct_edges = self._direct_grounding(token)
 

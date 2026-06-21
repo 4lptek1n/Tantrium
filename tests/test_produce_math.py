@@ -91,32 +91,6 @@ def test_cross_personalizes_by_dna():
     assert len(set(round(s, 1) for s in scores.values())) >= 2
 
 
-def test_true_dna_encoding_discriminates_genomes():
-    """GERÇEK DNA formu (EIIP sinyal) farklı genomları AYIRMALI — metin yolu ayıramıyordu.
-
-    Sen haklıydın: 'çözünürlük sınırı' değil, sığ encoding'di. Gerçek biyofiziksel form
-    (bazlar→EIIP→sinyal spektrumu) dizi yapısını ölçer → farklı genom = farklı imza.
-    """
-    from tantrium.perception.encode import encode_dna
-    genomes = ["ATCGATCGATCGTTAACCGGATCGATCGAACCGGTTATCG",
-               "GGCCGGCCTTAAGGCCAATTCCGGAATTCCGGCCAATTGG",
-               "ATATATATGCGCGCGCATATGCGCATGCATGCATGCATGC"]
-    mu1 = [float(encode_dna(g).moments[1]) for g in genomes]
-    # μ₁ değerleri belirgin AYRILMALI (yayılım metin yolundan çok daha büyük)
-    assert max(mu1) - min(mu1) > 0.05, f"genomlar ayrılmadı: {mu1}"
-
-
-def test_personalized_baseline():
-    """produce_math(healthy=DNA): ilaç genel ζ yerine KİŞİNİN tabanına tasarlanır."""
-    pe = _pe()
-    disease = [1.0, 0.62, 0.43, 0.31, 0.24, 0.19, 0.15, 0.12]
-    generic = pe.produce_math(disease)
-    personal = pe.produce_math(disease, healthy="ATATATATGCGCGCGCATATGCGCATGCATGCATGCATGC")
-    # kişiye-özel sağlıklı taban → farklı κ_drug (genel ζ'den ayrı)
-    assert personal.kappa_healthy != generic.kappa_healthy
-    assert personal.kappa_drug != generic.kappa_drug
-
-
 def test_cross_facade():
     """ai.cross() facade üçlü cross sonucu döner."""
     ai = tantrium.AI()

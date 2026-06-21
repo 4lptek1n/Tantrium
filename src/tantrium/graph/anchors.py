@@ -30,7 +30,7 @@ import math
 import random
 from fractions import Fraction
 
-from tantrium.core.semantic import Concept
+from tantrium.core.concept import Concept
 
 
 _ANCHOR_PREFIX = "⊕ANCHOR:"  # çapa isimlerinin ortak öneki (filtrelenebilir)

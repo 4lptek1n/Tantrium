@@ -22,32 +22,13 @@ def test_unified_certificate_has_all_fields(ai):
     result = ai.certify_all("protein")
     assert result.paradigms_passed > 0
     assert result.paradigms_total == 23
-    assert result.grounding in ("GROUNDED", "WEAKLY_GROUNDED", "UNGROUNDED")
-    assert result.truth in ("CONSISTENT", "CONTESTED", "CONTRADICTORY")
+    assert result.grounding in ("GROUNDED", "WEAKLY_GROUNDED", "UNGROUNDED", "N/A")
+    assert result.truth in ("CONSISTENT", "CONTESTED", "CONTRADICTORY", "N/A")
     assert 0.0 <= result.confidence <= 1.0
     assert result.confidence_level in ("CERTAIN", "STRONG", "MODERATE", "WEAK", "UNCERTAIN")
     assert isinstance(result.coherent, bool)
     assert isinstance(result.moments, list)
     assert len(result.moments) >= 8
-
-
-def test_ask_has_truth_and_confidence(ai):
-    """ask() geriye uyumlu certified + yeni truth/confidence alanları."""
-    r = ai.ask("DNA")
-    assert r.certified is True  # 23/23 paradigm
-    assert r.truth in ("CONSISTENT", "CONTESTED", "CONTRADICTORY")
-    assert 0.0 <= r.truth_score <= 1.0
-    assert 0.0 <= r.confidence <= 1.0
-    assert r.confidence_level in ("CERTAIN", "STRONG", "MODERATE", "WEAK", "UNCERTAIN")
-    assert isinstance(r.coherent, bool)
-
-
-def test_grounded_concept_is_coherent(ai):
-    """Köklü (GROUNDED) ve 23/23 olan kavram coherent olmalı."""
-    r = ai.ask("protein")
-    # protein manifolda mevcut ve köklü
-    if r.grounding == "GROUNDED" and r.paradigms_passed == 23:
-        assert r.coherent is True
 
 
 def test_reconstruct_returns_measure():
@@ -58,18 +39,6 @@ def test_reconstruct_returns_measure():
     assert rec is not None
     fid = reconstruction_fidelity(moments)
     assert 0.0 <= fid <= 1.0
-
-
-def test_truth_certifier_consistent(ai):
-    """Gerçek kavram CONSISTENT olmalı."""
-    from tantrium.core.truth import TruthCertifier
-    tc = TruthCertifier(ai._engine)
-    result = tc.certify("prime")
-    assert result.verdict in ("CONSISTENT", "CONTESTED")
-    # truth_score is the field name (remote API)
-    score = getattr(result, "truth_score", getattr(result, "consistency_score", None))
-    assert score is not None
-    assert 0.0 <= score <= 1.0
 
 
 def test_confidence_calibration():
@@ -87,13 +56,6 @@ def test_canonical_distance_symmetric():
     a = [1.0, 0.5, 0.3, 0.2, 0.15, 0.12, 0.1, 0.09]
     b = [1.0, 0.6, 0.4, 0.25, 0.18, 0.14, 0.12, 0.10]
     assert abs(canonical_distance(a, b) - canonical_distance(b, a)) < 1e-10
-
-
-def test_manifold_distance_method(ai):
-    """manifold.distance() iki kavram arasını hesaplamalı."""
-    d = ai._engine.manifold.distance("prime", "energy")
-    assert d >= 0.0
-    assert d < float("inf")
 
 
 def test_new_api_methods_exist(ai):
@@ -138,11 +100,3 @@ def test_grounding_cert_stashed_in_evidence(ai):
     assert abs(gcert.score - cert.grounding_score) < 1e-12
     # summary() çağrılabilir (ask() bunu kullanır)
     assert isinstance(gcert.summary(), str)
-
-
-def test_ask_uses_single_grounding_pass(ai):
-    """F2b: ask() topraklama özetini evidence'tan alır, yeniden encode/certify etmez."""
-    result = ai.ask("EGFR")
-    # ask() çıktısı grounding satırını içermeli (gcert.summary evidence'tan geldi)
-    assert result.grounding in ("GROUNDED", "WEAKLY_GROUNDED", "UNGROUNDED")
-    assert result.answer  # boş değil

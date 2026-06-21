@@ -69,7 +69,7 @@ def test_empty_returns_empty():
 
 def test_convex_preserves_psd_certifiable():
     """İki Aleph-PSD dizinin konveks kombosu da PSD (Aleph garantisi)."""
-    from tantrium.core.semantic import Concept
+    from tantrium.core.concept import Concept
     # μ_k = r^k nokta kütlesi → PSD
     a = [Fraction(1, 2 ** k) for k in range(6)]
     b = [Fraction(1, 3 ** k) for k in range(6)]

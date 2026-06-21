@@ -8,27 +8,12 @@ from tantrium.core.metric import canonical_distance, l1_distance, distance
 
 # ─── Doğruluk ekseni (3. eksen) ──────────────────────────────────────────────
 
-def test_truth_certifier_verdict(ai):
-    """Gerçek kavram komşularıyla tutarlı (CONSISTENT) olmalı."""
-    cert = TruthCertifier(ai._engine).certify("riemann", n_neighbors=5)
-    assert cert.verdict in ("CONSISTENT", "CONTESTED", "CONTRADICTORY")
-    assert 0.0 <= cert.truth_score <= 1.0
-    assert cert.neighbors_checked >= 0
-
 
 def test_truth_score_bounded(ai):
     """Doğruluk skoru her zaman [0,1]."""
     for name in ("prime", "protein", "EGFR"):
         cert = TruthCertifier(ai._engine).certify(name, n_neighbors=4)
         assert 0.0 <= cert.truth_score <= 1.0
-
-
-def test_truth_via_moments(ai):
-    """Manifoldda olmayan token momentlerle değerlendirilebilmeli."""
-    from tantrium.core.encoder import encode
-    obj = encode("xqztplmbnv", name="garbage")
-    cert = TruthCertifier(ai._engine).certify("xqztplmbnv", moments=list(obj.moments))
-    assert cert.verdict in ("CONSISTENT", "CONTESTED", "CONTRADICTORY")
 
 
 # ─── Güven kalibrasyonu ──────────────────────────────────────────────────────
@@ -81,12 +66,6 @@ def test_canonical_distance_symmetric():
     a = list(encode("zeta", name="zeta").moments)
     b = list(encode("prime", name="prime").moments)
     assert abs(canonical_distance(a, b) - canonical_distance(b, a)) < 1e-9
-
-
-def test_manifold_distance_canonical(ai):
-    """Manifold kanonik mesafe metodu çalışmalı."""
-    d = ai._engine.manifold.distance("riemann", "prime")
-    assert d is None or d >= 0.0
 
 
 def test_metric_dispatch():

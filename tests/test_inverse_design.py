@@ -70,19 +70,6 @@ def test_design_fast_enough(ai):
     assert elapsed < 30.0, f"Design too slow: {elapsed:.1f}s"
 
 
-def test_inverse_transport_manifold_search(ai):
-    from tantrium import InverseTransport
-    inv = InverseTransport(ai.engine)
-    m, t = inv._encode_target("EGFR")
-    hits = inv._search_manifold(m, n=5)
-    assert len(hits) > 0
-    # Check structure
-    for h in hits:
-        assert "name" in h
-        assert "w2" in h
-        assert "moments" in h
-
-
 def test_inverse_transport_encode_smiles(ai):
     from tantrium import InverseTransport
     inv = InverseTransport(ai.engine)

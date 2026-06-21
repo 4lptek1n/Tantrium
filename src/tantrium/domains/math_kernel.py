@@ -81,7 +81,7 @@ def inject_math_kernel(engine: "CertificationEngine") -> InjectionResult:
 
     Idempotent — zaten manifoldda olanları atlar.
     """
-    from tantrium.core.semantic import Concept
+    from tantrium.core.concept import Concept
     from tantrium.graph.knowledge_graph import KnowledgeNode, KnowledgeEdge
     from tantrium.graph.relations import certify_and_add_edge
 
@@ -249,7 +249,7 @@ def inject_computational_math_objects(engine: "CertificationEngine") -> int:
 
     Döner: güncellenen kavram sayısı.
     """
-    from tantrium.core.semantic import Concept
+    from tantrium.core.concept import Concept
 
     updated = 0
     _UNIFORM_M3 = 0.125  # eski uniform encoding'in 3. momenti (1/8)

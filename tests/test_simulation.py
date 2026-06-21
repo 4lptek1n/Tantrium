@@ -184,8 +184,8 @@ def test_produce_discriminates_structural(ai):
     pe = ProductionEngine(ai.engine)
     _, mu_req, _, _ = pe._read_target("egfr")
     erlotinib = "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1"
-    _, _, fit_real = pe._judge_on_axis(erlotinib, mu_req)
-    _, _, fit_junk = pe._judge_on_axis("CCO", mu_req)
+    _, _, fit_real, _ = pe._judge_on_axis(erlotinib, mu_req)
+    _, _, fit_junk, _ = pe._judge_on_axis("CCO", mu_req)
     assert fit_real < fit_junk        # erlotinib etanolden yapısal yakın
 
 

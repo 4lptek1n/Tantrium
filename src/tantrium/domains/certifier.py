@@ -144,7 +144,7 @@ class MolecularCertifier:
         auto_fetch: True → PubChem'den otomatik çek
         top_k: kaç aday değerlendirilsin
         """
-        from tantrium.core.semantic import Concept, moment_distance
+        from tantrium.core.concept import Concept, moment_distance
         from tantrium.graph.relations import certify_and_add_edge
         from tantrium.graph.anchors import nearest_anchor
 
@@ -228,7 +228,7 @@ class MolecularCertifier:
         target_concept,
     ) -> MoleculeReport:
         """Tek molekülü certify et."""
-        from tantrium.core.semantic import Concept, moment_distance
+        from tantrium.core.concept import Concept, moment_distance
         from tantrium.graph.anchors import nearest_anchor
 
         # SMILES + isim birlikte encode et

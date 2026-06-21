@@ -463,7 +463,7 @@ class AI:
 
     def _call_concept(self, text: str, name: str | None = None, detail: str = "standard") -> str:
         """Kavram sertifikası + manifold konumu + dil."""
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
 
         nm = name or text[:64]
         obj = self._engine.encoder.encode(text, name=nm)
@@ -933,7 +933,7 @@ class AI:
 
     def ask(self, query: str) -> AskResult:
         """Herhangi bir girdi → CoreMachine (tek geçiş, 4 eksen) → AskResult."""
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
 
         # ONE PASS: CoreMachine — encode, process, 4 axes all from shared state
         ucert = self._engine.core.certify(query, name=query[:64])
@@ -987,7 +987,7 @@ class AI:
 
         # Kavram manifoldda yoksa encode edip TAU'ya ekle
         if query not in self._engine.tau.nodes:
-            from tantrium.core.semantic import Concept
+            from tantrium.core.concept import Concept
             obj = self._engine.encoder.encode(query, name=query[:64])
             concept = Concept(name=query[:64], moments=list(obj.moments), domain="input")
             self._engine.manifold.add_unchecked(concept)
@@ -3420,7 +3420,7 @@ class AI:
         from tantrium.language.bootstrap import LanguageBootstrap
         from tantrium.research.autonomous import _extract_relations, AutonomousObserver
         from tantrium.graph.knowledge_graph import KnowledgeEdge
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
 
         bs = LanguageBootstrap(self._engine, window=3, min_freq=1)
         r = bs.auto_learn(text)
@@ -3768,7 +3768,7 @@ class AI:
         run = self._engine.process(obj)
 
         if learn and name not in self._engine.manifold.concepts:
-            from tantrium.core.semantic import Concept
+            from tantrium.core.concept import Concept
             concept = Concept(
                 name=name,
                 moments=list(obj.moments),
@@ -3938,7 +3938,7 @@ class AI:
             obj = encode_signal(signal, name=percept_name)
 
         # Percept kavramını manifolda ekle (trusted — sertifikalı algı kaynağı)
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
         concept = Concept(
             name=percept_name,
             moments=list(obj.moments),
@@ -4065,7 +4065,7 @@ class AI:
 
         def _nearest(n: int = 5, metric: str = "quantum") -> list:
             try:
-                from tantrium.core.semantic import Concept
+                from tantrium.core.concept import Concept
                 from fractions import Fraction
                 moms = [Fraction(m).limit_denominator(10 ** 9) for m in sig.moments]
                 tmp = Concept(name="⟨compose:query⟩", moments=moms)
@@ -4150,7 +4150,7 @@ class AI:
         if dna is not None:
             pname = f"⟨percept:{concept_name}:dna⟩"
             obj = self._engine.encoder.encode(dna, name=pname)
-            from tantrium.core.semantic import Concept
+            from tantrium.core.concept import Concept
             from tantrium.graph.knowledge_graph import KnowledgeEdge
             c = Concept(name=pname, moments=list(obj.moments), domain="percept",
                         source="ground_full:dna")
@@ -4354,7 +4354,7 @@ class AI:
                         n_certifications += 1
 
                     if learn and concept_name not in self._engine.manifold.concepts:
-                        from tantrium.core.semantic import Concept
+                        from tantrium.core.concept import Concept
                         concept = Concept(
                             name=concept_name,
                             moments=list(obj.moments),
@@ -4391,7 +4391,7 @@ class AI:
         Certified candidates have paths that stay on the real-measure manifold.
         """
         from tantrium.core.transport import CertifiedTransport
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
         from tantrium.core.encoder import encode as _enc
 
         # Ensure target is in manifold
@@ -5674,7 +5674,7 @@ class AI:
         Döner: [(anchor_name, w2_distance), ...] yakından uzağa sıralı
         """
         from tantrium.graph.anchors import nearest_anchor
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
         obj = self._engine.encoder.encode(query, name=query[:64])
         concept = Concept(name=query[:64], moments=list(obj.moments), domain="input")
         return nearest_anchor(self._engine.manifold, concept, top_n=top_n)
@@ -5702,7 +5702,7 @@ class AI:
 
         Fallback: moment vektör aritmetiği (TAU-kök filtreli).
         """
-        from tantrium.core.semantic import Concept
+        from tantrium.core.concept import Concept
         tau = self._engine.tau
         exclude = {a, b, c, a.lower(), b.lower(), c.lower()}
 
@@ -5833,7 +5833,7 @@ class AI:
                 loc = getattr(w.gap, "location", None)
                 if not loc:
                     continue
-                from tantrium.core.semantic import Concept
+                from tantrium.core.concept import Concept
                 probe = Concept(name="_hseed_", moments=list(loc),
                                 domain="_probe", source="hyp")
                 for name, _d in self._engine.manifold.nearest(probe, n=2):

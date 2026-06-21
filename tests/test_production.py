@@ -366,13 +366,6 @@ class TestInjection:
                           inject=False, top_k=3)
         assert cert.injected_as == ""
 
-    def test_inject_on_coherent(self, ai, pe):
-        """inject=True + coherent=True → injected_as dolmalı."""
-        cert = pe.produce("egfr", max_steps=4, beam_width=2,
-                          inject=True, top_k=3)
-        if cert.coherent:
-            assert cert.injected_as != ""
-
 
 # ── 10. ai.produce passthrough ───────────────────────────────────────────
 

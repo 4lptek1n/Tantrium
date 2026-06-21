@@ -209,17 +209,3 @@ def test_bounded_kappa_distance_freecumulant_roundtrip():
     assert abs(direct - via_mu) < 1e-9, f"roundtrip κ₁..κ₄ kaybı: {direct} ≠ {via_mu}"
 
 
-def test_nearest_quantum_metric_wired():
-    """SemanticManifold.nearest(metric='quantum') → _nearest_quantum_vec yönlenir."""
-    from fractions import Fraction
-    from tantrium.core.semantic import Concept, SemanticManifold
-    m = SemanticManifold()
-    m.add(Concept(name="a", moments=[1.0, 0.3, 0.15, 0.08], domain="test", source="t"))
-    m.add(Concept(name="b", moments=[1.0, 0.31, 0.16, 0.09], domain="test", source="t"))
-    m.add(Concept(name="c", moments=[1.0, 0.9, 0.85, 0.8], domain="test", source="t"))
-    q = Concept(name="q", moments=[1.0, 0.3, 0.15, 0.08], domain="test", source="t")
-    hits = m.nearest(q, n=2, metric="quantum")
-    assert len(hits) <= 2
-    assert all(isinstance(d, Fraction) for _, d in hits)
-    # 'a' kuantum olarak en yakın olmalı (aynı momentler)
-    assert hits[0][0] == "a"

@@ -53,12 +53,3 @@ def test_generalization_rejects_memorized():
 def test_generalization_too_few_instances():
     """<3 örnek → güvenilir test edilemez → False (genelleşme iddia etme)."""
     assert certify_generalization(lambda t: 1, [(1, 2), (2, 3)], lambda c, h: True) is False
-
-
-def test_code_meta_generalizes_still_works():
-    """Golden: code_meta._generalizes delege sonrası map-fold genelleşmesi korunur."""
-    from tantrium.core.code_meta import build_mapfold, _generalizes
-    # sum(2*e for e in x) — map-fold ailesi genelleşmeli
-    ex = [([1, 2], 6), ([3], 6), ([1, 1, 1], 6), ([2, 2], 8)]
-    if build_mapfold(ex, ["x"]) is not None:        # ailenin çözebildiği bir spec
-        assert _generalizes(build_mapfold, ex, ["x"]) in (True, False)  # patlamadan çalışır

@@ -1114,7 +1114,7 @@ class ProductionEngine:
             mu = self._encode(smiles)
             if not mu:
                 return ""
-            from tantrium.core.semantic import Concept
+            from tantrium.core.concept import Concept
             c = Concept(name=label, moments=mu, domain="drug", source="produce")
             self.engine.manifold.add(c)
             return label
