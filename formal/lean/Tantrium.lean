@@ -12,5 +12,6 @@ import Tantrium.GateA
 import Tantrium.GateB
 import Tantrium.GateBStaircase
 import Tantrium.SubresultantRecurrence
+import Tantrium.QjrQuotient
 import Tantrium.StaircaseQuotient
 import Tantrium.ResearchOS

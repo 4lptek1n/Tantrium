@@ -8,6 +8,12 @@ Quot.sound}`, no `sorryAx`), built against Mathlib:
 - `GateBStaircase.staircaseT_succ` — triangular law `T_{j+1} = T_j + (j+1)`
 - `GateBStaircase.topRamp_succ` — Gate B top-ramp recurrence
   `A_{j+1}(n) = 2^{j+1} (n+(j+1))^{j+1} · A_j(n)` for `A_j(n) = 2^{T_j} ∏_{m=1}^j (n+m)^m`
+- `QjrQuotient.qjrQuotient_natDegree` — **degree law for the normal-form staircase
+  quotient**: `deg Q(j,r) = D(j,r) = r(2j-r-1)/2` for `r ≤ j`, where
+  `Q(j,r+1) = Q(j,r)·∏_{a=D(j,r)+1}^{D(j,r+1)}(n+a)` (the `QJR_NORMAL_FORM_R_RECURRENCE`).
+  This closes the degree-law half of the `GENERAL_QUOTIENT_DEGREE_THEOREM` sub-gap
+  that Research OS v2 reports it cannot prove (`MISSING_SUBRESULTANT_RECURRENCE_FOR_Q_JR`).
+  (Identifying this normal form with the *true* hidden H-quotient remains open.)
 - `SubresultantRecurrence.qjr_degree_shift_j` — `D(j+1,r) = D(j,r) + r`
 - `SubresultantRecurrence.qjr_degree_step_r` — `D(j,r) = D(j,r-1) + (j-r)`
   (both on the admissible staircase domain `1 ≤ r ≤ j`)
