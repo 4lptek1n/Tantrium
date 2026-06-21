@@ -176,43 +176,39 @@ class CertifiedTransport:
 
     def rank_candidates(
         self,
-        target_name: str,
-        candidate_names: list[str] | None = None,
+        target,
+        candidates: list,
         top_n: int = 20,
     ) -> TransportRanking:
-        """Rank manifold candidates for a target via certified transport.
+        """Hedefe adayları sertifikalı-transport + RH-mesafe ile sırala (DURUMSUZ).
 
-        Better than nearest-neighbor: candidates with non-real transport paths
-        (STURM_FAILED) are rejected even if they are closer in moment distance.
+        Manifold yok: `target` ve `candidates` doğrudan girdilerdir (SMILES/dizi/string).
+        Her aday encode edilir, hedeften sertifikalı-transport denenir. Sıralama:
+          1. CERTIFIED önce (PSD-dışı yol = STURM_FAILED reddedilir, moment-yakın olsa bile)
+          2. RH-mesafe (rank+pivot+κ+Hausdorff — ayırt edici)
+          3. zeta-mesafe (ζ-sıfır ailesine)
+        Nearest-neighbor DEĞİL: "yolu gerçek kalan + RH-profili yakın" aday kazanır.
         """
-        target_c = self.engine.manifold.concepts.get(target_name)
-        if target_c is None:
-            return TransportRanking(target_name=target_name)
+        target_obj = self.engine.encoder.encode(target, name=str(target)[:40])
+        from tantrium.core.rh_certificate import rh_distance as _rd
+        tmom = list(target_obj.moments)
 
-        if candidate_names is None:
-            # Use nearest neighbors as starting pool
-            neighbors = self.engine.manifold.nearest(target_c, n=top_n * 2)
-            candidate_names = [n for n, _ in neighbors if n != target_name]
-
-        # Encode target as CodexObject to get eigenvalue structure
-        from tantrium.core.encoder import encode as _enc
-        target_obj = _enc(list(target_c.moments), name=target_name)
-
-        results: list[tuple[str, TransportCertificate]] = []
-        for name in candidate_names[:top_n * 3]:
-            cand_c = self.engine.manifold.concepts.get(name)
-            if cand_c is None:
-                continue
-            cand_obj = _enc(list(cand_c.moments), name=name)
+        scored: list[tuple[str, TransportCertificate, float]] = []
+        for cand in (candidates or []):
+            cand_obj = self.engine.encoder.encode(cand, name=str(cand)[:40])
             tc = self.certify(target_obj, cand_obj)
-            results.append((name, tc))
+            try:
+                rhd = _rd(tmom, list(cand_obj.moments))
+            except Exception:
+                rhd = float("inf")
+            scored.append((str(cand)[:40], tc, rhd))
 
-        # Sort: certified first, then by zeta_distance
-        results.sort(key=lambda x: (not x[1].certified, x[1].zeta_distance))
+        # CERTIFIED önce → RH-mesafe (ayırt edici) → zeta-mesafe
+        scored.sort(key=lambda x: (not x[1].certified, x[2], x[1].zeta_distance))
 
         return TransportRanking(
-            target_name=target_name,
-            candidates=results[:top_n],
+            target_name=str(target)[:40],
+            candidates=[(n, c) for n, c, _ in scored[:top_n]],
         )
 
     # ── Spectral decomposition ───────────────────────────────────────────────
