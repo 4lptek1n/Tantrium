@@ -535,6 +535,13 @@ class UniversalEncoder:
             ).k
         except Exception:
             pass
+        # RH-kriter katmanı: momentlerden τ/pivot/cross-ratio (exact Fraction).
+        # tce-collapse-engine ispat zincirinin moment-hesaplanabilir çekirdeği.
+        try:
+            from tantrium.core.rh_criteria import rh_criteria
+            state["rh_criteria"] = rh_criteria(moments).as_dict()
+        except Exception:
+            pass
         return state
 
     def _to_matrix(self, input: Any) -> list[list[Fraction]]:

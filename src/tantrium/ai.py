@@ -1462,6 +1462,22 @@ class AI:
 
     # ── Genelleme / Moment İnterpolasyonu ────────────────────────────────────
 
+    def rh_criteria(self, query) -> "RHCriteria":
+        """Girdinin RH-türevli pozitiflik kriterleri (τ/pivot/cross-ratio, exact Fraction).
+
+        tce-collapse-engine ispat zincirinin moment-hesaplanabilir çekirdeği: girdiyi
+        momentlerine okur, sonra Hankel determinantları τ_j, LDLᵀ pivotları d_k ve
+        cross-ratio ρ_j üretir. `hamburger_certified` = geçerli (PSD) moment dizisi.
+
+        Örnek:
+            r = ai.rh_criteria("EGFR")
+            print(r.summary())          # τ/pivot/cross-ratio işaretleri
+            print(r.hamburger_certified)
+        """
+        from tantrium.core.rh_criteria import rh_criteria as _rh
+        obj = self._engine.encoder.encode(query, name=str(query)[:64])
+        return _rh(obj.moments)
+
     def paradigms(self, query: str) -> dict:
         """Her paradigmanın durumunu ve kanıt detayını döndür.
 

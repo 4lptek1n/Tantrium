@@ -16,6 +16,7 @@ from tantrium.core.collision import CollisionHunter, CollisionReport
 from tantrium.core.network import CertificationPipeline, CertificationRun
 from tantrium.core.encoder import UniversalEncoder, encode, encode_smiles
 from tantrium.core.concept import Concept, moment_distance
+from tantrium.core.rh_criteria import rh_criteria, RHCriteria
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
 from tantrium.proof.certificate import Cell, Certificate, TransportEdge
 from tantrium.proof.dyadic_flow import solve_greedy, FlowPolicy
@@ -46,6 +47,8 @@ __all__ = [
     "encode_smiles",
     "Concept",
     "moment_distance",
+    "rh_criteria",
+    "RHCriteria",
     # Transport
     "CertifiedTransport",
     "TransportCertificate",
