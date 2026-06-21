@@ -1434,10 +1434,8 @@ class AI:
 
     def status(self) -> str:
         """Kısa durum özeti."""
-        n = len(self._engine.manifold.concepts)
-        edges = sum(len(v) for v in self._engine.tau.edges.values())
         return (
-            f"Tantrium AI  |  {n:,} kavram  |  {edges:,} TAU kenar  |  "
+            f"Tantrium AI  |  durumsuz saf-matematik makinesi  |  "
             f"Aleph-Tekin 23 paradigma"
         )
 
