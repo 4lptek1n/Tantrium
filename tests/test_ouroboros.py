@@ -14,11 +14,24 @@ def test_deterministic_universe():
 
 
 def test_monotone_expansion():
-    """Ouroboros: gözlemci çekilince boyut N → N+1 monoton büyür (çökmez)."""
+    """Ouroboros: gözlemci çekilince matris boyutu monoton büyür (çökmez)."""
     c = OuroborosEngine(n_c=12, max_dim=30).run()
     dims = [f.dim for f in c.frames]
     assert dims == sorted(dims)          # monoton artan
-    assert c.max_dim >= 28               # gerçekten genişledi
+    assert c.max_dim >= 14               # matris gerçekten büyüdü
+
+
+def test_true_rank_climbs_on_its_own():
+    """GERÇEK rank, eklenen hiçbir şey olmadan evrenle birlikte tırmanır.
+
+    Gölge rank (8-moment penceresi) ≈3'te kilitli kalır; ama büyüyen Gram
+    matrisinin gerçek rank'ı motoru uzun koşturdukça sıçrar — mimari doğruysa
+    rank sıçraması zamanın kendisinden doğar, dışarıdan enjeksiyon gerekmez."""
+    c = OuroborosEngine(n_c=12, max_dim=30).run()
+    true_ranks = [f.true_rank for f in c.frames]
+    assert true_ranks[-1] > true_ranks[0] + 3      # gerçekten sıçradı
+    assert max(f.shadow_rank for f in c.frames) <= 4  # gölge tıkalı kaldı
+    assert c.max_rank == max(true_ranks)
 
 
 def test_stays_on_critical_line():

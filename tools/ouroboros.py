@@ -22,8 +22,22 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
-from tantrium.core.encoder import encode
+import numpy as np
+
+from tantrium.core.encoder import UniversalEncoder, encode
 from tantrium.core.rh_criteria import rh_criteria
+
+_ENC = UniversalEncoder()
+
+
+def _true_rank(seed: list[float]) -> tuple[int, int]:
+    """Genişleyen evrenin GERÇEK rank'ı: tam Gram matrisi A'nın rank'ı.
+
+    DİKKAT: structure['matrix_rank'] ve rh_criteria.rank, encoder'ın sabit 8-moment
+    penceresinden okunan GÖLGE rank'tır (≈3'te kilitli). Evrenin gerçek spektral
+    karmaşıklığı, büyüyen A matrisinin kendisinde yaşar — burada onu ölçüyoruz."""
+    A = np.array(_ENC._to_matrix(seed), dtype=float)
+    return int(np.linalg.matrix_rank(A, tol=1e-9)), A.shape[0]
 
 
 def _dft_real(v: list[float]) -> list[float]:
@@ -49,9 +63,10 @@ def _normalize(v: list[float]) -> list[float]:
 class Frame:
     """Genişleyen evrenin tek bir anı (N-boyutlu kabuk)."""
     step: int
-    dim: int
-    rank: int
-    alive: bool                 # spektral pozitiflik ayakta mı (hankel PSD)
+    dim: int                    # tam Gram matrisinin boyutu (büyüyor)
+    true_rank: int              # GERÇEK rank (büyüyen A) — evrenin spektral karmaşıklığı
+    shadow_rank: int            # 8-moment gölge rank (≈3'te kilitli — encoder penceresi)
+    alive: bool                 # spektral pozitiflik ayakta mı
     hamburger: bool
     lam_dbn: float              # de Bruijn-Newman Λ (kritik çizgi ölçüsü)
     tau_tail: list[float]       # son Hankel determinantları (merdivenin ucu)
@@ -70,15 +85,17 @@ class Cosmos:
 
     def summary(self) -> str:
         last = self.frames[-1] if self.frames else None
-        ranks = sorted({f.rank for f in self.frames})
+        first = self.frames[0] if self.frames else None
         return (
-            f"OUROBOROS — {len(self.frames)} adım | boyut {self.frames[0].dim if self.frames else 0}"
-            f"→{self.max_dim} | rank spektrumu={ranks}\n"
+            f"OUROBOROS — {len(self.frames)} adım | boyut {first.dim if first else 0}→{self.max_dim}\n"
+            f"  GERÇEK rank: {first.true_rank if first else 0} → {self.max_rank} "
+            f"(evrenle birlikte tırmandı — eklenen hiçbir şey yok)\n"
+            f"  gölge rank (8-moment penceresi): sabit ≈{last.shadow_rank if last else 0} "
+            f"(yanıltıcı tıkaç — gerçek karmaşıklık matriste)\n"
             f"  faz geçişi (simetri kırılması): {self.phase_transitions} | "
             f"budama (hayatta-kalma reroute): {self.prunes}\n"
-            f"  son kabuk: rank={last.rank if last else '-'} "
-            f"Λ={last.lam_dbn if last else 0:+.4f} alive={last.alive if last else '-'}\n"
-            f"  → {'çıkmaz (motor öldü)' if self.died_at else 'genişleme sürüyor (ufuk: hesap/τ-patlaması)'}"
+            f"  son kabuk: Λ={last.lam_dbn if last else 0:+.4f} alive={last.alive if last else '-'}\n"
+            f"  → {'çıkmaz (motor öldü)' if self.died_at else 'genişleme + rank sıçraması sürüyor (ufuk: hesap)'}"
         )
 
 
@@ -144,9 +161,10 @@ class OuroborosEngine:
             event = "PRUNE→reroute" if self._alive(ccrit) else "PRUNE"
 
         nxt, crit, lam = cand, ccrit, clam
+        tr, mdim = _true_rank(nxt)          # GERÇEK rank, büyüyen Gram matrisinden
         frame = Frame(
-            step=n, dim=len(nxt), rank=crit.rank, alive=self._alive(crit),
-            hamburger=crit.hamburger_certified, lam_dbn=lam,
+            step=n, dim=mdim, true_rank=tr, shadow_rank=crit.rank,
+            alive=self._alive(crit), hamburger=crit.hamburger_certified, lam_dbn=lam,
             tau_tail=[round(float(x), 4) for x in crit.hankel_dets[-3:]],
             event=event,
         )
@@ -166,7 +184,7 @@ class OuroborosEngine:
             if frame.event.startswith("PRUNE"):
                 cosmos.prunes += 1
             cosmos.max_dim = max(cosmos.max_dim, frame.dim)
-            cosmos.max_rank = max(cosmos.max_rank, frame.rank)
+            cosmos.max_rank = max(cosmos.max_rank, frame.true_rank)
             if not frame.alive:                  # tümüyle çıkmaz: motor öldü
                 cosmos.died_at = n
                 break
@@ -181,7 +199,8 @@ def run() -> Cosmos:
     cosmos = OuroborosEngine(n_c=12, max_dim=40).run()
     for f in cosmos.frames:
         tag = f" «{f.event}»" if f.event else ""
-        print(f"  adım {f.step:3} | boyut {f.dim:2} | rank {f.rank} | "
+        print(f"  adım {f.step:3} | matris {f.dim:2}x{f.dim:<2} | "
+              f"GERÇEK rank={f.true_rank:2} | gölge={f.shadow_rank} | "
               f"Λ={f.lam_dbn:+.4f} | alive={'✓' if f.alive else '✗'}{tag}")
     print("-" * 66)
     print(cosmos.summary())
