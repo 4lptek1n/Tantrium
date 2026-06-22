@@ -71,9 +71,13 @@ from tantrium.core.truth import TruthCertificate, TruthCertifier
 from tantrium.core.unified import CoreMachine, UnifiedCertificate
 from tantrium.core.verifier import adversarial_control, seal, tamper_test, verify
 from tantrium.core.zeta_operator import (
+    HilbertPolyaCertificate,
     ZetaOperatorProbe,
     berry_keating_zeros,
+    certify_hilbert_polya,
+    compute_zeros,
     probe_zeta_operator,
+    riemann_siegel_z,
     zeta_operator_matrix,
     zeta_operator_zeros,
 )
@@ -141,6 +145,10 @@ __all__ = [
     "berry_keating_zeros",
     "zeta_operator_zeros",
     "zeta_operator_matrix",
+    "compute_zeros",
+    "riemann_siegel_z",
+    "certify_hilbert_polya",
+    "HilbertPolyaCertificate",
     "laguerre_polya_test",
     "is_hyperbolic",
     "turan",

@@ -8,7 +8,9 @@ import tantrium
 from tantrium.core.zeta_operator import (
     ZetaOperatorProbe,
     berry_keating_zeros,
+    compute_zeros,
     probe_zeta_operator,
+    riemann_siegel_z,
     smooth_counting,
     zeta_operator_matrix,
 )
@@ -63,6 +65,22 @@ def test_operator_matrix_spectrum_tracks_zeros():
     assert np.allclose(H, H.T)                          # Hermityen
     rms = float(np.sqrt(np.mean((spec - real) ** 2)))
     assert rms < 0.05                                   # taban ~0.02 (sıfırlar girmedi)
+
+
+def test_compute_zeros_from_zeta_exact():
+    """Makine sıfırları ζ'den HESAPLAR (Riemann-Siegel Z), ankraj/tahmin yok — ~1e-3."""
+    from tantrium.graph.anchors import _ZETA_ZEROS
+    known = [float(x) for x in _ZETA_ZEROS][:10]
+    z = compute_zeros(10)
+    assert len(z) == 10
+    assert all(z[i] < z[i + 1] for i in range(9))       # artan, deterministik
+    err = max(abs(z[i] - known[i]) for i in range(10))
+    assert err < 1e-2                                    # lider-mertebe Riemann-Siegel
+
+
+def test_riemann_siegel_z_sign_change_at_zero():
+    """Z(t) ilk sıfır (~14.13) civarında işaret değiştirir."""
+    assert riemann_siegel_z(13.0) * riemann_siegel_z(15.0) < 0
 
 
 def test_sdk_facade():

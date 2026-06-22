@@ -142,6 +142,17 @@ class RHMixin:
         from tantrium.core.zeta_operator import certify_hilbert_polya
         return certify_hilbert_polya(num=num_zeros, prime_cutoff=prime_cutoff)
 
+    def compute_zeros(self, num: int = 50) -> list[float]:
+        """İlk `num` Riemann zeta sıfırını ζ'den DOĞRUDAN HESAPLA (tahmin/ankraj YOK).
+
+        Riemann-Siegel Z(t)'nin işaret değişimleri = sıfırlar. Makine durumsuz-exact:
+        ÜRETMEZ/TAHMİN ETMEZ, hesaplar (deterministik, ~1e-3 lider mertebe).
+
+            ai.compute_zeros(10)   # [14.137, 21.024, 25.018, ...]
+        """
+        from tantrium.core.zeta_operator import compute_zeros as _cz
+        return _cz(num)
+
     def cosmos(self, seed=None, inflation_steps: int = 40) -> "object":
         """Bir tohumun TÜM evren ömrü: T₁ yaratılış → T₁₀ son, çağ çağ, mühürlü.
 

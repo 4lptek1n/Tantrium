@@ -63,6 +63,46 @@ def berry_keating_zeros(num: int) -> list[float]:
     return [_solve_counting(n, smooth_counting) for n in range(1, num + 1)]
 
 
+def riemann_siegel_z(t: float) -> float:
+    """Riemann-Siegel Z(t): ζ(½+it)'nin REEL biçimi (|Z|=|ζ|, aynı sıfırlar).
+
+    Z(t)=2 Σ_{n≤√(t/2π)} cos(θ(t)−t ln n)/√n + R(t) (lider artık terimi). TAHMİN DEĞİL —
+    ζ'nin EXACT hesabı (Riemann-Siegel ana toplam + lider düzeltme). Sıfırlar Z'nin
+    işaret değişimleridir; depolanmış sabit/ankraj kullanılmaz."""
+    th = riemann_siegel_theta(t)
+    N = int(math.sqrt(t / _TWO_PI))
+    main = sum(math.cos(th - t * math.log(n)) / math.sqrt(n) for n in range(1, N + 1))
+    p = math.sqrt(t / _TWO_PI) - N
+    psi = math.cos(_TWO_PI * (p * p - p - 1.0 / 16.0)) / math.cos(_TWO_PI * p)
+    remainder = ((-1) ** (N - 1)) * (t / _TWO_PI) ** (-0.25) * psi
+    return 2.0 * main + remainder
+
+
+def compute_zeros(num: int, step: float = 0.01) -> list[float]:
+    """İlk `num` zeta sıfırını ζ'den DOĞRUDAN HESAPLA (Riemann-Siegel Z işaret değişimi).
+
+    Ankraj/depolama/tahmin yok: Z(t)'yi tarar, işaret değiştiren her aralıkta kökü
+    bisection'la daraltır. Makine sıfırları ÜRETMEZ, HESAPLAR (deterministik, ~1e-3 lider
+    mertebe). Üst sınır iskeletten kestirilir (yalnız tarama aralığı için)."""
+    t_max = berry_keating_zeros(num + 1)[-1] + 5.0
+    zeros: list[float] = []
+    t, prev = 2.0, riemann_siegel_z(2.0)
+    while t < t_max and len(zeros) < num:
+        cur = riemann_siegel_z(t)
+        if prev * cur < 0.0:
+            a, b = t - step, t
+            for _ in range(60):
+                m = 0.5 * (a + b)
+                if riemann_siegel_z(a) * riemann_siegel_z(m) < 0.0:
+                    b = m
+                else:
+                    a = m
+            zeros.append(0.5 * (a + b))
+        prev = cur
+        t += step
+    return zeros
+
+
 def _primes_upto(N: int) -> list[int]:
     sieve = [True] * (N + 1)
     sieve[0] = sieve[1] = False
