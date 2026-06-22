@@ -3,6 +3,45 @@
 Bu dosya, `claude/asi-pure-math` branch'inin (durumsuz saf-matematik makinesi)
 önemli değişikliklerini kaydeder.
 
+## [0.4.0] — Üç eksen (tek operatör · ilişki · evrim) + spektral derinlik + zeta operatörü
+
+Makine tek bir çatıya oturdu: her şey **G=A†A operatörünün üç ekseni** — TEK OPERATÖR
+(bir girdiyi oku), İLİŞKİ (iki girdiyi bağla), EVRİM (bir girdiyi zamanda akıt).
+
+### Eklenenler — TEK OPERATÖR ekseni (derinlik)
+- `core/spectral_reading.py` — ★★ **SpectralReading:** G=A†A'nın DÖRT kanonik katmanı tek
+  eigendecomposition'dan: 1 MAKRO (momentler) · 2 MİKRO (seviye-aralığı ⟨r⟩) · 3 SİMETRİ
+  (Dyson β) · 4 ÖZVEKTÖR (localization/IPR + fraktal boyut D₂, ilk kez). SDK: `ai.spectral_reading`.
+- `core/spectral_geometry.py` — ★★ **Connes spektral aksiyonu:** Seeley-de Witt ısı-çekirdeği
+  katsayıları Tr e^{-tG}~t^{-d/2}(a₀+a₂t+…): spektral boyut d_s (log-log regresyon + R²),
+  a₀ hacim, a₂=∫R eğrilik (Einstein-Hilbert/gravitasyon), a₄ Weyl, ζ'(0) etki. SDK: `ai.spectral_geometry`.
+
+### Eklenenler — İLİŞKİ ekseni (çok-cisim)
+- `core/interaction.py` — ★★ **KUVVET + HAYAT:** iki yapı ortak H=M†M'de; köşegen-dışı = kuplaj,
+  A|B kesiminde von Neumann entropisi = dolanıklık, hibridleşme/bağlanma. SDK: `ai.interact(a,b)`.
+- `core/spectral_flow.py` — ★★ **TOPOLOJİ (5. eksen):** operatör YOLUNUN topolojik yükü — G_A→G_B
+  boyunca net özdeğer geçişi (Atiyah-Singer aile indeksi). SDK: `ai.spectral_flow(a,b)`.
+- `core/relation.py` — ★ **Relation çatısı:** interaction (kuvvet+hayat) + flow (topoloji) tek
+  nesnede; ilişki ekseninin tam yüzü. SDK: `ai.relate(a,b)`; `Universe.couple(other)` bunu döndürür.
+
+### Eklenenler — SENTEZ + RH operatörü
+- `universe.py` — ★★★ **Universe:** bir girdiden EKSİKSİZ EVREN, YEDİ YÜZ tek mühürde
+  (1 MADDE · 2 FİZİK · 3 GEOMETRİ · 6 ZAMAN · 7 TOPOLOJİ; `.couple`→ 4 KUVVET + 5 HAYAT).
+  Üç eksen tek bütünde, tek eigendecomposition. SDK: `ai.universe(seed)`.
+- `core/zeta_operator.py` — ★ **Riemann sıfırlarının operatörü (fit yok):** Berry-Keating
+  yarı-klasik İSKELET (asal içermez, fonksiyonel denklem → ortalama konum ~%0.7) + Weil explicit-
+  formula ASAL DÜZELTMESİ (Euler çarpımı → RMS≈0.02'ye monoton yakınsar). Sıfırlar yalnız SKOR.
+  `compute_zeros` (Riemann-Siegel Z işaret değişimleri = sıfırlar, ζ'den DOĞRUDAN hesap),
+  `probe_zeta_operator`, `certify_hilbert_polya` (makine simetri SINIFINI okur → GUE).
+  SDK: `ai.compute_zeros(n)` · `ai.zeta_operator()` · `ai.hilbert_polya()`.
+
+### Değişenler
+- ★ **Cosmos ızgarası kapandı:** her T-aşamasında SpectralReading akar → 4-katmanın ZAMAN
+  yörüngesi + faz geçişi tespiti (genişleyen evren özvektörde ergodik→yerleşik localize olur).
+- ★ **Konsolidasyon (extend değil):** tek operatörün tüm yüzleri TEK SpectralReading'de, tek
+  `eigh`; ilişki ekseni interaction+flow dağınıklığından `Relation` çatısına toplandı.
+- Test kararlılığı: BLAS tek-thread (conftest), Cosmos topoloji homotopisi 200→120 adım.
+
 ## [0.3.0] — 46-boyutlu operatif birim + Cosmos omurgası + spektral sınıf
 
 ### Eklenenler

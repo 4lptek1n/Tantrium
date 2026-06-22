@@ -43,10 +43,13 @@ sertifikada**.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  Katman 5: SDK                                                    │
-│  ai.py — durumsuz giriş (~48 matematik metodu)                   │
+│  Katman 5: SDK + SENTEZ                                          │
+│  ai/ — durumsuz giriş (mixin paketi, ~60 matematik metodu)       │
 │  ask / certify_all / transport / discover_law / reconstruct /    │
-│  produce_math / design / quantum_distance / sturm / positivity   │
+│  produce_math / design / quantum_distance / sturm / positivity / │
+│  spectral_reading / spectral_geometry / interact / relate /      │
+│  spectral_flow / compute_zeros / zeta_operator / hilbert_polya   │
+│  universe.py (YEDİ YÜZ sentez) · cosmos.py (T₀→T₁₀ evrim)        │
 │  serve.py — opsiyonel FastAPI REST                               │
 └───────────────────────────┬──────────────────────────────────────┘
                             │
@@ -92,6 +95,29 @@ sertifikada**.
 
 ---
 
+## Üç Eksen (v0.4.0 — tek operatörün üç yüzü)
+
+Her şey aynı `G=A†A` operatörünün bir yüzü; üçü de tek `eigh`'ten okunur:
+
+```
+1. TEK OPERATÖR  bir girdiyi oku
+   spectral_reading.py  → 4 katman: MAKRO (momentler) · MİKRO (⟨r⟩) · SİMETRİ (Dyson β) ·
+                          ÖZVEKTÖR (IPR/localization + fraktal boyut D₂)
+   spectral_geometry.py → Connes/NCG: Seeley-de Witt ısı-çekirdeği (boyut d_s · eğrilik a₂ · etki)
+
+2. İLİŞKİ         iki girdiyi bağla   → relation.py (çatı)
+   interaction.py   → KUVVET (köşegen-dışı kuplaj) + HAYAT (von Neumann dolanıklık), ortak H=M†M
+   spectral_flow.py → TOPOLOJİ: G_A→G_B yolunun net özdeğer geçişi (Atiyah-Singer aile indeksi)
+
+3. EVRİM          bir girdiyi zamanda akıt
+   cosmos.py        → T₀ Yasa → T₁₀ μ*/patlama; her T'de SpectralReading akar (4-katman yörünge)
+```
+
+`universe.py` üçünü bir girdiden **YEDİ YÜZ** + tek mühürde sentezler
+(1 MADDE · 2 FİZİK · 3 GEOMETRİ · 6 ZAMAN · 7 TOPOLOJİ; `.couple`→ 4 KUVVET + 5 HAYAT).
+
+---
+
 ## Veri Akışı (tek sertifikasyon)
 
 ```
@@ -123,6 +149,10 @@ Pólya'nın aradığı operatör türünden. Kodda canlı bağlantılar:
 - `pipeline.py` TAV: `Λ = −var₀ ≤ 0` = de Bruijn-Newman (RH eşdeğeri, 2020'de Λ≥0 kanıtlandı)
 - `transport.py` Sturm pivotları = normalize Hankel determinantları = subdiscriminantlar
 - `quantum_moments.py`: Voiculescu serbest kümülant κ-additivite
+- `zeta_operator.py`: ★ Hilbert-Pólya operatörünü DOĞAL malzemeden kurar (fit yok) — Berry-Keating
+  yarı-klasik iskelet (asal içermez, fonksiyonel denklem) + Weil explicit-formula asal düzeltmesi
+  (Euler çarpımı). Sıfırlar yalnız skor; taban RMS≈0.02, taban altı = açık RH. `compute_zeros`
+  Riemann-Siegel Z'den sıfırları DOĞRUDAN hesaplar (tahmin/ankraj yok).
 
 Tam RH ispat zinciri (D-pozitiflik → Sturm pivot → Jensen hiperbolisitesi → RH, Lean 4)
 ayrı branch'te: `tce-collapse-engine` (`external_formalization: PENDING`).

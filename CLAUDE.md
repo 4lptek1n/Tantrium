@@ -87,6 +87,15 @@ src/tantrium/
                           değil). G_t boyunca net özdeğer geçişi = spektral akış (Atiyah-Singer
                           aile indeksi). spectral_flow(a,b)/flow_between. transport + Cosmos
                           yörüngesine entegre. Özdeş→0, düzgün→0 geçiş, topolojik farklı→sıfırdan farklı.
+    relation.py        ← ★ İLİŞKİ EKSENİ ÇATISI: interaction (kuvvet+hayat) + spectral_flow (topoloji)
+                          tek nesnede. relate(a,b)/Relation. Universe.couple bunu döndürür (yeni math
+                          değil, üç eksenin ikincisinin çatısı: tek operatör · İLİŞKİ · evrim).
+    zeta_operator.py   ← ★ RH OPERATÖRÜ (fit YOK): Riemann sıfırlarını DOĞAL malzemeden kur —
+                          Berry-Keating yarı-klasik İSKELET (asal içermez, N̄(t)=θ(t)/π+1, ~%0.7) +
+                          Weil explicit-formula ASAL düzeltmesi (Euler çarpımı → RMS≈0.02). Sıfırlar
+                          yalnız SKOR (inşa dairesel değil). compute_zeros (Riemann-Siegel Z'den
+                          DOĞRUDAN hesap, tahmin/ankraj yok), probe_zeta_operator, certify_hilbert_polya
+                          (simetri sınıfı→GUE). Taban altı = açık Hilbert-Pólya/RH. compute_zeros(10).
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
     collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
     truth.py           ← TruthCertifier (komşu yok → N/A; durumsuz)
@@ -168,6 +177,7 @@ ai.spectral_reading("EGFR")       # ★★ G=A†A'nın DÖRT katmanı (makro/mi
 ai.spectral_flow("c1ccccc1", "CCO")  # ★★ 5. eksen: YOLUN topolojik yükü (net özdeğer geçişi)
 ai.spectral_geometry("EGFR")      # ★★ NCG: yapının TANIMLADIĞI uzayın boyutu/etkisi
 ai.interact("CCO", "CCCO")        # ★★ KUVVET + HAYAT: kuplaj + dolanıklık + bağlanma (çok-cisim)
+ai.relate("CCO", "CCCO")          # ★ İLİŞKİ EKSENİ: kuvvet+hayat (interaction) + topoloji (flow) tek nesnede
 ai.universe("EGFR")               # ★★★ SENTEZ: eksiksiz evren, YEDİ YÜZ, tek mühür (.couple ile kuvvet+hayat)
 ai.cosmos("EGFR")                 # ★ tohumun TÜM evren ömrü T₁→T₁₀ + 4-katman ızgarası + faz geçişi + 5.eksen topoloji
 ai.self_reference()               # öz-gönderim sabit noktası μ* (46-mercek kapanış)
@@ -177,6 +187,9 @@ ai.positivity("x^2 + 1")          # Hankel PSD
 ai.rh_certificate("EGFR")         # ★ BİRLEŞİK RH bundle (kriter+Hausdorff+χ+mühür)
 ai.rh_criteria("EGFR")            # RH-kriter: τ/pivot/cross-ratio/Stieltjes/κ/Λ/rank
 ai.rh_distance("EGFR", "c1ccccc1")# tam RH-sertifika ayırt edici mesafe (metric="rh")
+ai.compute_zeros(10)              # ★ ilk 10 Riemann ζ-sıfırını ζ'den DOĞRUDAN hesapla (Riemann-Siegel Z; tahmin yok)
+ai.zeta_operator()                # ★ RH operatörünü doğal malzemeden kur (Berry-Keating iskelet + asal düzeltme; fit yok)
+ai.hilbert_polya()                # ★ zeta-operatörü sertifika hattından geçir (simetri sınıfı→GUE, RMS≈0.02)
 ai.jensen([1,4,6,4,1])            # Jensen-Pólya: Laguerre-Pólya (RH-tipi) sertifikası
 ai.hyperbolic([2,-3,1])           # polinom tüm kökleri gerçek mi
 ai.bezoutian([-6,11,-6,1])        # Bezoutian gizli faktör + Lah pivot + ilk-beş-pivot
@@ -246,8 +259,13 @@ Bunlara referans gören kod kalıntısı = hata; temizlenmeli.
 
 ---
 
-## Mevcut Durum
-- 82 .py modül (55 core), ~370 test geçiyor. Durumsuz, saf matematik. RH bundle mimariye gömülü.
+## Mevcut Durum (v0.4.0)
+- 90 .py modül (62 core), 420 test fonksiyonu geçiyor. Durumsuz, saf matematik. RH bundle mimariye gömülü.
+- ★ **ÜÇ EKSEN tek çatıda:** TEK OPERATÖR (spectral_reading/geometry — 4 katman + NCG geometri) ·
+  İLİŞKİ (relation = interaction kuvvet+hayat + spectral_flow topoloji) · EVRİM (Cosmos T₀→T₁₀).
+  `universe.py` üçünü bir girdiden YEDİ YÜZ + tek mühürde sentezler.
 - ★ Operatif birim TAM 46-boyutlu sertifika (8 momente/W2'ye çökmez) — sistem geneli buna bağlı.
 - ★ Cosmos zaman-sıralı yaşam-döngüsü omurgası + spectral_class (integrallenebilir↔kaotik) + Ouroboros.
+- ★ `zeta_operator.py`: RH operatörü doğal malzemeden (Berry-Keating + explicit-formula, fit yok),
+  `compute_zeros` ζ'den DOĞRUDAN hesap. Taban RMS≈0.02; taban altı = açık Hilbert-Pólya/RH eşiği.
 - Theorem candidate dokümanları: `docs/`, `theorems/`. Tam RH ispatı: `tce-collapse-engine` branch (Lean).

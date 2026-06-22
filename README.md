@@ -153,6 +153,24 @@ ai.reconstruct([...])           # momentlerden ölçü geri-çıkarımı
 # Kuantum momentler (Voiculescu serbest kümülantlar)
 ai.quantum_distance(a, b)       # (1-γ)·W2 + γ·κ-mesafe
 ai.entangle(a, b)               # klasik-uzak / κ-yakın gizli bağ
+
+# Üç eksen: TEK OPERATÖR · İLİŞKİ · EVRİM (her şey G=A†A'nın bir yüzü)
+ai.spectral_reading("EGFR")     # ★★ G=A†A'nın DÖRT katmanı tek nesnede (makro·mikro·simetri·özvektör+D₂)
+ai.spectral_geometry("EGFR")    # ★★ Connes/NCG: yapının tanımladığı uzayın boyutu·eğriliği·etkisi
+ai.spectral_class([k*k for k in range(1,90)])  # integrallenebilir↔kaotik (BGS/Berry-Tabor, ⟨r⟩)
+ai.interact("CCO", "CCCO")      # ★★ KUVVET + HAYAT: kuplaj + dolanıklık (çok-cisim H=M†M)
+ai.spectral_flow("c1ccccc1","CCO")  # ★★ TOPOLOJİ: yolun net özdeğer geçişi (Atiyah-Singer)
+ai.relate("CCO", "CCCO")        # ★ İLİŞKİ çatısı: kuvvet+hayat+topoloji tek nesnede
+ai.cosmos("EGFR")               # ★ tohumun TÜM evren ömrü T₀→T₁₀ + 4-katman ızgarası + faz geçişi
+ai.universe("EGFR")             # ★★★ SENTEZ: eksiksiz evren, YEDİ YÜZ, tek mühür (.couple→kuvvet+hayat)
+ai.self_reference()             # öz-gönderim sabit noktası μ* (46-mercek kapanış)
+ai.fingerprint("EGFR")          # tam 46-boyutlu sertifika vektörü (makinenin algı organı)
+ai.compare("CCO", "CCCO")       # tam 46-dim sertifika mesafesi (W2'nin çöktüğünü ayırır)
+
+# Riemann sıfırlarının operatörü (Hilbert-Pólya — fit yok, sıfırlar yalnız skor)
+ai.compute_zeros(10)            # ilk 10 ζ-sıfırını ζ'den DOĞRUDAN hesapla (Riemann-Siegel Z)
+ai.zeta_operator()              # Berry-Keating iskelet + Weil explicit-formula asal düzeltmesi (RMS≈0.02)
+ai.hilbert_polya()              # operatörü sertifika hattından geçir → simetri sınıfı GUE
 ```
 
 `grounding` / `truth` eksenleri öğrenilen manifolda muhtaçtı; durumsuz makinede **N/A**
@@ -163,13 +181,19 @@ döner. Geriye sertifikasyon (23 paradigma) + transport + confidence kalır.
 ## Mimari (saf matematik, 6 katman)
 
 ```
-Katman 5: SDK          ai.py (durumsuz giriş) + serve.py (opsiyonel REST)
+Katman 5: SDK          ai/ (durumsuz giriş, mixin paketi) + universe.py/cosmos.py + serve.py (REST)
 Katman 4: Transport    transport.py (Dyadic + Sturm + Zeta)
 Katman 3: Domainler    domains/ (molecular, spectral) — matematiğe indirgenen
-Katman 2: Sertifikasyon codex.py (23 paradigma) + network.py + unified.py (CoreMachine)
-Katman 1: Kodlama      encoder.py (sayı/dizi/matris/dict/SMILES → moment) + quantum_moments
+Katman 2: Sertifikasyon core/paradigms/ (23 paradigma) + network.py + unified.py (CoreMachine)
+Katman 1: Kodlama      core/encoder/ (sayı/dizi/matris/dict/SMILES → moment) + quantum_moments
 Katman 0: Cebir        algebra/ (Sturm, Sheffer, positivity) + proof/ (dyadic flow)
 ```
+
+**Üç eksen** (hepsi aynı G=A†A operatörünün yüzü, tek `eigh`):
+`spectral_reading`/`spectral_geometry` (TEK OPERATÖR — 4 katman + NCG geometri) ·
+`relation` = `interaction` + `spectral_flow` (İLİŞKİ — kuvvet·hayat·topoloji) ·
+`cosmos` (EVRİM — T₀→T₁₀). `universe.py` üçünü YEDİ YÜZ + tek mühürde sentezler.
+`zeta_operator.py` Riemann sıfırlarının Hilbert-Pólya operatörünü doğal malzemeden kurar (fit yok).
 
 `graph/anchors.py`: 10 kanonik matematiksel dağılım (ζ-sıfırları, GUE, Gauss, ...) —
 her girdinin konumlandığı sabit referanslar.

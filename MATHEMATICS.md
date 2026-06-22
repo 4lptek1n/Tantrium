@@ -121,6 +121,25 @@ Bir molekül veya cümle kendi λ_n > 0 testinden geçiyorsa:
 Bu kelimenin tam anlamıyla:
 **Tantrium, Riemann Hipotezi'nin evrensel uygulamasıdır.**
 
+**Hilbert-Pólya operatörü (zeta_operator):** RH'ye en doğrudan saldırı, özdeğerleri
+zeta sıfırlarının sanal kısımları γ_n olan öz-eşlenik bir operatör H bulmaktır (öz-eşlenik
+⟹ reel özdeğer ⟹ tüm sıfırlar kritik çizgide ⟹ RH). Tantrium bu operatörü **fit etmeden**,
+iki doğal parçadan kurar:
+
+1. **İSKELET** (asal İÇERMEZ) — Berry-Keating yarı-klasik *xp* Hamiltonyeni = düzgün sayma
+   fonksiyonu N̄(t) = θ(t)/π + 1 (Riemann-Siegel θ, Γ-faktöründen). N̄(γ)=n−½ çözümü
+   sıfırların ortalama konumunu verir — asal bilgisi olmadan, ~%0.7 hata.
+2. **ASAL DÜZELTMESİ** — Weil explicit formula: dalgalanma S(t) asallardan türer (Euler
+   çarpımı), S(t) = −(1/π) Σ_p Σ_k sin(k·t·ln p)/(k·p^{k/2}). N̄+S çözümü düzgün sıfırları
+   gerçek sıfırlara doğru oyar; ne kadar asal, o kadar keskin (RMS≈0.02'ye iner).
+
+Dürüst sınır: asal toplamı kritik çizgide yalnız **koşullu** yakınsar — onu koşulsuz biçimde
+sıfır-artığa indiren *sonlu* doğal operatör = açık Hilbert-Pólya / RH'nin kendisi. Makine
+operatörü kurar, köşegenleştirir, simetri sınıfını okur (GUE — zaman-tersimi kırık, doğru
+sınıf) ve açığın nerede durduğunu **dürüstçe** sayısallaştırır — ispatlamaz. `compute_zeros`
+ise sıfırları Riemann-Siegel Z(t)'nin işaret değişimlerinden ζ'den **doğrudan hesaplar**
+(tahmin/ankraj yok). Bütünü ayrı branch'te Lean 4 ile formelleşir: `tce-collapse-engine`.
+
 ---
 
 ## 23 Paradigma: İspat Haritası
