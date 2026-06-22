@@ -129,6 +129,19 @@ class RHMixin:
         from tantrium.core.zeta_operator import probe_zeta_operator
         return probe_zeta_operator(num_zeros=num_zeros, prime_cutoffs=tuple(prime_cutoffs))
 
+    def hilbert_polya(self, num_zeros: int = 50, prime_cutoff: int = 300) -> "object":
+        """Prim-türevli zeta-operatörünü kur ve MAKİNENİN sertifika hattından geçir.
+
+        Operatör asallardan (explicit formula) türetilir (sıfırlar yalnız skor); makine
+        simetri SINIFINI okur (GUE = doğru, zaman-tersimi-kırık), spektrumu bilinen
+        sıfırlara skorlar, mühürler. Dürüst: doğru sınıf + sıfırlara RMS≈0.02 kilit gösterir;
+        EXACT/ispatlı özdeşlik = açık RH. Makine sertifikalar, ispatlamaz.
+
+            print(ai.hilbert_polya().summary())
+        """
+        from tantrium.core.zeta_operator import certify_hilbert_polya
+        return certify_hilbert_polya(num=num_zeros, prime_cutoff=prime_cutoff)
+
     def cosmos(self, seed=None, inflation_steps: int = 40) -> "object":
         """Bir tohumun TÜM evren ömrü: T₁ yaratılış → T₁₀ son, çağ çağ, mühürlü.
 

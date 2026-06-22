@@ -2,12 +2,15 @@
 
 İskelet (asal yok, fonksiyonel denklem) sıfırların ortalamasını verir; explicit-formula
 asal düzeltmesi eklendikçe gerçek sıfırlara YAKINSAR (sıfırlar yalnız skor için → dairesel değil)."""
+import numpy as np
+
 import tantrium
 from tantrium.core.zeta_operator import (
     ZetaOperatorProbe,
     berry_keating_zeros,
     probe_zeta_operator,
     smooth_counting,
+    zeta_operator_matrix,
 )
 
 
@@ -49,6 +52,17 @@ def test_deterministic():
     b = probe_zeta_operator(num_zeros=30)
     assert a.skeleton_rms == b.skeleton_rms
     assert a.corrected_rms == b.corrected_rms
+
+
+def test_operator_matrix_spectrum_tracks_zeros():
+    """Prim-türevli Hermityen operatörü KÖŞEGENLEŞTİR → spektrum gerçek sıfırlara oturur."""
+    from tantrium.graph.anchors import _ZETA_ZEROS
+    real = np.array([float(x) for x in _ZETA_ZEROS])
+    H, spec = zeta_operator_matrix(len(real), prime_cutoff=300)
+    assert H.shape == (len(real), len(real))
+    assert np.allclose(H, H.T)                          # Hermityen
+    rms = float(np.sqrt(np.mean((spec - real) ** 2)))
+    assert rms < 0.05                                   # taban ~0.02 (sıfırlar girmedi)
 
 
 def test_sdk_facade():

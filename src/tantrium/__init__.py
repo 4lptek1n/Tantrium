@@ -74,6 +74,7 @@ from tantrium.core.zeta_operator import (
     ZetaOperatorProbe,
     berry_keating_zeros,
     probe_zeta_operator,
+    zeta_operator_matrix,
     zeta_operator_zeros,
 )
 from tantrium.cosmos import Epoch, Lifecycle, run_cosmos
@@ -139,6 +140,7 @@ __all__ = [
     "ZetaOperatorProbe",
     "berry_keating_zeros",
     "zeta_operator_zeros",
+    "zeta_operator_matrix",
     "laguerre_polya_test",
     "is_hyperbolic",
     "turan",
