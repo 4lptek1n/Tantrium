@@ -74,3 +74,28 @@ Griffin–Ono–Rolen–Zagier frontier, i.e. RH itself.
 
 Reproduce: the comparison uses `tools/run_positivity_engine_v1.py` (`P_coeffs`)
 for the model and mpmath `Ξ` Taylor coefficients for the real target.
+
+## Addendum: the EXACT identification is rigorously impossible (non-holonomicity)
+
+A sharper result than "the fit degrades with d": the exact line-170 identity
+cannot hold for *any* fixed finite-parameter model, including `P_{λ,d}`.
+
+- The ξ Jensen sequence `g(n) = (-1)^n Ξ^{(2n)}(0)/(2n)!` was tested for any
+  finite holonomic (P-recursive) relation `Σ_{j=0}^J p_j(n) g(n+j)=0`
+  (rows normalized by `g(n)` to kill the super-exponential-decay artifact). The
+  minimal singular ratio decreases *smoothly* as parameters are added
+  (J=1: 1.4e-5 → 8.4e-9 → 4e-12 for P=1,2,3) — the signature of overfitting a
+  smooth sequence, **not** a sharp collapse to a genuine recursion. (The
+  "recursion" hits at param-count ≈ equation-count are overfitting artifacts.)
+- This matches the known theorem that **ζ — hence ξ — is not D-finite
+  (non-holonomic)**. So `g(n)` satisfies no finite-order linear recursion with
+  polynomial coefficients.
+
+Consequence: a fixed finite-parameter generating operator produces a holonomic
+(D-finite) family of Jensen polynomials, whereas ξ's is non-holonomic. Therefore
+**no fixed finite model — `P_{λ,d}` included — equals ξ's Jensen polynomials for
+all d.** The line-170 assertion is impossible as an *exact* identity; it can hold
+at most *asymptotically* (the Griffin–Ono–Rolen–Zagier `n→∞` regime, quantified
+above). Any route from the Tantrium model to RH must therefore be an asymptotic /
+comparison argument, not an identification — and the uniform all-(d,n) control
+such an argument needs is exactly the open frontier, i.e. RH.
