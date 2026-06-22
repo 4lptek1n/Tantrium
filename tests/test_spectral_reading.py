@@ -22,6 +22,18 @@ def test_eigenvector_layer_discriminates():
     assert mol.localized is True
 
 
+def test_fractal_dimension_substructure():
+    """Katman 4 alt-yapısı: fraktal boyut D₂∈[0,1] + multifraktal bayrağı + katılım entropisi."""
+    r = read("CC(=O)Oc1ccccc1C(=O)O")                 # aspirin
+    assert r.fractal_dim is not None
+    assert 0.0 <= r.fractal_dim <= 1.0                 # ergodik(1) ↔ yerleşik(0)
+    assert isinstance(r.multifractal, bool)
+    assert r.participation_entropy is not None and r.participation_entropy >= 0
+    # ergodiklik ile D₂ tutarlı: daha yerleşik (düşük ergodiklik) → daha düşük D₂
+    seq = read([((37 * k + 11) % 101) / 101 for k in range(8)])
+    assert (r.ergodicity < seq.ergodicity) == (r.fractal_dim < seq.fractal_dim)
+
+
 def test_as_spectrum_skips_eigenvectors():
     """Doğrudan seviye-dizisi modunda özvektör yok → katman 4 = N/A."""
     from tantrium.graph import anchors as A

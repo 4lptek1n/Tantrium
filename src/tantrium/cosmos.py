@@ -121,7 +121,9 @@ class Lifecycle:
             lines.append(f"    3 SİMETRİ  Dyson β {g.beta}→{f.beta}")
             ge = "—" if g.ergodicity is None else f"{g.ergodicity:.2f}"
             fe = "—" if f.ergodicity is None else f"{f.ergodicity:.2f}"
-            lines.append(f"    4 ÖZVEKTÖR ergodiklik {ge}→{fe}")
+            gd = "—" if g.fractal_dim is None else f"{g.fractal_dim:.2f}"
+            fd = "—" if f.fractal_dim is None else f"{f.fractal_dim:.2f}"
+            lines.append(f"    4 ÖZVEKTÖR ergodiklik {ge}→{fe} | fraktal boyut D₂ {gd}→{fd}")
             if self.transitions:
                 lines.append(f"  ⚡ FAZ GEÇİŞİ: {' | '.join(self.transitions)}")
             else:

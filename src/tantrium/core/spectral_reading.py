@@ -39,15 +39,20 @@ class SpectralReading:
     universality: str             # Poisson | GOE | GUE | Rijit
     beta: int                     # Dyson simetri sınıfı (0/1/2)
     chaotic: bool
-    # Layer 4 — ÖZVEKTÖR (localization)
+    # Layer 4 — ÖZVEKTÖR (localization — tam alt-yapı)
     mean_ipr: float | None        # ortalama inverse participation ratio
     ergodicity: float | None      # 1=ergodik(delocalize), ~0=yerleşik(localized)
     localized: bool | None
+    fractal_dim: float | None = None       # D₂ = −ln⟨IPR⟩/ln N (ergodik=1, yerleşik=0)
+    participation_entropy: float | None = None  # ⟨S⟩ = −Σp ln p (katılım sayısı = e^S)
+    multifractal: bool | None = None       # 0.1<D₂<0.9 (kritik — ne ergodik ne yerleşik)
 
     def summary(self) -> str:
         loc = "—" if self.localized is None else \
             ("YERLEŞİK" if self.localized else "ergodik")
         erg = "—" if self.ergodicity is None else f"{self.ergodicity:.3f}"
+        d2 = "—" if self.fractal_dim is None else f"{self.fractal_dim:.3f}"
+        mf = " [MULTİFRAKTAL/kritik]" if self.multifractal else ""
         kind = "integrallenebilir" if not self.chaotic else "KAOTİK"
         return (
             f"SpectralReading ({self.dim}-boyut, G=A†A) — dört katman:\n"
@@ -55,7 +60,7 @@ class SpectralReading:
             f"m₁..₃={[round(x, 3) for x in self.moments[1:4]]}\n"
             f"  2 MİKRO    ⟨r⟩={self.r_ratio:.4f} → {self.universality} ({kind})\n"
             f"  3 SİMETRİ  Dyson β={self.beta}\n"
-            f"  4 ÖZVEKTÖR ergodiklik={erg} → {loc}"
+            f"  4 ÖZVEKTÖR ergodiklik={erg} → {loc} | fraktal boyut D₂={d2}{mf}"
         )
 
 
@@ -95,9 +100,17 @@ def read(query, as_spectrum: bool = False) -> SpectralReading:
     G = A.T @ A
     w, V = np.linalg.eigh(G)               # özdeğer + özvektör (tek geçiş)
     n = len(w)
-    # Layer 4 — özvektör localization (inverse participation ratio)
-    ipr = float(np.mean([np.sum(np.abs(V[:, k]) ** 4) for k in range(n)]))
+    # Layer 4 — özvektör localization: IPR + katılım entropisi + fraktal boyut D₂
+    iprs, ents = [], []
+    for k in range(n):
+        p = np.abs(V[:, k]) ** 2
+        iprs.append(float(np.sum(p ** 2)))         # IPR (q=2)
+        pp = p[p > 1e-15]
+        ents.append(float(-np.sum(pp * np.log(pp))))  # katılım (Shannon) entropisi
+    ipr = float(np.mean(iprs))
     ergod = float(1.0 / (n * ipr)) if (n and ipr > 0) else 0.0
+    d2 = float(-np.log(ipr) / np.log(n)) if (n > 1 and ipr > 0) else None
+    mfrac = (d2 is not None and 0.1 < d2 < 0.9)    # kritik/multifraktal rejim
     # Layer 1/2/3
     sc = classify_spectrum(w)
     m, rho = _moments(w)
@@ -106,4 +119,5 @@ def read(query, as_spectrum: bool = False) -> SpectralReading:
         r_ratio=sc.r_ratio, universality=sc.universality,
         beta=_BETA.get(sc.universality, 0), chaotic=sc.chaotic,
         mean_ipr=ipr, ergodicity=ergod, localized=(ergod < 0.4),
+        fractal_dim=d2, participation_entropy=float(np.mean(ents)), multifractal=mfrac,
     )
