@@ -29,8 +29,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     pass
 
-# Kanonik metrik adı — tüm anlamsal hükümlerin kullanması gereken
-CANONICAL = "spectral_w2"
+# Kanonik metrik adı — tüm anlamsal hükümler bunu kullanır (tam 46-boyutlu sertifika)
+CANONICAL = "certificate"
 
 
 def canonical_distance(moments_a, moments_b) -> float:
@@ -56,17 +56,35 @@ def l1_distance(moments_a, moments_b) -> float:
 
 
 def distance(moments_a, moments_b, metric: str = CANONICAL) -> float:
-    """Tek giriş noktası. metric=CANONICAL (varsayılan) → spektral W2.
+    """Tek giriş noktası — TÜM anlamsal hükümler buradan geçer.
 
-    metric="l1" yalnızca hız gereken ön-eleme için.
-    metric="rh" → RH-sertifika mesafesi (rank+pivot+κ+Hausdorff; en ayırt edici).
+    Varsayılan (CANONICAL): TAM 46-boyutlu sertifika mesafesi — hiçbir alt-kümeye
+    çökmez (momentleri encode edip 23 paradigmanın tüm çıktısı üzerinde karşılaştırır).
+    metric="w2"  → spektral Wasserstein-2 (yalnız eigenvalue; eski kanonik).
+    metric="l1"  → ham moment L1 (yalnız hız gereken ön-eleme).
+    metric="rh"  → RH-sertifika alt-kümesi (rank+pivot+κ+Hausdorff).
     """
     if metric == "l1":
         return l1_distance(moments_a, moments_b)
+    if metric == "w2":
+        return canonical_distance(moments_a, moments_b)
     if metric == "rh":
         from tantrium.core.rh_certificate import rh_distance as _rd
         return _rd(moments_a, moments_b)
-    return canonical_distance(moments_a, moments_b)
+    return full_distance(moments_a, moments_b)
+
+
+def full_distance(moments_a, moments_b) -> float:
+    """TAM 46-boyutlu sertifika mesafesi momentlerden — operatif birim, çökmez.
+
+    Momentleri encode edip (aynı moment-Hankel'den) 23 paradigmanın TÜM çıktısı
+    üzerinde karşılaştırır. W2 yalnız eigenvalue'ya bakar; bu, aynı girdiden Newton/
+    Schur/τ/Li/Λ/cross-ratio/Achilles/κ'yı da okur → W2'nin çöktüğünü ayırır.
+    """
+    from tantrium.core.encoder import encode
+    sa = encode(list(moments_a), name="a").structure
+    sb = encode(list(moments_b), name="b").structure
+    return paradigm_distance(sa, sb)
 
 
 # ─── Paradigma-matematik imzası ──────────────────────────────────────────────

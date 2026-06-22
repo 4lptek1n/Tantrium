@@ -265,7 +265,7 @@ class InverseTransport:
         budget: int,
     ) -> list[dict]:
         """Tohum SMILES'lardan + sabit scaffoldlardan substituent değiştirerek yeni moleküller üret."""
-        from tantrium.core.metric import canonical_distance
+        from tantrium.core.metric import full_distance
 
         # Tohum: manifold'dan SMILES olanlar + drug scaffolds
         seeds: list[str] = []
@@ -290,7 +290,7 @@ class InverseTransport:
                     from tantrium.core.encoder import encode
                     obj = encode(v_smi)
                     v_moments = [float(m) for m in obj.moments]
-                    w2 = canonical_distance(v_moments, target_moments)
+                    w2 = full_distance(v_moments, target_moments)
                     results.append({
                         "name": f"frag_{len(results):03d}",
                         "smiles": v_smi,

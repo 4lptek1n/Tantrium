@@ -283,8 +283,9 @@ class MolecularSpace:
 
     @staticmethod
     def _w2(moments_a: list[float], moments_b: list[float]) -> float:
-        from tantrium.core.metric import canonical_distance
-        return canonical_distance(moments_a, moments_b)
+        # Operatif birim: tam 46-boyutlu sertifika (W2 yalnız eigenvalue'ya çökerdi)
+        from tantrium.core.metric import full_distance
+        return full_distance(moments_a, moments_b)
 
     # ── Moleküler Düzenleme ──────────────────────────────────────────────────
 
@@ -339,7 +340,7 @@ class MolecularSpace:
         Bu, iki kimyasal yapı arasındaki en kısa "evrimsel yol"dur.
         """
         from tantrium.core.encoder import encode
-        from tantrium.core.metric import canonical_distance
+        from tantrium.core.metric import full_distance as canonical_distance
 
         src_obj = encode(source_smiles)
         tgt_obj = encode(target_smiles)

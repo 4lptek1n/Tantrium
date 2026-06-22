@@ -223,7 +223,7 @@ class MolecularCertifier:
         target_concept,
     ) -> MoleculeReport:
         """Tek molekülü certify et."""
-        from tantrium.core.concept import Concept, moment_distance
+        from tantrium.core.concept import Concept
         from tantrium.graph.anchors import nearest_anchor
 
         # SMILES + isim birlikte encode et
@@ -238,8 +238,12 @@ class MolecularCertifier:
             source="molecular_certifier",
         )
 
-        # Hedefe mesafe
-        dist = float(moment_distance(target_concept, mol_concept))
+        # Hedefe mesafe — tam 46-boyutlu sertifika (moment-L1'e çökmez)
+        from tantrium.core.metric import full_distance
+        dist = float(full_distance(
+            [float(m) for m in target_concept.moments],
+            [float(m) for m in mol_concept.moments],
+        ))
 
         # Gap'ler
         gaps = [pid for pid, node in run.nodes.items() if node.status == "BLOCKED"]

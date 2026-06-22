@@ -145,8 +145,11 @@ class MolecularGenesis(_GenesisHelpers):
                 except Exception:
                     continue
 
-        from tantrium.core.metric import canonical_distance
+        from tantrium.core.metric import paradigm_distance
         _enc_cache: dict[str, object] = {}
+        # Hedef yapı bir kez hesaplanır (tam 46-boyutlu sertifika için)
+        _toward_struct = (encode([float(x) for x in toward_moments], name="toward").structure
+                          if toward_moments is not None else None)
 
         def _enc(smi: str):
             o = _enc_cache.get(smi)
@@ -191,12 +194,12 @@ class MolecularGenesis(_GenesisHelpers):
 
         def _score(s: SimStep) -> tuple:
             tw = 0.0
-            if toward_moments is not None:
+            if _toward_struct is not None:
                 tw = _tw_cache.get(s.smiles)
                 if tw is None:
                     try:
-                        tw = canonical_distance(
-                            [float(x) for x in _enc(s.smiles).moments], toward_moments)
+                        # Tam 46-boyut: adayın cache'li GERÇEK yapısı vs hedef yapı
+                        tw = paradigm_distance(_enc(s.smiles).structure, _toward_struct)
                     except Exception:
                         tw = 0.0
                     _tw_cache[s.smiles] = tw
