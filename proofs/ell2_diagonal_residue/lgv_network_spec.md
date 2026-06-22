@@ -106,6 +106,36 @@ family needs an explicit edge set in the same planar network (sources/sinks in t
 i-order), at which point Lindström delivers full TP at all orders and all r with no
 further computation, closing the ring back to `transportPhi_injective`.
 
+## Constructive certificate: the residual edges embed non-crossing (block-verified)
+
+Rather than splitting transported-vs-residual at grid level (additive, fragile —
+the trap that killed the LC route), localize to one descent and ask: do the
+split-family (residual) edges embed in the planar net **without crossing** the
+safe-descent (`L`-bidiagonal) edges? The Loewner–Whitney **bidiagonal (Neville)
+factorization** answers this directly: a matrix is TP iff it factors into
+nonnegative bidiagonal layers, and *that factorization is the explicit planar
+network* — every bidiagonal entry is an edge (safe + residual together), and
+**all Neville multipliers ≥ 0 ⟺ all edges embed non-crossing**.
+
+Computed exactly on the validated D-seed grid `[c_i(m)]`
+(`tools/ell2_dseed_neville.py`, leading 7-wide block, 20 diagonals):
+
+- **All Neville multipliers ≥ 0** (0 negative, exact `Fraction`). So the explicit
+  nonnegative planar network *exists* and the residual edges embed
+  triangle-compatibly — the non-crossing condition holds on the block. This is
+  the forward/constructive direction (a network is exhibited), not merely the
+  converse "TP ⟹ some network exists."
+- Some pivots are 0 (boundary structural zeros) — weak TP, consistent (zeros are
+  missing edges, not negative ones).
+
+**This pins the only remaining gap to a single statement:** the Neville
+multipliers of `[c_i(m)]` are nonnegative **uniformly** in (m,i). Verified on the
+finite block; a closed form for the multipliers would make it uniform in r and
+discharge the residual-non-crossing obligation structurally — at which point
+Lindström gives full TP at all orders/all r and the ring closes:
+`transportPhi_injective` (single-path) ⊂ full TP (multi-path), both from the same
+`L`-triangular structure.
+
 Caveat: ℓ=2 branch only. The ∀ℓ question is now precise — does this planar
 network (bidiagonal-generated conversion + non-crossing residual) lift uniformly
 in ℓ, or is ℓ=2 special? F5 (Pólya–Jensen → ξ) is the separate, deepest gate.
