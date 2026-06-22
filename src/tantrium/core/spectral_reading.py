@@ -97,8 +97,16 @@ def read(query, as_spectrum: bool = False) -> SpectralReading:
 
     from tantrium.core.encoder import UniversalEncoder
     A = np.asarray(UniversalEncoder()._to_matrix(query), dtype=float)
-    G = A.T @ A
-    w, V = np.linalg.eigh(G)               # özdeğer + özvektör (tek geçiş)
+    w, V = np.linalg.eigh(A.T @ A)         # özdeğer + özvektör (tek geçiş)
+    return reading_from_eig(w, V)
+
+
+def reading_from_eig(w, V) -> SpectralReading:
+    """TEK eigendecomposition'dan dört katmanı türet (Universe bunu paylaşır).
+
+    G=A†A'nın özdeğer (w) + özvektörlerinden (V) makro·mikro·simetri·özvektör — operatör
+    bir kez köşegenleştirilir, tüm yüzler ondan okunur (yeniden hesaplama yok)."""
+    w = np.real(np.asarray(w, dtype=float))
     n = len(w)
     # Layer 4 — özvektör localization: IPR + katılım entropisi + fraktal boyut D₂
     iprs, ents = [], []
@@ -107,11 +115,10 @@ def read(query, as_spectrum: bool = False) -> SpectralReading:
         iprs.append(float(np.sum(p ** 2)))         # IPR (q=2)
         pp = p[p > 1e-15]
         ents.append(float(-np.sum(pp * np.log(pp))))  # katılım (Shannon) entropisi
-    ipr = float(np.mean(iprs))
+    ipr = float(np.mean(iprs)) if iprs else 1.0
     ergod = float(1.0 / (n * ipr)) if (n and ipr > 0) else 0.0
     d2 = float(-np.log(ipr) / np.log(n)) if (n > 1 and ipr > 0) else None
     mfrac = (d2 is not None and 0.1 < d2 < 0.9)    # kritik/multifraktal rejim
-    # Layer 1/2/3
     sc = classify_spectrum(w)
     m, rho = _moments(w)
     return SpectralReading(

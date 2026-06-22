@@ -20,9 +20,8 @@ import hashlib
 from dataclasses import dataclass
 
 from tantrium.core.interaction import Interaction, interact
-from tantrium.core.spectral_geometry import SpectralGeometry, spectral_geometry
+from tantrium.core.spectral_geometry import SpectralGeometry
 from tantrium.core.spectral_reading import SpectralReading
-from tantrium.core.spectral_reading import read as _read
 from tantrium.cosmos import Lifecycle, run_cosmos
 
 
@@ -65,20 +64,27 @@ class Universe:
 
 
 def universe(seed, full: bool = True, inflation_steps: int = 30) -> Universe:
-    """Bir girdiden eksiksiz evreni doğur: madde + fizik + geometri (+ zaman + topoloji)."""
-    from tantrium.core.encoder import encode
-    obj = encode(seed, name="universe")
-    eigs = obj.structure.get("eigenvalues") or []
-    rank = int(obj.structure.get("matrix_rank") or 0)
-    physics = _read(seed)                              # 2 FİZİK
-    geom = spectral_geometry(seed)                     # 3 GEOMETRİ
+    """Bir girdiden eksiksiz evreni doğur: madde + fizik + geometri (+ zaman + topoloji).
+
+    Tek-operatör yüzleri (madde·fizik·geometri) TEK eigendecomposition'dan türer —
+    G bir kez köşegenleştirilir, hepsi ondan okunur ('tek operatör, yedi yüz' literal)."""
+    import numpy as np
+
+    from tantrium.core.encoder import UniversalEncoder
+    from tantrium.core.spectral_geometry import geometry_from_spectrum
+    from tantrium.core.spectral_reading import reading_from_eig
+    A = np.asarray(UniversalEncoder()._to_matrix(seed), dtype=float)
+    w, V = np.linalg.eigh(A.T @ A)                    # ★ TEK eigendecomposition
+    physics = reading_from_eig(w, V)                  # 2 FİZİK  (aynı w,V)
+    geom = geometry_from_spectrum(w)                  # 3 GEOMETRİ (aynı w)
+    rank = int(np.sum(w > 1e-9))                       # 1 MADDE  (aynı w)
     life = run_cosmos(seed=seed, inflation_steps=inflation_steps) if full else None  # 6+7
     blob = (f"{seed}|{physics.universality}|{round(physics.r_ratio, 6)}|"
             f"{round(geom.dimension, 6)}|{round(geom.action, 6)}|"
             f"{life.master_seal if life else ''}")
     seal = hashlib.sha256(blob.encode()).hexdigest()
     return Universe(
-        seed=str(seed)[:48], dim=len(eigs) or 1, rank=rank,
+        seed=str(seed)[:48], dim=len(w), rank=rank,
         physics=physics, geometry=geom, lifecycle=life, seal=seal, _input=seed,
     )
 

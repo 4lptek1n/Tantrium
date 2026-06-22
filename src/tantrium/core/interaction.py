@@ -15,10 +15,10 @@ import numpy as np
 
 @dataclass
 class Interaction:
-    """İki yapının çok-cisim etkileşimi: kuvvet + dolanıklık + bağlanma."""
+    """İki yapının çok-cisim etkileşimi: kuvvet + dolanıklık + hibridleşme."""
     coupling: float        # ‖köşegen-dışı‖ normalize — ham kuvvet şiddeti
     entanglement: float    # dolanıklık entropisi (A|B kesimi) — klasik-ayrılamaz korelasyon
-    binding: float         # kuplajın taban enerjisini düşürmesi (>0 = bağladı)
+    hybridization: float   # kuplajın spektrumu yeniden şekillendirmesi (seviye itmesi/karışım)
     n_a: int
     n_b: int
 
@@ -29,7 +29,7 @@ class Interaction:
     def summary(self) -> str:
         return (f"Interaction — kuvvet={self.coupling:.3f} | "
                 f"dolanıklık S={self.entanglement:.4f} ({'DOLANIK' if self.entangled else 'ayrık'}) | "
-                f"bağlanma={self.binding:+.4f}")
+                f"hibridleşme={self.hybridization:.4f}")
 
 
 def _feat(query) -> np.ndarray:
@@ -60,7 +60,9 @@ def interact(a, b) -> Interaction:
     C = occ @ occ.T
     xi = np.clip(np.linalg.eigvalsh(C[:na, :na]), 1e-12, 1 - 1e-12)
     S = float(-np.sum(xi * np.log(xi) + (1 - xi) * np.log(1 - xi)))
-    # Bağlanma: ayrık (köşegen) vs kuplajlı taban enerjisi
-    H0 = np.block([[ga, np.zeros((na, nb))], [np.zeros((nb, na)), gb]])
-    binding = float(np.linalg.eigvalsh(H0)[0] - w[0])
-    return Interaction(coupling=coupling, entanglement=S, binding=binding, n_a=na, n_b=nb)
+    # Hibridleşme: kuplaj spektrumu ne kadar yeniden şekillendirdi (ayrık ⊕ vs birleşik)
+    w_sep = np.sort(np.concatenate([np.linalg.eigvalsh(ga), np.linalg.eigvalsh(gb)]))
+    w_joint = np.sort(w)
+    denom = float(np.linalg.norm(w_sep)) or 1.0
+    hyb = float(np.linalg.norm(w_joint - w_sep) / denom)
+    return Interaction(coupling=coupling, entanglement=S, hybridization=hyb, n_a=na, n_b=nb)
