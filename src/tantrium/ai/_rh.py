@@ -153,6 +153,22 @@ class RHMixin:
         from tantrium.core.zeta_operator import compute_zeros as _cz
         return _cz(num)
 
+    def rh_genesis(self, depth: int = 16, max_degree: int = 4) -> "object":
+        """RH pozitifliğini sonlu formda var et — tek bütün (kaynak→Jensen→Hermite→mühür).
+
+        ξ'nin gerçek Φ-ölçüsünden (pozitifliğin kaynağı: Φ>0 ⟹ Hankel PSD bedava) Jensen-
+        Pólya dizisini a_n=γ_n/(2n)! kurar; sonsuz koşul "Ξ∈Laguerre-Pólya ⟺ RH"u sonlu
+        J^{d,n} hiperbolisitesine indirir; derinliği Ouroboros gibi adım adım büyütüp her
+        adımı EXACT Sturm ile sertifikalar; renormalize Jensen → Hermite (= GUE) yakınsamasını,
+        yani tek-kural adayını, ölçer; bütünü mühürler. Sonlu form sertifikalı; evrensel
+        hiperbolisite (= RH) hedeftir, iddia edilmez.
+
+            print(ai.rh_genesis().summary())
+        """
+        from tantrium.core.rh_genesis import rh_genesis as _rg
+        return _rg(depth=depth, max_degree=max_degree)
+
+
     def cosmos(self, seed=None, inflation_steps: int = 40) -> "object":
         """Bir tohumun TÜM evren ömrü: T₁ yaratılış → T₁₀ son, çağ çağ, mühürlü.
 

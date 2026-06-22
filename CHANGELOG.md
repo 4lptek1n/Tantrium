@@ -3,6 +3,27 @@
 Bu dosya, `claude/asi-pure-math` branch'inin (durumsuz saf-matematik makinesi)
 önemli değişikliklerini kaydeder.
 
+## [0.5.0] — RH-GENESIS: pozitifliğin sonlu-form var-oluşu (tek bütün)
+
+Tek organ, beş yüz, tek mühür — RH pozitifliğinin kaynağını sonlu formda var eder. Parça
+parça değil: kaynak ölçü → sonlu Jensen → Ouroboros var-oluş → Hermite/GUE kural avı → mühür.
+
+- `core/rh_genesis.py` — ★★★ **RHGenesis:**
+  - **KAYNAK:** Riemann ξ'sinin Pólya yoğunluğu Φ(u)>0 (gerçek ölçü); momentleri
+    γ_n=∫₀^∞ u^{2n}Φ(u)du. Hankel(γ) daima PSD (Cauchy-Schwarz) — moment-pozitifliği
+    BEDAVA çünkü ölçü gerçek ("iki biçim tek kaynak: operatör=ölçü=geometri → reel nesne").
+  - **SONLU:** "Ξ∈Laguerre-Pólya ⟺ RH" sonsuz koşulu sonlu Jensen polinomlarına iner:
+    a_n=γ_n/(2n)! (Ξ Taylor katsayıları), J^{d,n}=Σ C(d,j)a_{n+j}X^j. RH ⟺ tüm J^{d,n}
+    hiperbolik. Hankel-PSD otomatik; hiperbolisite = asıl RH içeriği (makine EXACT Sturm'la
+    sertifikalar — `jensen.py`).
+  - **VAR-OLUŞ:** derinlik adım adım büyür (Ouroboros); her adım hiperbolisiteyle sertifikalı.
+  - **KURAL:** tek-kural avı (GORZ 2019) — renormalize J^{d,n} → Hermite H_d (n→∞). Hermite
+    = harmonik salınıcı = **GUE** öz-fonksiyonları; pozitifliğin limitteki kaynağı. Modül
+    Hermite'e yakınsamayı (aday değişmez) ÖLÇER.
+  - **MÜHÜR:** bütün SHA-256 ile mühürlenir (deterministik, denetlenebilir).
+  - SDK: `ai.rh_genesis(depth, max_degree)`; `xi_phi`/`xi_jensen_sequence` ihraç.
+  - Dürüst: sonlu form EXACT sertifikalı; evrensel hiperbolisite (=RH) hedeftir, iddia edilmez.
+
 ## [0.4.0] — Üç eksen (tek operatör · ilişki · evrim) + spektral derinlik + zeta operatörü
 
 Makine tek bir çatıya oturdu: her şey **G=A†A operatörünün üç ekseni** — TEK OPERATÖR

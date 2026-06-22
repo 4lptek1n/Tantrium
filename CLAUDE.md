@@ -96,6 +96,13 @@ src/tantrium/
                           yalnız SKOR (inşa dairesel değil). compute_zeros (Riemann-Siegel Z'den
                           DOĞRUDAN hesap, tahmin/ankraj yok), probe_zeta_operator, certify_hilbert_polya
                           (simetri sınıfı→GUE). Taban koşullu yakınsamada; kapatan operatör = Hilbert-Pólya hedefi.
+    rh_genesis.py      ← ★★★ TEK BÜTÜN — RH pozitifliğinin sonlu-form var-oluşu (beş yüz, tek mühür):
+                          KAYNAK ξ'nin Pólya ölçüsü Φ(u)>0 → γ_n momentleri, Hankel PSD bedava (pozitiflik
+                          kaynağı = gerçek ölçü). SONLU "Ξ∈Laguerre-Pólya ⟺ RH" → sonlu Jensen a_n=γ_n/(2n)!,
+                          J^{d,n} hiperbolik mi (EXACT Sturm, jensen.py). VAR-OLUŞ derinlik adım adım büyür
+                          (Ouroboros), her adım sertifikalı. KURAL renormalize J→Hermite H_d (n→∞, GORZ) =
+                          GUE öz-fonksiyonları (tek-kural izi, ölçülür). MÜHÜR SHA-256. rh_genesis()/RHGenesis;
+                          SDK ai.rh_genesis(). Dürüst: sonlu form sertifikalı, evrensel hiperbolisite (=RH) HEDEF.
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
     collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
     truth.py           ← TruthCertifier (komşu yok → N/A; durumsuz)
@@ -190,6 +197,7 @@ ai.rh_distance("EGFR", "c1ccccc1")# tam RH-sertifika ayırt edici mesafe (metric
 ai.compute_zeros(10)              # ★ ilk 10 Riemann ζ-sıfırını ζ'den DOĞRUDAN hesapla (Riemann-Siegel Z; tahmin yok)
 ai.zeta_operator()                # ★ RH operatörünü doğal malzemeden kur (Berry-Keating iskelet + asal düzeltme; fit yok)
 ai.hilbert_polya()                # ★ zeta-operatörü sertifika hattından geçir (simetri sınıfı→GUE, RMS≈0.02)
+ai.rh_genesis(depth=16)           # ★★★ TEK BÜTÜN: RH pozitifliğinin sonlu-form var-oluşu (ξ ölçüsü→Jensen→Hermite/GUE→mühür)
 ai.jensen([1,4,6,4,1])            # Jensen-Pólya: Laguerre-Pólya (RH-tipi) sertifikası
 ai.hyperbolic([2,-3,1])           # polinom tüm kökleri gerçek mi
 ai.bezoutian([-6,11,-6,1])        # Bezoutian gizli faktör + Lah pivot + ilk-beş-pivot
@@ -260,7 +268,7 @@ Bunlara referans gören kod kalıntısı = hata; temizlenmeli.
 ---
 
 ## Mevcut Durum (v0.4.0)
-- 90 .py modül (62 core), 420 test fonksiyonu geçiyor. Durumsuz, saf matematik. RH bundle mimariye gömülü.
+- 91 .py modül (63 core), 427 test fonksiyonu geçiyor. Durumsuz, saf matematik. RH bundle mimariye gömülü.
 - ★ **ÜÇ EKSEN tek çatıda:** TEK OPERATÖR (spectral_reading/geometry — 4 katman + NCG geometri) ·
   İLİŞKİ (relation = interaction kuvvet+hayat + spectral_flow topoloji) · EVRİM (Cosmos T₀→T₁₀).
   `universe.py` üçünü bir girdiden YEDİ YÜZ + tek mühürde sentezler.
@@ -268,4 +276,7 @@ Bunlara referans gören kod kalıntısı = hata; temizlenmeli.
 - ★ Cosmos zaman-sıralı yaşam-döngüsü omurgası + spectral_class (integrallenebilir↔kaotik) + Ouroboros.
 - ★ `zeta_operator.py`: RH operatörü doğal malzemeden (Berry-Keating + explicit-formula, fit yok),
   `compute_zeros` ζ'den DOĞRUDAN hesap. Taban RMS≈0.02 (koşullu yakınsama); kapatan operatör = Hilbert-Pólya hedefi.
+- ★★★ `rh_genesis.py`: RH pozitifliğinin SONLU-FORM var-oluşu (tek bütün) — ξ Pólya ölçüsü Φ>0 (kaynak)
+  → sonlu Jensen J^{d,n} hiperbolisitesi (EXACT, RH içeriği) → Ouroboros var-oluş → renormalize J→Hermite/GUE
+  (tek-kural izi, GORZ) → mühür. Sonlu form sertifikalı; evrensel hiperbolisite (=RH) hedef.
 - Theorem candidate dokümanları: `docs/`, `theorems/`. Tam RH ispatı: `tce-collapse-engine` branch (Lean).

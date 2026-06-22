@@ -57,6 +57,12 @@ from tantrium.core.reconstruct import (
 from tantrium.core.relation import Relation, relate
 from tantrium.core.rh_certificate import RHCertificate, certify_rh, hausdorff
 from tantrium.core.rh_criteria import RHCriteria, criteria_distance, rh_criteria
+from tantrium.core.rh_genesis import (
+    RHGenesis,
+    rh_genesis,
+    xi_jensen_sequence,
+    xi_phi,
+)
 from tantrium.core.spectral_class import (
     SpectralClass,
     classify_spectrum,
@@ -147,6 +153,10 @@ __all__ = [
     "zeta_operator_matrix",
     "compute_zeros",
     "riemann_siegel_z",
+    "RHGenesis",
+    "rh_genesis",
+    "xi_jensen_sequence",
+    "xi_phi",
     "certify_hilbert_polya",
     "HilbertPolyaCertificate",
     "laguerre_polya_test",

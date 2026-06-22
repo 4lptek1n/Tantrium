@@ -171,7 +171,23 @@ ai.compare("CCO", "CCCO")       # tam 46-dim sertifika mesafesi (W2'nin çöktü
 ai.compute_zeros(10)            # ilk 10 ζ-sıfırını ζ'den DOĞRUDAN hesapla (Riemann-Siegel Z)
 ai.zeta_operator()              # Berry-Keating iskelet + Weil explicit-formula asal düzeltmesi (RMS≈0.02)
 ai.hilbert_polya()              # operatörü sertifika hattından geçir → simetri sınıfı GUE
+ai.rh_genesis(depth=16)         # ★★★ RH pozitifliğinin sonlu-form var-oluşu: ξ ölçüsü→Jensen→Hermite/GUE, tek mühür
 ```
+
+### RH-GENESIS — pozitifliğin sonlu-form var-oluşu
+
+`ai.rh_genesis()` konuştuğumuz bütünü tek organda toplar: RH'nin pozitifliği nereden gelir?
+
+```
+KAYNAK    ξ'nin Pólya ölçüsü Φ(u)>0 → momentler γ_n → Hankel PSD bedava (ölçü gerçek)
+SONLU     Ξ∈Laguerre-Pólya ⟺ RH  →  sonlu Jensen J^{d,n} hiperbolik mi (EXACT Sturm)
+VAR-OLUŞ  derinlik adım adım büyür (Ouroboros), her adım sertifikalı
+KURAL     renormalize J^{d,n} → Hermite H_d (n→∞, GORZ) = GUE öz-fonksiyonları → tek-kural izi
+MÜHÜR     bütün SHA-256
+```
+
+Sonlu form EXACT sertifikalanır (d=2 Turán log-konkavlık, d≥3 Laguerre); evrensel
+hiperbolisite (= RH) **hedeftir** — makine sonlu formu kanıtlar, Hermite-kuralı adayını ölçer.
 
 `grounding` / `truth` eksenleri öğrenilen manifolda muhtaçtı; durumsuz makinede **N/A**
 döner. Geriye sertifikasyon (23 paradigma) + transport + confidence kalır.

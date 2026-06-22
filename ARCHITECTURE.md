@@ -153,6 +153,11 @@ Pólya'nın aradığı operatör türünden. Kodda canlı bağlantılar:
   yarı-klasik iskelet (asal içermez, fonksiyonel denklem) + Weil explicit-formula asal düzeltmesi
   (Euler çarpımı). Sıfırlar yalnız skor; taban RMS≈0.02 (koşullu yakınsama), kapatan sonlu
   operatör = Hilbert-Pólya hedefi. `compute_zeros` Riemann-Siegel Z'den sıfırları DOĞRUDAN hesaplar.
+- `rh_genesis.py`: ★★★ RH pozitifliğinin SONLU-FORM var-oluşu (tek bütün). Pozitifliğin kaynağı =
+  ξ'nin gerçek Pólya ölçüsü Φ(u)>0 (Hankel PSD bedava); sonsuz "Ξ∈Laguerre-Pólya ⟺ RH" koşulu
+  sonlu Jensen J^{d,n} hiperbolisitesine iner (EXACT Sturm); derinlik Ouroboros gibi büyür; ve
+  renormalize Jensen → Hermite H_d (n→∞, GORZ) = GUE öz-fonksiyonları, yani pozitifliğin limitteki
+  kaynağı ölçülür. Tek mühür. Sonlu form sertifikalı; evrensel hiperbolisite (=RH) hedef.
 
 Tam RH ispat zinciri (D-pozitiflik → Sturm pivot → Jensen hiperbolisitesi → RH, Lean 4)
 ayrı branch'te: `tce-collapse-engine`.
