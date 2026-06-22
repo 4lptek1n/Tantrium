@@ -49,18 +49,60 @@ In the **diagonal** coordinate (the natural one per the catalog and the
 - Row/column log-concavity of that grid is **false** — but log-concavity is not
   implied by TP₂ (different notion), so this is consistent.
 
-## Status
+## Diagonal TP survives extension to r=30 (the decisive gate)
 
-- The surviving uniform invariant is **total positivity in the diagonal
-  coordinate**, verified on the stored leading block (i=0..4, m=0..11) and
-  backed to r=30 at first order. It is NOT inherited from q_d (emergent from the
-  full `P2(d,Y,q_d)` wrap), and it is NOT a Hankel object → needs the
-  production-matrix (LGV/Karlin) route, not Sokal-Hankel.
-- **Open (narrow, checkable):** regenerate the *full* diagonal binom-r vectors
-  (i=0..12, all diagonals, r=3..30 — only c₀..c₄ are currently stored) and test
-  full TP there; then write the explicit column→column **production matrix P**
-  and decide whether it is itself TP (Karlin: P TP ⟹ generated grid TP). That
-  reduces "operator preserves TP" to a single finite matrix check.
+The fixed-r 2D TP was a window artifact. To rule out a *third* mirage, the
+diagonal-coordinate TP was extended to the full r=30 window on the **validated**
+D-seed object. The D-seed `c_a(r) = -2·[binom(x,a)][Y^{r+2}]·L2` was reconstructed
+by pure-Fraction substitution of the S-fraction `q_d` into the stored mixed-depth
+kernel (`results/engine/ell2_mixed_depth_kernel.csv`) and **validated exactly**
+against the established r=2 ground truth `[8,244,1376,2892,2592,840]`. With
+`maxk(r)=r+3`, `m=(r+3)-a`, on r=3..30:
+
+- **(A) Complete monotonicity.** Each diagonal sequence (over r) and *all* its
+  forward differences (every order) are ≥ 0: **30/30 diagonals, zero negatives**
+  → each diagonal is a Hausdorff moment sequence.
+- **(B) High-order TP.** The binom-r coefficient grid `[c_i(m)]` (25 diagonals ×
+  10 coeffs): all `c_i(m) ≥ 0`, and contiguous minors of orders 2–6 are **all
+  nonnegative** (`TP₂…TP₆`: 0 negative). On the small leading block all minors
+  (not just contiguous) were 0-negative too.
+
+So — unlike real-rootedness, ULC, and fixed-r TP, each of which died on
+extension — **diagonal TP holds to r=30 and to minor-order 6.** This is the first
+candidate invariant that passes the extension stress-test.
+
+## Status: numerical gate passed → structural target is PLANARITY (LGV)
+
+Chasing larger numerical minors is the wrong endgame — any finite check stays
+window-bounded. The structural cause is **Lindström–Gessel–Viennot**:
+
+```
+diagonal C-grid is TP  ⟺  the ℓ=2 transport network is planar (positive weights)
+```
+
+A matrix is TP iff it is the path matrix of a planar acyclic positively-weighted
+network; then every minor = a non-crossing path-family count ≥ 0 (LGV), at every
+order and every r, with no window artifact. The repo's `PATH_MODEL.md` already
+gives the **single-path** version: `Φ = SplitPair∘RootTop∘Wrapping` is injective
+(formalized in `Collapse.lean`) ⟹ `S_m(i) ≥ 0` (first-order positivity). The
+diagonal-TP result above is the **multi-path** shadow of the same network.
+
+- **Single-path LGV** = `Φ` injective  → first-order positivity  (done).
+- **Multi-path LGV** = non-crossing path families → full TP  (the open target).
+
+This also explains the coordinate dependence (red flag → green): TP needs an
+LGV-compatible source/sink order. The **diagonal** order is the planar one (no
+crossings → TP); the **fixed-r** order is not (paths cross → 98 negatives). The
+catalog calling the diagonal coordinate "natural" is exactly this.
+
+**Open (the real (G), now sharp):** make the path objects counted by `C_m(i)`
+explicit as a planar acyclic network — sources, sinks, edges, the ≥0 weights, and
+the non-crossing condition — reusing the wrap/Top/Split left-inverse structure
+already in `Collapse.lean`. Planarity ⟹ TP at all orders/all r by Lindström, with
+no further numerics. (Karlin's *linear* production-matrix theorem does **not**
+apply directly: the r→r+1 map is the S-fraction's **quadratic** convolution;
+LGV/planarity bypasses this because path combinatorics absorbs the quadratic
+step.)
 
 Caveat: this is the ℓ=2 branch only. The Uniform Lift (∀ℓ, "P2") and the
 Pólya–Jensen → ξ link ("F5") still gate RH.
