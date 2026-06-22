@@ -26,6 +26,7 @@ from tantrium.core.free_probability import (
     r_transform,
     semicircle_distance,
 )
+from tantrium.core.interaction import Interaction, interact
 from tantrium.core.inverse import DesignCandidate, DesignReport, InverseTransport
 from tantrium.core.jensen import JensenReport, is_hyperbolic, laguerre_polya_test, turan
 from tantrium.core.metric import (
@@ -60,6 +61,7 @@ from tantrium.core.spectral_class import (
     spectral_class,
 )
 from tantrium.core.spectral_flow import SpectralFlow, flow_between, spectral_flow
+from tantrium.core.spectral_geometry import SpectralGeometry, spectral_geometry
 from tantrium.core.spectral_reading import SpectralReading
 from tantrium.core.spectral_reading import read as spectral_reading
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
@@ -76,6 +78,7 @@ from tantrium.domains.spectral import (
 )
 from tantrium.proof.certificate import Cell, Certificate, TransportEdge
 from tantrium.proof.dyadic_flow import FlowPolicy, solve_greedy
+from tantrium.universe import Universe, universe
 
 __all__ = [
     # SDK
@@ -113,6 +116,12 @@ __all__ = [
     "run_cosmos",
     "Lifecycle",
     "Epoch",
+    "universe",
+    "Universe",
+    "interact",
+    "Interaction",
+    "spectral_geometry",
+    "SpectralGeometry",
     "laguerre_polya_test",
     "is_hyperbolic",
     "turan",

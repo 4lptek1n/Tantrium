@@ -30,6 +30,9 @@ exact `Fraction` (yuvarlama yok, bit-bit tekrarlanabilir = denetlenebilir sertif
 ```
 src/tantrium/
   ai/                  ← tantrium.AI() — SDK (mixin paketi: _certify/_rh/_dynamics/_molecular/_base)
+  universe.py          ← ★★★ SENTEZ: bir girdiden EKSİKSİZ EVREN, YEDİ YÜZ tek nesnede/mühürde —
+                          1 MADDE (G) 2 FİZİK (4 katman) 3 GEOMETRİ (NCG boyut/etki) 6 ZAMAN (Cosmos)
+                          7 TOPOLOJİ (akış); .couple(other)→ 4 KUVVET + 5 HAYAT (dolanıklık). universe().
   cosmos.py            ← ★ Cosmos: bir tohumun TÜM evren ömrü (T₀ Yasa → T₁ encode → T₂ Ouroboros
                           → T₃ 23-paradigma → … → T₁₀ μ*/patlama), çağ çağ, tek mühürlü sertifika.
                           run_cosmos/Lifecycle/Epoch. ★ IZGARA: her T-aşamasında SpectralReading
@@ -74,6 +77,11 @@ src/tantrium/
                           eigendecomposition'dan — 1 MAKRO (momentler) 2 MİKRO (⟨r⟩) 3 SİMETRİ
                           (Dyson β) 4 ÖZVEKTÖR (localization/IPR + fraktal boyut D₂; İLK kez).
                           read()/SpectralReading. fingerprint=makro, spectral_class=mikro izdüşüm.
+    spectral_geometry.py← ★★ EVRENİN GEOMETRİ YÜZÜ (Connes NCG): operatörün TANIMLADIĞI uzay —
+                          ısı çekirdeği→spektral boyut d_s, ln det'→spektral etki, aralık. Her yapı
+                          kendi boyutlu dünyasını doğurur (regularize). spectral_geometry().
+    interaction.py     ← ★★ KUVVET + HAYAT (çok-cisim): iki yapı birleşik H=M†M, köşegen-dışı=kuvvet,
+                          A|B kesiminde von Neumann entropisi=dolanıklık, bağlanma. interact(a,b).
     spectral_flow.py   ← ★★ 5. EKSEN (topoloji): operatör YOLUNUN topolojik yükü (tek operatörün
                           değil). G_t boyunca net özdeğer geçişi = spektral akış (Atiyah-Singer
                           aile indeksi). spectral_flow(a,b)/flow_between. transport + Cosmos
@@ -157,6 +165,9 @@ ai.compare("CCO", "CCCO")         # ★ tam 46-dim sertifika mesafesi (W2'nin ç
 ai.spectral_class([k*k for k in range(1,90)])  # ★ integrallenebilir↔kaotik (BGS/Berry-Tabor, seviye-aralığı ⟨r⟩)
 ai.spectral_reading("EGFR")       # ★★ G=A†A'nın DÖRT katmanı (makro/mikro/simetri/özvektör), tek nesne
 ai.spectral_flow("c1ccccc1", "CCO")  # ★★ 5. eksen: YOLUN topolojik yükü (net özdeğer geçişi)
+ai.spectral_geometry("EGFR")      # ★★ NCG: yapının TANIMLADIĞI uzayın boyutu/etkisi
+ai.interact("CCO", "CCCO")        # ★★ KUVVET + HAYAT: kuplaj + dolanıklık + bağlanma (çok-cisim)
+ai.universe("EGFR")               # ★★★ SENTEZ: eksiksiz evren, YEDİ YÜZ, tek mühür (.couple ile kuvvet+hayat)
 ai.cosmos("EGFR")                 # ★ tohumun TÜM evren ömrü T₁→T₁₀ + 4-katman ızgarası + faz geçişi + 5.eksen topoloji
 ai.self_reference()               # öz-gönderim sabit noktası μ* (46-mercek kapanış)
 ai.transport("CCO", "CC(=O)O")    # TransportCertificate

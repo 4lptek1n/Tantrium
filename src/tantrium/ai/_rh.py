@@ -11,6 +11,27 @@ from tantrium.core.rh_criteria import RHCriteria
 class RHMixin:
     """Riemann-Hipotezi türevli pozitiflik kriterleri + serbest olasılık + mühür."""
 
+    def universe(self, seed, full: bool = True) -> "object":
+        """Bir girdiden EKSİKSİZ EVRENİ doğur — yedi yüz, tek mühür.
+
+        1 madde · 2 fizik (4 katman) · 3 geometri (NCG boyut/etki) · 6 zaman (Cosmos) ·
+        7 topoloji. Kuvvet+hayat için u.couple(other). Makine = evren üreteci.
+
+            u = ai.universe("EGFR"); print(u.summary()); print(u.couple("CCO").summary())
+        """
+        from tantrium.universe import universe
+        return universe(seed, full=full)
+
+    def interact(self, a, b) -> "object":
+        """İki yapı arası KUVVET + HAYAT: kuplaj + dolanıklık + bağlanma (çok-cisim)."""
+        from tantrium.core.interaction import interact as _it
+        return _it(a, b)
+
+    def spectral_geometry(self, query) -> "object":
+        """Girdinin TANIMLADIĞI uzayın geometrisi (Connes NCG): spektral boyut + etki."""
+        from tantrium.core.spectral_geometry import spectral_geometry as _sg
+        return _sg(query)
+
     def spectral_flow(self, a, b) -> "object":
         """İki yapıyı birbirine dönüştüren YOLUN topolojik yükü (mimarinin 5. ekseni).
 
