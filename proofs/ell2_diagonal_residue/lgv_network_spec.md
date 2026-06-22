@@ -177,3 +177,27 @@ from the same `L`-triangular, m-independent step.
 Caveat: ℓ=2 branch only. The ∀ℓ question is now precise — does this planar
 network (bidiagonal-generated conversion + non-crossing residual) lift uniformly
 in ℓ, or is ℓ=2 special? F5 (Pólya–Jensen → ξ) is the separate, deepest gate.
+
+## Addendum: the production residual is log-concave (moment signature)
+
+A further structural property of the residual, computed on the validated D-seed
+grid: writing the production identity as `C_{m+1} = α·M₁·C_m + S_m` with `M₁` the
+lower-bidiagonal binomial Toeplitz (the conversion generator `L`) and `α` the
+tight transport coefficient, the residual `S_m` is — for every m tested (0..18) —
+
+- binomial-x **nonnegative**, and
+- **log-concave**, with a structural zero in the leading coordinate.
+
+So `S_m` is not merely `≥ 0`; it carries a **moment-sequence signature**
+(log-concavity ⇒ consistent with a Hausdorff/Hamburger moment representation).
+This is exactly what one expects if `S_m` is a positive path-count (the LGV
+residual family `Res_m`): a moment structure is the hallmark of a nonnegative
+combinatorial weight count. It strengthens the case that the residual edges admit
+a manifestly-positive (non-crossing path) representation.
+
+Caveat (unchanged): the coefficient `α` and `S_m` here are read off the computed
+`C_{m+1}`, so this is corroboration of the certificate's existence, not a
+non-circular derivation. The open core remains a construction-level
+(C_{m+1}-independent) positive representation of `S_m`, uniform in m. And the
+ℓ=2 branch as a whole is gated by F5 (model = real ξ), which is asymptotic-only
+(see `f5_model_vs_real_xi.md`).
