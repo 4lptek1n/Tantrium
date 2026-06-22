@@ -129,12 +129,50 @@ Computed exactly on the validated D-seed grid `[c_i(m)]`
   missing edges, not negative ones).
 
 **This pins the only remaining gap to a single statement:** the Neville
-multipliers of `[c_i(m)]` are nonnegative **uniformly** in (m,i). Verified on the
-finite block; a closed form for the multipliers would make it uniform in r and
-discharge the residual-non-crossing obligation structurally — at which point
-Lindström gives full TP at all orders/all r and the ring closes:
-`transportPhi_injective` (single-path) ⊂ full TP (multi-path), both from the same
-`L`-triangular structure.
+multipliers of `[c_i(m)]` are nonnegative **uniformly** in (m,i).
+
+## The deciding question: is the edge structure m-independent? — YES
+
+"Neville uniform ≥0, closed form" is, by Gasca–Peña, just a faithful *restatement*
+of uniform TP (multipliers = ratios of consecutive minors), so it carries no new
+leverage and there is no closed form. The only real lever is whether the
+single-descent network is **m-independent** (structure fixed, only weights scale)
+— in which case the block is *generic* and concatenation gives all m — versus
+m-varying (a breakable finite window, like fixed-r at r=7).
+
+**Two independent confirmations that the structure is m-independent:**
+
+1. *Definitional.* `Φ = B∘R∘W` adds exactly one marker to one component at every
+   descent (`wrap γ`, `Top τ`, `Split σ`), the same operation regardless of the
+   current depth `m`; the per-descent weight is the constant `(1/2)³ = 1/8`. The
+   descent operation does not change with m.
+2. *Empirical (`tools/ell2_dseed_muniform.py`).* The Neville multiplier **sign
+   pattern is identical across five shifted m-windows** (m=0..5, 3..8, 6..11,
+   9..14, 12..17): all 15 multipliers `+`, no zeros, no sign change. The network's
+   incidence/sign structure is stable under m-shift — materially unlike fixed-r,
+   where extension *introduced* 98 negatives.
+
+So we are in the **generic** branch: the block is the generic descent, not a
+fragile window. Structural collapse at large m is ruled out.
+
+## What remains — and the honest core
+
+With the structure m-generic, ℓ=2 closure reduces to exactly one thing: the
+**residual edge weights are ≥ 0 for all m**. The safe-transport part
+(`8^{-m}·M_Δ`, `M_Δ = L^Δ`) is manifestly ≥0 and m-uniform. The residual is the
+open core — and it is **not** manifestly ≥0: in the natural q-power representation
+`P2 = P4q⁴+P3q³+P2c q²+P1q+P0`, the families `P3, P1` are **negative** and `P0`
+is mixed (`p2_q_power_decomposition.md`: "ℓ=2 cannot be closed by independent
+q-layer positivity"). The all-`+` Neville result is strong evidence the *combined*
+residual weight is nonetheless ≥0, but proving it ∀m is exactly the deferred
+**path-class identification** (`RESIDUE_MAPS_SPEC.md` §7): exhibit `Res_m(i)` as a
+manifestly-positive path count (the "weighted dominance" target), not the
+sign-indefinite algebraic form. This is the same dominance crisis that has gated
+ℓ=2 throughout — now localized precisely as the *last* piece: a positive
+representation of the residual split-family weights, m-uniform by the generic
+structure above. Once written, Lindström gives full TP at all orders/all r and the
+ring closes: `transportPhi_injective` (single-path) ⊂ full TP (multi-path), both
+from the same `L`-triangular, m-independent step.
 
 Caveat: ℓ=2 branch only. The ∀ℓ question is now precise — does this planar
 network (bidiagonal-generated conversion + non-crossing residual) lift uniformly
