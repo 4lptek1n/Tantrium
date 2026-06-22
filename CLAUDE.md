@@ -72,8 +72,12 @@ src/tantrium/
                           → GUE (0.62). Hankel-kodlama (varsayılan) reel → GOE; GUE'yi kaybeder.
     spectral_reading.py← ★★ IZGARANIN DERİNLİK EKSENİ: G=A†A'nın DÖRT kanonik katmanı tek
                           eigendecomposition'dan — 1 MAKRO (momentler) 2 MİKRO (⟨r⟩) 3 SİMETRİ
-                          (Dyson β) 4 ÖZVEKTÖR (localization/IPR; İLK kez). read()/SpectralReading.
-                          Mevcut yetenekler bunun izdüşümü (fingerprint=makro, spectral_class=mikro).
+                          (Dyson β) 4 ÖZVEKTÖR (localization/IPR + fraktal boyut D₂; İLK kez).
+                          read()/SpectralReading. fingerprint=makro, spectral_class=mikro izdüşüm.
+    spectral_flow.py   ← ★★ 5. EKSEN (topoloji): operatör YOLUNUN topolojik yükü (tek operatörün
+                          değil). G_t boyunca net özdeğer geçişi = spektral akış (Atiyah-Singer
+                          aile indeksi). spectral_flow(a,b)/flow_between. transport + Cosmos
+                          yörüngesine entegre. Özdeş→0, düzgün→0 geçiş, topolojik farklı→sıfırdan farklı.
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
     collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
     truth.py           ← TruthCertifier (komşu yok → N/A; durumsuz)
@@ -152,7 +156,8 @@ ai.fingerprint("EGFR")            # ★ TAM 46-boyutlu sertifika vektörü (maki
 ai.compare("CCO", "CCCO")         # ★ tam 46-dim sertifika mesafesi (W2'nin çöktüğünü ayırır)
 ai.spectral_class([k*k for k in range(1,90)])  # ★ integrallenebilir↔kaotik (BGS/Berry-Tabor, seviye-aralığı ⟨r⟩)
 ai.spectral_reading("EGFR")       # ★★ G=A†A'nın DÖRT katmanı (makro/mikro/simetri/özvektör), tek nesne
-ai.cosmos("EGFR")                 # ★ tohumun TÜM evren ömrü T₁→T₁₀ + 4-katman ızgarası + faz geçişi
+ai.spectral_flow("c1ccccc1", "CCO")  # ★★ 5. eksen: YOLUN topolojik yükü (net özdeğer geçişi)
+ai.cosmos("EGFR")                 # ★ tohumun TÜM evren ömrü T₁→T₁₀ + 4-katman ızgarası + faz geçişi + 5.eksen topoloji
 ai.self_reference()               # öz-gönderim sabit noktası μ* (46-mercek kapanış)
 ai.transport("CCO", "CC(=O)O")    # TransportCertificate
 ai.sturm("x^3 - 3*x + 1")         # Sturm zinciri

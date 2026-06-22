@@ -59,6 +59,7 @@ from tantrium.core.spectral_class import (
     classify_spectrum,
     spectral_class,
 )
+from tantrium.core.spectral_flow import SpectralFlow, flow_between, spectral_flow
 from tantrium.core.spectral_reading import SpectralReading
 from tantrium.core.spectral_reading import read as spectral_reading
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
@@ -100,6 +101,9 @@ __all__ = [
     "SpectralClass",
     "spectral_reading",
     "SpectralReading",
+    "spectral_flow",
+    "flow_between",
+    "SpectralFlow",
     "certify_rh",
     "RHCertificate",
     "hausdorff",

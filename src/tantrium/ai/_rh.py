@@ -11,6 +11,18 @@ from tantrium.core.rh_criteria import RHCriteria
 class RHMixin:
     """Riemann-Hipotezi türevli pozitiflik kriterleri + serbest olasılık + mühür."""
 
+    def spectral_flow(self, a, b) -> "object":
+        """İki yapıyı birbirine dönüştüren YOLUN topolojik yükü (mimarinin 5. ekseni).
+
+        Dört katman tek operatörü okur; bu, operatörler arası bir yolu okur. G_A→G_B
+        morfingi boyunca net özdeğer geçişi = topolojik yük. Özdeş→0; düzgün/yakın
+        dönüşüm→0 geçiş; topolojik farklı yapı→sıfırdan farklı.
+
+            print(ai.spectral_flow("c1ccccc1", "CC(=O)Oc1ccccc1C(=O)O").summary())
+        """
+        from tantrium.core.spectral_flow import spectral_flow as _sf
+        return _sf(a, b)
+
     def spectral_reading(self, query, as_spectrum: bool = False) -> "object":
         """G=A†A'nın TAM dört-katmanlı okuması — tek nesne, tek eigendecomposition.
 

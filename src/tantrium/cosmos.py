@@ -30,6 +30,7 @@ from tantrium.core.encoder import encode
 from tantrium.core.fixed_point import self_reference_orbit
 from tantrium.core.network import CertificationPipeline
 from tantrium.core.rh_criteria import rh_criteria
+from tantrium.core.spectral_flow import SpectralFlow, flow_between
 from tantrium.core.spectral_reading import SpectralReading
 from tantrium.core.spectral_reading import read as _read_spectrum
 
@@ -56,6 +57,17 @@ def _uncapped_spectrum(carrier: list[float]) -> tuple[int, int, int, float]:
     pos = s[s > 0]
     cond = float(smax / pos[-1]) if pos.size else float("inf")
     return n, num_rank, eff, cond
+
+
+def _life_topology(seed, carrier) -> SpectralFlow:
+    """Ömrün topolojik yükü: doğuş G'sinden son G'sine spektral akış (5. eksen)."""
+    from tantrium.core.encoder import UniversalEncoder
+    enc = UniversalEncoder()
+
+    def g(x):
+        A = np.asarray(enc._to_matrix(x), dtype=float)
+        return A.T @ A
+    return flow_between(g(seed), g(carrier), steps=200)
 
 
 def _inflate_step(carrier: list[float], n_c: int, step: int) -> list[float]:
@@ -101,6 +113,7 @@ class Lifecycle:
     universality_path: list[str] = field(default_factory=list)   # mikro katman yörüngesi
     ergodicity_path: list[float] = field(default_factory=list)    # özvektör katman yörüngesi
     transitions: list[str] = field(default_factory=list)          # ömür boyu faz geçişleri
+    topology: SpectralFlow | None = None   # 5. eksen: ömrün topolojik yükü (doğuş→son)
 
     def summary(self) -> str:
         lines = [f"COSMOS — '{self.seed}' yaşam döngüsü (tek yasa: pozitiflik ≥ 0)"]
@@ -128,6 +141,10 @@ class Lifecycle:
                 lines.append(f"  ⚡ FAZ GEÇİŞİ: {' | '.join(self.transitions)}")
             else:
                 lines.append("  (faz geçişi yok — yapı ömrü boyunca sınıfını korudu)")
+        if self.topology is not None:
+            t = self.topology
+            eng = "düzgün" if t.smooth else f"{t.crossings} mod yeniden-örgütlenmesi"
+            lines.append(f"  ── 5. eksen: TOPOLOJİ (yol) ── yük (net akış)={t.net_flow:+d} | {eng}")
         return "\n".join(lines)
 
 
@@ -164,6 +181,8 @@ def run_cosmos(seed=None, inflation_steps: int = 40, n_c: int = 12) -> Lifecycle
             if rd.ergodicity is not None:
                 life.ergodicity_path.append(round(rd.ergodicity, 3))
     life.final_reading = _read_spectrum(carrier)
+    # 5. eksen — ömrün topolojik yükü: doğuş operatöründen son operatöre spektral akış
+    life.topology = _life_topology(seed, carrier)
     dim_f, num_f, eff_f, cond_f = _uncapped_spectrum(carrier)
     tail = effs[len(effs) // 2:] or effs
     plateau = max(set(tail), key=tail.count) if tail else eff_f
