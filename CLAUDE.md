@@ -30,8 +30,11 @@ exact `Fraction` (yuvarlama yok, bit-bit tekrarlanabilir = denetlenebilir sertif
 ```
 src/tantrium/
   ai/                  ← tantrium.AI() — SDK (mixin paketi: _certify/_rh/_dynamics/_molecular/_base)
+  cosmos.py            ← ★ Cosmos: bir tohumun TÜM evren ömrü (T₀ Yasa → T₁ encode → T₂ Ouroboros
+                          → T₃ 23-paradigma → … → T₁₀ μ*/patlama), çağ çağ, tek mühürlü sertifika.
+                          run_cosmos/Lifecycle/Epoch. Makinenin organlarını tek zaman okuna dizer.
   serve.py             ← opsiyonel FastAPI REST
-  core/                ← 34 modül (büyükler paket: paradigms/ encoder/ pipeline/ production/ molecular_derivation/)
+  core/                ← 36 modül (büyükler paket: paradigms/ encoder/ pipeline/ production/ molecular_derivation/)
     encoder/           ← girdi→moment (paket: _linalg/_text/_encoder). SMILES→bigram,
                           diğer string→deterministik imza-hash (math, YAKINLIK/ANLAM YOK)
     paradigms/         ← 23 paradigma (paket: base/core/aux; verify() okur, hesaplamaz)
@@ -40,6 +43,8 @@ src/tantrium/
     engine.py          ← CertificationEngine (DURUMSUZ) + engine.core (CoreMachine lazy)
     unified.py         ← CoreMachine — tek geçiş sertifika
     concept.py         ← Concept + moment_distance (saf moment L1)
+    fixed_point.py     ← ★ öz-gönderim sabit noktası μ* (makine kendine bakar; 45-dim imza
+                          uzayında, 46 RH-merceğinde kapanış). self_reference_orbit.
     rh_certificate.py  ← ★ BİRLEŞİK RH bundle (mimari omurga): TÜM moment-RH matematiği
                           tek nesnede — rh_criteria + Hausdorff + Turán + free_entropy +
                           yarı-daire + SHA-256 mühür. certify_rh(moments). encoder her
@@ -55,7 +60,13 @@ src/tantrium/
                           serbest konvolüsyon ⊞, yarı-daire (Wigner) mesafesi.
     verifier.py        ← mühürlü sertifika: seal→SHA-256 içerik-hash, verify→tamper-tespiti,
                           adversarial_control (geçersiz diziyi dürüstçe eler — negatif kontrol).
-    metric.py          ← canonical_distance (spectral W2), l1_distance
+    metric.py          ← ★ OPERATİF BİRİM: full_distance/certificate_distance = TAM 46-boyutlu
+                          sertifika mesafesi (paradigm_signature, 23 paradigmanın tüm çıktısı).
+                          distance() varsayılanı artık 46-dim (W2 yalnız metric="w2"). Sistem
+                          geneli buna bağlı (inverse/molecular_space/genesis/certifier).
+    spectral_class.py  ← ★ integrallenebilir↔kaotik: TAM N×N spektrumun seviye-aralığı ⟨r⟩
+                          (8 moment DEĞİL). Bohigas-Giannoni-Schmit + Berry-Tabor. Poisson
+                          (kapalı-form) / GOE (kaotik). G=AᵀA reel → en fazla GOE.
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
     collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
     truth.py           ← TruthCertifier (komşu yok → N/A; durumsuz)
@@ -76,6 +87,13 @@ src/tantrium/
   domains/             ← bridge/ (paket), certifier, generator, math_kernel*, spectral
   graph/
     anchors.py         ← 10 kanonik dağılım (ZETA_ZEROS, GUE, Gauss, ...) — saf matematik
+
+tools/                 ← deneyler (çekirdeği süren sürücüler; durum motorda, çekirdek durumsuz):
+  ouroboros.py         ← kendi kendini besleyen deterministik genişleme (boyut N→N+1, gerçek
+                          rank tırmanır, kritik çizgide kalır). Simetri kırılması + hayatta-kalma.
+  ouroboros_explosion.py← tavansız genişleme: etkin rank ~95'te doyar (kendini-örgütleme),
+                          Hankel kondisyonu patlar (gerçek ufuk).
+  self_reference_experiment.py · cosmos demo · discrimination_benchmark.py
 
 * math_kernel.inject_math_kernel: manifold gerektirdiği için durumsuz makinede no-op.
 ```
@@ -123,6 +141,11 @@ ai.status()                       # durumsuz makine özeti
 ai.ask("EGFR")                    # AskResult: paradigma sertifikası
 ai.certify_all("EGFR")            # UnifiedCertificate (tek geçiş)
 ai.paradigms("c1ccccc1")          # 23 paradigma dökümü
+ai.fingerprint("EGFR")            # ★ TAM 46-boyutlu sertifika vektörü (makinenin algı organı)
+ai.compare("CCO", "CCCO")         # ★ tam 46-dim sertifika mesafesi (W2'nin çöktüğünü ayırır)
+ai.spectral_class([k*k for k in range(1,90)])  # ★ integrallenebilir↔kaotik (BGS/Berry-Tabor, seviye-aralığı ⟨r⟩)
+ai.cosmos("EGFR")                 # ★ tohumun TÜM evren ömrü T₁→T₁₀, çağ çağ, mühürlü
+ai.self_reference()               # öz-gönderim sabit noktası μ* (46-mercek kapanış)
 ai.transport("CCO", "CC(=O)O")    # TransportCertificate
 ai.sturm("x^3 - 3*x + 1")         # Sturm zinciri
 ai.positivity("x^2 + 1")          # Hankel PSD
@@ -199,5 +222,7 @@ Bunlara referans gören kod kalıntısı = hata; temizlenmeli.
 ---
 
 ## Mevcut Durum
-- 52 .py modül, ~170+ test geçiyor. Durumsuz, saf matematik. RH bundle mimariye gömülü (mühürlü).
-- Theorem candidate dokümanları: `docs/`, `theorems/`. Tam RH ispatı: `tce-collapse-engine` branch.
+- 82 .py modül (55 core), ~370 test geçiyor. Durumsuz, saf matematik. RH bundle mimariye gömülü.
+- ★ Operatif birim TAM 46-boyutlu sertifika (8 momente/W2'ye çökmez) — sistem geneli buna bağlı.
+- ★ Cosmos zaman-sıralı yaşam-döngüsü omurgası + spectral_class (integrallenebilir↔kaotik) + Ouroboros.
+- Theorem candidate dokümanları: `docs/`, `theorems/`. Tam RH ispatı: `tce-collapse-engine` branch (Lean).

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tantrium"
-version = "0.2.0"
+version = "0.3.0"
 description = "Durumsuz, saf-matematik yapısal sertifikasyon makinesi — girdiyi spektral momentlere okur, Riemann Hipotezi ispat yapısından türetilmiş pozitiflik operatörleriyle sertifikalar."
 readme = "README.md"
 requires-python = ">=3.10"
