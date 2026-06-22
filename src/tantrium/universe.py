@@ -48,7 +48,8 @@ class Universe:
             f"  1 MADDE     operatör {self.dim}×{self.dim}, rank {self.rank}",
             f"  2 FİZİK     {p.universality} (β={p.beta}) | özvektör D₂="
             f"{'—' if p.fractal_dim is None else round(p.fractal_dim, 3)}",
-            f"  3 GEOMETRİ  uzay boyutu d_s={g.dimension:.3f} | etki={g.action:+.3f}",
+            f"  3 GEOMETRİ  uzay boyutu d_s={g.dimension:.3f} (R²={g.fit_quality:.2f}) | "
+            f"etki ζ'(0)={g.action:+.3f}",
         ]
         if self.lifecycle is not None:
             life = self.lifecycle

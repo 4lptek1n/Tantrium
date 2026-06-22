@@ -54,9 +54,10 @@ def interact(a, b) -> Interaction:
     ga, gb, k = H[:na, :na], H[na:, na:], H[:na, na:]    # bloklar; k = köşegen-dışı = kuvvet
     coupling = float(np.linalg.norm(k) /
                      (np.linalg.norm(ga) * np.linalg.norm(gb)) ** 0.5) if na and nb else 0.0
-    # Dolanıklık: yapısal (medyan-üstü) modları doldur → korelasyon matrisi → A|B kesimi
+    # Dolanıklık: YAPISAL (rank, sıfır-olmayan) modları doldur → korelasyon → A|B kesimi
     w, V = np.linalg.eigh(H)
-    occ = V[:, w > np.median(w)]
+    tol = max(1e-9, 1e-9 * float(w.max()))
+    occ = V[:, w > tol]                                 # gerçek yapı (null-uzay değil)
     C = occ @ occ.T
     xi = np.clip(np.linalg.eigvalsh(C[:na, :na]), 1e-12, 1 - 1e-12)
     S = float(-np.sum(xi * np.log(xi) + (1 - xi) * np.log(1 - xi)))

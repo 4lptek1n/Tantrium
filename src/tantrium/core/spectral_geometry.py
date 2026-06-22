@@ -16,32 +16,48 @@ import numpy as np
 @dataclass
 class SpectralGeometry:
     """Bir yapının tanımladığı non-komütatif uzayın geometrisi."""
-    dimension: float       # spektral boyut (ısı çekirdeği üssü)
-    action: float          # ln det' G / n — spektral etki (Connes aksiyonu)
+    dimension: float       # spektral boyut (ısı çekirdeği üssü, log-log regresyon)
+    fit_quality: float     # boyut kestiriminin R² uyumu (ölçek rejimi ne kadar temiz)
+    action: float          # ln det' G / n — spektral efektif etki ζ'_G(0) (one-loop)
     spectral_gap: float    # λ_min/λ_max — kütlesizlik / iletkenlik ölçüsü
     n_modes: int
 
     def summary(self) -> str:
-        return (f"SpectralGeometry — tanımlanan uzay: boyut d_s={self.dimension:.3f} | "
-                f"etki={self.action:+.3f} | spektral aralık={self.spectral_gap:.2e} "
-                f"({self.n_modes} mod)")
+        return (f"SpectralGeometry — tanımlanan uzay: boyut d_s={self.dimension:.3f} "
+                f"(R²={self.fit_quality:.2f}) | etki ζ'(0)={self.action:+.3f} | "
+                f"spektral aralık={self.spectral_gap:.2e} ({self.n_modes} mod)")
 
 
 def geometry_from_spectrum(eigenvalues) -> SpectralGeometry:
-    """Özdeğer spektrumundan NCG geometrisi (ölçek-değişmez, regularize)."""
+    """Özdeğer spektrumundan NCG geometrisi (ölçek-değişmez, regularize).
+
+    Spektral boyut: Tr e^{-tG} ~ t^{-d/2}'in log-log eğimi ÖLÇEK REJİMİNDE (en düz
+    plato) en küçük-kareler regresyonuyla — keyfi pencere medyanı değil. R² uyum kalitesi
+    plato ne kadar temiz onu söyler. Etki: ln det' (spektral efektif etki, one-loop) —
+    NOT: tam Connes aksiyonu Tr f(D/Λ) değil; o ayrı bir fizik kurgusu."""
     w = np.real(np.asarray(eigenvalues, dtype=float))
     w = w[w > 1e-9]
-    if w.size < 2:
-        return SpectralGeometry(0.0, 0.0, 0.0, int(w.size))
+    if w.size < 3:
+        return SpectralGeometry(0.0, 0.0, 0.0, 0.0, int(w.size))
     wn = w / float(np.mean(w))                       # ölçek-değişmez
-    ts = np.logspace(-1.5, 1.0, 50)
+    ts = np.logspace(-1.5, 1.0, 60)
     Z = np.array([np.sum(np.exp(-t * wn)) for t in ts])   # Tr e^{-tG}
-    slope = np.gradient(np.log(Z), np.log(ts))
-    d_s = float(-2.0 * np.median(slope[15:35]))      # spektral boyut (kararlı pencere)
-    action = float(np.mean(np.log(wn)))              # ln det' / n (spektral etki)
+    lt, lz = np.log(ts), np.log(Z)
+    # En düz plato: kayan pencerede |türev| en kararlı bölge → orada regresyon
+    slope = np.gradient(lz, lt)
+    win = 18
+    var = [float(np.var(slope[i:i + win])) for i in range(len(slope) - win)]
+    i0 = int(np.argmin(var))
+    xs, ys = lt[i0:i0 + win], lz[i0:i0 + win]
+    A_ = np.vstack([xs, np.ones_like(xs)]).T
+    (m_fit, _b), res, *_ = np.linalg.lstsq(A_, ys, rcond=None)
+    ss_tot = float(np.sum((ys - ys.mean()) ** 2)) or 1.0
+    r2 = float(1.0 - (res[0] / ss_tot)) if res.size else 1.0
+    d_s = float(-2.0 * m_fit)
+    action = float(np.mean(np.log(wn)))              # ln det' / n (efektif etki)
     gap = float(w.min() / w.max())
-    return SpectralGeometry(dimension=max(d_s, 0.0), action=action,
-                            spectral_gap=gap, n_modes=int(w.size))
+    return SpectralGeometry(dimension=max(d_s, 0.0), fit_quality=max(r2, 0.0),
+                            action=action, spectral_gap=gap, n_modes=int(w.size))
 
 
 def spectral_geometry(query) -> SpectralGeometry:
