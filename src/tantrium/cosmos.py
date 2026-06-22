@@ -67,7 +67,7 @@ def _life_topology(seed, carrier) -> SpectralFlow:
     def g(x):
         A = np.asarray(enc._to_matrix(x), dtype=float)
         return A.T @ A
-    return flow_between(g(seed), g(carrier), steps=200)
+    return flow_between(g(seed), g(carrier), steps=120)
 
 
 def _inflate_step(carrier: list[float], n_c: int, step: int) -> list[float]:
