@@ -28,7 +28,14 @@ from tantrium.core.free_probability import (
 )
 from tantrium.core.inverse import DesignCandidate, DesignReport, InverseTransport
 from tantrium.core.jensen import JensenReport, is_hyperbolic, laguerre_polya_test, turan
-from tantrium.core.metric import canonical_distance, l1_distance
+from tantrium.core.metric import (
+    canonical_distance,
+    certificate_distance,
+    certificate_vector,
+    l1_distance,
+    paradigm_distance,
+    paradigm_signature,
+)
 from tantrium.core.metric import distance as metric_distance
 from tantrium.core.molecular_derivation import GenesisCandidate, MolecularGenesis
 from tantrium.core.molecular_derivation import GenesisReport as MolGenesisReport
@@ -145,6 +152,10 @@ __all__ = [
     "canonical_distance",
     "metric_distance",
     "l1_distance",
+    "certificate_vector",
+    "certificate_distance",
+    "paradigm_distance",
+    "paradigm_signature",
     "CollisionHunter",
     "CollisionReport",
     # Quantum moments (free probability)

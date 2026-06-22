@@ -188,3 +188,30 @@ def paradigm_distance(struct_a: dict, struct_b: dict) -> float:
     raw = sum(abs(a[i] - b[i]) for i in range(k))
     # Ortalama feature başına mesafe × 19 (orijinal feature sayısı) → ölçek korunur
     return raw / k * 19
+
+
+# ─── Operatif birim: TAM 46-boyutlu sertifika (çökmeden) ─────────────────────
+# Makinenin asıl algı organı 8 moment DEĞİL, 23 paradigmanın tüm çıktısından
+# türeyen 46-boyutlu sertifika vektörüdür. W2 yalnız eigenvalue'ya, moment-L1
+# yalnız ham momente, rh_distance kriter alt-kümesine ÇÖKER. Aşağıdaki iki giriş
+# noktası hiçbir şeye çökmeden tam vektör üzerinde çalışır — karşılaştırmanın
+# operatif birimi budur.
+
+def certificate_vector(query, name: str = "q") -> list[float]:
+    """Bir girdinin TAM 46-boyutlu sertifika vektörü (encode → 23 paradigma imzası).
+
+    Newton, Sylvester, Schur, τ-determinant, Li, de Bruijn-Newman Λ, cross-ratio,
+    Hankel oranları, entropi üçlüsü, Achilles, serbest kümülant κ — hepsi tek vektör.
+    """
+    from tantrium.core.encoder import encode
+    return paradigm_signature(encode(query, name=str(name)[:32]).structure)
+
+
+def certificate_distance(a, b) -> float:
+    """İki girdi arası TAM 46-boyutlu sertifika mesafesi — operatif birim, çökmez.
+
+    W2 (eigenvalue) aspirin/kafeini ≈0'a çökerken bu vektör onları ayırır: ayrım
+    8 boyutta değil, 23 paradigmanın tüm çıktısında yaşar.
+    """
+    from tantrium.core.encoder import encode
+    return paradigm_distance(encode(a, name="a").structure, encode(b, name="b").structure)

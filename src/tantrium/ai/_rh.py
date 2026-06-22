@@ -11,6 +11,24 @@ from tantrium.core.rh_criteria import RHCriteria
 class RHMixin:
     """Riemann-Hipotezi türevli pozitiflik kriterleri + serbest olasılık + mühür."""
 
+    def fingerprint(self, query) -> list[float]:
+        """Girdinin TAM 46-boyutlu sertifika parmak izi — makinenin asıl algı organı.
+
+        8 moment kapıdır; bu vektör 23 paradigmanın TÜM çıktısıdır (Newton, Schur,
+        τ, Li, de Bruijn-Newman Λ, cross-ratio, Achilles, serbest kümülant κ...).
+        """
+        from tantrium.core.metric import certificate_vector
+        return certificate_vector(query)
+
+    def compare(self, a, b) -> float:
+        """İki girdiyi TAM 46-boyutlu sertifika uzayında karşılaştır — çökmeden.
+
+        W2 (eigenvalue) ve moment-L1 alt-kümeye çöker; bu, 23 paradigmanın tüm
+        çıktısı üzerinde çalışır. Ayrımı 8 boyutta değil, 46 boyutta okur.
+        """
+        from tantrium.core.metric import certificate_distance
+        return certificate_distance(a, b)
+
     def self_reference(self, seed=None, max_iter: int = 64, tol: float = 1e-6) -> "object":
         """Makineyi kendi üzerine katla → öz-gönderim sabit noktası μ* (strange loop, exact).
 
