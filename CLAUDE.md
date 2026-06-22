@@ -77,9 +77,10 @@ src/tantrium/
                           eigendecomposition'dan — 1 MAKRO (momentler) 2 MİKRO (⟨r⟩) 3 SİMETRİ
                           (Dyson β) 4 ÖZVEKTÖR (localization/IPR + fraktal boyut D₂; İLK kez).
                           read()/SpectralReading. fingerprint=makro, spectral_class=mikro izdüşüm.
-    spectral_geometry.py← ★★ EVRENİN GEOMETRİ YÜZÜ (Connes NCG): operatörün TANIMLADIĞI uzay —
-                          ısı çekirdeği→spektral boyut d_s, ln det'→spektral etki, aralık. Her yapı
-                          kendi boyutlu dünyasını doğurur (regularize). spectral_geometry().
+    spectral_geometry.py← ★★ EVRENİN GEOMETRİ YÜZÜ (Connes spektral aksiyonu): Seeley-de Witt
+                          ısı-çekirdeği katsayıları — Tr e^{-tG}~t^{-d/2}(a₀+a₂t+…): boyut d_s
+                          (log-log regresyon+R²), a₀ hacim, a₂=∫R (Einstein-Hilbert/gravitasyon),
+                          a₄ Weyl, ζ'(0) etki. Molekül kıvrımlı, sayı dizisi DÜZ. spectral_geometry().
     interaction.py     ← ★★ KUVVET + HAYAT (çok-cisim): iki yapı birleşik H=M†M, köşegen-dışı=kuvvet,
                           A|B kesiminde von Neumann entropisi=dolanıklık, bağlanma. interact(a,b).
     spectral_flow.py   ← ★★ 5. EKSEN (topoloji): operatör YOLUNUN topolojik yükü (tek operatörün
