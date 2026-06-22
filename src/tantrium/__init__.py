@@ -70,6 +70,12 @@ from tantrium.core.transport import CertifiedTransport, TransportCertificate, Tr
 from tantrium.core.truth import TruthCertificate, TruthCertifier
 from tantrium.core.unified import CoreMachine, UnifiedCertificate
 from tantrium.core.verifier import adversarial_control, seal, tamper_test, verify
+from tantrium.core.zeta_operator import (
+    ZetaOperatorProbe,
+    berry_keating_zeros,
+    probe_zeta_operator,
+    zeta_operator_zeros,
+)
 from tantrium.cosmos import Epoch, Lifecycle, run_cosmos
 from tantrium.domains.spectral import (
     SpectralMeasure,
@@ -129,6 +135,10 @@ __all__ = [
     "to_eig",
     "spectral_geometry",
     "SpectralGeometry",
+    "probe_zeta_operator",
+    "ZetaOperatorProbe",
+    "berry_keating_zeros",
+    "zeta_operator_zeros",
     "laguerre_polya_test",
     "is_hyperbolic",
     "turan",

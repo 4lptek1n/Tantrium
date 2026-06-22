@@ -115,6 +115,20 @@ class RHMixin:
         from tantrium.core.fixed_point import self_reference_orbit
         return self_reference_orbit(seed=seed, max_iter=max_iter, tol=tol)
 
+    def zeta_operator(self, num_zeros: int = 50,
+                      prime_cutoffs: tuple = (7, 30, 100, 300)) -> "object":
+        """Riemann sıfırlarının operatörünü DOĞAL malzemeden kurma denemesi (fit yok).
+
+        İskelet (asal içermez, Berry-Keating yarı-klasik = fonksiyonel denklem) sıfırların
+        ortalama konumunu ~%0.7 verir; explicit-formula asal düzeltmesi (Euler çarpımı)
+        eklendikçe gerçek sıfırlara monoton yakınsar. Sıfırlar yalnız SKOR için kullanılır
+        — inşa dairesel değildir. Artığı sıfıra indiren sonlu operatör = açık Hilbert-Pólya.
+
+            print(ai.zeta_operator().summary())
+        """
+        from tantrium.core.zeta_operator import probe_zeta_operator
+        return probe_zeta_operator(num_zeros=num_zeros, prime_cutoffs=tuple(prime_cutoffs))
+
     def cosmos(self, seed=None, inflation_steps: int = 40) -> "object":
         """Bir tohumun TÜM evren ömrü: T₁ yaratılış → T₁₀ son, çağ çağ, mühürlü.
 
