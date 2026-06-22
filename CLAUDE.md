@@ -32,7 +32,9 @@ src/tantrium/
   ai/                  ← tantrium.AI() — SDK (mixin paketi: _certify/_rh/_dynamics/_molecular/_base)
   cosmos.py            ← ★ Cosmos: bir tohumun TÜM evren ömrü (T₀ Yasa → T₁ encode → T₂ Ouroboros
                           → T₃ 23-paradigma → … → T₁₀ μ*/patlama), çağ çağ, tek mühürlü sertifika.
-                          run_cosmos/Lifecycle/Epoch. Makinenin organlarını tek zaman okuna dizer.
+                          run_cosmos/Lifecycle/Epoch. ★ IZGARA: her T-aşamasında SpectralReading
+                          (4-katman) akar → 4 katmanın ZAMAN yörüngesi + faz geçişi tespiti
+                          (genişleyen evren özvektörde ergodik→yerleşik localize olur).
   serve.py             ← opsiyonel FastAPI REST
   core/                ← 36 modül (büyükler paket: paradigms/ encoder/ pipeline/ production/ molecular_derivation/)
     encoder/           ← girdi→moment (paket: _linalg/_text/_encoder). SMILES→bigram,
@@ -68,6 +70,10 @@ src/tantrium/
                           Bohigas-Giannoni-Schmit + Berry-Tabor. Poisson/GOE/GUE/Rijit.
                           as_spectrum=True: gerçek spektrumu (zeta sıfırları) DOĞRUDAN okur
                           → GUE (0.62). Hankel-kodlama (varsayılan) reel → GOE; GUE'yi kaybeder.
+    spectral_reading.py← ★★ IZGARANIN DERİNLİK EKSENİ: G=A†A'nın DÖRT kanonik katmanı tek
+                          eigendecomposition'dan — 1 MAKRO (momentler) 2 MİKRO (⟨r⟩) 3 SİMETRİ
+                          (Dyson β) 4 ÖZVEKTÖR (localization/IPR; İLK kez). read()/SpectralReading.
+                          Mevcut yetenekler bunun izdüşümü (fingerprint=makro, spectral_class=mikro).
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
     collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
     truth.py           ← TruthCertifier (komşu yok → N/A; durumsuz)
@@ -145,7 +151,8 @@ ai.paradigms("c1ccccc1")          # 23 paradigma dökümü
 ai.fingerprint("EGFR")            # ★ TAM 46-boyutlu sertifika vektörü (makinenin algı organı)
 ai.compare("CCO", "CCCO")         # ★ tam 46-dim sertifika mesafesi (W2'nin çöktüğünü ayırır)
 ai.spectral_class([k*k for k in range(1,90)])  # ★ integrallenebilir↔kaotik (BGS/Berry-Tabor, seviye-aralığı ⟨r⟩)
-ai.cosmos("EGFR")                 # ★ tohumun TÜM evren ömrü T₁→T₁₀, çağ çağ, mühürlü
+ai.spectral_reading("EGFR")       # ★★ G=A†A'nın DÖRT katmanı (makro/mikro/simetri/özvektör), tek nesne
+ai.cosmos("EGFR")                 # ★ tohumun TÜM evren ömrü T₁→T₁₀ + 4-katman ızgarası + faz geçişi
 ai.self_reference()               # öz-gönderim sabit noktası μ* (46-mercek kapanış)
 ai.transport("CCO", "CC(=O)O")    # TransportCertificate
 ai.sturm("x^3 - 3*x + 1")         # Sturm zinciri

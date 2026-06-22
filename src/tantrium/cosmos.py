@@ -30,6 +30,8 @@ from tantrium.core.encoder import encode
 from tantrium.core.fixed_point import self_reference_orbit
 from tantrium.core.network import CertificationPipeline
 from tantrium.core.rh_criteria import rh_criteria
+from tantrium.core.spectral_reading import SpectralReading
+from tantrium.core.spectral_reading import read as _read_spectrum
 
 
 def _normalize(v: list[float]) -> list[float]:
@@ -93,6 +95,12 @@ class Lifecycle:
     fate_crunch: str = ""              # T₁₀: μ* öz-imge
     fate_rip: str = ""                 # T₁₀: kondisyon patlama eğilimi
     master_seal: str = ""
+    # ── Izgaranın derinlik ekseni: 4-katman SpectralReading, ZAMAN boyunca ──────
+    genesis_reading: SpectralReading | None = None   # T₁ doğuşta dört katman
+    final_reading: SpectralReading | None = None      # T₁₀ sonda dört katman
+    universality_path: list[str] = field(default_factory=list)   # mikro katman yörüngesi
+    ergodicity_path: list[float] = field(default_factory=list)    # özvektör katman yörüngesi
+    transitions: list[str] = field(default_factory=list)          # ömür boyu faz geçişleri
 
     def summary(self) -> str:
         lines = [f"COSMOS — '{self.seed}' yaşam döngüsü (tek yasa: pozitiflik ≥ 0)"]
@@ -104,6 +112,20 @@ class Lifecycle:
             f"etkin boyut ~{self.effective_dim} | paradigma {self.paradigms_frozen}/23 | "
             f"mühür {self.master_seal[:12]}"
         )
+        if self.genesis_reading and self.final_reading:
+            g, f = self.genesis_reading, self.final_reading
+            lines.append("  ── 4-katman ızgarası (doğuş → son) ──")
+            lines.append(f"    1 MAKRO    rank {g.rank}→{f.rank}")
+            lines.append(f"    2 MİKRO    {g.universality}→{f.universality}  "
+                         f"(yörünge: {'→'.join(self.universality_path)})")
+            lines.append(f"    3 SİMETRİ  Dyson β {g.beta}→{f.beta}")
+            ge = "—" if g.ergodicity is None else f"{g.ergodicity:.2f}"
+            fe = "—" if f.ergodicity is None else f"{f.ergodicity:.2f}"
+            lines.append(f"    4 ÖZVEKTÖR ergodiklik {ge}→{fe}")
+            if self.transitions:
+                lines.append(f"  ⚡ FAZ GEÇİŞİ: {' | '.join(self.transitions)}")
+            else:
+                lines.append("  (faz geçişi yok — yapı ömrü boyunca sınıfını korudu)")
         return "\n".join(lines)
 
 
@@ -123,14 +145,23 @@ def run_cosmos(seed=None, inflation_steps: int = 40, n_c: int = 12) -> Lifecycle
     eigs = [float(e) for e in (s.get("eigenvalues") or [])]
     mdim = len(eigs) or 1
     life.epochs.append(Epoch("T₁", "Yaratılış", f"girdi → A → G ({mdim}×{mdim}), {len(mu)} moment"))
+    # ── Derinlik ekseni: T₁ doğuşta dört-katman okuma ──────────────────────────
+    life.genesis_reading = _read_spectrum(seed)
 
-    # T₂ Şişme + T₅ Kendini örgütleme — Ouroboros genişleme, etkin boyut izi
+    # T₂ Şişme + T₅ Kendini örgütleme — Ouroboros genişleme, etkin boyut + 4-katman izi
     carrier = list(mu)
     d0 = _uncapped_spectrum(carrier)[0]
     effs: list[int] = []
+    sample_every = max(1, inflation_steps // 5)
     for step in range(inflation_steps):
         carrier = _inflate_step(carrier, n_c, step)
         effs.append(_uncapped_spectrum(carrier)[2])
+        if step % sample_every == 0:                  # 4-katman yörüngesini örnekle
+            rd = _read_spectrum(carrier)
+            life.universality_path.append(rd.universality)
+            if rd.ergodicity is not None:
+                life.ergodicity_path.append(round(rd.ergodicity, 3))
+    life.final_reading = _read_spectrum(carrier)
     dim_f, num_f, eff_f, cond_f = _uncapped_spectrum(carrier)
     tail = effs[len(effs) // 2:] or effs
     plateau = max(set(tail), key=tail.count) if tail else eff_f
@@ -174,12 +205,25 @@ def run_cosmos(seed=None, inflation_steps: int = 40, n_c: int = 12) -> Lifecycle
     kappa = [round(float(x), 4) for x in (s.get("free_cumulants") or [])][:3]
     life.epochs.append(Epoch("T₉", "Etkileşim", f"serbest kümülant κ = {kappa}"))
 
+    # ── Faz geçişleri: dört katman ömür boyunca sınıf değiştirdi mi? ────────────
+    g, fr = life.genesis_reading, life.final_reading
+    if g and fr:
+        if g.universality != fr.universality:
+            life.transitions.append(f"mikro {g.universality}→{fr.universality}")
+        if g.localized is not None and fr.localized is not None and g.localized != fr.localized:
+            a = "yerleşik" if g.localized else "ergodik"
+            b = "yerleşik" if fr.localized else "ergodik"
+            life.transitions.append(f"özvektör {a}→{b}")
+        if g.beta != fr.beta:
+            life.transitions.append(f"simetri β{g.beta}→β{fr.beta}")
+
     # T₁₀ Son — iki kader
     fp = self_reference_orbit(seed=mu, max_iter=48)
     life.fate_crunch = f"μ* (kritik çizgide={fp.on_critical_line})"
     life.fate_rip = f"kondisyon→{cond_f:.2e} (patlamaya doğru)"
+    trans = f" | faz geçişi: {', '.join(life.transitions)}" if life.transitions else ""
     life.epochs.append(Epoch(
-        "T₁₀", "Son", f"Büyük Çöküş: {life.fate_crunch} | Büyük Yırtılma: {life.fate_rip}"
+        "T₁₀", "Son", f"Büyük Çöküş: {life.fate_crunch} | Büyük Yırtılma: {life.fate_rip}{trans}"
     ))
 
     # Ana mühür — tüm ömrün kanonik adresi

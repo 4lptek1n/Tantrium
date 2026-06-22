@@ -44,3 +44,24 @@ def test_sdk_facade():
     assert isinstance(life, Lifecycle)
     assert "COSMOS" in life.summary()
     assert "kritik çizgide" in life.summary()
+
+
+def test_grid_depth_axis_present():
+    """Izgaranın derinlik ekseni: T₁ doğuş + T₁₀ son dört-katman okuması Cosmos'ta."""
+    from tantrium.core.spectral_reading import SpectralReading
+    life = run_cosmos(inflation_steps=15)
+    assert isinstance(life.genesis_reading, SpectralReading)   # doğuşta 4 katman
+    assert isinstance(life.final_reading, SpectralReading)     # sonda 4 katman
+    assert life.universality_path                              # mikro yörünge örneklendi
+    assert "4-katman ızgarası" in life.summary()
+    assert "ÖZVEKTÖR" in life.summary()
+
+
+def test_lifecycle_phase_transition_detected():
+    """Izgara faz geçişini yakalar: genişleyen evren özvektörde localize olur (ergodik→yerleşik)."""
+    life = run_cosmos(inflation_steps=30)
+    g, f = life.genesis_reading, life.final_reading
+    # özvektör katmanı ömür boyunca değişir (localization dinamiği)
+    assert g.ergodicity is not None and f.ergodicity is not None
+    assert f.ergodicity < g.ergodicity            # genişledikçe yerleşikleşir
+    assert any("özvektör" in t for t in life.transitions)
