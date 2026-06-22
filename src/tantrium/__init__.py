@@ -59,6 +59,8 @@ from tantrium.core.spectral_class import (
     classify_spectrum,
     spectral_class,
 )
+from tantrium.core.spectral_reading import SpectralReading
+from tantrium.core.spectral_reading import read as spectral_reading
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
 from tantrium.core.truth import TruthCertificate, TruthCertifier
 from tantrium.core.unified import CoreMachine, UnifiedCertificate
@@ -96,6 +98,8 @@ __all__ = [
     "spectral_class",
     "classify_spectrum",
     "SpectralClass",
+    "spectral_reading",
+    "SpectralReading",
     "certify_rh",
     "RHCertificate",
     "hausdorff",

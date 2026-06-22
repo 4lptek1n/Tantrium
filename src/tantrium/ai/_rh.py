@@ -11,6 +11,18 @@ from tantrium.core.rh_criteria import RHCriteria
 class RHMixin:
     """Riemann-Hipotezi türevli pozitiflik kriterleri + serbest olasılık + mühür."""
 
+    def spectral_reading(self, query, as_spectrum: bool = False) -> "object":
+        """G=A†A'nın TAM dört-katmanlı okuması — tek nesne, tek eigendecomposition.
+
+        1 MAKRO (yoğunluk/momentler) · 2 MİKRO (⟨r⟩ korelasyon) · 3 SİMETRİ (Dyson β) ·
+        4 ÖZVEKTÖR (localization/ergodiklik — makinede ilk kez). Makinenin "okuma derinliği"
+        ekseni; Cosmos bunu zaman boyunca akıtır (ızgara).
+
+            print(ai.spectral_reading("CC(=O)Oc1ccccc1C(=O)O").summary())
+        """
+        from tantrium.core.spectral_reading import read
+        return read(query, as_spectrum=as_spectrum)
+
     def spectral_class(self, query, as_spectrum: bool = False) -> "object":
         """Girdi integrallenebilir mi, kaotik mi? — spektrumun seviye-aralığı ⟨r⟩.
 
