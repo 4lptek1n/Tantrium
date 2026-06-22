@@ -30,6 +30,13 @@ Quot.sound}`, no `sorryAx`), built against Mathlib:
   `docs/FINAL_RH_PROOF_CHAIN.md` §9 (depends on **no** axioms): the open links
   (D-positivity, LGV path positivity, Sturm ⟹ hyperbolicity, Pólya–Jensen) are
   explicit hypotheses, not `sorry`/`True`.
+- `SFractionDepth.aSeq_nonneg` / `SFractionDepth.aSeq_depth_mono` — the S-fraction
+  depth coefficients `a_n(d) = [Y^n] q_d`, defined by the convolution recurrence
+  `a_0(d)=d`, `a_{n+1}(d) = ½ ∑_{k≤n} a_k(d) a_{n-k}(d-1)` (base `q_0≡0`), are
+  **nonnegative** (`0 ≤ a_n(d)`, **L1**) and **depth-monotone** (`a_n(d) ≤
+  a_n(d+1)`, **L2**). Construction-level, non-circular building blocks of the ℓ=1
+  split-pair and ℓ=2 D-positivity arguments
+  (`proofs/ell2_diagonal_residue/absmonotone_cone_lemmas.md`, `injection_lift.md`).
 
 The general-`j` subdiscriminant identity still needs a Cauchy–Binet formula
 (absent from Mathlib), and the analytic chain links above remain genuinely
