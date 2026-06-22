@@ -11,6 +11,18 @@ from tantrium.core.rh_criteria import RHCriteria
 class RHMixin:
     """Riemann-Hipotezi türevli pozitiflik kriterleri + serbest olasılık + mühür."""
 
+    def spectral_class(self, query) -> "object":
+        """Girdi integrallenebilir mi, kaotik mi? — tam spektrumun seviye-aralığı ⟨r⟩.
+
+        8 moment DEĞİL: N×N spektrumun ince korelasyonu. Bohigas-Giannoni-Schmit
+        (kaos→rastgele-matris) + Berry-Tabor (integrallenebilir→Poisson). Kapalı-formlu
+        diziler → Poisson; lojistik harita/rastgele → GOE.
+
+            print(ai.spectral_class([k*k for k in range(1,90)]).summary())   # integrallenebilir
+        """
+        from tantrium.core.spectral_class import spectral_class as _sc
+        return _sc(query)
+
     def fingerprint(self, query) -> list[float]:
         """Girdinin TAM 46-boyutlu sertifika parmak izi — makinenin asıl algı organı.
 

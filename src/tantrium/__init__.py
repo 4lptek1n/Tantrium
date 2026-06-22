@@ -54,6 +54,11 @@ from tantrium.core.reconstruct import (
 )
 from tantrium.core.rh_certificate import RHCertificate, certify_rh, hausdorff
 from tantrium.core.rh_criteria import RHCriteria, criteria_distance, rh_criteria
+from tantrium.core.spectral_class import (
+    SpectralClass,
+    classify_spectrum,
+    spectral_class,
+)
 from tantrium.core.transport import CertifiedTransport, TransportCertificate, TransportRanking
 from tantrium.core.truth import TruthCertificate, TruthCertifier
 from tantrium.core.unified import CoreMachine, UnifiedCertificate
@@ -88,6 +93,9 @@ __all__ = [
     "rh_criteria",
     "RHCriteria",
     "criteria_distance",
+    "spectral_class",
+    "classify_spectrum",
+    "SpectralClass",
     "certify_rh",
     "RHCertificate",
     "hausdorff",
