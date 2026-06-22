@@ -12,6 +12,8 @@ def test_four_layers_present():
     assert r.r_ratio == r.r_ratio                     # mikro: ⟨r⟩ (nan değil olabilir ama alan var)
     assert r.beta in (0, 1, 2)                         # simetri: Dyson β
     assert r.ergodicity is not None                   # özvektör: localization açık
+    assert r.geometry is not None                      # geometri AYNI okumada (konsolide)
+    assert 0 < r.geometry.n_modes <= r.dim             # tek eigh: tutarlı (sıfır-olmayan modlar)
 
 
 def test_eigenvector_layer_discriminates():
@@ -54,4 +56,4 @@ def test_sdk_facade():
     r = tantrium.AI().spectral_reading("CCO")
     assert isinstance(r, SpectralReading)
     s = r.summary()
-    assert "dört katman" in s and "ÖZVEKTÖR" in s
+    assert "tüm yüzler" in s and "ÖZVEKTÖR" in s and "GEOMETRİ" in s

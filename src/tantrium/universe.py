@@ -73,12 +73,11 @@ def universe(seed, full: bool = True, inflation_steps: int = 30) -> Universe:
     import numpy as np
 
     from tantrium.core.encoder import UniversalEncoder
-    from tantrium.core.spectral_geometry import geometry_from_spectrum
     from tantrium.core.spectral_reading import reading_from_eig
     A = np.asarray(UniversalEncoder()._to_matrix(seed), dtype=float)
     w, V = np.linalg.eigh(A.T @ A)                    # ★ TEK eigendecomposition
-    physics = reading_from_eig(w, V)                  # 2 FİZİK  (aynı w,V)
-    geom = geometry_from_spectrum(w)                  # 3 GEOMETRİ (aynı w)
+    physics = reading_from_eig(w, V)                  # 2 FİZİK + 3 GEOMETRİ (tek okumada)
+    geom = physics.geometry                           # 3 GEOMETRİ (aynı okumadan)
     rank = int(np.sum(w > 1e-9))                       # 1 MADDE  (aynı w)
     life = run_cosmos(seed=seed, inflation_steps=inflation_steps) if full else None  # 6+7
     blob = (f"{seed}|{physics.universality}|{round(physics.r_ratio, 6)}|"

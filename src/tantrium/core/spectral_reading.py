@@ -46,6 +46,7 @@ class SpectralReading:
     fractal_dim: float | None = None       # D₂ = −ln⟨IPR⟩/ln N (ergodik=1, yerleşik=0)
     participation_entropy: float | None = None  # ⟨S⟩ = −Σp ln p (katılım sayısı = e^S)
     multifractal: bool | None = None       # 0.1<D₂<0.9 (kritik — ne ergodik ne yerleşik)
+    geometry: "object | None" = None       # 5 GEOMETRİ — SpectralGeometry (aynı eigh'tan)
 
     def summary(self) -> str:
         loc = "—" if self.localized is None else \
@@ -54,13 +55,19 @@ class SpectralReading:
         d2 = "—" if self.fractal_dim is None else f"{self.fractal_dim:.3f}"
         mf = " [MULTİFRAKTAL/kritik]" if self.multifractal else ""
         kind = "integrallenebilir" if not self.chaotic else "KAOTİK"
+        g = self.geometry
+        geo = "" if g is None else (
+            f"\n  5 GEOMETRİ d_s={g.dimension:.3f} (R²={g.fit_quality:.2f}) | "
+            f"eğrilik a₂={g.curvature:+.3f} ({'kıvrımlı' if g.curved else 'DÜZ'}) | "
+            f"etki ζ'(0)={g.action:+.3f}")
         return (
-            f"SpectralReading ({self.dim}-boyut, G=A†A) — dört katman:\n"
+            f"SpectralReading ({self.dim}-boyut, G=A†A) — tek operatör, tüm yüzler:\n"
             f"  1 MAKRO    rank={self.rank} ρ={self.spectral_radius:.3g} "
             f"m₁..₃={[round(x, 3) for x in self.moments[1:4]]}\n"
             f"  2 MİKRO    ⟨r⟩={self.r_ratio:.4f} → {self.universality} ({kind})\n"
             f"  3 SİMETRİ  Dyson β={self.beta}\n"
             f"  4 ÖZVEKTÖR ergodiklik={erg} → {loc} | fraktal boyut D₂={d2}{mf}"
+            + geo
         )
 
 
@@ -121,10 +128,13 @@ def reading_from_eig(w, V) -> SpectralReading:
     mfrac = (d2 is not None and 0.1 < d2 < 0.9)    # kritik/multifraktal rejim
     sc = classify_spectrum(w)
     m, rho = _moments(w)
+    from tantrium.core.spectral_geometry import geometry_from_spectrum
+    geom = geometry_from_spectrum(w)                  # 5 GEOMETRİ — AYNI eigh'tan
     return SpectralReading(
         dim=n, moments=m, spectral_radius=rho, rank=int(np.sum(w > 1e-12)),
         r_ratio=sc.r_ratio, universality=sc.universality,
         beta=_BETA.get(sc.universality, 0), chaotic=sc.chaotic,
         mean_ipr=ipr, ergodicity=ergod, localized=(ergod < 0.4),
         fractal_dim=d2, participation_entropy=float(np.mean(ents)), multifractal=mfrac,
+        geometry=geom,
     )
