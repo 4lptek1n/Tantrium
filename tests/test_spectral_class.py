@@ -57,6 +57,37 @@ def test_classify_spectrum_direct():
     assert sc.n_levels > 0
 
 
+def test_zeta_zeros_are_gue_direct():
+    """Zeta sıfırları DOĞRUDAN okununca GUE çıkar (Montgomery-Odlyzko) — yapı GUE.
+
+    Hankel'e sokmak (reel-simetrik) GUE'yi GOE'ye düşürür; as_spectrum=True yapının
+    kendi seviye-korelasyonunu okur ve GUE'yi geri verir.
+    """
+    from tantrium.graph import anchors as A
+    zeta = [float(x) for x in list(A._ZETA_ZEROS)]
+    sc = spectral_class(zeta, as_spectrum=True)
+    assert sc.universality == "GUE"
+    assert sc.chaotic is True
+    assert sc.r_ratio > 0.55
+
+
+def test_rigid_spectrum_is_integrable():
+    """Eşit-aralıklı (harmonik-osilatör/picket-fence) → Rijit, süper-düzenli integrallenebilir."""
+    sc = spectral_class(list(range(1, 60)), as_spectrum=True)
+    assert sc.universality == "Rijit"
+    assert sc.integrable is True
+    assert sc.r_ratio > 0.9
+
+
+def test_uncorrelated_levels_poisson():
+    """Korelasyonsuz seviyeler → Poisson (integrallenebilir, kümelenme)."""
+    import random
+    random.seed(1)
+    sc = spectral_class([random.random() for _ in range(120)], as_spectrum=True)
+    assert sc.universality == "Poisson"
+    assert sc.integrable is True
+
+
 def test_sdk_facade():
     sc = tantrium.AI().spectral_class([k * k for k in range(1, 90)])
     assert isinstance(sc, SpectralClass)

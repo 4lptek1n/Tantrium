@@ -64,9 +64,10 @@ src/tantrium/
                           sertifika mesafesi (paradigm_signature, 23 paradigmanın tüm çıktısı).
                           distance() varsayılanı artık 46-dim (W2 yalnız metric="w2"). Sistem
                           geneli buna bağlı (inverse/molecular_space/genesis/certifier).
-    spectral_class.py  ← ★ integrallenebilir↔kaotik: TAM N×N spektrumun seviye-aralığı ⟨r⟩
-                          (8 moment DEĞİL). Bohigas-Giannoni-Schmit + Berry-Tabor. Poisson
-                          (kapalı-form) / GOE (kaotik). G=AᵀA reel → en fazla GOE.
+    spectral_class.py  ← ★ integrallenebilir↔kaotik: seviye-aralığı ⟨r⟩ (8 moment DEĞİL).
+                          Bohigas-Giannoni-Schmit + Berry-Tabor. Poisson/GOE/GUE/Rijit.
+                          as_spectrum=True: gerçek spektrumu (zeta sıfırları) DOĞRUDAN okur
+                          → GUE (0.62). Hankel-kodlama (varsayılan) reel → GOE; GUE'yi kaybeder.
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
     collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
     truth.py           ← TruthCertifier (komşu yok → N/A; durumsuz)

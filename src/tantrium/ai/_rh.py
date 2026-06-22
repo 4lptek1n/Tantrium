@@ -11,17 +11,21 @@ from tantrium.core.rh_criteria import RHCriteria
 class RHMixin:
     """Riemann-Hipotezi türevli pozitiflik kriterleri + serbest olasılık + mühür."""
 
-    def spectral_class(self, query) -> "object":
-        """Girdi integrallenebilir mi, kaotik mi? — tam spektrumun seviye-aralığı ⟨r⟩.
+    def spectral_class(self, query, as_spectrum: bool = False) -> "object":
+        """Girdi integrallenebilir mi, kaotik mi? — spektrumun seviye-aralığı ⟨r⟩.
 
-        8 moment DEĞİL: N×N spektrumun ince korelasyonu. Bohigas-Giannoni-Schmit
-        (kaos→rastgele-matris) + Berry-Tabor (integrallenebilir→Poisson). Kapalı-formlu
-        diziler → Poisson; lojistik harita/rastgele → GOE.
+        8 moment DEĞİL: spektrumun ince korelasyonu. Bohigas-Giannoni-Schmit
+        (kaos→rastgele-matris) + Berry-Tabor (integrallenebilir→Poisson).
 
-            print(ai.spectral_class([k*k for k in range(1,90)]).summary())   # integrallenebilir
+        as_spectrum=True: girdi GERÇEK bir seviye-dizisiyse (zeta sıfırları, özdeğerler,
+        enerji seviyeleri) doğrudan oku → zeta GUE (0.62) çıkar. Varsayılan: keyfi yapıyı
+        G=AᵀA'ya kodla (reel → en fazla GOE).
+
+            ai.spectral_class([k*k for k in range(1,90)])           # integrallenebilir
+            ai.spectral_class(zeta_zeros, as_spectrum=True)         # GUE
         """
         from tantrium.core.spectral_class import spectral_class as _sc
-        return _sc(query)
+        return _sc(query, as_spectrum=as_spectrum)
 
     def fingerprint(self, query) -> list[float]:
         """Girdinin TAM 46-boyutlu sertifika parmak izi — makinenin asıl algı organı.
