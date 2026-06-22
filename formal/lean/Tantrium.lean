@@ -11,6 +11,7 @@ import Tantrium.DPositivity
 import Tantrium.AGLGV
 import Tantrium.VandermondeLayer
 import Tantrium.RHChain
+import Tantrium.RiemannHypothesisLink
 import Tantrium.GateA
 import Tantrium.GateB
 import Tantrium.GateBStaircase
