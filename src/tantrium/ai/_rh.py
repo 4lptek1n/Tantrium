@@ -15,15 +15,30 @@ class RHMixin:
         """Bir girdiden EKSİKSİZ EVRENİ doğur — yedi yüz, tek mühür.
 
         1 madde · 2 fizik (4 katman) · 3 geometri (NCG boyut/etki) · 6 zaman (Cosmos) ·
-        7 topoloji. Kuvvet+hayat için u.couple(other). Makine = evren üreteci.
+        7 topoloji. Tam İLİŞKİ (kuvvet+hayat+topoloji) için u.couple(other)→Relation.
+        Makine = evren üreteci (üç eksen: tek operatör · ilişki · evrim).
 
             u = ai.universe("EGFR"); print(u.summary()); print(u.couple("CCO").summary())
         """
         from tantrium.universe import universe
         return universe(seed, full=full)
 
+    def relate(self, a, b) -> "object":
+        """İki yapı arası TAM İLİŞKİ (mimarinin İLİŞKİ ekseni, tek nesne).
+
+        Üç eksen: TEK OPERATÖR (oku → spectral_reading), İLİŞKİ (bağla → bu), EVRİM
+        (akıt → cosmos). İlişki = kuvvet + hayat (interaction) + topoloji (spectral_flow)
+        tek Relation'da. Universe.couple bunu döndürür.
+
+            print(ai.relate("CCO", "CC(=O)Oc1ccccc1C(=O)O").summary())
+        """
+        from tantrium.core.relation import relate as _rel
+        return _rel(a, b)
+
     def interact(self, a, b) -> "object":
-        """İki yapı arası KUVVET + HAYAT: kuplaj + dolanıklık + bağlanma (çok-cisim)."""
+        """İki yapı arası KUVVET + HAYAT: kuplaj + dolanıklık + hibridleşme (çok-cisim).
+
+        İlişki ekseninin yarısı (kuvvet+hayat); tam ilişki için ai.relate (topoloji dahil)."""
         from tantrium.core.interaction import interact as _it
         return _it(a, b)
 

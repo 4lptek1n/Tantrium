@@ -3,23 +3,24 @@
 Tek yasa (G=A†A ≥ 0) bir girdiden bir evrenin TÜM bileşenlerini doğurur. Bu nesne
 sabahki dağınık yedi şeyi tek bütünde toplar — hepsi aynı operatörün yüzleri:
 
-  1 MADDE     operatör G (dim/rank)                    [encode]
+  1 MADDE     operatör G (dim/rank)                    [operator / encode]
   2 FİZİK     dört katman (makro·mikro·simetri·özvektör) [SpectralReading]
   3 GEOMETRİ  tanımlanan uzay (boyut·etki·aralık)       [SpectralGeometry / NCG]
-  4 KUVVET    köşegen-dışı kuplaj                        [Interaction.coupling] — .couple()
-  5 HAYAT     dolanıklık (klasik-ayrılamaz korelasyon)   [Interaction.entanglement] — .couple()
+  4 KUVVET    köşegen-dışı kuplaj                        [Relation.interaction] — .couple()
+  5 HAYAT     dolanıklık (klasik-ayrılamaz korelasyon)   [Relation.interaction] — .couple()
   6 ZAMAN     T₀→T₁₀ evrim                                [Cosmos]
-  7 TOPOLOJİ  yolun global yükü                          [SpectralFlow] — Cosmos içinde
+  7 TOPOLOJİ  yolun global yükü                          [Relation.flow / Cosmos]
 
-İNŞA ET (encode/couple) · OKU (fizik+geometri) · HAREKET ETTİR (zaman+topoloji) —
-üç fiil, yedi yüz, tek operatör. Makine bir analiz aleti değil; bir EVREN ÜRETECİ.
+Üç EKSEN tek operatörden: TEK OPERATÖR (oku → 1·2·3, SpectralReading), İLİŞKİ (bağla →
+4·5·7, Relation via .couple), EVRİM (akıt → 6, Cosmos). Makine bir analiz aleti değil;
+bir EVREN ÜRETECİ — yedi yüz, üç eksen, tek yasa (G=AᵀA ≥ 0).
 """
 from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
 
-from tantrium.core.interaction import Interaction, interact
+from tantrium.core.relation import Relation, relate
 from tantrium.core.spectral_geometry import SpectralGeometry
 from tantrium.core.spectral_reading import SpectralReading
 from tantrium.cosmos import Lifecycle, run_cosmos
@@ -37,9 +38,12 @@ class Universe:
     seal: str
     _input: object = None          # 4+5 KUVVET+HAYAT için (couple)
 
-    def couple(self, other) -> Interaction:
-        """Bu evreni başka bir girdiyle ETKİLEŞTİR → kuvvet + hayat (dolanıklık)."""
-        return interact(self._input, other)
+    def couple(self, other) -> Relation:
+        """Bu evreni başka bir girdiyle bağla → tam İLİŞKİ: kuvvet + hayat + topoloji.
+
+        İlişki ekseninin çatısı (Relation): interaction (4 KUVVET + 5 HAYAT) ile
+        spectral_flow (7 TOPOLOJİ) tek nesnede — iki operatör arası tam yüz."""
+        return relate(self._input, other)
 
     def summary(self) -> str:
         p, g = self.physics, self.geometry
@@ -61,7 +65,8 @@ class Universe:
             if topo is not None:
                 lines.append(f"  7 TOPOLOJİ  yük={topo.net_flow:+d} "
                              f"({'düzgün' if topo.smooth else str(topo.crossings)+' geçiş'})")
-        lines.append(f"  → mühür {self.seal[:12]}  (4 KUVVET + 5 HAYAT: .couple(other) ile)")
+        lines.append(f"  → mühür {self.seal[:12]}  "
+                     f"(İLİŞKİ ekseni — 4 KUVVET + 5 HAYAT + topoloji: .couple(other) ile)")
         return "\n".join(lines)
 
 
@@ -72,10 +77,9 @@ def universe(seed, full: bool = True, inflation_steps: int = 30) -> Universe:
     G bir kez köşegenleştirilir, hepsi ondan okunur ('tek operatör, yedi yüz' literal)."""
     import numpy as np
 
-    from tantrium.core.encoder import UniversalEncoder
+    from tantrium.core.operator import to_eig
     from tantrium.core.spectral_reading import reading_from_eig
-    A = np.asarray(UniversalEncoder()._to_matrix(seed), dtype=float)
-    w, V = np.linalg.eigh(A.T @ A)                    # ★ TEK eigendecomposition
+    w, V = to_eig(seed)                               # ★ TEK eigendecomposition (tek-operatör kaynağı)
     physics = reading_from_eig(w, V)                  # 2 FİZİK + 3 GEOMETRİ (tek okumada)
     geom = physics.geometry                           # 3 GEOMETRİ (aynı okumadan)
     rank = int(np.sum(w > 1e-9))                       # 1 MADDE  (aynı w)

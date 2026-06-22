@@ -33,8 +33,8 @@ class Interaction:
 
 
 def _feat(query) -> np.ndarray:
-    from tantrium.core.encoder import UniversalEncoder
-    return np.asarray(UniversalEncoder()._to_matrix(query), dtype=float)
+    from tantrium.core.operator import to_matrix  # tek-operatör kaynağı (özellik matrisi A)
+    return to_matrix(query)
 
 
 def _pad_rows(M: np.ndarray, r: int) -> np.ndarray:

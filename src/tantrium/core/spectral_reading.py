@@ -102,9 +102,8 @@ def read(query, as_spectrum: bool = False) -> SpectralReading:
             chaotic=sc.chaotic, mean_ipr=None, ergodicity=None, localized=None,
         )
 
-    from tantrium.core.encoder import UniversalEncoder
-    A = np.asarray(UniversalEncoder()._to_matrix(query), dtype=float)
-    w, V = np.linalg.eigh(A.T @ A)         # özdeğer + özvektör (tek geçiş)
+    from tantrium.core.operator import to_eig
+    w, V = to_eig(query)                   # özdeğer + özvektör (tek-operatör kaynağı)
     return reading_from_eig(w, V)
 
 

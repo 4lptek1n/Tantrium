@@ -43,6 +43,7 @@ from tantrium.core.molecular_derivation import GenesisCandidate, MolecularGenesi
 from tantrium.core.molecular_derivation import GenesisReport as MolGenesisReport
 from tantrium.core.molecular_space import ArrangementResult, MolecularSpace, MolPoint, MorphResult
 from tantrium.core.network import CertificationPipeline, CertificationRun
+from tantrium.core.operator import to_eig, to_gram, to_matrix
 from tantrium.core.quantum_moments import (
     FreeCumulants,
     QuantumSignature,
@@ -53,6 +54,7 @@ from tantrium.core.reconstruct import (
     reconstruct_measure,
     reconstruction_fidelity,
 )
+from tantrium.core.relation import Relation, relate
 from tantrium.core.rh_certificate import RHCertificate, certify_rh, hausdorff
 from tantrium.core.rh_criteria import RHCriteria, criteria_distance, rh_criteria
 from tantrium.core.spectral_class import (
@@ -120,6 +122,11 @@ __all__ = [
     "Universe",
     "interact",
     "Interaction",
+    "relate",
+    "Relation",
+    "to_matrix",
+    "to_gram",
+    "to_eig",
     "spectral_geometry",
     "SpectralGeometry",
     "laguerre_polya_test",

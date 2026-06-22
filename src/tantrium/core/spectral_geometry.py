@@ -75,7 +75,8 @@ def geometry_from_spectrum(eigenvalues) -> SpectralGeometry:
 
 
 def spectral_geometry(query) -> SpectralGeometry:
-    """Bir girdinin tanımladığı uzayın geometrisi (boyut + etki + aralık)."""
-    from tantrium.core.encoder import UniversalEncoder
-    A = np.asarray(UniversalEncoder()._to_matrix(query), dtype=float)
-    return geometry_from_spectrum(np.linalg.eigvalsh(A.T @ A))
+    """Bir girdinin tanımladığı uzayın geometrisi (boyut + etki + aralık).
+
+    Tek-operatör (TEK OPERATÖR ekseni) izdüşümü: G=AᵀA spektrumunun geometri yüzü."""
+    from tantrium.core.operator import to_gram
+    return geometry_from_spectrum(np.linalg.eigvalsh(to_gram(query)))

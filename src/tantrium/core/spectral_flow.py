@@ -62,16 +62,11 @@ def flow_between(g_a: np.ndarray, g_b: np.ndarray, steps: int = 400) -> Spectral
                         n_levels=n, smooth=(crossings == 0))
 
 
-def _gram(query) -> np.ndarray:
-    from tantrium.core.encoder import UniversalEncoder
-    A = np.asarray(UniversalEncoder()._to_matrix(query), dtype=float)
-    return A.T @ A
-
-
 def spectral_flow(a, b, steps: int = 400) -> SpectralFlow:
     """İki girdiyi birbirine dönüştüren yolun topolojik yükü (5. eksen).
 
     G_A → G_B morfingi boyunca özdeğer geçişleri. Özdeş girdi → 0; düzgün/yakın
     dönüşüm → 0 geçiş; topolojik olarak farklı yapı → sıfırdan farklı net akış.
     """
-    return flow_between(_gram(a), _gram(b), steps=steps)
+    from tantrium.core.operator import to_gram
+    return flow_between(to_gram(a), to_gram(b), steps=steps)

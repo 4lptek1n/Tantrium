@@ -1,6 +1,7 @@
 """Universe — bir girdiden eksiksiz evren: yedi yüz tek bütünde, tek mühür."""
 import tantrium
 from tantrium.core.interaction import Interaction
+from tantrium.core.relation import Relation
 from tantrium.core.spectral_geometry import SpectralGeometry
 from tantrium.core.spectral_reading import SpectralReading
 from tantrium.cosmos import Lifecycle
@@ -27,12 +28,14 @@ def test_geometry_defines_a_space():
 
 
 def test_couple_force_and_life():
-    """4 KUVVET + 5 HAYAT: iki evren etkileşince kuvvet + dolanıklık doğar."""
+    """İLİŞKİ ekseni: couple → Relation (4 KUVVET + 5 HAYAT + 7 TOPOLOJİ tek nesnede)."""
     u = universe("c1ccccc1", full=False)
-    it = u.couple("CC(=O)Oc1ccccc1C(=O)O")
-    assert isinstance(it, Interaction)
-    assert it.coupling > 0                              # kuvvet var
-    assert it.entanglement > 0                          # hayat: dolanık
+    rel = u.couple("CC(=O)Oc1ccccc1C(=O)O")
+    assert isinstance(rel, Relation)
+    assert isinstance(rel.interaction, Interaction)
+    assert rel.coupling > 0                             # kuvvet var
+    assert rel.entanglement > 0                         # hayat: dolanık
+    assert rel.flow is not None                         # topoloji: dönüşüm yolunun yükü
 
 
 def test_deterministic_and_sealed():

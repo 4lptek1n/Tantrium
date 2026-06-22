@@ -113,10 +113,8 @@ def spectral_class(query, as_spectrum: bool = False, min_levels: int = 8) -> Spe
         return classify_spectrum([float(x) for x in query])   # seviyeleri olduğu gibi oku
     if isinstance(query, (list, tuple)) and query and \
             all(isinstance(x, (int, float)) for x in query):
-        eigs = np.linalg.eigvalsh(_full_hankel(query))
+        eigs = np.linalg.eigvalsh(_full_hankel(query))   # sayısal-liste: Hankel (özel yol)
     else:
-        from tantrium.core.encoder import UniversalEncoder
-        A = np.array(UniversalEncoder()._to_matrix(query), dtype=float)
-        # G = AᵀA spektrumu (daima PSD, reel-simetrik)
-        eigs = np.linalg.eigvalsh(A.T @ A)
+        from tantrium.core.operator import to_gram  # yapısal: tek-operatör kaynağı
+        eigs = np.linalg.eigvalsh(to_gram(query))          # G=AᵀA spektrumu (PSD, reel-simetrik)
     return classify_spectrum(eigs)
