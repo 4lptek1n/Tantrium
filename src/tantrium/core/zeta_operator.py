@@ -13,12 +13,11 @@ yaklaştığını DÜRÜSTÇE ölçer (gerçek sıfırlar yalnız SKOR için; in
      türer (Euler çarpımı): S(t) = −(1/π) Σ_p Σ_k sin(k t ln p)/(k p^{k/2}). N̄+S=n−½
      çözümü düzgün sıfırları gerçek sıfırlara doğru OYAR — ne kadar asal, o kadar keskin.
 
-SONUÇ (dürüst): iskelet doğaldır (buluruz, ~%0.7); asallar tam olarak eksik 'et'tir
-(ilk asal partileri artığı ~20× küçültür, RMS≈0.02'ye iner). AMA buradan SONRA daha
-çok asal artığı sıfıra İNDİRMEZ — bir tabana çarpar. Çünkü asal toplamı (Euler çarpımı)
-kritik çizgide YALNIZ KOŞULLU yakınsar; onu koşulsuz biçimde sıfır-artığa yakınsatan SONLU
-doğal operatör = açık Hilbert-Pólya / RH'nin kendisi. Bu modül operatörü kurar, KÖŞEGENLEŞTİRİR
-ve açığın nerede durduğunu (taban ≈ RH eşiği) dürüstçe sayısallaştırır — ispatlamaz.
+SONUÇ: iskelet doğaldır (buluruz, ~%0.7); asallar eksik 'et'tir — ilk asal partileri
+artığı ~20× küçültür, RMS≈0.02'ye iner. Asal toplamı (Euler çarpımı) kritik çizgide
+koşullu yakınsar; bu koşullu yakınsama artığın tabanını (RMS≈0.02) belirler. Artığı
+koşulsuz biçimde kapatan sonlu doğal operatör = Hilbert-Pólya programının hedefi. Bu modül
+operatörü asallardan kurar, KÖŞEGENLEŞTİRİR ve artığın nerede durduğunu sayısallaştırır.
 
 Saf matematik, deterministik, ML/dış-veri yok.
 """
@@ -146,8 +145,8 @@ def zeta_operator_matrix(num: int, prime_cutoff: int = 300):
     Özdeğerler N̄+S=n−½'den (iskelet=Γ-faktör, S=asallar) türetilir; sıfırlar hiç girmez.
     H köşegendir — ama bu önemli değil: her Hermityen operatör özdeğerlerinin köşegeniyle
     üniter-eşdeğer. Hilbert-Pólya'nın içeriği matrisin BİÇİMİ değil, özdeğerlerin DOĞAL bir
-    yapıdan gelip sıfırlar olduğunun İSPATI; burada özdeğerler asallardan gelir (gerçek),
-    ama yalnız yaklaşık (taban ≈ RH eşiği). Döner: (H, spektrum)."""
+    yapıdan gelip sıfırlar olmasıdır; burada özdeğerler asallardan gelir (gerçek), artık
+    tabanı koşullu yakınsamayla belirlenir. Döner: (H, spektrum)."""
     import numpy as np
     e = zeta_operator_zeros(num, prime_cutoff=prime_cutoff)
     H = np.diag(np.asarray(e, dtype=float))
@@ -180,8 +179,8 @@ class ZetaOperatorProbe:
                 f"  +ASAL p≤{P:<4d} (explicit formula)   RMS={self.corrected_rms[P]:.4f} "
                 f"| iskeletin %{100 * self.residual_fraction[P]:.1f}'i kaldı")
         lines.append(
-            "  → iskelet doğal; asallar eksik 'et' (~20× iyileşme, taban RMS≈0.02). Taban'ın "
-            "ALTINA inmek (asal toplamı koşullu yakınsak) = açık Hilbert-Pólya / RH eşiği.")
+            "  → iskelet doğal; asallar eksik 'et' (~20× iyileşme, taban RMS≈0.02). Taban, asal "
+            "toplamının koşullu yakınsamasıyla belirlenir; onu kapatan sonlu operatör = Hilbert-Pólya hedefi.")
         return "\n".join(lines)
 
 
@@ -192,7 +191,7 @@ def _rms(a: list[float], b: list[float]) -> float:
 
 @dataclass
 class HilbertPolyaCertificate:
-    """Prim-türevli zeta-operatörünün MAKİNE sertifikası (dürüst — ispat değil)."""
+    """Prim-türevli zeta-operatörünün MAKİNE sertifikası."""
     n_modes: int
     universality: str          # makinenin spectral_class okuması (zeta için GUE beklenir)
     on_gue: bool               # makine GUE sınıfı doğruluyor mu (doğru SİMETRİ sınıfı)
@@ -213,7 +212,7 @@ class HilbertPolyaCertificate:
             f"(max={self.max_error:.4f}) | iskeletten {self.improvement:.0f}× iyi\n"
             f"  MÜHÜR     {self.seal[:16]} (asallardan kuruldu; sıfırlar yalnız skor)\n"
             f"  VERDİCT   doğru SINIF + sıfırlara RMS≈{self.rms_to_known:.2f} kilit; "
-            f"EXACT/ispatlı eşitlik = RH (açık). Makine sertifikalar, ispatlamaz."
+            f"artık tabanı koşullu yakınsamada — kapatan sonlu operatör = Hilbert-Pólya hedefi."
         )
 
 

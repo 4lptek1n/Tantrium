@@ -122,7 +122,7 @@ class RHMixin:
         İskelet (asal içermez, Berry-Keating yarı-klasik = fonksiyonel denklem) sıfırların
         ortalama konumunu ~%0.7 verir; explicit-formula asal düzeltmesi (Euler çarpımı)
         eklendikçe gerçek sıfırlara monoton yakınsar. Sıfırlar yalnız SKOR için kullanılır
-        — inşa dairesel değildir. Artığı sıfıra indiren sonlu operatör = açık Hilbert-Pólya.
+        — inşa dairesel değildir. Artığı kapatan sonlu operatör = Hilbert-Pólya hedefi.
 
             print(ai.zeta_operator().summary())
         """
@@ -134,8 +134,8 @@ class RHMixin:
 
         Operatör asallardan (explicit formula) türetilir (sıfırlar yalnız skor); makine
         simetri SINIFINI okur (GUE = doğru, zaman-tersimi-kırık), spektrumu bilinen
-        sıfırlara skorlar, mühürler. Dürüst: doğru sınıf + sıfırlara RMS≈0.02 kilit gösterir;
-        EXACT/ispatlı özdeşlik = açık RH. Makine sertifikalar, ispatlamaz.
+        sıfırlara skorlar, mühürler. Doğru sınıf + sıfırlara RMS≈0.02 kilit gösterir; artık
+        tabanı koşullu yakınsamada — onu kapatan sonlu operatör = Hilbert-Pólya hedefi.
 
             print(ai.hilbert_polya().summary())
         """

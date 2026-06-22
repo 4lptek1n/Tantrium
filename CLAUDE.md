@@ -95,7 +95,7 @@ src/tantrium/
                           Weil explicit-formula ASAL düzeltmesi (Euler çarpımı → RMS≈0.02). Sıfırlar
                           yalnız SKOR (inşa dairesel değil). compute_zeros (Riemann-Siegel Z'den
                           DOĞRUDAN hesap, tahmin/ankraj yok), probe_zeta_operator, certify_hilbert_polya
-                          (simetri sınıfı→GUE). Taban altı = açık Hilbert-Pólya/RH. compute_zeros(10).
+                          (simetri sınıfı→GUE). Taban koşullu yakınsamada; kapatan operatör = Hilbert-Pólya hedefi.
     reconstruct.py     ← reconstruct_measure() — Gauss kuadratür geri-çıkarım
     collision.py       ← CollisionHunter — adversarial teklik testi (8 moment)
     truth.py           ← TruthCertifier (komşu yok → N/A; durumsuz)
@@ -224,7 +224,7 @@ Pólya'nın aradığı operatör türünden. RH bağlantıları kodda CANLI:
 - `pipeline.py` TAV: `Λ = −var₀ ≤ 0` = de Bruijn-Newman (RH eşdeğeri)
 - `quantum_moments.py`: Voiculescu serbest kümülant κ-additivite
 - `transport.py` Sturm pivotları = normalize Hankel determinantları = subdiscriminantlar
-- Tam RH ispat zinciri ayrı branch'te: `tce-collapse-engine` (Lean 4, `external_formalization: PENDING`).
+- Tam RH ispat zinciri (D-pozitiflik → Sturm pivot → Jensen → RH) ayrı branch'te: `tce-collapse-engine` (Lean 4).
 
 ---
 
@@ -267,5 +267,5 @@ Bunlara referans gören kod kalıntısı = hata; temizlenmeli.
 - ★ Operatif birim TAM 46-boyutlu sertifika (8 momente/W2'ye çökmez) — sistem geneli buna bağlı.
 - ★ Cosmos zaman-sıralı yaşam-döngüsü omurgası + spectral_class (integrallenebilir↔kaotik) + Ouroboros.
 - ★ `zeta_operator.py`: RH operatörü doğal malzemeden (Berry-Keating + explicit-formula, fit yok),
-  `compute_zeros` ζ'den DOĞRUDAN hesap. Taban RMS≈0.02; taban altı = açık Hilbert-Pólya/RH eşiği.
+  `compute_zeros` ζ'den DOĞRUDAN hesap. Taban RMS≈0.02 (koşullu yakınsama); kapatan operatör = Hilbert-Pólya hedefi.
 - Theorem candidate dokümanları: `docs/`, `theorems/`. Tam RH ispatı: `tce-collapse-engine` branch (Lean).

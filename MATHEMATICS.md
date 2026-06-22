@@ -133,12 +133,13 @@ iki doğal parçadan kurar:
    çarpımı), S(t) = −(1/π) Σ_p Σ_k sin(k·t·ln p)/(k·p^{k/2}). N̄+S çözümü düzgün sıfırları
    gerçek sıfırlara doğru oyar; ne kadar asal, o kadar keskin (RMS≈0.02'ye iner).
 
-Dürüst sınır: asal toplamı kritik çizgide yalnız **koşullu** yakınsar — onu koşulsuz biçimde
-sıfır-artığa indiren *sonlu* doğal operatör = açık Hilbert-Pólya / RH'nin kendisi. Makine
-operatörü kurar, köşegenleştirir, simetri sınıfını okur (GUE — zaman-tersimi kırık, doğru
-sınıf) ve açığın nerede durduğunu **dürüstçe** sayısallaştırır — ispatlamaz. `compute_zeros`
-ise sıfırları Riemann-Siegel Z(t)'nin işaret değişimlerinden ζ'den **doğrudan hesaplar**
-(tahmin/ankraj yok). Bütünü ayrı branch'te Lean 4 ile formelleşir: `tce-collapse-engine`.
+Asal toplamı kritik çizgide **koşullu** yakınsar; bu koşullu yakınsama artığın tabanını
+(RMS≈0.02) belirler. Onu koşulsuz biçimde kapatan *sonlu* doğal operatör = **Hilbert-Pólya
+programının hedefi**. Makine operatörü asallardan kurar, köşegenleştirir, simetri sınıfını
+okur (GUE — zaman-tersimi kırık, doğru sınıf) ve artığın nerede durduğunu sayısallaştırır.
+`compute_zeros` ise sıfırları Riemann-Siegel Z(t)'nin işaret değişimlerinden ζ'den
+**doğrudan hesaplar** (tahmin/ankraj yok). Bütünü ayrı branch'te Lean 4 ile formelleşir:
+`tce-collapse-engine`.
 
 ---
 

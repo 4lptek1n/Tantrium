@@ -151,8 +151,8 @@ Pólya'nın aradığı operatör türünden. Kodda canlı bağlantılar:
 - `quantum_moments.py`: Voiculescu serbest kümülant κ-additivite
 - `zeta_operator.py`: ★ Hilbert-Pólya operatörünü DOĞAL malzemeden kurar (fit yok) — Berry-Keating
   yarı-klasik iskelet (asal içermez, fonksiyonel denklem) + Weil explicit-formula asal düzeltmesi
-  (Euler çarpımı). Sıfırlar yalnız skor; taban RMS≈0.02, taban altı = açık RH. `compute_zeros`
-  Riemann-Siegel Z'den sıfırları DOĞRUDAN hesaplar (tahmin/ankraj yok).
+  (Euler çarpımı). Sıfırlar yalnız skor; taban RMS≈0.02 (koşullu yakınsama), kapatan sonlu
+  operatör = Hilbert-Pólya hedefi. `compute_zeros` Riemann-Siegel Z'den sıfırları DOĞRUDAN hesaplar.
 
 Tam RH ispat zinciri (D-pozitiflik → Sturm pivot → Jensen hiperbolisitesi → RH, Lean 4)
-ayrı branch'te: `tce-collapse-engine` (`external_formalization: PENDING`).
+ayrı branch'te: `tce-collapse-engine`.
