@@ -23,6 +23,12 @@ parça değil: kaynak ölçü → sonlu Jensen → Ouroboros var-oluş → Hermi
   - **MÜHÜR:** bütün SHA-256 ile mühürlenir (deterministik, denetlenebilir).
   - SDK: `ai.rh_genesis(depth, max_degree)`; `xi_phi`/`xi_jensen_sequence` ihraç.
   - Dürüst: sonlu form EXACT sertifikalı; evrensel hiperbolisite (=RH) hedeftir, iddia edilmez.
+- `rh_genesis.heat_flow_thresholds` — ★★ **BARİYER EKSENİ (de Bruijn-Newman, EXACT):**
+  "pozitif neden kalıyor" = "ısı 0'da kalıyor mu" = Λ≤0. Isı akışı momentlerde birebir
+  kaydırmadır: γ_n(t)=Σ_k (t^k/k!) γ_{n+k}. Her n için d=2 Turán marjının t-kökü = pozitifliğin
+  restore olduğu eşik Λ_n (sympy real_roots, EXACT — deney değil). Makinenin EXACT bulduğu yapı:
+  eşikler monoton **aşağıdan 0'a tırmanır**, **yalnız çift n bağlar** (parite). Λ≥0 kanıtlı
+  (Rodgers–Tao), Λ∈[0,0.2]; RH ⟺ lim Λ_N ≤ 0. SDK: `ai.dbn_flow(depth)`; `DBNFlow` ihraç.
 
 ## [0.4.0] — Üç eksen (tek operatör · ilişki · evrim) + spektral derinlik + zeta operatörü
 

@@ -198,6 +198,7 @@ ai.compute_zeros(10)              # ★ ilk 10 Riemann ζ-sıfırını ζ'den DO
 ai.zeta_operator()                # ★ RH operatörünü doğal malzemeden kur (Berry-Keating iskelet + asal düzeltme; fit yok)
 ai.hilbert_polya()                # ★ zeta-operatörü sertifika hattından geçir (simetri sınıfı→GUE, RMS≈0.02)
 ai.rh_genesis(depth=16)           # ★★★ TEK BÜTÜN: RH pozitifliğinin sonlu-form var-oluşu (ξ ölçüsü→Jensen→Hermite/GUE→mühür)
+ai.dbn_flow(depth=12)             # ★★ BARİYER: de Bruijn-Newman ısı eşikleri EXACT (Λ_n↗0, ısı=momentte kaydırma); RH ⟺ Λ≤0
 ai.jensen([1,4,6,4,1])            # Jensen-Pólya: Laguerre-Pólya (RH-tipi) sertifikası
 ai.hyperbolic([2,-3,1])           # polinom tüm kökleri gerçek mi
 ai.bezoutian([-6,11,-6,1])        # Bezoutian gizli faktör + Lah pivot + ilk-beş-pivot

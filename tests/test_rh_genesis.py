@@ -4,7 +4,9 @@ from fractions import Fraction
 import tantrium
 from tantrium.core.jensen import turan
 from tantrium.core.rh_genesis import (
+    DBNFlow,
     RHGenesis,
+    heat_flow_thresholds,
     rh_genesis,
     xi_jensen_sequence,
     xi_phi,
@@ -64,3 +66,19 @@ def test_sdk_surface():
     g = ai.rh_genesis(depth=10, max_degree=3)
     assert g.all_hyperbolic
     assert "RH-GENESIS" in g.summary()
+
+
+def test_dbn_flow_exact_thresholds():
+    """de Bruijn-Newman: ısı eşikleri EXACT, monoton 0'a tırmanıyor, yalnız çift n bağlıyor."""
+    f = heat_flow_thresholds(depth=12)
+    assert isinstance(f, DBNFlow)
+    assert f.binding_parity_even          # bağlayıcı eşikler yalnız çift n (gözlenen yapı)
+    assert f.climbing_to_zero             # Λ_n n ile 0'a tırmanır (aşağıdan)
+    assert f.lambda_estimate < 0          # d=2 / bu kesim Λ'nın altında (RH-tutarlı)
+
+
+def test_dbn_flow_sdk():
+    """ai.dbn_flow SDK yüzeyinde."""
+    ai = tantrium.AI()
+    f = ai.dbn_flow(depth=10)
+    assert "BRUIJN-NEWMAN" in f.summary()

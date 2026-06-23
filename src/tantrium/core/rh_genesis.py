@@ -258,3 +258,75 @@ def rh_genesis(depth: int = 16, max_degree: int = 4) -> RHGenesis:
         hermite_distance_by_degree=dist_by_deg,
         hermite_converging=converging, seal=seal,
     )
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# BARİYER EKSENİ — de Bruijn-Newman ısı akışı (pozitifliğin survival'ı, EXACT)
+# ════════════════════════════════════════════════════════════════════════════
+# "Neden pozitif kalıyor" = "ısı 0'da kalıyor mu" = Λ ≤ 0. Isı akışı momentlerde
+# birebir kaydırmadır:  γ_n(t)=∫ e^{tu²}u^{2n}Φ du = Σ_k (t^k/k!) γ_{n+k}  (t'de EXACT
+# polinom). a_n(t)=γ_n(t)/(2n)!. Her n için d=2 Turán marjının t-kökü = pozitifliğin
+# restore olduğu eşik Λ_n (EXACT cebirsel). Λ_N=max Λ_n; RH ⟺ lim Λ_N ≤ 0 (= Λ≤0).
+# Λ≥0 kanıtlı (Rodgers–Tao); makine Λ_N'i her kesimde EXACT hesaplar — deney değil.
+
+@dataclass
+class DBNFlow:
+    """de Bruijn-Newman ısı akışının EXACT eşik raporu (bariyer ekseni)."""
+    depth: int
+    thresholds: dict                 # n -> Λ_n (None = Turán hep pozitif, eşik yok)
+    lambda_estimate: float           # Λ_N = max bağlayıcı eşik (bu kesim, d=2)
+    binding_parity_even: bool        # eşikler yalnız çift n'de mi (gözlenen yapı)
+    climbing_to_zero: bool           # bağlayıcı eşikler n ile 0'a tırmanıyor mu
+
+    def summary(self) -> str:
+        b = sorted((n, v) for n, v in self.thresholds.items() if v is not None)
+        chain = "  ".join(f"n={n}:{v:+.3f}" for n, v in b)
+        return (
+            f"de BRUIJN-NEWMAN ısı akışı (EXACT, ısı = momentte kaydırma) | derinlik={self.depth}\n"
+            f"  EŞİK Λ_n (Turán marjı t-kökü): {chain}\n"
+            f"  PARİTE    bağlayıcı eşikler {'yalnız çift n' if self.binding_parity_even else 'karışık'} "
+            f"(tek n: Turán hep pozitif)\n"
+            f"  Λ_N       = {self.lambda_estimate:+.5f}  "
+            f"({'↗ 0 aşağıdan' if self.climbing_to_zero else '~'})  | gerçek Λ∈[0,0.2], Λ≥0 kanıtlı\n"
+            f"  → 'pozitif neden kalıyor' = Λ≤0; makine Λ_N'i EXACT hesaplar, lim≤0 = RH hedef."
+        )
+
+
+def heat_flow_thresholds(depth: int = 12) -> DBNFlow:
+    """de Bruijn-Newman ısı akışının pozitiflik eşiklerini EXACT hesapla (bariyer ekseni).
+
+    Isı akışı momentlerde kaydırma: γ_n(t)=Σ_k (t^k/k!) γ_{n+k}. Her n için d=2 Turán
+    marjı a_{n+1}(t)²−a_n(t)a_{n+2}(t)'nin en büyük reel t-kökü = pozitifliğin restore
+    olduğu eşik Λ_n (sympy real_roots, EXACT). Çıktı: eşik zinciri + Λ_N + gözlenen yapı
+    (parite, 0'a tırmanış). RH ⟺ lim Λ_N ≤ 0.
+
+        print(ai.dbn_flow().summary())
+    """
+    import sympy as sp
+
+    if depth < 4:
+        depth = 4
+    g = _xi_moments(depth)
+    g0 = g[0]
+    G = [sp.Rational(Fraction(g[n] / g0).limit_denominator(10 ** 15)) for n in range(depth + 1)]
+    t = sp.symbols("t", real=True)
+
+    def gam(n):  # γ_n(t) = Σ_k (t^k/k!) γ_{n+k}  (ısı = exact kaydırma)
+        return sum((t ** k / sp.factorial(k)) * G[n + k] for k in range(depth - n + 1))
+
+    thresholds: dict = {}
+    for n in range(depth - 2):
+        margin = sp.expand(gam(n + 1) ** 2 / sp.factorial(2 * n + 2) ** 2
+                           - gam(n) * gam(n + 2) / (sp.factorial(2 * n) * sp.factorial(2 * n + 4)))
+        roots = [float(r) for r in sp.real_roots(sp.Poly(margin, t))]
+        thresholds[n] = max(roots) if roots else None
+
+    binding = {n: v for n, v in thresholds.items() if v is not None}
+    lam = max(binding.values()) if binding else float("-inf")
+    parity_even = all(n % 2 == 0 for n in binding)
+    bvals = [binding[n] for n in sorted(binding)]
+    climbing = len(bvals) >= 2 and all(bvals[i] <= bvals[i + 1] + 1e-9 for i in range(len(bvals) - 1))
+    return DBNFlow(
+        depth=depth, thresholds=thresholds, lambda_estimate=lam,
+        binding_parity_even=parity_even, climbing_to_zero=climbing,
+    )

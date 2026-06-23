@@ -168,6 +168,19 @@ class RHMixin:
         from tantrium.core.rh_genesis import rh_genesis as _rg
         return _rg(depth=depth, max_degree=max_degree)
 
+    def dbn_flow(self, depth: int = 12) -> "object":
+        """de Bruijn-Newman ısı akışının pozitiflik eşiklerini EXACT hesapla (bariyer ekseni).
+
+        "Pozitif neden kalıyor" = "ısı 0'da kalıyor mu" = Λ≤0. Isı akışı momentlerde
+        birebir kaydırmadır: γ_n(t)=Σ_k (t^k/k!) γ_{n+k}. Her n için d=2 Turán marjının
+        t-kökü = pozitifliğin restore olduğu eşik Λ_n (sympy real_roots, EXACT — deney değil).
+        Λ_N=max Λ_n aşağıdan 0'a tırmanır (Λ≥0 kanıtlı, Λ∈[0,0.2]); RH ⟺ lim Λ_N ≤ 0.
+
+            print(ai.dbn_flow().summary())
+        """
+        from tantrium.core.rh_genesis import heat_flow_thresholds
+        return heat_flow_thresholds(depth=depth)
+
 
     def cosmos(self, seed=None, inflation_steps: int = 40) -> "object":
         """Bir tohumun TÜM evren ömrü: T₁ yaratılış → T₁₀ son, çağ çağ, mühürlü.

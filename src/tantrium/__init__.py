@@ -58,7 +58,9 @@ from tantrium.core.relation import Relation, relate
 from tantrium.core.rh_certificate import RHCertificate, certify_rh, hausdorff
 from tantrium.core.rh_criteria import RHCriteria, criteria_distance, rh_criteria
 from tantrium.core.rh_genesis import (
+    DBNFlow,
     RHGenesis,
+    heat_flow_thresholds,
     rh_genesis,
     xi_jensen_sequence,
     xi_phi,
@@ -157,6 +159,8 @@ __all__ = [
     "rh_genesis",
     "xi_jensen_sequence",
     "xi_phi",
+    "DBNFlow",
+    "heat_flow_thresholds",
     "certify_hilbert_polya",
     "HilbertPolyaCertificate",
     "laguerre_polya_test",
