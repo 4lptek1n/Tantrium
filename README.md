@@ -1,16 +1,19 @@
 # Tantrium
 
-**Durumsuz, saf-matematik yapısal sertifikasyon makinesi.** Her girdi — sayı dizisi,
+**Durumsuz, saf-matematik yapısal ölçüm makinesi.** Her girdi — sayı dizisi,
 matris, graf, molekül (SMILES) — zaten bir matematiksel nesnedir. Tantrium o yapıyı
-spektral momentlere okur ve Riemann Hipotezi ispat yapısından türetilmiş pozitiflik
-operatörleriyle **sertifikalar**. Dil yok, öğrenme yok, istatistik yok — yalnız matematik.
+spektral momentlere okur ve 23 matematiksel boyutu **ölçer** — her boyut moment dizisinin
+farklı bir yapısal özelliğini sayısal olarak verir. Bu ölçümler bir sonraki adımda
+kullanılmak üzere 46-boyutlu bir vektör oluşturur. Dil yok, öğrenme yok, istatistik yok —
+yalnız matematik.
 
 ```python
 import tantrium
 ai = tantrium.AI()
 
-ai.certify_all("EGFR")                       # 23-paradigma sertifikası (tek geçiş)
-ai.transport("CCO", "CC(=O)O")               # sertifikalı dyadic+Sturm+Zeta geçiş
+ai.fingerprint("EGFR")                        # 46-boyutlu ölçüm vektörü
+ai.compare("CCO", "CCCO")                     # iki girdi arasındaki yapısal mesafe
+ai.transport("CCO", "CC(=O)O")                # dyadic+Sturm+Zeta geçiş
 ai.discover_law([1, 1, 2, 3, 5, 8, 13, 21])  # ham veriden yönetici yasa (Fibonacci→φ)
 ai.reconstruct([1, 1, 2, 3, 5, 8, 13, 21])   # momentlerden ölçü geri-çıkarımı
 ai.produce_math([1.0, 0.6, 0.4, 0.28])       # ölçülen κ → gerçeklenebilir spektrum
@@ -22,93 +25,97 @@ ai.produce_math([1.0, 0.6, 0.4, 0.28])       # ölçülen κ → gerçeklenebili
 
 ```
 girdi → negatif-olmayan matris A → G = AᵀA → μ_k = Tr(Gᵏ)/n → 8 rasyonel moment
+                                                                         ↓
+                                                               23 boyut ölçülür
+                                                                         ↓
+                                                            46-boyutlu vektör (fingerprint)
+                                                                         ↓
+                                                    karşılaştırma / transport / yasa keşfi
 ```
 
 **Hamburger Teoremi**: kompakt destekli bir ölçü, moment dizisiyle tek biçimde belirlenir.
 `G = AᵀA` daima pozitif yarı-tanımlıdır, dolayısıyla `[μ₀..μ₇]` daima geçerli bir moment
 dizisidir. Encoder dünyayı matematiğe **çevirmez** — dünya zaten matematiktir, encoder okur.
 
-Tüm aritmetik **exact `Fraction`** (rasyonel) — yuvarlama yok, kanıt-taşıyan, bit-bit
-tekrarlanabilir. İşte bu, istatistiksel modellerin sunamadığı şey: **deterministik,
-denetlenebilir sertifika**.
+Tüm aritmetik **exact `Fraction`** (rasyonel) — yuvarlama yok, bit-bit tekrarlanabilir,
+deterministik. Bu, istatistiksel modellerin sunamadığı şey: aynı girdi her zaman aynı
+vektörü üretir.
 
 ---
 
-## 23 Paradigma (RH ispat yapısının katmanları)
+## 23 Ölçüm Boyutu
 
-Her paradigma, Riemann Hipotezi ispatından türetilmiş formal bir pozitiflik operatörüdür —
-metafor değil.
+Her paradigma moment dizisinin farklı bir yapısal özelliğini sayısal olarak ölçer.
+Çıktıları ileriki adımlarda (karşılaştırma, transport, yasa keşfi) girdi olarak kullanılır.
 
-| Paradigma | Katman | Ne kontrol eder |
-|-----------|--------|-----------------|
-| ALEPH | temel | Hankel PSD — geçerli moment dizisi |
-| DALET | L2.5 | `eigvalsh(Gram)` → gerçek özdeğerler |
-| HE | L1.5 | Lyapunov kararlılığı: `V(k) = μ_k / λ_max^k` azalır |
-| ZAYIN | L2 | LGV iz kimliği: `path_sum = Tr(G)` |
-| HET | L3 | Li kriteri: nesnenin kendi özdeğerleri için `λ_n > 0` |
-| TAV | L4 | de Bruijn-Newman: `Λ = −var₀ ≤ 0` (2020'de kanıtlandı) |
-| GIMEL | L5 | Achilles: zincirde zayıf paradigma yok |
-| EMET | L6 | Tutarlılık: çelişki yok |
+| Paradigma | Katman | Ne ölçer |
+|-----------|--------|----------|
+| ALEPH | temel | Hankel determinantları — moment dizisinin yapısı |
+| DALET | L2.5 | `eigvalsh(Gram)` → özdeğer dağılımı |
+| HE | L1.5 | Lyapunov oranı: `V(k) = μ_k / λ_max^k` |
+| ZAYIN | L2 | LGV iz: `path_sum = Tr(G)` |
+| HET | L3 | Li skoru: özdeğerlerin işaret dağılımı |
+| TAV | L4 | de Bruijn-Newman sabiti: `Λ = −var₀` |
+| GIMEL | L5 | Achilles: zincirin en zayıf halkası |
+| EMET | L6 | İç tutarlılık ölçüsü |
 
-Tümü `CertificationPipeline` ile topolojik bağımlılık sırasında çalışır.
-
----
-
-## Sertifikalı Transport
-
-İki spektral ölçü arası geçiş "en yakın komşu araması" değil — bir **ispattır**:
-
-```
-1. DYADIC   solve_greedy(src_cells, tgt_cells) → "verified_exact"
-            Exact rasyonel aritmetik. Kütle korunumu garanti.
-
-2. STURM    H(t) = (1-t)·H_src + t·H_tgt tüm t ∈ [0,1] için PSD kalır
-            Geçiş yolu "gerçek nesne" manifoldunda kalır — hayalet ara nokta yok.
-
-3. ZETA     Riemann ζ-sıfır spektral ailesine L1 mesafesi
-
-CERTIFIED = dyadic ✓ AND sturm ✓
-```
-
-Benzene `DYADIC_FAILED` (simetrik halka bu yolla taşınamaz), aspirin `CERTIFIED`. Bu hata
-değil — evren yolun gerçek olup olmadığını söylüyor.
+Tümü `MeasurementPipeline` ile topolojik bağımlılık sırasında çalışır. Önemli not:
+G=AᵀA yapısı gereği her zaman PSD olduğundan bu boyutlar "geçti/geçemedi" değil,
+**sayısal değerler** üretir — asıl ayrım bu değerlerin büyüklüklerinde ve kombinasyonundadır.
 
 ---
 
-## RH-Kriter Katmanı (8 moment + tam RH kriterleri)
+## Transport
 
-8 moment, RH ispat zincirinin (`tce-collapse-engine`) moment-hesaplanabilir çekirdeğiyle
-**zenginleştirilir** — hepsi aynı exact-Fraction borusunda, 16-derinlik:
+İki spektral ölçü arasındaki geçiş üç adımda ölçülür:
 
 ```
-τ_j  = det[μ_{a+b}]_{0..j}      Hankel/subdiscriminant   (τ_j>0 ⇔ hiperbolik ölçü)
-τ'_j = det[μ_{a+b+1}]_{0..j}    Stieltjes (half-line; G=AᵀA spektrumu ≥0)
-d_k  = τ_k/τ_{k-1}              LDLᵀ/Sturm pivot          (Hamburger sertifikası)
-ρ_j  = τ_{j-2}τ_j/τ_{j-1}²      cross-ratio (log-konkavlık)
-κ_k, Λ = −var₀ ≤ 0             log-det kümülant + de Bruijn-Newman
-rank = en yüksek τ_j>0          spektral atom sayısı  ← AYIRT EDİCİ
+1. DYADIC   solve_greedy(src_cells, tgt_cells) → exact rasyonel aritmetik
+            Kütle korunumu kontrol edilir. Başarısız olabilir (DYADIC_FAILED).
+
+2. STURM    H(t) = (1-t)·H_src + t·H_tgt için t ∈ [0,1] boyunca PSD kalıyor mu?
+            Geçiş yolunun yapısal sürekliliği ölçülür.
+
+3. ZETA     Riemann ζ-sıfır spektral ailesine L1 mesafesi — referansa uzaklık ölçüsü
+
+GEÇERLI = dyadic ✓ AND sturm ✓
 ```
 
-`rank` gerçek bir ayırt edici: **benzene rank≈1** (simetrik halka, dejenere) vs
-**aspirin rank≈6** (zengin yapı) — 23 paradigmanın (hepsi PSD geçer) göremediği fark.
-`ai.rh_distance(a, b)` bu vektör (rank + pivot + κ) üzerinden ayırt edici mesafe verir;
-`certify_all` çıktısı `rh_grade` + `rh_stieltjes` eksenini taşır.
+Benzene `DYADIC_FAILED` (simetrik halka bu yolla taşınamaz), aspirin geçerli geçiş yapar.
+Bu bir hata değil — yapının o yolu izleyip izleyemeyeceğini söyleyen bir ölçümdür.
 
-**Birleşik kablolama:** Tüm bunlar tek `RHCertificate`'te toplanır (`certify_rh`) ve
-**mimariye gömülüdür** — encoder her çıktıya `structure["rh"]` ekler, `certify_all`
-(CoreMachine) her sertifikaya RH bundle + **SHA-256 mühür** taşır (`ai.verify` ile
-dışarıdan denetlenebilir), `metric="rh"` ayırt edici mesafeyi verir. Parça değil, omurga.
+---
 
-Ek cevherler (ispatın çekirdeğinden):
+## RH-Kriter Vektörü (asıl ayırt edici katman)
 
-- **Jensen-Pólya hiperbolisite** (`ai.jensen`) — RH'nin HEDEF kriteri: bir dizinin Jensen
-  polinomları `J^{d,n}=Σ C(d,j)γ_{n+j}X^j` hiperbolik mi (= Laguerre-Pólya sınıfı). PSD
-  gibi otomatik DEĞİL; log-konkav/ξ-benzeri diziler için gerçek pozitiflik testi.
-- **Serbest olasılık** (`ai.free_entropy`, `semicircle_distance`) — Voiculescu serbest
-  entropi χ (logaritmik enerji, konkav), R-dönüşümü, serbest konvolüsyon ⊞, yarı-daire.
-- **Mühürlü sertifika** (`ai.seal` / `ai.verify`) — her çıktıyı SHA-256 içerik-hash'iyle
-  mühürler; `verify` dışarıdan yeniden-hesaplayıp **tamper'ı tespit eder**. `adversarial_control`
-  geçersiz diziyi dürüstçe eler (negatif kontrol) — makine her şeyi "geçirmez".
+8 moment, exact-Fraction aritmetiğiyle 16 derinliğe genişletilir. Bu katman **sayısal
+değerler** üretir — geçti/kaldı değil:
+
+```
+τ_j  = det[μ_{a+b}]_{0..j}      Hankel determinantları
+τ'_j = det[μ_{a+b+1}]_{0..j}    Stieltjes determinantları
+d_k  = τ_k/τ_{k-1}              LDLᵀ/Sturm pivotları
+ρ_j  = τ_{j-2}τ_j/τ_{j-1}²      cross-ratio (log-konkavlık ölçüsü)
+κ_k, Λ = −var₀               log-det kümülant + de Bruijn-Newman sabiti
+rank = en yüksek τ_j>0          spektral atom sayısı  ← ASIL AYIRT EDİCİ
+```
+
+`rank` girdiler arasındaki gerçek farkı ortaya çıkarır: **benzene rank≈1** (simetrik
+halka, dejenere yapı) vs **aspirin rank≈6** (zengin yapı). `ai.rh_distance(a, b)` bu
+vektör (rank + pivot + κ) üzerinden mesafe hesaplar.
+
+**Mimari entegrasyon:** Bu ölçümler encoder çıktısına `structure["rh"]` olarak eklenir,
+`certify_all` (CoreMachine) her sonuca RH vektörünü + SHA-256 hash'i (tekrarlanabilirlik
+için) taşır. `metric="rh"` ile bu vektör üzerinden mesafe kullanılır.
+
+Ek ölçüm araçları:
+
+- **Jensen-Pólya** (`ai.jensen`) — bir dizinin Jensen polinomlarının hiperbolisite ölçüsü
+  (Laguerre-Pólya sınıfı). G=AᵀA gibi her zaman pozitif değil; gerçek bir sayısal test.
+- **Serbest entropi** (`ai.free_entropy`, `semicircle_distance`) — Voiculescu serbest
+  entropi χ (logaritmik enerji), R-dönüşümü, yarı-daire (Wigner) mesafesi.
+- **SHA-256 hash** (`ai.seal` / `ai.verify`) — hesaplanan ölçüm vektörünü mühürler;
+  `verify` ile dışarıdan yeniden hesaplanıp bit-bit karşılaştırılabilir.
 
 ---
 
@@ -117,35 +124,37 @@ Ek cevherler (ispatın çekirdeğinden):
 ```python
 ai = tantrium.AI()
 
-# Sertifikasyon
-ai.ask("EGFR")                  # AskResult: paradigma sertifikası
-ai.certify_all("EGFR")          # UnifiedCertificate: tek geçiş
-ai.paradigms("c1ccccc1")        # 23 paradigma dökümü
+# Ölçüm & analiz
+ai.ask("EGFR")                  # 23 boyutun ham ölçüm sonuçları
+ai.certify_all("EGFR")          # tek geçişte tam ölçüm paketi
+ai.paradigms("c1ccccc1")        # 23 boyutun dökümü (sayısal değerler)
+ai.fingerprint("EGFR")          # ★ tam 46-boyutlu ölçüm vektörü (makinenin çıktısı)
+ai.compare("CCO", "CCCO")       # ★ 46-dim vektör mesafesi (W2'nin göremediği farkı yakalar)
 ai.sturm("x^3 - 3*x + 1")       # Sturm zinciri
-ai.positivity("x^2 + 1")        # Hankel PSD kontrolü
+ai.positivity("x^2 + 1")        # Hankel determinantları
 
-# RH-kriter (tce-collapse RH zincirinin moment-çekirdeği — ayırt edici)
+# RH-kriter vektörü (asıl ayırt edici — sayısal değerler)
 ai.rh_criteria("EGFR")          # τ/pivot/cross-ratio/Stieltjes/κ/Λ/rank (exact)
-ai.rh_distance("EGFR", "c1ccccc1")  # rank+pivot+κ ayırt edici mesafe
-ai.rh_certificate("EGFR")       # ★ BİRLEŞİK RH bundle (kriterler+Hausdorff+χ+mühür)
-ai.jensen([1,4,6,4,1])          # Jensen-Pólya: Laguerre-Pólya (RH-tipi) hiperbolisite
-ai.hyperbolic([2,-3,1])         # polinom tüm kökleri gerçek mi
-ai.bezoutian([-6,11,-6,1])      # Bezoutian gizli faktör + Lah pivot + ilk-beş-pivot
-ai.free_entropy("EGFR")         # serbest entropi χ (logaritmik enerji, konkav)
+ai.rh_distance("EGFR", "c1ccccc1")  # rank+pivot+κ vektörü üzerinden mesafe
+ai.rh_certificate("EGFR")       # ★ birleşik RH vektörü (kriterler+Hausdorff+χ+hash)
+ai.jensen([1,4,6,4,1])          # Jensen-Pólya hiperbolisite ölçüsü (Laguerre-Pólya)
+ai.hyperbolic([2,-3,1])         # polinom kök dağılımı
+ai.bezoutian([-6,11,-6,1])      # Bezoutian faktör + Lah pivot
+ai.free_entropy("EGFR")         # serbest entropi χ (logaritmik enerji)
 ai.semicircle_distance("EGFR")  # yarı-daireye (Wigner) κ-mesafesi
-s = ai.seal("EGFR"); ai.verify(s)   # mühürlü SHA-256 sertifika + tamper-tespiti
+s = ai.seal("EGFR"); ai.verify(s)   # SHA-256 hash + bit-bit doğrulama
 
-# Transport & molekül (matematiğe indirgenen domainler)
-ai.transport("CCO", "CC(=O)O")  # sertifikalı geçiş
+# Transport & molekül
+ai.transport("CCO", "CC(=O)O")  # dyadic+Sturm+Zeta geçiş (başarısız olabilir)
 ai.design("EGFR")               # ters transport → W2-minimal moleküller
 ai.arrange("EGFR")              # saf W2 dizimi
 ai.morph("CCO", "c1ccccc1")     # moment-uzayı yolu
 ai.produce_math([...])          # κ → gerçeklenebilir spektrum
-ai.design_peptide("ACDEFGHIK")  # Sturm-sertifikalı biyopolimer
+ai.design_peptide("ACDEFGHIK")  # Sturm destekli biyopolimer
 
 # Evrensel matematik (domain-kör, ham veri → yapı)
 ai.discover_law(series)         # yönetici yasa + tahmin (Koopman/EDMD)
-ai.forecast(series)             # holdout-sertifikalı tahmin
+ai.forecast(series)             # doğrulamalı tahmin
 ai.detect_anomalies(series)     # yapısal anomali
 ai.reverse_engineer(obs)        # gözlemden üreten gizli yapı
 ai.reconstruct([...])           # momentlerden ölçü geri-çıkarımı
@@ -154,43 +163,41 @@ ai.reconstruct([...])           # momentlerden ölçü geri-çıkarımı
 ai.quantum_distance(a, b)       # (1-γ)·W2 + γ·κ-mesafe
 ai.entangle(a, b)               # klasik-uzak / κ-yakın gizli bağ
 
-# Üç eksen: TEK OPERATÖR · İLİŞKİ · EVRİM (her şey G=A†A'nın bir yüzü)
-ai.spectral_reading("EGFR")     # ★★ G=A†A'nın DÖRT katmanı tek nesnede (makro·mikro·simetri·özvektör+D₂)
-ai.spectral_geometry("EGFR")    # ★★ Connes/NCG: yapının tanımladığı uzayın boyutu·eğriliği·etkisi
+# Üç eksen: TEK OPERATÖR · İLİŞKİ · EVRİM
+ai.spectral_reading("EGFR")     # G=A†A'nın dört katmanı (makro·mikro·simetri·özvektör+D₂)
+ai.spectral_geometry("EGFR")    # Connes/NCG: yapının uzayının boyutu·eğriliği·etkisi
 ai.spectral_class([k*k for k in range(1,90)])  # integrallenebilir↔kaotik (BGS/Berry-Tabor, ⟨r⟩)
-ai.interact("CCO", "CCCO")      # ★★ KUVVET + HAYAT: kuplaj + dolanıklık (çok-cisim H=M†M)
-ai.spectral_flow("c1ccccc1","CCO")  # ★★ TOPOLOJİ: yolun net özdeğer geçişi (Atiyah-Singer)
-ai.relate("CCO", "CCCO")        # ★ İLİŞKİ çatısı: kuvvet+hayat+topoloji tek nesnede
-ai.cosmos("EGFR")               # ★ tohumun TÜM evren ömrü T₀→T₁₀ + 4-katman ızgarası + faz geçişi
-ai.universe("EGFR")             # ★★★ SENTEZ: eksiksiz evren, YEDİ YÜZ, tek mühür (.couple→kuvvet+hayat)
+ai.interact("CCO", "CCCO")      # kuplaj + dolanıklık (çok-cisim H=M†M)
+ai.spectral_flow("c1ccccc1","CCO")  # yolun net özdeğer geçişi (Atiyah-Singer)
+ai.relate("CCO", "CCCO")        # kuvvet+hayat+topoloji tek nesnede
+ai.cosmos("EGFR")               # tohumun evren ömrü T₀→T₁₀ + 4-katman ızgarası + faz geçişi
+ai.universe("EGFR")             # sentez: yedi yüz, tek hash (.couple ile kuvvet+hayat)
 ai.self_reference()             # öz-gönderim sabit noktası μ* (46-mercek kapanış)
-ai.fingerprint("EGFR")          # tam 46-boyutlu sertifika vektörü (makinenin algı organı)
-ai.compare("CCO", "CCCO")       # tam 46-dim sertifika mesafesi (W2'nin çöktüğünü ayırır)
 
 # Riemann sıfırlarının operatörü (Hilbert-Pólya — fit yok, sıfırlar yalnız skor)
-ai.compute_zeros(10)            # ilk 10 ζ-sıfırını ζ'den DOĞRUDAN hesapla (Riemann-Siegel Z)
+ai.compute_zeros(10)            # ilk 10 ζ-sıfırını ζ'den doğrudan hesapla (Riemann-Siegel Z)
 ai.zeta_operator()              # Berry-Keating iskelet + Weil explicit-formula asal düzeltmesi (RMS≈0.02)
-ai.hilbert_polya()              # operatörü sertifika hattından geçir → simetri sınıfı GUE
-ai.rh_genesis(depth=16)         # ★★★ RH pozitifliğinin sonlu-form var-oluşu: ξ ölçüsü→Jensen→Hermite/GUE, tek mühür
+ai.hilbert_polya()              # operatörü ölçüm hattından geçir → simetri sınıfı GUE
+ai.rh_genesis(depth=16)         # RH pozitifliğinin sonlu-form var-oluşu: ξ ölçüsü→Jensen→Hermite/GUE
 ```
 
 ### RH-GENESIS — pozitifliğin sonlu-form var-oluşu
 
-`ai.rh_genesis()` konuştuğumuz bütünü tek organda toplar: RH'nin pozitifliği nereden gelir?
+`ai.rh_genesis()`: RH'nin pozitifliği nereden gelir?
 
 ```
-KAYNAK    ξ'nin Pólya ölçüsü Φ(u)>0 → momentler γ_n → Hankel PSD bedava (ölçü gerçek)
-SONLU     Ξ∈Laguerre-Pólya ⟺ RH  →  sonlu Jensen J^{d,n} hiperbolik mi (EXACT Sturm)
-VAR-OLUŞ  derinlik adım adım büyür (Ouroboros), her adım sertifikalı
-KURAL     renormalize J^{d,n} → Hermite H_d (n→∞, GORZ) = GUE öz-fonksiyonları → tek-kural izi
-MÜHÜR     bütün SHA-256
+KAYNAK    ξ'nin Pólya ölçüsü Φ(u)>0 → momentler γ_n → Hankel PSD (ölçü gerçek)
+SONLU     sonlu Jensen J^{d,n}'nin hiperbolisite ölçüsü (EXACT Sturm)
+VAR-OLUŞ  derinlik adım adım büyür (Ouroboros), her adımın ölçümü kaydedilir
+KURAL     renormalize J→Hermite H_d (n→∞, GORZ) = GUE öz-fonksiyonları → kural izi ölçülür
+MÜHÜR     SHA-256
 ```
 
-Sonlu form EXACT sertifikalanır (d=2 Turán log-konkavlık, d≥3 Laguerre); evrensel
-hiperbolisite (= RH) **hedeftir** — makine sonlu formu kanıtlar, Hermite-kuralı adayını ölçer.
+Sonlu form EXACT hesaplanır (d=2 Turán log-konkavlık, d≥3 Laguerre); evrensel
+hiperbolisite (=RH) **hedeftir** — makine sonlu formu hesaplar, Hermite-kuralı adayını ölçer.
 
 `grounding` / `truth` eksenleri öğrenilen manifolda muhtaçtı; durumsuz makinede **N/A**
-döner. Geriye sertifikasyon (23 paradigma) + transport + confidence kalır.
+döner. Geriye ölçüm (23 boyut) + transport + confidence kalır.
 
 ---
 
@@ -200,7 +207,7 @@ döner. Geriye sertifikasyon (23 paradigma) + transport + confidence kalır.
 Katman 5: SDK          ai/ (durumsuz giriş, mixin paketi) + universe.py/cosmos.py + serve.py (REST)
 Katman 4: Transport    transport.py (Dyadic + Sturm + Zeta)
 Katman 3: Domainler    domains/ (molecular, spectral) — matematiğe indirgenen
-Katman 2: Sertifikasyon core/paradigms/ (23 paradigma) + network.py + unified.py (CoreMachine)
+Katman 2: Ölçüm        core/paradigms/ (23 boyut) + network.py + unified.py (CoreMachine)
 Katman 1: Kodlama      core/encoder/ (sayı/dizi/matris/dict/SMILES → moment) + quantum_moments
 Katman 0: Cebir        algebra/ (Sturm, Sheffer, positivity) + proof/ (dyadic flow)
 ```

@@ -1,9 +1,10 @@
 # Tantrium — Sistem Hafızası
 
-> **NE OLDUĞU (tek cümle):** Durumsuz, saf-matematik yapısal sertifikasyon makinesi.
-> Girdiyi (sayı/dizi/matris/dict/SMILES) spektral momentlere okur, Riemann Hipotezi
-> ispat yapısından türetilmiş 23 pozitiflik paradigmasıyla sertifikalar. **Dil yok,
-> öğrenme yok, manifold/graf yok, ajans yok, istatistik yok.**
+> **NE OLDUĞU (tek cümle):** Durumsuz, saf-matematik yapısal ölçüm makinesi.
+> Girdiyi (sayı/dizi/matris/dict/SMILES) spektral momentlere okur, 23 matematiksel
+> boyutu ölçerek 46-boyutlu bir vektör üretir — bu vektör sonraki adımlarda
+> (karşılaştırma, transport, yasa keşfi) kullanılır. **Dil yok, öğrenme yok,
+> manifold/graf yok, ajans yok, istatistik yok.**
 
 ## Aktif Branch
 `claude/asi-pure-math` — saf-matematik makinesi. (Geçmiş: `claude/seninle-agi-yapacagiz-XwJRz`
