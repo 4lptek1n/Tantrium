@@ -2,13 +2,14 @@
 İlaç Tasarım Pipeline — Hastalıktan 3D Moleküle
 =================================================
 Adımlar:
-  1. Hastalık verisi (sayılar) → κ_disease
-  2. Sağlıklı referans (sayılar) → κ_healthy
-  3. κ_drug = κ_healthy ⊟ κ_disease (Voiculescu serbest dekonvolüsyon)
-  4. μ_drug → eigenvalue spektrum (İLACIN KENDİSİ — saf matematik)
-  5. Eigenvalue spektrumuna en yakın moleküler yapı → SMILES
+  1. Hastalık verisi (sayılar) → 91-dim universe_coordinate()
+  2. Sağlıklı referans (sayılar) → 91-dim universe_coordinate()
+  3. Hedef = v_healthy - v_disease (91-dim boşluk)
+  4. κ_drug = κ_healthy ⊟ κ_disease (Voiculescu) → gerçeklenebilirlik sertifikası
+  5. Her scaffold → 91-dim vektör → Öklid mesafesi → en yakın scaffold
   6. SMILES → 3D SDF (RDKit ETKDGv3 + MMFF94)
 
+91 boyutun TAMAMI kullanılır: moment + pivot + cross-ratio + Li + Λ + GOE/GUE + paradigma.
 Dil yok. Harf yalnız en sonda (SMILES/SDF çıktısında).
 """
 import sys, os
@@ -51,11 +52,10 @@ _SCAFFOLDS = [
 ]
 
 
-def _scaffold_eigenvalues(smiles: str) -> list[float]:
-    """Scaffold SMILES → G=AᵀA eigenvalue spektrumu (moleküler Laplacian)."""
+def _scaffold_laplacian_eigs(smiles: str) -> list[float]:
+    """Scaffold SMILES → moleküler Laplacian eigenvalue listesi."""
     try:
         from rdkit import Chem
-        from rdkit.Chem import rdmolops
         import numpy as np
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
@@ -73,29 +73,61 @@ def _scaffold_eigenvalues(smiles: str) -> list[float]:
         return []
 
 
-def _w2_distance(a: list[float], b: list[float]) -> float:
-    """Wasserstein-2 mesafesi iki eigenvalue spektrumu arasında."""
-    if not a or not b:
-        return float("inf")
-    import numpy as np
-    la, lb = sorted(a, reverse=True), sorted(b, reverse=True)
-    n = min(len(la), len(lb))
-    return float(np.sqrt(sum((la[i] - lb[i]) ** 2 for i in range(n)) / n))
+def _scaffold_91dim(smiles: str) -> list[float] | None:
+    """Scaffold SMILES → 91-dim universe_coordinate vektörü.
+
+    Moleküler Laplacian eigenvalue'ları → build_mini_space → universe_coordinate().
+    Böylece scaffold'un moment/RH/Li/paradigma bilgisi tamamı kullanılır.
+    """
+    eigs = _scaffold_laplacian_eigs(smiles)
+    if not eigs:
+        return None
+    try:
+        ms = build_mini_space(eigs)
+        return ms.universe_coordinate()
+    except Exception:
+        return None
 
 
-def _match_scaffold(target_eigs: list[float], weights: list[float]) -> str:
-    """En yakın scaffold'u W2 mesafesiyle bul."""
-    # Ağırlıklı hedef spektrum
-    target = sorted([e * w for e, w in zip(target_eigs, weights)], reverse=True)
-    best_smi, best_d = _SCAFFOLDS[0][1], float("inf")
+def _euclidean_91(a: list[float], b: list[float]) -> float:
+    """İki 91-dim vektör arasında Öklid mesafesi."""
+    import math
+    n = min(len(a), len(b))
+    return math.sqrt(sum((a[i] - b[i]) ** 2 for i in range(n)))
+
+
+def _match_scaffold_91dim(v_disease: list[float], v_healthy: list[float]) -> tuple[str, str]:
+    """91-dim uzayda en yakın scaffold'u bul.
+
+    Hedef = v_healthy (sağlıklı uzay koordinatı).
+    Her scaffold'un 91-dim vektörü hesaplanır, Öklid mesafesiyle karşılaştırılır.
+    Scaffold seçimi: moment, pivot, cross-ratio, Li, Λ, GOE/GUE, paradigma hepsini kullanır.
+    """
+    import math
+
+    # Hedef: sağlıklı uzay koordinatı (drug → disease'i healthy'e taşımalı)
+    target = v_healthy
+
+    best_smi, best_name, best_d = _SCAFFOLDS[0][1], _SCAFFOLDS[0][0], float("inf")
+    details = []
+
     for name, smi in _SCAFFOLDS:
-        eigs = _scaffold_eigenvalues(smi)
-        d = _w2_distance(target, eigs)
+        v_scaf = _scaffold_91dim(smi)
+        if v_scaf is None:
+            continue
+        d = _euclidean_91(target, v_scaf)
+        details.append((d, name, smi))
         if d < best_d:
-            best_d, best_smi = d, smi
-            best_name = name
-    print(f"    W2 mesafesi: {best_d:.4f} → {best_name}")
-    return best_smi
+            best_d, best_smi, best_name = d, smi, name
+
+    # En iyi 3'ü göster
+    details.sort()
+    print(f"    91-dim Öklid mesafesi (ilk 3):")
+    for d, n, s in details[:3]:
+        marker = " ←" if n == best_name else ""
+        print(f"      {n:<20} d={d:.4f}{marker}")
+
+    return best_smi, best_name
 
 
 def _count_atoms(smiles: str) -> int:
@@ -119,17 +151,28 @@ def run_pipeline(disease_numbers: list, healthy_numbers: list,
 
     ai = tantrium.AI()
 
-    section(f"ADIM 1-4: MATEMATİK — {label}")
+    section(f"ADIM 1-2: 91-DİM UZAY KOORDİNATI — {label}")
 
-    # 1. Uzay koordinatları
+    # 1. Her iki durum için TAM 91-dim universe_coordinate
     disease_ms  = build_mini_space(disease_numbers)
     healthy_ms  = build_mini_space(healthy_numbers)
+    v_disease   = disease_ms.universe_coordinate()
+    v_healthy   = healthy_ms.universe_coordinate()
 
-    print(f"  Hastalık uzay koordinatı  → β={disease_ms.beta}, ⟨r⟩={disease_ms.r_ratio:.4f}")
-    print(f"  Sağlıklı uzay koordinatı  → β={healthy_ms.beta}, ⟨r⟩={healthy_ms.r_ratio:.4f}")
+    print(f"  Hastalık  91-dim: β={disease_ms.beta}, ⟨r⟩={disease_ms.r_ratio:.4f}, "
+          f"Λ={float(disease_ms.rh.lambda_dbn):+.4f}")
+    print(f"  Sağlıklı  91-dim: β={healthy_ms.beta}, ⟨r⟩={healthy_ms.r_ratio:.4f}, "
+          f"Λ={float(healthy_ms.rh.lambda_dbn):+.4f}")
+
+    # 91-dim boşluk: kaç boyut farklı?
+    n_dim = min(len(v_disease), len(v_healthy))
+    n_diff = sum(1 for i in range(n_dim) if abs(v_disease[i] - v_healthy[i]) > 1e-6)
+    import math
+    gap_91 = math.sqrt(sum((v_disease[i]-v_healthy[i])**2 for i in range(n_dim)))
+    print(f"  91-dim boşluk : {n_diff}/{n_dim} boyut farklı, Öklid={gap_91:.4f}")
     print()
 
-    # 2-4. produce_math: κ_disease → κ_drug → eigenvalues
+    # 3-4. Voiculescu dekonvolüsyon → gerçeklenebilirlik sertifikası
     math_drug = ai.produce_math(disease_numbers, build=False, healthy=healthy_numbers)
     print(math_drug.summary())
 
@@ -138,16 +181,23 @@ def run_pipeline(disease_numbers: list, healthy_numbers: list,
         return
 
     eigs = math_drug.eigenvalues
-    weights = math_drug.weights
     print(f"  ✓ İLACIN SPEKTRUMU: eigenvalues={[round(e,3) for e in eigs]}")
-    print(f"    ağırlıklar={[round(w,4) for w in weights]}")
 
-    section(f"ADIM 5: YAPI ARAMA — eigenvalue → SMILES (W2 scaffold eşleştirme)")
+    section(f"ADIM 5: YAPI ARAMA — 91-DİM UZAYDA SCAFFOLD EŞLEŞTİRME")
+    print(f"  Hedef: sağlıklı 91-dim koordinatı")
+    print(f"  Yöntem: scaffold → Laplacian eigs → universe_coordinate() → Öklid mesafesi")
+    print()
 
-    smiles = _match_scaffold(eigs, weights)
+    smiles, scaffold_name = _match_scaffold_91dim(v_disease, v_healthy)
     n_atoms = _count_atoms(smiles)
-    print(f"  ✓ En yakın scaffold: {smiles}")
-    print(f"    Atom sayısı: {n_atoms}")
+
+    # Seçilen scaffold'un 91-dim vektörünü karşılaştır
+    v_scaf = _scaffold_91dim(smiles)
+    if v_scaf:
+        scaf_gap = math.sqrt(sum((v_healthy[i]-v_scaf[i])**2 for i in range(min(len(v_healthy),len(v_scaf)))))
+        print(f"  ✓ Seçilen scaffold: {scaffold_name} → {smiles}")
+        print(f"    Atom sayısı : {n_atoms}")
+        print(f"    Sağlıklıya 91-dim mesafe: {scaf_gap:.4f}  (hastalık→sağlıklı boşluk={gap_91:.4f})")
 
     section(f"ADIM 6: 3D YAPI — SMILES → SDF (RDKit ETKDGv3)")
 
