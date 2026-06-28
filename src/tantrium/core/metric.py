@@ -34,17 +34,17 @@ CANONICAL = "certificate"
 
 
 def canonical_distance(moments_a, moments_b) -> float:
-    """İki moment dizisi arasındaki KANONİK mesafe (spektral W2).
+    """İki moment dizisi arasındaki KANONİK mesafe — TAM 46-boyutlu sertifika.
 
-    Bu, sistemin her yerde kullanması gereken tek mesafe. Ölçüler arası
-    gerçek taşıma maliyeti — koordinat (L1) artefaktı değil.
+    Bu, sistemin her yerde kullanması gereken tek mesafe: 23 paradigmanın tüm
+    sayısal çıktısı üzerinde ölçek-bağımsız karşılaştırma. W2 yalnız eigenvalue'ya
+    bakar; bu, τ/Li/Λ/cross-ratio/Achilles/κ'yı da okur → W2'nin çöktüğünü ayırır.
+
+    distance() varsayılanıyla (metric="certificate") özdeşleşmiş olur.
+    W2 için: canonical_distance(..., metric="w2") yerine
+             domain.spectral.spectral_distance() doğrudan çağrılabilir.
     """
-    from tantrium.domains.spectral import moments_to_spectral, spectral_distance
-    mu_a = [float(m) for m in moments_a]
-    mu_b = [float(m) for m in moments_b]
-    spec_a = moments_to_spectral(mu_a, name="_a")
-    spec_b = moments_to_spectral(mu_b, name="_b")
-    return spectral_distance(spec_a, spec_b)
+    return full_distance(moments_a, moments_b)
 
 
 def l1_distance(moments_a, moments_b) -> float:
