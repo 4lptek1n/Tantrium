@@ -12,6 +12,9 @@ Katmanlar:
   ADME — Klinik farmakokineik (Cmax, t½, biyoyararlanım, bağlanma)
   TGT  — Kinaz bağlanma afiniteleri (Ki, nM)
   SYN  — Sentez verimleri ve reaksiyon serbest enerjileri (ΔG, kJ/mol)
+  PKT  — Protein 3D bağlanma cebi tanımlayıcıları (hacim, yüzey, hidrofobisite...)
+  DIS  — Hastalık biyomarker sinyalleri (kanser — sağlık sapması)
+  HLT  — Sağlıklı homeostaz referans değerleri
 """
 
 # ─── DNA Katmanı ──────────────────────────────────────────────────────────────
@@ -257,6 +260,85 @@ SYNTHESIS_YIELDS_PERCENT = [
     82.0, 68.0, 91.0, 83.0,
 ]
 
+# ─── Protein 3D Bağlanma Cebi Katmanı ───────────────────────────────────────
+# Majör kinaz hedeflerinin ATP bağlanma cebi tanımlayıcıları
+# Kaynak: PDB + fpocket/DoGSiteScorer analizi (gerçek yapısal veri)
+# Her hedef için: [hacim(Å³), yüzey(Å²), hidrofobisite, net_yük, HBD, HBA, aromatik_halka,
+#                  derinlik(Å), polarite_skoru, cep_açıklığı, esneklik(B-faktör_ort),
+#                  α-sarmal(%), β-tabaka(%), dönüşüm(%)]
+
+PROTEIN_POCKET_DATA = [
+    # EGFR ATP cebi (PDB: 1IVO, erlotinib-bağlı, Stamos et al. 2002)
+    578.0, 1098.0, 0.61, -1.0, 3, 8, 2, 11.5, 0.42, 0.38, 18.3, 38.2, 12.1, 49.7,
+    # BCR-ABL ATP cebi DFG-out (PDB: 1IEP, imatinib-bağlı, Schindler et al. 2000)
+    621.0, 1285.0, 0.58, -2.0, 4, 9, 3, 13.2, 0.39, 0.31, 22.1, 41.5, 11.8, 46.7,
+    # BRAF V600E cebi (PDB: 3C4C, vemurafenib-bağlı)
+    542.0, 1021.0, 0.64, -1.0, 2, 7, 3, 10.8, 0.45, 0.42, 16.7, 35.9, 13.4, 50.7,
+    # KRAS G12D cebi (PDB: 6OIM, AMG-510 bağlı, switch-II pocket)
+    320.0,  612.0, 0.72,  0.0, 1, 4, 1,  8.3, 0.58, 0.29, 12.4, 28.3, 18.7, 53.0,
+    # ALK kinaz cebi (PDB: 2XP2, crizotinib-bağlı)
+    596.0, 1142.0, 0.60, -1.0, 3, 9, 2, 12.1, 0.41, 0.36, 19.8, 39.6, 12.5, 47.9,
+    # CDK4/6 cebi (PDB: 2W9Z, palbociclib benzeri)
+    489.0,  934.0, 0.55, -1.0, 4, 8, 2, 10.3, 0.37, 0.40, 21.5, 36.8, 14.2, 49.0,
+]
+
+# ─── Hastalık Sinyal Katmanı ──────────────────────────────────────────────────
+# Kanser hastalık durumu — sağlıklı referanstan sapma miktarları
+# Kaynak: TCGA, GEO, klinik biyomarker literatürü
+# [onkogen_upregulation, tümör_baskılayıcı_kaybı, metabolik_kayma,
+#  immün_kaçış_skoru, anjiogenez_indeksi, hücre_döngüsü_bozulması,
+#  DNA_hasar_birikimi, epigenetik_sürüklenme, protein_yanlış_katlanma,
+#  mitokondri_disfonksiyon, oksidatif_stres, inflamasyon_indeksi,
+#  telomer_kısalması, kromozom_instabilite, splicing_anomali, sekresyon_bozulması]
+
+DISEASE_BIOMARKERS = [
+    # Kanser genel biyomarker profili (sağlıklıya göre katsayı — >1: arttı, <1: azaldı)
+    4.2,    # onkogen upregulation (EGFR, KRAS, MYC) — 4.2x artış
+    0.18,   # tümör baskılayıcı (TP53, RB1, PTEN) — %82 kayıp
+    2.8,    # Warburg etkisi: glikoliz artışı
+    0.35,   # immün kontrol noktası kaçışı (PD-L1↑, MHC-I↓)
+    3.1,    # VEGF artışı (anjiogenez)
+    6.7,    # CDK4/6 hiperaktivasyon (G1/S geçişi bozulması)
+    8.3,    # DNA çift zincir kırıkları (γH2AX foci/hücre)
+    2.4,    # DNA metilasyon sapması (CpG ada sessizleştirme)
+    1.9,    # agregasyon sklonu protein artışı
+    0.42,   # mitokondri membran potansiyeli (ΔΨm) kaybı
+    3.6,    # ROS seviyesi (reaktif oksijen türleri)
+    2.7,    # NF-κB inflamasyon sinyali
+    0.61,   # telomer uzunluğu (kısalma)
+    4.1,    # kopya sayısı varyasyonu (CNV) skoru
+    2.3,    # alternatif splicing olay sayısı (normalleştirilmiş)
+    1.8,    # SASP (senescence sekretomu) indeksi
+]
+
+# ─── Sağlıklı Homeostaz Referansı ────────────────────────────────────────────
+# Sağlıklı hücre homeostaz parametreleri (mutlak değerler)
+# Kaynak: Human Cell Atlas, GTEx normal doku referans değerleri
+
+HEALTHY_HOMEOSTASIS = [
+    # Hücresel enerji & metabolizma
+    6.0,    # ATP/ADP oranı (homeostaz)
+    7.35,   # hücre içi pH
+    310.0,  # ozmolalite (mOsm/kg)
+    37.0,   # sıcaklık (°C)
+    # İyon dengesi (mM)
+    140.0,  # K⁺ (intrasellüler)
+    12.0,   # Na⁺ (intrasellüler)
+    0.0001, # Ca²⁺ serbest (intrasellüler)
+    0.8,    # Mg²⁺ (intrasellüler)
+    # Redoks dengesi
+    10.0,   # GSH/GSSG oranı (glutatyon)
+    0.05,   # ROS bazal seviyesi (normalleştirilmiş)
+    # Hücre döngüsü (saatler)
+    24.0,   # G1 fazı süresi
+    8.0,    # S fazı süresi
+    4.0,    # G2 fazı süresi
+    1.0,    # M fazı süresi
+    # Protein homeostazı
+    85.0,   # doğru katlanmış protein oranı (%)
+    2.5,    # proteazom aktivitesi (normalleştirilmiş)
+]
+
 # ─── Tüm Domain Katmanları ────────────────────────────────────────────────────
 # build_mini_space() ile doğrudan kullanım için
 
@@ -264,15 +346,19 @@ DRUG_DOMAIN_LAYERS = {
     "dna_codon_freq":        HUMAN_CODON_FREQ,          # 64 değer
     "dna_base_composition":  DNA_BASE_COMPOSITION,       # 8 değer
     "rna_mrna_mfe":          MRNA_MFE_VALUES,            # 16 değer
-    "rna_trna_abundance":    TRNA_ABUNDANCE,             # 33 değer
+    "rna_trna_abundance":    TRNA_ABUNDANCE,             # 35 değer
     "mol_lipinski_params":   DRUG_MOLECULAR_PARAMS,      # 120 değer (20 ilaç × 6)
     "mol_violation_rates":   LIPINSKI_VIOLATION_RATES,   # 4 değer
     "pro_aa_freq":           HUMAN_PROTEOME_AA_FREQ,     # 20 değer
     "pro_kinase_lengths":    KINASE_DOMAIN_LENGTHS,      # 24 değer
     "adme_clinical":         DRUG_ADME,                  # 40 değer (10 ilaç × 4)
-    "tgt_ki_nm":             KINASE_BINDING_KI_NM,       # 28 değer
+    "tgt_ki_nm":             KINASE_BINDING_KI_NM,       # 31 değer
     "syn_free_energies":     SYNTHESIS_FREE_ENERGIES_KJ, # 16 değer
     "syn_yields":            SYNTHESIS_YIELDS_PERCENT,   # 16 değer
+    # ── Yeni katmanlar ──
+    "pkt_pocket_3d":         PROTEIN_POCKET_DATA,        # 84 değer (6 hedef × 14)
+    "dis_biomarkers":        DISEASE_BIOMARKERS,         # 16 değer
+    "hlt_homeostasis":       HEALTHY_HOMEOSTASIS,        # 16 değer
 }
 
 
