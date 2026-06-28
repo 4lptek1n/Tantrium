@@ -220,8 +220,8 @@ def get_stream(source_name: str, path_or_url: str) -> Iterator[tuple[str, dict]]
 def _worker_fn(batch: list[tuple[str, dict]]) -> list[dict]:
     """
     Worker process: (smiles, metadata) batch → pre-hesaplanmış kayıtlar.
-    Hızlı yol: _smiles_to_fast_record (build_mini_space YOK, ~0.5ms/mol).
-    max_atoms=100 filtresi: büyük peptidler/polimerler atlanır.
+    Hızlı yol: _smiles_to_fast_record (build_mini_space YOK).
+    max_atoms=50: ilaç-benzeri bileşiklerin >95%'ini kapsar, eigvalsh O(n³) sınırlar.
     """
     import sys
     sys.path.insert(0, "src")
@@ -230,7 +230,7 @@ def _worker_fn(batch: list[tuple[str, dict]]) -> list[dict]:
     results = []
     for smiles, meta in batch:
         try:
-            rec = _smiles_to_fast_record(smiles, max_atoms=100, metadata=meta)
+            rec = _smiles_to_fast_record(smiles, max_atoms=50, metadata=meta)
             if rec is None:
                 continue
             results.append({
@@ -292,8 +292,11 @@ def process_source(
     """
     Tek kaynaktan veri çek + işle + hafızaya yaz.
     imap_unordered: N worker aynı anda çalışır, ana process sırasız sonuç alır.
+    DB yazma ayrı thread'de: worker'lar hiç beklemez.
     Dönüş: {"added": int, "skipped": int, "errors": int, "total_seen": int}
     """
+    import threading, queue as queue_mod
+
     stream = get_stream(source_name, path_or_url)
 
     added = 0
@@ -303,6 +306,32 @@ def process_source(
     t_start = time.time()
     t_last_log = t_start
     t_last_commit = t_start
+
+    # DB yazma thread'i: results queue'dan alır, bulk_add_computed çağırır
+    write_q: queue_mod.Queue = queue_mod.Queue(maxsize=32)
+
+    def _writer():
+        nonlocal added, skipped, errors, t_last_commit
+        while True:
+            item = write_q.get()
+            if item is None:
+                write_q.task_done()
+                break
+            results, ts = item
+            try:
+                a, s = mem.bulk_add_computed(results)
+                added += a
+                skipped += s
+            except Exception:
+                errors += len(results)
+            now = time.time()
+            if now - t_last_commit >= 30:
+                mem.batch_commit()
+                t_last_commit = now
+            write_q.task_done()
+
+    writer_thread = threading.Thread(target=_writer, daemon=True)
+    writer_thread.start()
 
     gen = _batch_generator(stream, batch_size, limit, resume_from)
 
@@ -314,34 +343,13 @@ def process_source(
             chunksize=1,
         ):
             total_seen = max(total_seen, ts)
-
-            for r in results:
-                try:
-                    ok = mem.add_computed(
-                        eigenvalues=r["eigenvalues"],
-                        moments_8=r["moments_8"],
-                        coord_91=r["coord_91"],
-                        smiles=r["smiles"],
-                        metadata=r["metadata"],
-                    )
-                    if ok:
-                        added += 1
-                    else:
-                        skipped += 1
-                except Exception:
-                    errors += 1
-
-            # Commit her 30 saniye
-            now = time.time()
-            if now - t_last_commit >= 30:
-                mem.batch_commit()
-                t_last_commit = now
+            write_q.put((results, ts))  # DB yazma thread'e devret, bloklanma
 
             # Log her 10 saniye
+            now = time.time()
             if now - t_last_log >= 10:
                 elapsed = now - t_start
                 rate = (total_seen - resume_from) / max(elapsed, 1)
-                eta_s = 0
                 print(
                     f"  [{source_name}] {total_seen:>10,} görüldü | "
                     f"{added:>8,} eklendi | {skipped:>6,} dup | "
@@ -356,6 +364,9 @@ def process_source(
                     }))
                 t_last_log = now
 
+    # Tüm yazmaların bitmesini bekle
+    write_q.put(None)
+    writer_thread.join()
     mem.batch_commit()
     elapsed = time.time() - t_start
     return {

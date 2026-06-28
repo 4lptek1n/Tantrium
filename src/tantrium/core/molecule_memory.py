@@ -173,7 +173,7 @@ class MoleculeMemory:
         """
         self.db_path = Path(db_path)
         self._lazy = lazy
-        self._conn = sqlite3.connect(str(self.db_path))
+        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
         self._conn.execute("PRAGMA cache_size=-65536")   # 64 MB page cache
@@ -301,6 +301,51 @@ class MoleculeMemory:
             return True
         except Exception:
             return False
+
+    def bulk_insert_records(self, recs: list[MoleculeRecord]) -> tuple[int, int]:
+        """Çok sayıda kaydı tek executemany ile yaz — toplu yükleme için.
+        Dönüş: (added, skipped) sayıları.
+        """
+        if not recs:
+            return 0, 0
+        mol_rows = []
+        eig_rows = []
+        for rec in recs:
+            mol_rows.append((
+                rec.mol_id,
+                rec.smiles,
+                json.dumps([round(e, 8) for e in rec.eigenvalues]),
+                json.dumps([round(m, 8) for m in rec.moments_8]),
+                json.dumps([round(c, 8) for c in rec.coord_91]),
+                json.dumps(rec.metadata),
+            ))
+            e8 = (rec.eigenvalues + [0.0] * 8)[:8]
+            eig_rows.append((rec.mol_id, *e8))
+
+        try:
+            cur = self._conn.executemany(
+                "INSERT OR IGNORE INTO molecules "
+                "(mol_id, smiles, eigenvalues, moments_8, coord_91, metadata) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                mol_rows,
+            )
+            added = cur.rowcount
+            self._conn.executemany(
+                "INSERT OR IGNORE INTO eig_index "
+                "(mol_id, e0, e1, e2, e3, e4, e5, e6, e7) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                eig_rows,
+            )
+            return added, len(recs) - added
+        except Exception:
+            # Fallback to one-by-one
+            a = s = 0
+            for rec in recs:
+                if self._insert_record(rec):
+                    a += 1
+                else:
+                    s += 1
+            return a, s
 
     def add_numbers(self, numbers: list[float], smiles: str = "",
                     metadata: dict | None = None) -> MoleculeRecord | None:
@@ -627,13 +672,11 @@ class ShardedMoleculeMemory:
     # ── Ekleme ────────────────────────────────────────────────────────────────
 
     def add_record(self, rec: MoleculeRecord) -> bool:
-        """Pre-hesaplanmış MoleculeRecord → doğru shard'a yaz."""
+        """Pre-hesaplanmış MoleculeRecord → doğru shard'a yaz.
+        Commit batch_commit() ile yapılır — her kayıtta değil."""
         e0 = rec.eigenvalues[0] if rec.eigenvalues else 0.0
         shard = self._shards[_shard_for_e0(e0)]
-        inserted = shard._insert_record(rec)
-        if inserted:
-            shard._conn.commit()
-        return inserted
+        return shard._insert_record(rec)
 
     def add_computed(self, eigenvalues: list[float], moments_8: list[float],
                      coord_91: list[float], smiles: str = "",
@@ -649,6 +692,34 @@ class ShardedMoleculeMemory:
             metadata=metadata or {},
         )
         return self.add_record(rec)
+
+    def bulk_add_computed(self, results: list[dict]) -> tuple[int, int]:
+        """Worker batch çıktısını shard'lara göre grupla, executemany ile yaz.
+        Dönüş: (added, skipped).
+        """
+        from collections import defaultdict
+        shard_recs: dict[int, list[MoleculeRecord]] = defaultdict(list)
+        for r in results:
+            eigs = r["eigenvalues"]
+            mol_id = _mol_id(eigs)
+            rec = MoleculeRecord(
+                mol_id=mol_id,
+                smiles=r.get("smiles", ""),
+                eigenvalues=eigs,
+                moments_8=r.get("moments_8", []),
+                coord_91=r.get("coord_91", []),
+                metadata=r.get("metadata", {}),
+            )
+            e0 = eigs[0] if eigs else 0.0
+            sid = _shard_for_e0(e0)
+            shard_recs[sid].append(rec)
+
+        total_added = total_skipped = 0
+        for sid, recs in shard_recs.items():
+            a, s = self._shards[sid].bulk_insert_records(recs)
+            total_added += a
+            total_skipped += s
+        return total_added, total_skipped
 
     def add_smiles(self, smiles: str,
                    metadata: dict | None = None) -> MoleculeRecord | None:

@@ -361,32 +361,34 @@ def compute_coord_91(numbers: list[float]) -> tuple[list[float], list[float], li
         return [0.0] * 91, [0.0] * 16, [0.0] * 8
 
     lam_max = max(eigs) or 1.0
-    lam = [v / lam_max for v in eigs]
+    # Vectorized moments: numpy matris çarpımı, Python döngüsü yok
+    lam_arr = _np.array(eigs, dtype=float) / lam_max
     order = min(n + 1, 16)
 
-    # Float moments
-    mu: list[float] = [1.0]
-    for k in range(1, order):
-        mu.append(sum(l ** k for l in lam) / n)
+    # mu[k] = (Σ lam^k) / n for k=1..order-1, vectorized over k
+    ks = _np.arange(1, order)
+    pow_mat = lam_arr[_np.newaxis, :] ** ks[:, _np.newaxis]  # (order-1, n)
+    mu_arr = pow_mat.sum(axis=1) / n                          # (order-1,)
+    mu: list[float] = [1.0] + mu_arr.tolist()
     while len(mu) < 16:
         mu.append(0.0)
 
-    # Hankel determinantları (numpy)
+    # Hankel determinantları — numpy advanced indexing (list comprehension yok)
     N = len(mu)
     J  = (N - 1) // 2
     Js = (N - 2) // 2 if N >= 2 else -1
+    mu_full = _np.array(mu, dtype=float)
+    mu_shifted = _np.array(mu[1:] + [0.0], dtype=float)
 
     taus = []
     for j in range(J + 1):
-        H = _np.array([[mu[a + b] for b in range(j + 1)]
-                       for a in range(j + 1)], dtype=float)
-        taus.append(float(_np.linalg.det(H)))
+        idx = _np.add.outer(_np.arange(j + 1), _np.arange(j + 1))
+        taus.append(float(_np.linalg.det(mu_full[idx])))
 
     shifted = []
     for j in range(Js + 1):
-        H = _np.array([[mu[a + b + 1] for b in range(j + 1)]
-                       for a in range(j + 1)], dtype=float)
-        shifted.append(float(_np.linalg.det(H)))
+        idx = _np.add.outer(_np.arange(j + 1), _np.arange(j + 1))
+        shifted.append(float(_np.linalg.det(mu_shifted[idx])))
 
     # Rank
     rank = -1
