@@ -200,18 +200,20 @@ def _coord_91_float(smiles: str, max_atoms: int = 100) -> tuple[list[float], lis
 # ─── Worker ──────────────────────────────────────────────────────────────────
 
 def _enrich_worker(batch: list[tuple[str, str]]) -> list[dict]:
-    """(mol_id, smiles) → tam coord_91 (float64, Fraction YOK)."""
+    """(mol_id, smiles) → tam coord_91 via compute_coord_91 (float64, Fraction YOK)."""
     import sys; sys.path.insert(0, "src")
+    from tantrium.core.molecule_memory import smiles_to_numbers
+    from tantrium.core.mini_space import compute_coord_91
 
     results = []
     for mol_id, smiles in batch:
         if not smiles:
             continue
         try:
-            out = _coord_91_float(smiles, max_atoms=100)
-            if out is None:
+            nums = smiles_to_numbers(smiles, max_atoms=100)
+            if not nums:
                 continue
-            coord_91, eigs_16, moments_8 = out
+            coord_91, eigs_16, moments_8 = compute_coord_91(nums)
             results.append({
                 "mol_id": mol_id,
                 "eigenvalues": eigs_16,

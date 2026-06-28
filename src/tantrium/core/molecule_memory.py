@@ -498,11 +498,9 @@ class MoleculeMemory:
 
     def query_numbers(self, numbers: list[float], k: int = 10) -> list[QueryResult]:
         """Sayı listesinden en yakın k molekülü bul."""
-        from tantrium.core.mini_space import build_mini_space
+        from tantrium.core.mini_space import compute_coord_91
         try:
-            ms = build_mini_space(numbers)
-            query_coord = ms.universe_coordinate()
-            query_eigs = ms.eigenvalues
+            query_coord, query_eigs, _ = compute_coord_91(numbers)
         except Exception:
             return []
 
@@ -550,26 +548,20 @@ class MoleculeMemory:
 def _smiles_to_fast_record(smiles: str, max_atoms: int = 100,
                             metadata: dict | None = None) -> MoleculeRecord | None:
     """
-    SMILES → MoleculeRecord — hızlı yol (build_mini_space YOK).
+    SMILES → MoleculeRecord — tam 91-dim coord (float64, Fraction YOK).
 
-    smiles_to_numbers() çıktısı DOĞRUDAN eigenvalue vektörüdür:
-      [lap_eigs... adj_eigs... atom_vec... counts...]
-    Bu vektör coord_91'e pad/truncate edilir.
-    rh_criteria / Fraction aritmetiği YOK → ~0.5ms/mol (12× daha hızlı).
-
-    ShardedMoleculeMemory (500M ölçek) tarafından kullanılır.
-    Küçük/hassas analiz için MoleculeMemory + build_mini_space kullan.
+    smiles_to_numbers → compute_coord_91 → tam 91-dim:
+      16 moment + 14 RH + 7 flag + 4 Li + 4 GOE/GUE + 46 paradigma
+    ~2ms/mol (Fraction yoluna göre 900× daha hızlı).
     """
+    from tantrium.core.mini_space import compute_coord_91
     nums = smiles_to_numbers(smiles, max_atoms=max_atoms)
     if not nums:
         return None
-    # coord_91: nums → 91'e tamamla / kırp
-    coord = (nums + [0.0] * 91)[:91]
-    # eigenvalues: ilk 16 (Laplacian eigenvalues başta, büyükten küçüğe)
-    eigs = (nums + [0.0] * 16)[:16]
-    # 8 moment: power sums, normalize
-    s2 = sum(e * e for e in eigs) + 1e-10
-    moments = [sum(e ** k for e in eigs) / (s2 ** (k / 2)) for k in range(1, 9)]
+    try:
+        coord, eigs, moments = compute_coord_91(nums)
+    except Exception:
+        return None
     mol_id = _mol_id(eigs)
     return MoleculeRecord(
         mol_id=mol_id,
@@ -682,9 +674,11 @@ class ShardedMoleculeMemory:
 
     def query_numbers(self, numbers: list[float], k: int = 10) -> list[QueryResult]:
         """En yakın k molekülü tüm ilgili shardlarda ara, merge et."""
-        # Hızlı yol: smiles_to_numbers çıktısı doğrudan coord/eigs (build_mini_space YOK)
-        query_coord = (numbers + [0.0] * 91)[:91]
-        query_eigs  = (numbers + [0.0] * 16)[:16]
+        from tantrium.core.mini_space import compute_coord_91
+        try:
+            query_coord, query_eigs, _ = compute_coord_91(numbers)
+        except Exception:
+            return []
 
         e0 = query_eigs[0] if query_eigs else 0.0
         shard_ids = _shards_for_range(e0 - EIG_SEARCH_RADIUS, e0 + EIG_SEARCH_RADIUS)

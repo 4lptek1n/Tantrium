@@ -334,6 +334,144 @@ class MiniSpace:
 
 # ─── Giriş noktası ───────────────────────────────────────────────────────────
 
+def compute_coord_91(numbers: list[float]) -> tuple[list[float], list[float], list[float]]:
+    """
+    Sayı vektörü → (coord_91, eigenvalues_16, moments_8) — float64, Fraction YOK.
+
+    Tam 91-dim universe_coordinate ile aynı matematiksel içerik:
+      Grup1[0:16]  — 16 moment (tanh-normalize)
+      Grup2[16:30] — 14 RH nicel (pivot, cross-ratio, kümülant, Λ, rank, grade)
+      Grup3[30:37] — 7 pozitiflik flag (Hamburger, Stieltjes vb.)
+      Grup4[37:41] — 4 Li katsayısı
+      Grup5[41:45] — 4 GOE/GUE
+      Grup6[45:91] — 46 paradigma imzası
+    = 91 boyut
+
+    Fraction _power_moments (~100ms) ve Fraction rh_criteria (~2000ms) yerine
+    numpy float64 kullanır (<2ms/mol). Depolama, sorgulama ve toplu yükleme için.
+    """
+    import math
+    import numpy as _np
+    from math import comb
+    from tantrium.core.metric import paradigm_signature
+
+    eigs = sorted([abs(float(v)) for v in numbers], reverse=True)
+    n = len(eigs)
+    if n == 0:
+        return [0.0] * 91, [0.0] * 16, [0.0] * 8
+
+    lam_max = max(eigs) or 1.0
+    lam = [v / lam_max for v in eigs]
+    order = min(n + 1, 16)
+
+    # Float moments
+    mu: list[float] = [1.0]
+    for k in range(1, order):
+        mu.append(sum(l ** k for l in lam) / n)
+    while len(mu) < 16:
+        mu.append(0.0)
+
+    # Hankel determinantları (numpy)
+    N = len(mu)
+    J  = (N - 1) // 2
+    Js = (N - 2) // 2 if N >= 2 else -1
+
+    taus = []
+    for j in range(J + 1):
+        H = _np.array([[mu[a + b] for b in range(j + 1)]
+                       for a in range(j + 1)], dtype=float)
+        taus.append(float(_np.linalg.det(H)))
+
+    shifted = []
+    for j in range(Js + 1):
+        H = _np.array([[mu[a + b + 1] for b in range(j + 1)]
+                       for a in range(j + 1)], dtype=float)
+        shifted.append(float(_np.linalg.det(H)))
+
+    # Rank
+    rank = -1
+    for j, t in enumerate(taus):
+        if t > 1e-10:
+            rank = j
+        else:
+            break
+
+    # Pivots
+    pivots_f: list[float] = []
+    prev = 1.0
+    for k in range(rank + 1):
+        pivots_f.append(taus[k] / prev if abs(prev) > 1e-15 else 0.0)
+        prev = taus[k]
+
+    # Cross-ratios
+    cross_f: list[float] = []
+    for j in range(2, rank + 1):
+        denom = taus[j - 1] ** 2
+        cross_f.append(taus[j - 2] * taus[j] / denom if abs(denom) > 1e-15 else 0.0)
+
+    # Kümülantlar
+    kappa: list[float] = []
+    for nn in range(1, 5):
+        if nn >= len(mu):
+            break
+        s = mu[nn]
+        for k in range(1, nn):
+            s -= comb(nn - 1, k - 1) * kappa[k - 1] * mu[nn - k]
+        kappa.append(s)
+    lambda_dbn = -kappa[1] if len(kappa) >= 2 else 0.0
+
+    # Boolean verdictler
+    hankel_psd      = all(t >= -1e-10 for t in taus)
+    stieltjes_psd   = hankel_psd and all(t >= -1e-10 for t in shifted)
+    pivots_pos      = rank >= 0 and all(p > 1e-10 for p in pivots_f)
+    cross_pos       = all(c > -1e-10 for c in cross_f) if cross_f else True
+    first_five_pos  = (all(p > 1e-10 for p in pivots_f[1:6])
+                       if len(pivots_f) > 1 else pivots_pos)
+    hamburger       = pivots_pos and hankel_psd
+    stieltjes       = hamburger and stieltjes_psd
+    grade           = sum([hankel_psd, stieltjes_psd, pivots_pos,
+                           cross_pos, first_five_pos, hamburger, stieltjes]) / 7.0
+
+    # GOE/GUE
+    r_ratio, beta, univ, goe_dist, gue_dist = _level_spacing(eigs)
+
+    # Structure + paradigma
+    structure  = _structure_from_eigs(eigs, mu)   # type: ignore[arg-type]
+    paradigm_v = paradigm_signature(structure)
+
+    # ── 91-dim birleştir ────────────────────────────────────────────────────
+    mu_vec      = [math.tanh(mu[i] / 10.0) for i in range(16)]
+
+    piv = [math.tanh(p) for p in pivots_f[:4]];  piv += [0.0] * (4 - len(piv))
+    cr  = [math.tanh(r) for r in cross_f[:3]];   cr  += [0.0] * (3 - len(cr))
+    ka  = [math.tanh(k) for k in kappa[:4]];     ka  += [0.0] * (4 - len(ka))
+    rh_vec = piv + cr + ka + [math.tanh(lambda_dbn), rank / 16.0, grade]
+
+    pos_vec = [
+        1.0 if hankel_psd else 0.0,     1.0 if stieltjes_psd else 0.0,
+        1.0 if pivots_pos else 0.0,     1.0 if cross_pos else 0.0,
+        1.0 if first_five_pos else 0.0, 1.0 if hamburger else 0.0,
+        1.0 if stieltjes else 0.0,
+    ]
+
+    li_raw = structure.get("li_coefficients", [])
+    li_vec = [math.tanh(float(x) / 10.0) for x in li_raw[:4]]
+    while len(li_vec) < 4:
+        li_vec.append(0.0)
+
+    r_f = float(r_ratio) if r_ratio is not None else 0.5307
+    goe_gue_vec = [r_f, goe_dist, gue_dist, beta / 2.0]
+
+    coord_91 = mu_vec + rh_vec + pos_vec + li_vec + goe_gue_vec + paradigm_v
+
+    # Eigenvalues (ilk 16) + 8-moment
+    eigs_16  = (eigs + [0.0] * 16)[:16]
+    s2       = sum(e * e for e in eigs_16) + 1e-10
+    moments8 = [sum(e ** k for e in eigs_16) / (s2 ** (k / 2)) for k in range(1, 9)]
+
+    return coord_91, eigs_16, moments8
+
+
 def build_mini_space(raw_input: Any) -> MiniSpace:
     """Ham veriden tam çözünürlükte mini uzay kur — G=AᵀA YOK.
 
