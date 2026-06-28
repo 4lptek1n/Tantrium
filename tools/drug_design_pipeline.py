@@ -30,6 +30,82 @@ W = 70
 OUT_DIR = "/tmp/tantrium_molecules"
 os.makedirs(OUT_DIR, exist_ok=True)
 
+# Bilinen ilaç scaffold'ları + eigenvalue spektrumları (G=AᵀA'dan)
+_SCAFFOLDS = [
+    ("adenine",         "Nc1ncnc2ncnc12"),
+    ("benzimidazole",   "c1ccc2[nH]cnc2c1"),
+    ("quinoline",       "c1ccc2ncccc2c1"),
+    ("quinazoline",     "c1cnc2ccccc2n1"),
+    ("indole",          "c1ccc2[nH]ccc2c1"),
+    ("pyrimidine",      "c1ccncn1"),
+    ("purine",          "c1ncc2[nH]cnc2n1"),
+    ("imidazole",       "c1cn[nH]c1"),          # pyrazole
+    ("piperidine",      "C1CCNCC1"),
+    ("morpholine",      "C1CCOCC1"),
+    ("benzene",         "c1ccccc1"),
+    ("naphthalene",     "c1ccc2ccccc2c1"),
+    ("caffeine",        "Cn1cnc2c1c(=O)n(c(=O)n2C)C"),
+    ("imatinib_core",   "Cc1ccc(cc1Nc2nccc(n2)c3cccnc3)NC(=O)c4ccc(cc4)CN5CCN(CC5)C"),
+    ("erlotinib_core",  "C#Cc1cccc(Nc2ncnc3cc(OCCO)c(OCC)cc23)c1"),
+    ("gefitinib_core",  "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN4CCOCC4"),
+]
+
+
+def _scaffold_eigenvalues(smiles: str) -> list[float]:
+    """Scaffold SMILES → G=AᵀA eigenvalue spektrumu (moleküler Laplacian)."""
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import rdmolops
+        import numpy as np
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return []
+        n = mol.GetNumAtoms()
+        L = np.zeros((n, n))
+        for b in mol.GetBonds():
+            i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+            L[i, j] = L[j, i] = -1.0
+        for i in range(n):
+            L[i, i] = -L[i].sum() - L[i, i]
+        eigs = sorted(np.linalg.eigvalsh(L), reverse=True)
+        return [float(e) for e in eigs if abs(e) > 1e-10]
+    except Exception:
+        return []
+
+
+def _w2_distance(a: list[float], b: list[float]) -> float:
+    """Wasserstein-2 mesafesi iki eigenvalue spektrumu arasında."""
+    if not a or not b:
+        return float("inf")
+    import numpy as np
+    la, lb = sorted(a, reverse=True), sorted(b, reverse=True)
+    n = min(len(la), len(lb))
+    return float(np.sqrt(sum((la[i] - lb[i]) ** 2 for i in range(n)) / n))
+
+
+def _match_scaffold(target_eigs: list[float], weights: list[float]) -> str:
+    """En yakın scaffold'u W2 mesafesiyle bul."""
+    # Ağırlıklı hedef spektrum
+    target = sorted([e * w for e, w in zip(target_eigs, weights)], reverse=True)
+    best_smi, best_d = _SCAFFOLDS[0][1], float("inf")
+    for name, smi in _SCAFFOLDS:
+        eigs = _scaffold_eigenvalues(smi)
+        d = _w2_distance(target, eigs)
+        if d < best_d:
+            best_d, best_smi = d, smi
+            best_name = name
+    print(f"    W2 mesafesi: {best_d:.4f} → {best_name}")
+    return best_smi
+
+
+def _count_atoms(smiles: str) -> int:
+    try:
+        from rdkit import Chem
+        mol = Chem.MolFromSmiles(smiles)
+        return mol.GetNumAtoms() if mol else 0
+    except Exception:
+        return 0
+
 
 def section(title: str) -> None:
     print()
@@ -66,41 +142,12 @@ def run_pipeline(disease_numbers: list, healthy_numbers: list,
     print(f"  ✓ İLACIN SPEKTRUMU: eigenvalues={[round(e,3) for e in eigs]}")
     print(f"    ağırlıklar={[round(w,4) for w in weights]}")
 
-    section(f"ADIM 5: YAPI ARAMA — eigenvalue → SMILES")
+    section(f"ADIM 5: YAPI ARAMA — eigenvalue → SMILES (W2 scaffold eşleştirme)")
 
-    # Eigenvalue spektrumu → en yakın moleküler yapı (W2 minimizasyon)
-    # produce(μ_drug) fragment kütüphanesini tarar
-    try:
-        prod = ai.produce_math(disease_numbers, build=True, healthy=healthy_numbers)
-        smiles = getattr(prod, "designed_smiles", "") or ""
-        n_atoms = getattr(prod, "n_atoms", 0)
-        coherent = getattr(prod, "structure_coherent", False)
-    except Exception as e:
-        smiles = ""
-        n_atoms = 0
-        coherent = False
-        print(f"  Yapı arama hatası: {e}")
-
-    if smiles:
-        print(f"  ✓ SMILES bulundu: {smiles}")
-        print(f"    Atom sayısı: {n_atoms} | Yapısal uyum: {coherent}")
-    else:
-        # Fallback: eigenvalue büyüklüğünden tahmin et hangi scaffold yakın
-        print(f"  ~ Direkt eşleşme bulunamadı — eigenvalue spektrumundan scaffold tahmini:")
-        max_eig = max(abs(e) for e in eigs) if eigs else 0
-        if max_eig < 10:
-            smiles = "c1ccccc1"           # benzene — küçük aromatik
-            label_s = "benzene (küçük aromatik çekirdek)"
-        elif max_eig < 30:
-            smiles = "c1ccc2[nH]cnc2c1"  # benzimidazole — orta
-            label_s = "benzimidazole (orta yapı, kinaz inhibitörü çekirdeği)"
-        elif max_eig < 60:
-            smiles = "c1ccc2ncccc2c1"    # quinoline — büyük
-            label_s = "quinoline (büyük aromatik, ilaç scaffold)"
-        else:
-            smiles = "Cn1cnc2c1c(=O)n(c(=O)n2C)C"  # caffeine — karmaşık
-            label_s = "xanthine çekirdeği (max_eig={:.1f})".format(max_eig)
-        print(f"    → {smiles}  [{label_s}]")
+    smiles = _match_scaffold(eigs, weights)
+    n_atoms = _count_atoms(smiles)
+    print(f"  ✓ En yakın scaffold: {smiles}")
+    print(f"    Atom sayısı: {n_atoms}")
 
     section(f"ADIM 6: 3D YAPI — SMILES → SDF (RDKit ETKDGv3)")
 
