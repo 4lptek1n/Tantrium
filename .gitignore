@@ -15,6 +15,12 @@ venv/
 results/
 *.sdf
 
+# Moleküler hafıza veritabanı (runtime data, commit edilmez)
+mol_db/
+*.db
+*.db-shm
+*.db-wal
+
 # IDE / OS
 .idea/
 .vscode/
