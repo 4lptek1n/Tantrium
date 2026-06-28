@@ -9,6 +9,15 @@ from __future__ import annotations
 from ._results import DesignResult, DiscoverResult, MolResult
 
 
+def _get_db(db_dir: str | None = None):
+    """mol_db/ DB'sini otomatik bul. None = DB yok."""
+    try:
+        from tantrium.core.db_search import get_db
+        return get_db(db_dir)
+    except Exception:
+        return None
+
+
 class MolecularMixin:
     """De novo molekül üretimi, ters transport, üretim dökümhanesi metotları."""
 
@@ -101,7 +110,7 @@ class MolecularMixin:
         import warnings
         warnings.filterwarnings("ignore")
         from tantrium.core.inverse import InverseTransport
-        inv = InverseTransport(self.engine)
+        inv = InverseTransport(self.engine, db=_get_db())
         report = inv.design(target, top_k=top_k, out_dir=out_dir,
                             n_fragment_rounds=n_fragment_rounds)
         return DesignResult(
@@ -129,7 +138,7 @@ class MolecularMixin:
         import warnings
         warnings.filterwarnings("ignore")
         from tantrium.core.molecular_space import MolecularSpace
-        ms = MolecularSpace(self.engine)
+        ms = MolecularSpace(self.engine, db=_get_db())
         return ms.arrange(target, n=n, cls_filter=cls_filter)
 
     def morph(
@@ -146,7 +155,7 @@ class MolecularMixin:
         import warnings
         warnings.filterwarnings("ignore")
         from tantrium.core.molecular_space import MolecularSpace
-        ms = MolecularSpace(self.engine)
+        ms = MolecularSpace(self.engine, db=_get_db())
         return ms.morph(source_smiles, target_smiles, steps=steps)
 
     def lineage_mol(
@@ -161,7 +170,7 @@ class MolecularMixin:
         import warnings
         warnings.filterwarnings("ignore")
         from tantrium.core.molecular_space import MolecularSpace
-        ms = MolecularSpace(self.engine)
+        ms = MolecularSpace(self.engine, db=_get_db())
         return ms.lineage(smiles, depth=depth)
 
     def genesis_mol(

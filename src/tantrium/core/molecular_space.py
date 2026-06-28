@@ -239,9 +239,10 @@ class MolecularSpace:
     Her molekül G=AᵀA → μ_k. Mesafe = spektral W2. Düzenleme = W2 sıralama.
     """
 
-    def __init__(self, engine: "CertificationEngine"):
+    def __init__(self, engine: "CertificationEngine", db=None):
         self.engine = engine
-        self._lib_cache: dict[str, list[float]] | None = None  # smiles → moments
+        self._lib_cache: dict[str, list[float]] | None = None
+        self._db = db  # ShardedMoleculeMemory | None
 
     # ── Kütüphane cache ──────────────────────────────────────────────────────
 
@@ -304,17 +305,47 @@ class MolecularSpace:
         t0 = time.time()
 
         target_moments, target_smiles = self._encode_target(target)
-        lib = self._get_library_moments()
 
         points: list[MolPoint] = []
+        seen_smiles: set[str] = set()
+
+        # 1. DB arama — 7M molekül (SMILES hedef ise)
+        if self._db is not None and target_smiles:
+            db_k = max(n * 30, 600)
+            try:
+                db_results = self._db.query_smiles(target_smiles, k=db_k)
+                for qr in db_results:
+                    rec = qr.record
+                    if not rec.smiles or rec.smiles in seen_smiles:
+                        continue
+                    src = rec.metadata.get("source", "db")
+                    if cls_filter and src != cls_filter:
+                        continue
+                    w2 = self._w2(rec.moments_8, target_moments)
+                    points.append(MolPoint(
+                        name=rec.smiles[:60],
+                        smiles=rec.smiles,
+                        cls=src,
+                        moments=rec.moments_8,
+                        w2_to_target=w2,
+                    ))
+                    seen_smiles.add(rec.smiles)
+            except Exception:
+                pass
+
+        # 2. DRUG_LIBRARY — zengin annotasyonlu 150 ilaç (her zaman ekle)
+        lib = self._get_library_moments()
         for name, (smiles, cls, moments) in lib.items():
             if cls_filter and cls != cls_filter:
+                continue
+            if smiles in seen_smiles:
                 continue
             w2 = self._w2(moments, target_moments)
             points.append(MolPoint(
                 name=name, smiles=smiles, cls=cls,
                 moments=moments, w2_to_target=w2,
             ))
+            seen_smiles.add(smiles)
 
         points.sort(key=lambda p: p.w2_to_target)
 
@@ -347,26 +378,38 @@ class MolecularSpace:
         src_m = [float(x) for x in src_obj.moments]
         tgt_m = [float(x) for x in tgt_obj.moments]
 
-        lib = self._get_library_moments()
+        # Aday havuzu: DB + DRUG_LIBRARY
+        # {smiles: (moments, cls)}
+        pool: dict[str, tuple[list[float], str]] = {}
+
+        if self._db is not None:
+            for qsmi in [source_smiles, target_smiles]:
+                try:
+                    for qr in self._db.query_smiles(qsmi, k=300):
+                        rec = qr.record
+                        if rec.smiles:
+                            pool[rec.smiles] = (rec.moments_8, rec.metadata.get("source", "db"))
+                except Exception:
+                    pass
+
+        for name, (smiles, cls, moments) in self._get_library_moments().items():
+            if smiles:
+                pool.setdefault(smiles, (moments, cls))
 
         result_steps: list[MolPoint] = []
         for i in range(steps):
             t = i / max(steps - 1, 1)
-            # Lineer moment interpolasyonu (momentler konveks kombinasyonda kalır)
             interp = [(1 - t) * a + t * b for a, b in zip(src_m, tgt_m)]
 
-            # Kütüphanede bu noktaya en yakın molekül
-            best_name, best_w2, best_smi, best_cls, best_mom = None, float("inf"), "", "", []
-            for name, (smiles, cls, moments) in lib.items():
-                w2 = canonical_distance(moments, interp)
+            best_smi, best_w2, best_mom, best_cls = "", float("inf"), [], "db"
+            for smi, (mom, cls) in pool.items():
+                w2 = canonical_distance(mom, interp)
                 if w2 < best_w2:
-                    best_w2, best_name, best_smi, best_cls, best_mom = (
-                        w2, name, smiles, cls, moments
-                    )
+                    best_w2, best_smi, best_mom, best_cls = w2, smi, mom, cls
 
-            if best_name:
+            if best_smi:
                 result_steps.append(MolPoint(
-                    name=best_name, smiles=best_smi, cls=best_cls,
+                    name=best_smi[:60], smiles=best_smi, cls=best_cls,
                     moments=best_mom, w2_to_target=best_w2,
                 ))
 
@@ -390,15 +433,28 @@ class MolecularSpace:
 
         obj = encode(smiles)
         root_m = [float(x) for x in obj.moments]
-        lib = self._get_library_moments()
+
+        # Aday havuzu: DB + DRUG_LIBRARY
+        pool: dict[str, tuple[list[float], str]] = {}
+        if self._db is not None:
+            try:
+                for qr in self._db.query_smiles(smiles, k=500):
+                    rec = qr.record
+                    if rec.smiles:
+                        pool[rec.smiles] = (rec.moments_8, rec.metadata.get("source", "db"))
+            except Exception:
+                pass
+        for name, (smi, cls, mom) in self._get_library_moments().items():
+            if smi:
+                pool.setdefault(smi, (mom, cls))
 
         def _nearest(moments: list[float], exclude: set[str], k: int) -> list[MolPoint]:
             scored = []
-            for name, (smi, cls, mom) in lib.items():
-                if name in exclude:
+            for smi, (mom, cls) in pool.items():
+                if smi in exclude:
                     continue
                 w2 = self._w2(mom, moments)
-                scored.append(MolPoint(name=name, smiles=smi, cls=cls,
+                scored.append(MolPoint(name=smi[:60], smiles=smi, cls=cls,
                                        moments=mom, w2_to_target=w2))
             scored.sort(key=lambda p: p.w2_to_target)
             return scored[:k]
@@ -412,8 +468,7 @@ class MolecularSpace:
             if not layer:
                 break
             tree.append(layer)
-            seen.update(p.name for p in layer)
-            # Bir sonraki seviye: bu katmanın merkezinden
+            seen.update(p.smiles or p.name for p in layer)
             if layer:
                 avg = [sum(layer[j].moments[i] for j in range(len(layer))) / len(layer)
                        for i in range(len(layer[0].moments))]

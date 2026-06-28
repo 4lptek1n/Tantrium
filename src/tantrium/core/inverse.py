@@ -143,8 +143,9 @@ class DesignReport:
 class InverseTransport:
     """Hedef → manifold araması + fragment mutasyonu → minimum W2 moleküller."""
 
-    def __init__(self, engine: "CertificationEngine"):
+    def __init__(self, engine: "CertificationEngine", db=None):
         self.engine = engine
+        self._db = db  # ShardedMoleculeMemory | None
 
     # ── Genel giriş noktası ──────────────────────────────────────────────────
 
@@ -160,16 +161,35 @@ class InverseTransport:
 
         target_moments, target_type = self._encode_target(target)
 
-        # Phase 1: manifold araması
+        # Phase 1a: DB arama (SMILES hedef ise 7M'de ara)
+        db_hits: list[dict] = []
+        if self._db is not None and target_type == "smiles":
+            try:
+                db_results = self._db.query_smiles(target, k=top_k * 8)
+                for qr in db_results:
+                    rec = qr.record
+                    if rec.smiles:
+                        db_hits.append({
+                            "name": rec.smiles[:60],
+                            "smiles": rec.smiles,
+                            "moments": rec.moments_8,
+                            "w2": float(qr.distance),
+                            "method": "db",
+                        })
+            except Exception:
+                pass
+
+        # Phase 1b: manifold araması (stateless makinede boş, ama tutulur)
         manifold_hits = self._search_manifold(target_moments, n=top_k * 4)
 
-        # Phase 2: scaffold + fragment mutasyonu
+        # Phase 2: scaffold + fragment mutasyonu (tohumlar: DB + manifold)
+        seeds = (db_hits[:6] + manifold_hits[:6])
         fragment_hits = self._fragment_design(
-            target_moments, manifold_hits[:6], rounds=n_fragment_rounds, budget=top_k * 6
+            target_moments, seeds, rounds=n_fragment_rounds, budget=top_k * 6
         )
 
-        # Phase 3: sertifika + sıralama
-        all_raw = manifold_hits + fragment_hits
+        # Phase 3: sertifika + sıralama (DB + manifold + fragment)
+        all_raw = db_hits + manifold_hits + fragment_hits
         candidates = self._certify_and_rank(all_raw, target_moments, top_k * 2)
 
         # Phase 4: 3D konformasyon
