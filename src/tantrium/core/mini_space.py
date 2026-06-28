@@ -1,14 +1,17 @@
-"""MiniSpace — ham veriden tam çözünürlükte ölçüm uzayı.
+"""MiniSpace — sayılardan tam çözünürlükte ölçüm uzayı.
 
 MİMARİ:
-  Hesaplama için:   build_mini_space(raw) → MiniSpace (n özdeğer, tam çözünürlük)
-  Depolama için:    ms.compress(8)        → 8 moment hatırası (SONRA, isteğe bağlı)
+  Hesaplama için:   build_mini_space(numbers) → MiniSpace (n özdeğer, tam çözünürlük)
+  Depolama için:    ms.compress(8)            → 8 moment hatırası (SONRA, isteğe bağlı)
+
+GİRDİ: SADECE SAYILAR. Dil yok, kelime yok, domain yok.
+  [x₁, x₂, ..., xₙ]  →  n özdeğer  →  μₖ = Σxᵢᵏ/n
 
 G=AᵀA bu yolda YOKTUR. Giriş sayıları DOĞRUDAN özdeğerdir.
-Uzayın boyutu = veri boyutu. [x₁..xₙ] → n özdeğer → μₖ=Σxᵢᵏ/n.
+Uzayın boyutu = veri boyutu.
 
-Metin girdisi → karakter kodları → sayı → aynı yol.
-SMILES → atom kütleleri / bağ sayıları → sayı → aynı yol.
+Çağıran kendi domain verisini sayıya çevirmekten sorumludur.
+Bu sistem sayıyı alır, matematiksel uzayı kurar — başka hiçbir şey yapmaz.
 
 Meslek: hesaplama (transport, RH, GOE/GUE, paradigma).
 Hatıra: .compress(8) veya .compress(16) → kayıpsız sıkıştırma.
@@ -23,42 +26,24 @@ from typing import Any
 
 # ─── Ham veri → özdeğer dizisi ───────────────────────────────────────────────
 
-def _to_eigenvalues(raw_input: Any) -> list[float]:
-    """Ham girdiyi sıralı pozitif özdeğer listesine çevir.
+def _to_eigenvalues(numbers) -> list[float]:
+    """Sayı listesini sıralı pozitif özdeğer dizisine çevir.
 
-    Sayı dizisi → doğrudan (|xᵢ|, sıralı azalan).
-    Metin → karakter kodları.
-    Tek sayı → tek elemanlı liste.
+    GİRDİ: list[int|float|Fraction] veya tek sayı.
+    Dil yok. String yok. Sayı gelir, özdeğer çıkar.
     """
-    # Liste / tuple
-    if isinstance(raw_input, (list, tuple)):
-        nums: list[float] = []
-        for v in raw_input:
-            try:
-                nums.append(abs(float(v)))
-            except (TypeError, ValueError):
-                # Metin eleman varsa char-kodlarına dön
-                if isinstance(v, str):
-                    nums.extend(float(ord(c)) for c in v if c.isprintable())
-        if nums:
-            return sorted(nums, reverse=True)
+    if isinstance(numbers, (list, tuple)):
+        eigs = []
+        for v in numbers:
+            eigs.append(abs(float(v)))
+        if eigs:
+            return sorted(eigs, reverse=True)
 
-    # Tek sayı
-    if isinstance(raw_input, (int, float, Fraction)):
-        v = abs(float(raw_input))
+    if isinstance(numbers, (int, float, Fraction)):
+        v = abs(float(numbers))
         return [v if v > 0 else 1.0]
 
-    # Metin → karakter kodları
-    if isinstance(raw_input, str):
-        codes = [float(ord(c)) for c in raw_input if c.isprintable()]
-        return sorted(codes, reverse=True) if codes else [1.0]
-
-    # Son çare: str() üzerinden
-    try:
-        codes = [float(ord(c)) for c in str(raw_input)[:128] if c.isprintable()]
-        return sorted(codes, reverse=True) if codes else [1.0]
-    except Exception:
-        return [1.0]
+    raise TypeError(f"build_mini_space sadece sayı alır, {type(numbers).__name__} değil")
 
 
 # ─── Doğrudan moment hesabı (G YOK) ─────────────────────────────────────────
