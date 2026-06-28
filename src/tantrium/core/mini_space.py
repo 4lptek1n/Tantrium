@@ -263,7 +263,7 @@ class MiniSpace:
         return out
 
     def universe_coordinate(self) -> list[float]:
-        """90-dim birleşik evren uzayı koordinatı — tam çözünürlükten.
+        """91-dim birleşik evren uzayı koordinatı — tam çözünürlükten.
 
         Grup 1 [0:16]   — 16 moment (tanh-normalize, veri uzunluğuna bağlı derinlik)
         Grup 2 [16:30]  — 14 RH nicel: pivot×4, cross_ratio×3, kümülant×4, Λ, rank, grade
@@ -273,7 +273,7 @@ class MiniSpace:
                           hamburger_certified, stieltjes_certified
         Grup 4 [37:41]  — 4 Li katsayısı (tanh-normalize)
         Grup 5 [41:45]  — 4 GOE/GUE zaman ekseni
-        Grup 6 [45:90]  — 45 paradigma imzası
+        Grup 6 [45:91]  — 46 paradigma imzası (κ₅ dahil)
         """
         from tantrium.core.metric import paradigm_signature
 
