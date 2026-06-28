@@ -31,44 +31,121 @@ W = 70
 OUT_DIR = "/tmp/tantrium_molecules"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# Bilinen ilaç scaffold'ları + eigenvalue spektrumları (G=AᵀA'dan)
+# İlaç scaffold'ları — 32 çeşit: basit halkalar, biheteroaromati kler, onaylı ilaç çekirdekleri
+# Atom tipi + topoloji + bağ tipi → 91-dim uzayda farklı noktalar
 _SCAFFOLDS = [
-    ("adenine",         "Nc1ncnc2ncnc12"),
-    ("benzimidazole",   "c1ccc2[nH]cnc2c1"),
-    ("quinoline",       "c1ccc2ncccc2c1"),
-    ("quinazoline",     "c1cnc2ccccc2n1"),
-    ("indole",          "c1ccc2[nH]ccc2c1"),
-    ("pyrimidine",      "c1ccncn1"),
-    ("purine",          "c1ncc2[nH]cnc2n1"),
-    ("imidazole",       "c1cn[nH]c1"),          # pyrazole
-    ("piperidine",      "C1CCNCC1"),
-    ("morpholine",      "C1CCOCC1"),
-    ("benzene",         "c1ccccc1"),
-    ("naphthalene",     "c1ccc2ccccc2c1"),
-    ("caffeine",        "Cn1cnc2c1c(=O)n(c(=O)n2C)C"),
-    ("imatinib_core",   "Cc1ccc(cc1Nc2nccc(n2)c3cccnc3)NC(=O)c4ccc(cc4)CN5CCN(CC5)C"),
-    ("erlotinib_core",  "C#Cc1cccc(Nc2ncnc3cc(OCCO)c(OCC)cc23)c1"),
-    ("gefitinib_core",  "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN4CCOCC4"),
+    # ── Basit halkalar ─────────────────────────────────────────────────────────
+    ("benzene",          "c1ccccc1"),
+    ("piperidine",       "C1CCNCC1"),
+    ("morpholine",       "C1CCOCC1"),
+    ("piperazine",       "C1CNCCN1"),
+    ("pyrrolidine",      "C1CCNC1"),
+    ("tetrahydrofuran",  "C1CCOC1"),
+    # ── 5/6 heteroaromatik ──────────────────────────────────────────────────────
+    ("imidazole",        "c1cn[nH]c1"),
+    ("pyrimidine",       "c1ccncn1"),
+    ("pyridine",         "c1ccncc1"),
+    ("thiophene",        "c1ccsc1"),
+    ("oxazole",          "c1cnoc1"),
+    ("triazole",         "c1cn[nH]n1"),
+    # ── Bisiküller ──────────────────────────────────────────────────────────────
+    ("indole",           "c1ccc2[nH]ccc2c1"),
+    ("benzimidazole",    "c1ccc2[nH]cnc2c1"),
+    ("quinoline",        "c1ccc2ncccc2c1"),
+    ("quinazoline",      "c1cnc2ccccc2n1"),
+    ("quinoxaline",      "c1cnc2ccccc2n1"),     # N-N bisisiklik
+    ("benzothiazole",    "c1ccc2scnc2c1"),
+    ("benzoxazole",      "c1ccc2ocnc2c1"),
+    ("naphthalene",      "c1ccc2ccccc2c1"),
+    # ── Pürin / ksantin ─────────────────────────────────────────────────────────
+    ("adenine",          "Nc1ncnc2[nH]cnc12"),
+    ("purine",           "c1ncc2[nH]cnc2n1"),
+    ("caffeine",         "Cn1cnc2c1c(=O)n(c(=O)n2C)C"),
+    ("xanthine",         "O=c1[nH]c(=O)c2[nH]cnc2[nH]1"),
+    # ── Büyük ilaç çekirdekleri (atomca zengin, 3D çeşitlilik) ──────────────────
+    ("imatinib_core",    "Cc1ccc(cc1Nc2nccc(n2)c3cccnc3)NC(=O)c4ccc(cc4)CN5CCN(CC5)C"),
+    ("erlotinib_core",   "C#Cc1cccc(Nc2ncnc3cc(OCCO)c(OCC)cc23)c1"),
+    ("gefitinib_core",   "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN4CCOCC4"),
+    ("lapatinib_core",   "CS(=O)(=O)CCNCc1ccc(-c2ccc3ncnc(Nc4ccc(OCc5cccc(F)c5)c(Cl)c4)c3c2)o1"),
+    ("nilotinib_core",   "Cc1ccc(C(=O)Nc2ccc(CN3CCN(C)CC3)cc2Nc4nc5ccc(F)cc5s4)cc1C"),
+    ("osimertinib_core", "COc1cc2c(Nc3ccc(F)c(Cl)c3)ncnc2cc1NC(=O)C=C"),
+    ("palbociclib_core", "Cc1cnc2n(C)c(=O)cc2n1-c1ccc(N2CCNCC2)cc1"),
+    ("venetoclax_core",  "Cc1ccc(-n2cc(C(=O)NS(=O)(=O)c3ccc(NCC4CCOCC4)cc3)cn2)cc1"),
 ]
 
 
-def _scaffold_laplacian_eigs(smiles: str) -> list[float]:
-    """Scaffold SMILES → moleküler Laplacian eigenvalue listesi."""
+def _scaffold_rich_numbers(smiles: str) -> list[float]:
+    """Scaffold SMILES → zengin sayı vektörü (topoloji + atom tipi + bağ).
+
+    Neden zengin? Laplacian YALNIZ topolojiyi (bağlantıyı) yakalar — atom tipi yok.
+    Benzene (C6) ve morfolin (C4NO, aynı 6-halka) özdeş Laplacian'a sahiptir.
+    Çözüm: birden fazla matrisin eigenvalue'larını + atom sayılarını birleştir.
+
+    1. Laplacian eigs       — topoloji (bağlantı derecesi)
+    2. Atomik sayılar /100  — atom tipi (C=0.06, N=0.07, O=0.08, S=0.16, F=0.09...)
+    3. Komşuluk mat. eigs   — halka/çift bağ yapısı (mutlak değer)
+    4. Moleküler sayımlar   — büyüklük, heteroatom, halka, HBD/HBA
+    """
     try:
         from rdkit import Chem
+        from rdkit.Chem import rdMolDescriptors
         import numpy as np
+
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             return []
+
         n = mol.GetNumAtoms()
+        atom_nums = [a.GetAtomicNum() for a in mol.GetAtoms()]
+
+        # 1. Laplacian eigenvalues (topoloji)
         L = np.zeros((n, n))
+        A = np.zeros((n, n))
         for b in mol.GetBonds():
             i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
-            L[i, j] = L[j, i] = -1.0
+            w = b.GetBondTypeAsDouble()   # 1.0 / 1.5 / 2.0 / 3.0
+            L[i, j] = L[j, i] = -w
+            A[i, j] = A[j, i] = w
         for i in range(n):
             L[i, i] = -L[i].sum() - L[i, i]
-        eigs = sorted(np.linalg.eigvalsh(L), reverse=True)
-        return [float(e) for e in eigs if abs(e) > 1e-10]
+            # Atom ağırlığı: Z_i / (max_Z * n) — hafif diyagonal pertürbasyon
+            L[i, i] += atom_nums[i] / (max(atom_nums) * n + 1e-9)
+
+        lap_eigs = sorted([float(e) for e in np.linalg.eigvalsh(L)
+                           if abs(e) > 1e-10], reverse=True)
+
+        # 2. Komşuluk matrisi eigenvalue'ları (abs, ağırlıklı bağ tipiyle)
+        adj_eigs = sorted([abs(float(e)) for e in np.linalg.eigvalsh(A)
+                           if abs(e) > 1e-10], reverse=True)
+
+        # 3. Atom tipi vektörü: sıralı atom numaraları / 100
+        atom_vec = sorted([z / 100.0 for z in atom_nums], reverse=True)
+
+        # 4. Moleküler sayımlar (normalize)
+        n_arom  = sum(1 for a in mol.GetAtoms() if a.GetIsAromatic())
+        n_N     = atom_nums.count(7)
+        n_O     = atom_nums.count(8)
+        n_S     = atom_nums.count(16)
+        n_hal   = sum(1 for z in atom_nums if z in (9, 17, 35, 53))
+        n_rings = rdMolDescriptors.CalcNumRings(mol)
+        n_hbd   = rdMolDescriptors.CalcNumHBD(mol)
+        n_hba   = rdMolDescriptors.CalcNumHBA(mol)
+        n_rot   = rdMolDescriptors.CalcNumRotatableBonds(mol)
+
+        counts = [
+            n / 50.0,          # büyüklük
+            n_arom / n,        # aromatik oran
+            n_N / max(n, 1),   # N oranı
+            n_O / max(n, 1),   # O oranı
+            n_S / max(n, 1),   # S oranı
+            n_hal / max(n, 1), # halojen oranı
+            n_rings / 10.0,    # halka sayısı
+            n_hbd / 10.0,      # HBD
+            n_hba / 10.0,      # HBA
+            n_rot / 20.0,      # esnek bağ
+        ]
+
+        return lap_eigs + adj_eigs + atom_vec + counts
     except Exception:
         return []
 
@@ -76,14 +153,15 @@ def _scaffold_laplacian_eigs(smiles: str) -> list[float]:
 def _scaffold_91dim(smiles: str) -> list[float] | None:
     """Scaffold SMILES → 91-dim universe_coordinate vektörü.
 
-    Moleküler Laplacian eigenvalue'ları → build_mini_space → universe_coordinate().
+    Topoloji + atom tipi + bağ + sayım → build_mini_space → universe_coordinate().
     Böylece scaffold'un moment/RH/Li/paradigma bilgisi tamamı kullanılır.
+    Benzene vs morfolin vs indol vs imatinib hepsi farklı noktalar.
     """
-    eigs = _scaffold_laplacian_eigs(smiles)
-    if not eigs:
+    numbers = _scaffold_rich_numbers(smiles)
+    if not numbers:
         return None
     try:
-        ms = build_mini_space(eigs)
+        ms = build_mini_space(numbers)
         return ms.universe_coordinate()
     except Exception:
         return None
