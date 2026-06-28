@@ -1,24 +1,52 @@
 # Tantrium — Sistem Hafızası
 
-> **NE OLDUĞU (tek cümle):** Durumsuz, saf-matematik yapısal ölçüm makinesi.
-> Girdiyi (sayı/dizi/matris/dict/SMILES) spektral momentlere okur, 23 matematiksel
-> boyutu ölçerek 46-boyutlu bir vektör üretir — bu vektör sonraki adımlarda
-> (karşılaştırma, transport, yasa keşfi) kullanılır. **Dil yok, öğrenme yok,
-> manifold/graf yok, ajans yok, istatistik yok.**
+> **NE OLDUĞU (tek cümle):** G=AᵀA aksiyomundan türeyen deterministik matematik
+> uzayında dyadic transport omurgasıyla yürüyen, dallanabilen ve N girdiyi
+> karşılaştırabilen saf-matematik makinesi. **Dil yok, istatistik yok, öğrenme yok.**
 
 ## Aktif Branch
-`claude/asi-pure-math` — saf-matematik makinesi. (Geçmiş: `claude/seninle-agi-yapacagiz-XwJRz`
-tam ASI sistemiydi; dil/kod/graf/büyüme katmanları o branch'ten silinerek bu makine türetildi.)
+`claude/asi-pure-math` — saf-matematik makinesi.
 
 ## Temel Kural
 `from tantrium import ...` — her şey düz. `from tantrium.agi import ...` → YOK.
 
 ---
 
+## Mimari (5 Katman — her biri bir öncekinden zorunlu olarak çıkar)
+
+```
+KATMAN 0 — AKSİYOM
+  G=AᵀA ≥ 0 (tek kural)
+  Buradan her şey çıkar: 8 moment, 23 paradigma, 46 boyut, RH kriterleri
+  Hepsi G'nin türevi — ayrı katman değil, aynı şey
+
+KATMAN 1 — UZAY
+  Aksiyomdan üretilen ölçümler bir uzay kurar
+  Her girdi bu uzayda bir nokta (deterministik, Fraction, SHA-256)
+
+KATMAN 2 — YÜRÜYÜŞ (OMURGA)
+  İki nokta arası dyadic transport
+  Pozitiflik her adımda korunur, Sturm sertifikalı
+  Bu omurga — her şey buna hizmet eder
+
+KATMAN 3 — DALLANMA
+  Kritik noktalarda (eigenvalue geçişi, faz değişimi) yol ayrılır
+  Her dal yeni bir evren penceresi (Cosmos T₀→T₁₁)
+
+KATMAN 4 — KARŞILAŞMA
+  N girdi aynı uzaya girer
+  Aralarında transport yürür, yeni yapı çıkar
+  (T₁₁ — iki evrenin dyadic transport üzerinden birleşmesi)
+
+KATMAN 5 — HAFIZA
+  Her yürüyüş SHA-256 mühürlü
+  Tekrarlanabilir, denetlenebilir, tartışılmaz
+```
+
 ## Felsefe
 
 ```
-girdi → A matris → G=AᵀA (daima PSD) → μ_k=Tr(G^k)/n → 8 rasyonel moment
+girdi → A matris → G=AᵀA (daima PSD) → tüm ölçümler G'den
 ```
 **Hamburger Teoremi**: kompakt destekli ölçü moment dizisiyle tek biçimde belirlenir.
 Encoder "çevirmez" — okur. Sayı, matris, molekül — hepsi aynı formül. Tüm aritmetik
