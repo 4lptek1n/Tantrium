@@ -188,14 +188,15 @@ def paradigm_signature(structure: dict) -> list[float]:
     feats.append(math.log(max(_sf(s.get("composite_dim"), 1.0), 1.0)) / 10.0)
 
     # ── Serbest Kümülantlar (κ_k): Voiculescu kuantum imzası ─────────────────
-    kappa = [float(x) for x in (s.get("free_cumulants") or [])][:4]
-    feats += [math.tanh(x) for x in kappa] + [0.0] * (4 - len(kappa))
+    # κ₁..κ₄ şekil yapısı; κ₅ beşinci mertebe non-komütatiflik (halka/bağlanma)
+    kappa = [float(x) for x in (s.get("free_cumulants") or [])][:5]
+    feats += [math.tanh(x) for x in kappa] + [0.0] * (5 - len(kappa))
 
-    return feats  # 45 özellik — 23 paradigmanın tüm sayısal çıktısı
+    return feats  # 46 özellik — 23 paradigmanın tüm sayısal çıktısı
 
 
 def paradigm_distance(struct_a: dict, struct_b: dict) -> float:
-    """İki nesnenin paradigma-matematik imzaları arası normalize L1 mesafe.
+    """İki nesnenin paradigma-matematik imzaları arası L1 mesafe.
 
     Feature sayısına normalize → threshold feature eklendikçe geçerli kalır.
     Küçük mesafe = paradigmaların kendi hesaplarına göre 'aynı tür yapı'.
@@ -205,9 +206,9 @@ def paradigm_distance(struct_a: dict, struct_b: dict) -> float:
     k = min(len(a), len(b))
     if k == 0:
         return 0.0
-    raw = sum(abs(a[i] - b[i]) for i in range(k))
-    # Ortalama feature başına mesafe × 19 (orijinal feature sayısı) → ölçek korunur
-    return raw / k * 19
+    # L1 sum — k=19'daki orijinal davranışla özdeş (k=19: raw/19*19=raw).
+    # k büyüdükçe mesafe büyür (doğru: daha çok eksen = daha ayırt edici).
+    return sum(abs(a[i] - b[i]) for i in range(k))
 
 
 # ─── Operatif birim: TAM 46-boyutlu sertifika (çökmeden) ─────────────────────

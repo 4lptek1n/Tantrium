@@ -9,12 +9,12 @@ from tantrium.core.fixed_point import (
 )
 
 
-def test_self_map_is_45dim():
-    """self_map 45-boyutlu paradigma imzası üstünde çalışır (8 momente çökmez)."""
+def test_self_map_is_46dim():
+    """self_map 46-boyutlu paradigma imzası üstünde çalışır (8 momente çökmez)."""
     s = _signature([1.0, 0.5, 0.4, 0.3, 0.25, 0.2, 0.17, 0.15])
     out = self_map(s)
-    assert len(out) == 45
-    assert len(s) == 45
+    assert len(out) == 46
+    assert len(s) == 46
 
 
 def test_deterministic():

@@ -173,8 +173,12 @@ def _structure_from_eigs(eigenvalues: list[float], moments: list[Fraction]) -> d
         li_k = sum(1.0 - (1.0 - 1.0 / e) ** k for e in eigenvalues if e > 1.0)
         li.append(li_k)
 
-    # Serbest kümülantlar (ham moment farkı)
-    kappa = mu[1:5] if len(mu) >= 5 else (mu[1:] + [0.0] * (4 - len(mu) + 1))
+    # Gerçek Voiculescu serbest kümülantları (NC Möbius bölüm kafesi, κ₁..κ₅)
+    try:
+        from tantrium.core.quantum_moments import FreeCumulants
+        kappa = FreeCumulants.from_moments(mu).k[:5]
+    except Exception:
+        kappa = mu[1:5] + [0.0]
 
     # Entropi üçlüsü
     half = max(1, n // 2)
@@ -215,7 +219,7 @@ def _structure_from_eigs(eigenvalues: list[float], moments: list[Fraction]) -> d
         "mdl_ratio": rank / (n + 1) if n > 0 else 0.5,
         "achilles_margin": achilles_margin,
         "composite_dim": float(n),
-        "free_cumulants": kappa,
+        "free_cumulants": (list(kappa) + [0.0] * 5)[:5],
     }
 
 
