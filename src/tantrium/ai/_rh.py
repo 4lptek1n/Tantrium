@@ -105,6 +105,54 @@ class RHMixin:
         from tantrium.core.metric import certificate_distance
         return certificate_distance(a, b)
 
+    def universe_point(self, query) -> list[float]:
+        """Girdinin BİRLEŞİK EVREN UZAYI koordinatı (71 boyut, kayıpsız tek vektör).
+
+        G=AᵀA'dan türeyen BÜTÜN ölçümler tek koordinatta:
+          [0:8]   8 spectral moment  (tanh-normalize, Hamburger temeli)
+          [8:22]  14 RH kriterleri   (τ pivot/cross-ratio/κ/Λ/rank/grade, pozitiflik yapısı)
+          [22:26] 4 GOE/GUE konum    (⟨r⟩, goe_dist, gue_dist, β/2, zaman yönü)
+          [26:71] 45 paradigma imzası (23 paradigmanın tüm sayısal çıktısı)
+
+        Her girdi bu uzayda tek bir nokta. İki nokta arası mesafe = universe_distance.
+        Uzayın iki sabit çıpası: GOE (asal sayılar, β=1, geçmiş) ve GUE (Riemann ζ-sıfırları, β=2, gelecek).
+
+        Örnek:
+            pt = ai.universe_point("EGFR")   # 71-dim koordinat
+            print(len(pt), pt[:8])           # 8 moment bileşeni
+        """
+        from tantrium.core.metric import universe_point as _up
+        return _up(query)
+
+    def universe_distance(self, a, b) -> float:
+        """BİRLEŞİK EVREN UZAYI mesafesi — tek metrik, hiçbir şeye çökmez.
+
+        8 moment + 14 RH + 4 GOE/GUE + 45 paradigma — her bölüm kendi boyutuna normalize,
+        sonra bölüm ağırlıkları eşit. W2/L1/certificate'in üzerine: tüm ölçümleri birden görür.
+
+        Örnek:
+            d = ai.universe_distance("CCO", "CC(=O)O")
+            print(f"evren mesafesi: {d:.4f}")
+        """
+        from tantrium.core.metric import universe_distance as _ud
+        return _ud(a, b)
+
+    def universe_anchor_distances(self, query) -> dict:
+        """Girdinin GOE ve GUE çıpalarına uzaklığı — evren uzayındaki konum yorumu.
+
+        GOE çıpası = asal sayılar (β=1, zaman-tersinir, geçmiş).
+        GUE çıpası = Riemann ζ-sıfırları (β=2, zaman-tersinmez, gelecek).
+
+        goe_closer=True  → geçmiş tarafında (integrallenebilir/klasik)
+        goe_closer=False → gelecek tarafında (kaotik/kuantum, RH kritik hattına yakın)
+
+        Örnek:
+            d = ai.universe_anchor_distances("EGFR")
+            print(d['time_side'], d['goe_anchor_dist'], d['gue_anchor_dist'])
+        """
+        from tantrium.core.metric import universe_anchor_distances as _uad
+        return _uad(query)
+
     def self_reference(self, seed=None, max_iter: int = 64, tol: float = 1e-6) -> "object":
         """Makineyi kendi üzerine katla → öz-gönderim sabit noktası μ* (strange loop, exact).
 

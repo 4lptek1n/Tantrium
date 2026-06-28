@@ -71,6 +71,8 @@ def distance(moments_a, moments_b, metric: str = CANONICAL) -> float:
     if metric == "rh":
         from tantrium.core.rh_certificate import rh_distance as _rd
         return _rd(moments_a, moments_b)
+    if metric == "universe":
+        return universe_distance(moments_a, moments_b)
     return full_distance(moments_a, moments_b)
 
 
@@ -233,3 +235,158 @@ def certificate_distance(a, b) -> float:
     """
     from tantrium.core.encoder import encode
     return paradigm_distance(encode(a, name="a").structure, encode(b, name="b").structure)
+
+
+# ─── Unified Universe Metric — TEK METRİK, TAM UZAY ─────────────────────────
+#
+# G=AᵀA'dan türeyen BÜTÜN ölçümler TEK bir koordinat vektöründe:
+#   8 spectral moment  → ölçünün temeli (Hamburger tekliği)
+#  14 RH kriterleri   → τ/pivot/cross-ratio/κ/Λ/rank/grade (pozitiflik yapısı)
+#   4 GOE/GUE         → ⟨r⟩/goe_dist/gue_dist/β (zaman yönü)
+#  45 paradigma       → 23 paradigmanın tüm sayısal çıktısı
+# Toplam: 71 boyut. Hiçbir alt-kümeye çökmez.
+#
+# İki sabit referans noktası (çapa):
+#   GOE çıpası — asal sayıların boşlukları (β=1, geçmiş, zaman-tersinir)
+#   GUE çıpası — Riemann ζ-sıfırları    (β=2, gelecek, zaman-tersinmez)
+# Her girdinin uzaydaki konumu bu iki çıpaya olan mesafeyle yorumlanır.
+
+def _safe_float(m) -> float:
+    """Fraction → float, büyük pay/paydayı sınırla."""
+    try:
+        return float(m)
+    except (OverflowError, ValueError):
+        try:
+            return float(m.limit_denominator(2 ** 52))
+        except Exception:
+            return 0.0
+
+
+def universe_point(raw_input) -> list[float]:
+    """Girdinin birleşik evren uzayındaki koordinatı (71 boyut, kayıpsız).
+
+    Tüm G=AᵀA ölçümleri tek vektörde:
+      [0:8]   8 spectral moment  (tanh-normalize)
+      [8:22]  14 RH kriterleri   (τ pivot/cross-ratio/κ/Λ/rank/grade)
+      [22:26] 4 GOE/GUE konum    (⟨r⟩, goe_dist, gue_dist, β/2)
+      [26:71] 45 paradigma imzası (paradigm_signature)
+    """
+    import math as _m
+    from tantrium.core.encoder import encode
+    from tantrium.core.rh_criteria import rh_criteria as _rh
+
+    obj = encode(raw_input)
+    s = obj.structure
+    mu = obj.moments
+
+    # ── Bölüm 1: 8 spectral moment (tanh-normalize, μ₀=1 sabit) ─────────────
+    mu_f = [_safe_float(m) for m in mu[:8]]
+    while len(mu_f) < 8:
+        mu_f.append(0.0)
+    mu0 = mu_f[0] if abs(mu_f[0]) > 1e-12 else 1.0
+    mu_vec = [_m.tanh(mu_f[i] / (mu0 * 10.0)) for i in range(8)]  # 8 dim
+
+    # ── Bölüm 2: 14 RH kriterleri ────────────────────────────────────────────
+    rh = _rh(mu)
+    pivots  = [_m.tanh(_safe_float(p)) for p in rh.pivots[:4]]
+    pivots += [0.0] * (4 - len(pivots))                            # 4 dim
+    crossr  = [_m.tanh(_safe_float(r)) for r in rh.cross_ratios[:3]]
+    crossr += [0.0] * (3 - len(crossr))                            # 3 dim
+    kappa   = [_m.tanh(_safe_float(k)) for k in rh.cumulants[:4]]
+    kappa  += [0.0] * (4 - len(kappa))                             # 4 dim
+    lam     = [_m.tanh(_safe_float(rh.lambda_dbn))]                # 1 dim
+    rank    = [rh.rank / 8.0]                                      # 1 dim
+    grade   = [rh.grade()]                                         # 1 dim
+    rh_vec  = pivots + crossr + kappa + lam + rank + grade         # 14 dim
+
+    # ── Bölüm 3: 4 GOE/GUE zaman ekseni ─────────────────────────────────────
+    r_val    = s.get("r_ratio")
+    r_f      = float(r_val) if r_val is not None else 0.5307
+    goe_dist = float(s.get("goe_dist", 0.0))
+    gue_dist = float(s.get("gue_dist", abs(0.5996 - 0.5307)))
+    beta     = float(s.get("beta", 1)) / 2.0
+    goe_gue_vec = [r_f, goe_dist, gue_dist, beta]                  # 4 dim
+
+    # ── Bölüm 4: 45 paradigma imzası ─────────────────────────────────────────
+    paradigm_vec = paradigm_signature(s)                            # 45 dim
+
+    return mu_vec + rh_vec + goe_gue_vec + paradigm_vec            # 71 dim
+
+
+def universe_distance(a, b) -> float:
+    """İki girdi arası birleşik evren uzayı mesafesi (71-boyut, bölüm-ağırlıklı).
+
+    8 moment + 14 RH + 4 GOE/GUE + 45 paradigma — tek metrik, hiçbir şeye çökmez.
+    Her bölüm kendi boyutuna normalize edilir → eşit ağırlık katkısı.
+    """
+    import math as _m
+    va = universe_point(a)
+    vb = universe_point(b)
+    # Bölüm sınırları: [0,8) moment | [8,22) RH | [22,26) GOE/GUE | [26,71) paradigma
+    groups = [(0, 8), (8, 22), (22, 26), (26, 71)]
+    total = 0.0
+    for start, end in groups:
+        k = min(end, len(va), len(vb)) - start
+        if k <= 0:
+            continue
+        sq = sum((va[start + i] - vb[start + i]) ** 2 for i in range(k)) / k
+        total += sq
+    return _m.sqrt(total / len(groups))
+
+
+# ── GOE / GUE sabit çıpa noktaları ───────────────────────────────────────────
+
+def _prime_sequence(n: int = 30) -> list[int]:
+    """İlk n asal sayı — GOE çıpa girdisi (asal boşluklar GOE seviye itmesini takip eder)."""
+    primes, cand = [], 2
+    while len(primes) < n:
+        if all(cand % p != 0 for p in primes):
+            primes.append(cand)
+        cand += 1
+    return primes
+
+
+_GOE_ANCHOR_POINT: "list[float] | None" = None
+_GUE_ANCHOR_POINT: "list[float] | None" = None
+
+
+def goe_anchor() -> list[float]:
+    """Evren uzayında GOE çıpasının koordinatı (asal sayılar → β=1 geçmiş)."""
+    global _GOE_ANCHOR_POINT
+    if _GOE_ANCHOR_POINT is None:
+        _GOE_ANCHOR_POINT = universe_point(_prime_sequence(30))
+    return _GOE_ANCHOR_POINT
+
+
+def gue_anchor() -> list[float]:
+    """Evren uzayında GUE çıpasının koordinatı (Riemann ζ-sıfırları → β=2 gelecek)."""
+    global _GUE_ANCHOR_POINT
+    if _GUE_ANCHOR_POINT is None:
+        from tantrium.graph.anchors import _ZETA_ZEROS
+        _GUE_ANCHOR_POINT = universe_point(list(_ZETA_ZEROS))
+    return _GUE_ANCHOR_POINT
+
+
+def universe_anchor_distances(raw_input) -> dict:
+    """Girdinin GOE ve GUE çıpalarına uzaklığı — uzaydaki konumun yorumu.
+
+    goe_closer=True  → geçmiş tarafında (β=1, zaman-tersinir, asal sayı hizası)
+    goe_closer=False → gelecek tarafında (β=2, zaman-tersinmez, Riemann ζ hizası)
+    """
+    import math as _m
+    pt = universe_point(raw_input)
+    va = goe_anchor()
+    vb = gue_anchor()
+
+    def _l2(x: list, y: list) -> float:
+        k = min(len(x), len(y))
+        return _m.sqrt(sum((x[i] - y[i]) ** 2 for i in range(k)) / max(k, 1))
+
+    d_goe = _l2(pt, va)
+    d_gue = _l2(pt, vb)
+    return {
+        "goe_anchor_dist": d_goe,
+        "gue_anchor_dist": d_gue,
+        "goe_closer": d_goe < d_gue,
+        "time_side": "past (GOE)" if d_goe < d_gue else "future (GUE)",
+    }
