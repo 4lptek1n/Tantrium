@@ -137,6 +137,22 @@ class RHMixin:
         from tantrium.core.metric import universe_distance as _ud
         return _ud(a, b)
 
+    def mini_space(self, raw_input) -> "object":
+        """Ham veriden tam çözünürlükte mini uzay kur — G=AᵀA YOK.
+
+        Giriş sayıları DOĞRUDAN özdeğer. Uzay boyutu = veri boyutu.
+        Moment derinliği verinin uzunluğuna göre (maks 16).
+
+        Hesap burada tam çözünürlükte olur.
+        Depolamak için: ms.compress(8) veya ms.compress(16) → moment hatırası.
+
+            ms = ai.mini_space([2,3,5,7,11,13,17,19,23,29])
+            print(ms.summary())
+            print(ms.compress(8))
+        """
+        from tantrium.core.mini_space import build_mini_space
+        return build_mini_space(raw_input)
+
     def universe_anchor_distances(self, query) -> dict:
         """Girdinin GOE ve GUE çıpalarına uzaklığı — evren uzayındaki konum yorumu.
 

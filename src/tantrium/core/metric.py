@@ -265,52 +265,23 @@ def _safe_float(m) -> float:
 def universe_point(raw_input) -> list[float]:
     """Girdinin birleşik evren uzayındaki koordinatı (71 boyut, kayıpsız).
 
-    Tüm G=AᵀA ölçümleri tek vektörde:
+    MİMARİ: G=AᵀA geçmiyor. Ham veri → MiniSpace → koordinat.
+      giriş sayıları DOĞRUDAN özdeğer (sıkıştırma yok)
+      momentler μₖ = Σλᵢᵏ/n  (veri uzunluğuna göre derinlik, maks 16)
+      RH kriterleri bu momentlerden
+      GOE/GUE bu özdeğerlerden (level spacing, tam çözünürlük)
+      paradigma bu özdeğer + momentlerden
+
+    Depolamak için: build_mini_space(x).compress(8) → 8 moment hatırası.
+
+    Boyutlar:
       [0:8]   8 spectral moment  (tanh-normalize)
       [8:22]  14 RH kriterleri   (τ pivot/cross-ratio/κ/Λ/rank/grade)
       [22:26] 4 GOE/GUE konum    (⟨r⟩, goe_dist, gue_dist, β/2)
-      [26:71] 45 paradigma imzası (paradigm_signature)
+      [26:71] 45 paradigma imzası
     """
-    import math as _m
-    from tantrium.core.encoder import encode
-    from tantrium.core.rh_criteria import rh_criteria as _rh
-
-    obj = encode(raw_input)
-    s = obj.structure
-    mu = obj.moments
-
-    # ── Bölüm 1: 8 spectral moment (tanh-normalize, μ₀=1 sabit) ─────────────
-    mu_f = [_safe_float(m) for m in mu[:8]]
-    while len(mu_f) < 8:
-        mu_f.append(0.0)
-    mu0 = mu_f[0] if abs(mu_f[0]) > 1e-12 else 1.0
-    mu_vec = [_m.tanh(mu_f[i] / (mu0 * 10.0)) for i in range(8)]  # 8 dim
-
-    # ── Bölüm 2: 14 RH kriterleri ────────────────────────────────────────────
-    rh = _rh(mu)
-    pivots  = [_m.tanh(_safe_float(p)) for p in rh.pivots[:4]]
-    pivots += [0.0] * (4 - len(pivots))                            # 4 dim
-    crossr  = [_m.tanh(_safe_float(r)) for r in rh.cross_ratios[:3]]
-    crossr += [0.0] * (3 - len(crossr))                            # 3 dim
-    kappa   = [_m.tanh(_safe_float(k)) for k in rh.cumulants[:4]]
-    kappa  += [0.0] * (4 - len(kappa))                             # 4 dim
-    lam     = [_m.tanh(_safe_float(rh.lambda_dbn))]                # 1 dim
-    rank    = [rh.rank / 8.0]                                      # 1 dim
-    grade   = [rh.grade()]                                         # 1 dim
-    rh_vec  = pivots + crossr + kappa + lam + rank + grade         # 14 dim
-
-    # ── Bölüm 3: 4 GOE/GUE zaman ekseni ─────────────────────────────────────
-    r_val    = s.get("r_ratio")
-    r_f      = float(r_val) if r_val is not None else 0.5307
-    goe_dist = float(s.get("goe_dist", 0.0))
-    gue_dist = float(s.get("gue_dist", abs(0.5996 - 0.5307)))
-    beta     = float(s.get("beta", 1)) / 2.0
-    goe_gue_vec = [r_f, goe_dist, gue_dist, beta]                  # 4 dim
-
-    # ── Bölüm 4: 45 paradigma imzası ─────────────────────────────────────────
-    paradigm_vec = paradigm_signature(s)                            # 45 dim
-
-    return mu_vec + rh_vec + goe_gue_vec + paradigm_vec            # 71 dim
+    from tantrium.core.mini_space import build_mini_space
+    return build_mini_space(raw_input).universe_coordinate()
 
 
 def universe_distance(a, b) -> float:
