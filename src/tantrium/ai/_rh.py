@@ -195,6 +195,42 @@ class RHMixin:
         from tantrium.cosmos import run_cosmos
         return run_cosmos(seed=seed, inflation_steps=inflation_steps)
 
+    def seven_cosmos(self, raw_input=None, inflation_steps: int = 10) -> "object":
+        """Bir girdinin YEDİ COSMOS türündeki eksiksiz evrimi — tek mühür.
+
+        universe.py'nin 7 yüzünün (MADDE/FİZİK/GEOMETRİ/KUVVET/HAYAT/ZAMAN/TOPOLOJİ)
+        her biri için Ouroboros zaman yörüngesi hesaplanır. Her yörünge tek bir
+        delta (Δ) değeriyle özetlenir → 7-boyutlu cosmos vektörü.
+
+        Ayrıca: measurement_space (GOE/GUE + 46-dim + RH) statik 7-dim vektörü.
+
+        Örnek:
+            sc = ai.seven_cosmos("EGFR", inflation_steps=5)
+            print(sc.summary())
+            print('trajectory Δ:', sc.cosmos_vector())
+            print('space 7-dim:', sc.measurement_space.cosmos_vector())
+        """
+        from tantrium.cosmos import run_seven_cosmos
+        return run_seven_cosmos(raw_input=raw_input, inflation_steps=inflation_steps)
+
+    def measurement_space(self, raw_input) -> "object":
+        """Ham girdiden birleşik ölçüm uzayını kur (GOE/GUE + 46-dim + RH + 7-dim cosmos).
+
+        Encoder çıktısının TÜM temsilleri tek nesnede:
+          - 8 spektral moment (exact Fraction, G=AᵀA'dan)
+          - 45-dim fingerprint (23 paradigma sayısal çıktıları)
+          - RH kriterleri (τ/pivot/κ/Λ/rank)
+          - GOE/GUE zaman yönü (β, ⟨r⟩, geçmiş↔gelecek)
+          - cosmos_vector(): 7-dim (MADDE/FİZİK/GEOMETRİ/KUVVET/HAYAT/ZAMAN/TOPOLOJİ)
+
+        Örnek:
+            ms = ai.measurement_space("EGFR")
+            print(ms.summary())
+            print('7-boyut:', ms.cosmos_vector())
+        """
+        from tantrium.core.measurement_space import build_measurement_space
+        return build_measurement_space(raw_input)
+
     def rh_criteria(self, query) -> "RHCriteria":
         """Girdinin RH-türevli pozitiflik kriterleri (τ/pivot/cross-ratio, exact Fraction).
 

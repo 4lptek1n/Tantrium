@@ -262,5 +262,303 @@ def run() -> Lifecycle:
     return life
 
 
+# ── Yedi Cosmos Türü (universe.py'nin 7 yüzünün zaman-yörüngeleri) ─────────
+
+from dataclasses import dataclass as _dc, field as _fld  # noqa: E402
+
+
+@_dc
+class CosmosReading:
+    """Tek bir zaman adımındaki ölçüm."""
+    step: int
+    value: float
+    label: str = ""
+
+
+@_dc
+class CosmosTrajectory:
+    """Bir cosmos türünün zaman-sıralı ölçüm yörüngesi."""
+    cosmos_type: int       # 1-7
+    name: str
+    description: str
+    readings: list = _fld(default_factory=list)   # list[CosmosReading]
+    initial: float = 0.0
+    final: float = 0.0
+    delta: float = 0.0
+    seal: str = ""
+
+
+@_dc
+class SevenCosmos:
+    """Bir girdinin yedi cosmos türündeki eksiksiz evrimi + ölçüm uzayı."""
+    seed: str
+    trajectories: list = _fld(default_factory=list)   # list[CosmosTrajectory]
+    measurement_space: object = None   # MeasurementSpace
+    master_seal: str = ""
+
+    def cosmos_vector(self) -> list[float]:
+        """7-boyutlu cosmos vektörü: her boyut bir cosmos türünün Δ (delta) değeri.
+
+        Trajectory deltas:
+          [0] MADDE     Δrank       G operatörü rank artışı
+          [1] FİZİK     Δ⟨r⟩        seviye-aralığı oranı değişimi (GOE→GUE)
+          [2] GEOMETRİ  Δd_s        NCG spektral boyut değişimi
+          [3] KUVVET    Δvar(λ)     kuplaj kuvveti değişimi
+          [4] HAYAT     ΔS_vN       von Neumann entropisi değişimi
+          [5] ZAMAN     certified   yasa-korunan çağ sayısı
+          [6] TOPOLOJİ  Δλ_max     dominant özdeğer değişimi (topolojik yük)
+        """
+        return [t.delta for t in self.trajectories]
+
+    def summary(self) -> str:
+        lines = [f"SEVEN COSMOS — '{self.seed}'"]
+        names = ["MADDE", "FİZİK", "GEOMETRİ", "KUVVET", "HAYAT", "ZAMAN", "TOPOLOJİ"]
+        for t in self.trajectories:
+            delta_str = f"{t.delta:+.4f}" if isinstance(t.delta, float) else str(t.delta)
+            lines.append(
+                f"  {t.cosmos_type} {t.name:12} {t.description[:40]:40} "
+                f"Δ={delta_str}"
+            )
+        cv = self.cosmos_vector()
+        lines.append(f"  7-boyut: {[f'{v:.3f}' for v in cv]}")
+        if self.measurement_space is not None:
+            ms_cv = self.measurement_space.cosmos_vector()
+            lines.append(f"  uzay-7d: {[f'{v:.3f}' for v in ms_cv]}")
+        lines.append(f"  mühür: {self.master_seal[:16]}")
+        return "\n".join(lines)
+
+
+def _cosmos_1_madde(seed_carrier, steps: int, n_c: int) -> CosmosTrajectory:
+    """1-MADDE: rank/dim evrimi (G operatörünün büyümesi)."""
+    carrier = list(seed_carrier)
+    readings = []
+    d0, r0, _, _ = _uncapped_spectrum(carrier)
+    readings.append(CosmosReading(step=0, value=float(r0), label=f"dim={d0}"))
+    for step in range(steps):
+        carrier = _inflate_step(carrier, n_c, step)
+        d, r, _, _ = _uncapped_spectrum(carrier)
+        readings.append(CosmosReading(step=step + 1, value=float(r), label=f"dim={d}"))
+    initial = readings[0].value
+    final = readings[-1].value
+    return CosmosTrajectory(
+        cosmos_type=1, name="MADDE",
+        description="G operatörü rank evrimi (Ouroboros)",
+        readings=readings, initial=initial, final=final, delta=final - initial,
+    )
+
+
+def _cosmos_2_fizik(seed_carrier, steps: int, n_c: int) -> CosmosTrajectory:
+    """2-FİZİK: ⟨r⟩ seviye-aralığı oranı (GOE↔GUE zaman yönü)."""
+    import numpy as _np
+    carrier = list(seed_carrier)
+    readings = []
+
+    def _r_mean(c):
+        _, _, _, _ = _uncapped_spectrum(c)
+        n = max(1, (len(c) + 1) // 2)
+        H = _np.empty((n, n))
+        for i in range(n):
+            for j in range(n):
+                H[i, j] = c[i + j] if i + j < len(c) else 0.0
+        s = _np.linalg.svd(H, compute_uv=False)
+        eigs = sorted([float(v) for v in s if v > 1e-10])
+        gaps = [eigs[k + 1] - eigs[k] for k in range(len(eigs) - 1)
+                if eigs[k + 1] - eigs[k] > 1e-10]
+        if len(gaps) < 3:
+            return float("nan")
+        r_vals = [min(gaps[k], gaps[k + 1]) / max(gaps[k], gaps[k + 1])
+                  for k in range(len(gaps) - 1)]
+        return sum(r_vals) / len(r_vals)
+
+    r0 = _r_mean(carrier)
+    readings.append(CosmosReading(step=0, value=r0 if r0 == r0 else 0.0, label="⟨r⟩"))
+    for step in range(steps):
+        carrier = _inflate_step(carrier, n_c, step)
+        rv = _r_mean(carrier)
+        readings.append(CosmosReading(step=step + 1, value=rv if rv == rv else 0.0, label="⟨r⟩"))
+    initial = readings[0].value
+    final = readings[-1].value
+    return CosmosTrajectory(
+        cosmos_type=2, name="FİZİK",
+        description="⟨r⟩ seviye-aralığı (GOE→GUE zaman yönü)",
+        readings=readings, initial=initial, final=final, delta=final - initial,
+    )
+
+
+def _cosmos_3_geometri(seed_carrier, steps: int, n_c: int) -> CosmosTrajectory:
+    """3-GEOMETRİ: NCG spektral boyut evrimi."""
+    from tantrium.core.spectral_geometry import spectral_geometry as _sg
+    carrier = list(seed_carrier)
+    readings = []
+
+    def _dim(c):
+        try:
+            return float(_sg(c).spectral_dimension)
+        except Exception:
+            return float("nan")
+
+    d0 = _dim(carrier)
+    readings.append(CosmosReading(step=0, value=d0 if d0 == d0 else 0.0, label="d_s"))
+    for step in range(steps):
+        carrier = _inflate_step(carrier, n_c, step)
+        dv = _dim(carrier)
+        readings.append(CosmosReading(step=step + 1, value=dv if dv == dv else 0.0, label="d_s"))
+    initial = readings[0].value
+    final = readings[-1].value
+    return CosmosTrajectory(
+        cosmos_type=3, name="GEOMETRİ",
+        description="NCG spektral boyut (Connes ısı-çekirdeği)",
+        readings=readings, initial=initial, final=final, delta=final - initial,
+    )
+
+
+def _cosmos_4_kuvvet(seed_carrier, steps: int, n_c: int) -> CosmosTrajectory:
+    """4-KUVVET: özdeğer varyansı evrimi (kuplaj kuvveti)."""
+    import numpy as _np
+    carrier = list(seed_carrier)
+    readings = []
+
+    def _variance(c):
+        n = max(1, (len(c) + 1) // 2)
+        H = _np.empty((n, n))
+        for i in range(n):
+            for j in range(n):
+                H[i, j] = c[i + j] if i + j < len(c) else 0.0
+        s = _np.linalg.svd(H, compute_uv=False)
+        if s.size < 2:
+            return 0.0
+        return float(_np.var(s))
+
+    v0 = _variance(carrier)
+    readings.append(CosmosReading(step=0, value=v0, label="var(λ)"))
+    for step in range(steps):
+        carrier = _inflate_step(carrier, n_c, step)
+        vv = _variance(carrier)
+        readings.append(CosmosReading(step=step + 1, value=vv, label="var(λ)"))
+    initial = readings[0].value
+    final = readings[-1].value
+    return CosmosTrajectory(
+        cosmos_type=4, name="KUVVET",
+        description="özdeğer varyansı (kuplaj kuvveti evrimi)",
+        readings=readings, initial=initial, final=final, delta=final - initial,
+    )
+
+
+def _cosmos_5_hayat(seed_carrier, steps: int, n_c: int) -> CosmosTrajectory:
+    """5-HAYAT: von Neumann entropisi evrimi."""
+    import numpy as _np
+    carrier = list(seed_carrier)
+    readings = []
+
+    def _entropy(c):
+        n = max(1, (len(c) + 1) // 2)
+        H = _np.empty((n, n))
+        for i in range(n):
+            for j in range(n):
+                H[i, j] = c[i + j] if i + j < len(c) else 0.0
+        s = _np.linalg.svd(H, compute_uv=False)
+        total = float(s.sum())
+        if total < 1e-12:
+            return 0.0
+        p = s / total
+        return float(-_np.sum(p[p > 1e-15] * _np.log(p[p > 1e-15])))
+
+    e0 = _entropy(carrier)
+    readings.append(CosmosReading(step=0, value=e0, label="S_vN"))
+    for step in range(steps):
+        carrier = _inflate_step(carrier, n_c, step)
+        ev = _entropy(carrier)
+        readings.append(CosmosReading(step=step + 1, value=ev, label="S_vN"))
+    initial = readings[0].value
+    final = readings[-1].value
+    return CosmosTrajectory(
+        cosmos_type=5, name="HAYAT",
+        description="von Neumann entropisi (dolanıklık evrimi)",
+        readings=readings, initial=initial, final=final, delta=final - initial,
+    )
+
+
+def _cosmos_6_zaman(raw_input) -> CosmosTrajectory:
+    """6-ZAMAN: Lifecycle T₀→T₁₀ (tam cosmos ömrü)."""
+    life = run_cosmos(seed=raw_input)
+    readings = [
+        CosmosReading(step=i, value=float(e.law_held), label=f"{e.t}:{e.name}")
+        for i, e in enumerate(life.epochs)
+    ]
+    certified = sum(1 for e in life.epochs if e.law_held)
+    return CosmosTrajectory(
+        cosmos_type=6, name="ZAMAN",
+        description="Lifecycle T₀→T₁₀ yasa-korunumu (çağ sayısı)",
+        readings=readings, initial=0.0, final=float(len(life.epochs)),
+        delta=float(certified),
+        seal=life.master_seal,
+    )
+
+
+def _cosmos_7_topoloji(seed_carrier, steps: int, n_c: int) -> CosmosTrajectory:
+    """7-TOPOLOJİ: dominant özdeğer değişimi (spektral akış yükü)."""
+    import numpy as _np
+    carrier = list(seed_carrier)
+    readings = []
+
+    def _top_eig(c):
+        n = max(1, (len(c) + 1) // 2)
+        H = _np.empty((n, n))
+        for i in range(n):
+            for j in range(n):
+                H[i, j] = c[i + j] if i + j < len(c) else 0.0
+        s = _np.linalg.svd(H, compute_uv=False)
+        return float(s[0]) if s.size else 0.0
+
+    lam0 = _top_eig(carrier)
+    readings.append(CosmosReading(step=0, value=lam0, label="λ_max"))
+    for step in range(steps):
+        carrier = _inflate_step(carrier, n_c, step)
+        lv = _top_eig(carrier)
+        readings.append(CosmosReading(step=step + 1, value=lv, label="λ_max"))
+    initial = readings[0].value
+    final = readings[-1].value
+    return CosmosTrajectory(
+        cosmos_type=7, name="TOPOLOJİ",
+        description="dominant özdeğer evrimi (spektral akış yükü)",
+        readings=readings, initial=initial, final=final, delta=final - initial,
+    )
+
+
+def run_seven_cosmos(raw_input=None, inflation_steps: int = 10, n_c: int = 12) -> SevenCosmos:
+    """Bir girdiden yedi cosmos türünü çalıştır; her birinin zaman yörüngesini üret."""
+    import hashlib as _hl
+    from tantrium.core.measurement_space import build_measurement_space
+
+    if raw_input is None:
+        raw_input = [1.0 / (k + 1) for k in range(6)]
+
+    # Ölçüm uzayını bir kez kur (46-dim + GOE/GUE + RH)
+    ms = build_measurement_space(raw_input)
+
+    # Başlangıç taşıyıcı: encoder momentlerinden (float listesi)
+    seed_carrier = [float(m) for m in ms.moments]
+
+    trajectories = [
+        _cosmos_1_madde(seed_carrier, inflation_steps, n_c),
+        _cosmos_2_fizik(seed_carrier, inflation_steps, n_c),
+        _cosmos_3_geometri(seed_carrier, inflation_steps, n_c),
+        _cosmos_4_kuvvet(seed_carrier, inflation_steps, n_c),
+        _cosmos_5_hayat(seed_carrier, inflation_steps, n_c),
+        _cosmos_6_zaman(raw_input),
+        _cosmos_7_topoloji(seed_carrier, inflation_steps, n_c),
+    ]
+
+    blob = "|".join(f"{t.cosmos_type}:{t.delta:.6f}" for t in trajectories)
+    master_seal = _hl.sha256(blob.encode()).hexdigest()
+
+    return SevenCosmos(
+        seed=str(raw_input)[:48],
+        trajectories=trajectories,
+        measurement_space=ms,
+        master_seal=master_seal,
+    )
+
+
 if __name__ == "__main__":
     run()

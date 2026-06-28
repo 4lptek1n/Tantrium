@@ -47,7 +47,18 @@ def _compute_all(
     state: dict = {}
     n = len(A)
     ng = len(G)
-    sig = hashlib.sha256("|".join(str(m) for m in moments).encode()).hexdigest()[:16]
+
+    def _mf(m):
+        """Fraction → float, büyük pay/paydayı sınırla (overflow koruması)."""
+        try:
+            return float(m)
+        except (OverflowError, ValueError):
+            try:
+                return float(m.limit_denominator(2 ** 52))
+            except Exception:
+                return 0.0
+
+    sig = hashlib.sha256("|".join(f"{_mf(m):.15g}" for m in moments).encode()).hexdigest()[:16]
 
     # ── Eigenvalue'lar: BİR KEZ ──────────────────────────────────────────────
     try:
@@ -172,7 +183,7 @@ def _compute_all(
         ]
         state["lyapunov_values"] = _lyap
     except Exception:
-        state["lyapunov_values"] = [float(m) for m in moments[:6]]
+        state["lyapunov_values"] = [_mf(m) for m in moments[:6]]
 
     # ── ZAYIN / L2 — τ-det + Schur ──────────────────────────────────────────
     try:
@@ -292,7 +303,7 @@ def _compute_all(
     _sensor_hash = hashlib.sha256(
         str(raw_input)[:4000].encode("utf-8", errors="replace")
     ).hexdigest()[:16]
-    _cert_hash = hashlib.sha256("|".join(str(m) for m in moments).encode()).hexdigest()[:16]
+    _cert_hash = hashlib.sha256("|".join(f"{_mf(m):.15g}" for m in moments).encode()).hexdigest()[:16]
     state.update({
         "sensor_hash": _sensor_hash,
         "certificate_hash": _cert_hash,
@@ -364,7 +375,7 @@ def _compute_all(
     if moments:
         _best_k = max(range(min(4, len(moments))), key=lambda k: moments[k])
         state["actions"] = [
-            {"id": f"use_moment_{k}", "score": float(moments[k])}
+            {"id": f"use_moment_{k}", "score": _mf(moments[k])}
             for k in range(min(4, len(moments)))
         ]
         state["chosen_action"] = f"use_moment_{_best_k}"
@@ -373,7 +384,7 @@ def _compute_all(
     try:
         import numpy as _np4
 
-        _mu_f = [float(m) for m in moments]
+        _mu_f = [_mf(m) for m in moments]
         _dets = [1.0]
         for _nn in range(1, len(_mu_f) // 2 + 1):
             _Hn = _np4.array([[_mu_f[_i + _j] for _j in range(_nn)] for _i in range(_nn)])
@@ -433,7 +444,7 @@ def _compute_all(
 
         _raw_str = str(raw_input)[:2000]
         _raw_compressed = len(_zlib.compress(_raw_str.encode("utf-8", errors="replace"), level=9))
-        _mu_full = [float(m) for m in moments]
+        _mu_full = [_mf(m) for m in moments]
         _model_str = _json.dumps(_mu_full)
         _model_compressed = len(_zlib.compress(_model_str.encode(), level=9))
         _residual = max(0, _raw_compressed - _model_compressed)
@@ -539,5 +550,59 @@ def _compute_all(
             {"claim": "moment_sequence_exists", "certificate": sig},
             {"claim": "encoding_is_deterministic", "certificate": sig},
         ]
+
+    # ── GOE / GUE — zaman yönü ──────────────────────────────────────────────
+    # G=AᵀA reel-simetrik → doğal hali GOE (β=1, geçmiş, zaman-tersinir).
+    # GUE (β=2, gelecek, zaman-tersinmez) kompleks-Hermitian gerektirir;
+    # burada ⟨r⟩ ile sınıflandırılır, GUE referansına uzaklık "gelecek ekseni"dir.
+    try:
+        _eigs_sc = sorted([e for e in eigs if e > 1e-10])
+        _s = [
+            _eigs_sc[i + 1] - _eigs_sc[i]
+            for i in range(len(_eigs_sc) - 1)
+            if _eigs_sc[i + 1] - _eigs_sc[i] > 1e-10
+        ]
+        if len(_s) >= 3:
+            _r_vals = [
+                min(_s[i], _s[i + 1]) / max(_s[i], _s[i + 1])
+                for i in range(len(_s) - 1)
+            ]
+            _r_mean = sum(_r_vals) / len(_r_vals)
+        else:
+            _r_mean = float("nan")
+        _GOE_R, _GUE_R = 0.5307, 0.5996
+        if _r_mean != _r_mean:          # nan — not enough spacings
+            _beta, _univ = 1, "GOE"
+            _goe_dist = 0.0
+            _gue_dist = abs(_GUE_R - _GOE_R)
+        elif _r_mean > 0.57:
+            _beta, _univ = 2, "GUE"
+            _goe_dist = abs(_r_mean - _GOE_R)
+            _gue_dist = abs(_r_mean - _GUE_R)
+        elif _r_mean > 0.46:
+            _beta, _univ = 1, "GOE"
+            _goe_dist = abs(_r_mean - _GOE_R)
+            _gue_dist = abs(_r_mean - _GUE_R)
+        else:
+            _beta, _univ = 0, "Poisson"
+            _goe_dist = abs(_r_mean - _GOE_R)
+            _gue_dist = abs(_r_mean - _GUE_R)
+        state.update({
+            "r_ratio": None if _r_mean != _r_mean else _r_mean,
+            "beta": _beta,
+            "universality": _univ,
+            "goe_dist": _goe_dist,
+            "gue_dist": _gue_dist,
+            "time_direction": "future" if _univ == "GUE" else "past",
+        })
+    except Exception:
+        state.update({
+            "r_ratio": None,
+            "beta": 1,
+            "universality": "GOE",
+            "goe_dist": 0.0,
+            "gue_dist": abs(0.5996 - 0.5307),
+            "time_direction": "past",
+        })
 
     return state
