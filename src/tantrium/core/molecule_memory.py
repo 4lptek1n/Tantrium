@@ -82,7 +82,7 @@ def _eig_dist(a: list[float], b: list[float]) -> float:
     ) ** 2 for i in range(n)))
 
 
-def smiles_to_numbers(smiles: str) -> list[float]:
+def smiles_to_numbers(smiles: str, max_atoms: int = 100) -> list[float]:
     """
     SMILES → zengin sayı vektörü.
 
@@ -91,6 +91,8 @@ def smiles_to_numbers(smiles: str) -> list[float]:
       2. Adjacency matris özdeğerleri      (bağ yapısı)
       3. Normalize atomik sayılar          (atom kimliği)
       4. Moleküler sayım vektörü           (küresel özellikler)
+
+    max_atoms: bu sınırı aşan moleküller atlanır (büyük peptidler/polimerler).
     """
     try:
         from rdkit import Chem
@@ -98,6 +100,9 @@ def smiles_to_numbers(smiles: str) -> list[float]:
 
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
+            return []
+
+        if mol.GetNumAtoms() > max_atoms:
             return []
 
         n = mol.GetNumAtoms()

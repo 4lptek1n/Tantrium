@@ -53,7 +53,7 @@ W = 72  # satır genişliği
 
 SOURCES: dict[str, dict] = {
     "chembl": {
-        "url": "https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/chembl_35_chemreps.txt.gz",
+        "url": "https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/chembl_37_chemreps.txt.gz",
         "format": "chembl_tsv",
         "description": "ChEMBL ~2.4M biyoaktif bileşik (hedef + aktivite)",
         "priority": 1,
@@ -221,6 +221,7 @@ def _worker_fn(batch: list[tuple[str, dict]]) -> list[dict]:
     """
     Worker process: (smiles, metadata) batch → pre-hesaplanmış kayıtlar.
     Her kayıt: eigenvalues, moments_8, coord_91, smiles, metadata.
+    max_atoms=100 filtresi: büyük peptidler/polimerler atlanır.
     """
     import sys
     sys.path.insert(0, "src")
@@ -230,7 +231,7 @@ def _worker_fn(batch: list[tuple[str, dict]]) -> list[dict]:
     results = []
     for smiles, meta in batch:
         try:
-            numbers = smiles_to_numbers(smiles)
+            numbers = smiles_to_numbers(smiles, max_atoms=100)
             if not numbers:
                 continue
             ms = build_mini_space(numbers)
@@ -248,10 +249,42 @@ def _worker_fn(batch: list[tuple[str, dict]]) -> list[dict]:
 
 # ─── Ana işleme döngüsü ───────────────────────────────────────────────────────
 
+def _batch_generator(stream, batch_size: int, limit: int, resume_from: int):
+    """
+    Stream'den batch'ler üret.
+    Dönüş: (batch, total_seen_so_far) tuple'ları.
+    """
+    batch: list[tuple[str, dict]] = []
+    total_seen = 0
+    skipped_resume = 0
+
+    for smiles, meta in stream:
+        total_seen += 1
+
+        # Resume: atla
+        if total_seen <= resume_from:
+            skipped_resume += 1
+            if skipped_resume % 100_000 == 0:
+                print(f"  Atlıyor: {skipped_resume:,} / {resume_from:,}", end="\r", flush=True)
+            continue
+
+        batch.append((smiles, meta))
+
+        if len(batch) >= batch_size:
+            yield batch, total_seen
+            batch = []
+
+        if limit and (total_seen - resume_from) >= limit:
+            break
+
+    if batch:
+        yield batch, total_seen
+
+
 def process_source(
     source_name: str,
     path_or_url: str,
-    mem,  # ShardedMoleculeMemory
+    mem,
     n_workers: int = 4,
     batch_size: int = 500,
     limit: int = 0,
@@ -260,6 +293,7 @@ def process_source(
 ) -> dict:
     """
     Tek kaynaktan veri çek + işle + hafızaya yaz.
+    imap_unordered: N worker aynı anda çalışır, ana process sırasız sonuç alır.
     Dönüş: {"added": int, "skipped": int, "errors": int, "total_seen": int}
     """
     stream = get_stream(source_name, path_or_url)
@@ -270,17 +304,21 @@ def process_source(
     total_seen = 0
     t_start = time.time()
     t_last_log = t_start
+    t_last_commit = t_start
 
-    batch: list[tuple[str, dict]] = []
+    gen = _batch_generator(stream, batch_size, limit, resume_from)
 
     with mp.Pool(processes=n_workers) as pool:
-        def flush_batch(b: list) -> None:
-            nonlocal added, skipped, errors
-            if not b:
-                return
-            try:
-                results = pool.apply_async(_worker_fn, (b,)).get(timeout=120)
-                for r in results:
+        # imap_unordered: N batch aynı anda işlenir, sırasız sonuç alınır
+        for results, ts in pool.imap_unordered(
+            _worker_fn_with_ts,
+            ((batch, ts) for batch, ts in gen),
+            chunksize=1,
+        ):
+            total_seen = max(total_seen, ts)
+
+            for r in results:
+                try:
                     ok = mem.add_computed(
                         eigenvalues=r["eigenvalues"],
                         moments_8=r["moments_8"],
@@ -292,53 +330,35 @@ def process_source(
                         added += 1
                     else:
                         skipped += 1
-            except Exception as e:
-                errors += len(b)
+                except Exception:
+                    errors += 1
 
-        for smiles, meta in stream:
-            total_seen += 1
+            # Commit her 30 saniye
+            now = time.time()
+            if now - t_last_commit >= 30:
+                mem.batch_commit()
+                t_last_commit = now
 
-            # Resume: ilk N kaydı atla
-            if total_seen <= resume_from:
-                if total_seen % 100_000 == 0:
-                    print(f"  Atlıyor: {total_seen:,} / {resume_from:,}", end="\r")
-                continue
+            # Log her 10 saniye
+            if now - t_last_log >= 10:
+                elapsed = now - t_start
+                rate = (total_seen - resume_from) / max(elapsed, 1)
+                eta_s = 0
+                print(
+                    f"  [{source_name}] {total_seen:>10,} görüldü | "
+                    f"{added:>8,} eklendi | {skipped:>6,} dup | "
+                    f"{errors:>5,} hata | {rate:>7,.0f}/s",
+                    flush=True,
+                )
+                if progress_path:
+                    progress_path.write_text(json.dumps({
+                        "source": source_name,
+                        "total_seen": total_seen,
+                        "added": added,
+                    }))
+                t_last_log = now
 
-            batch.append((smiles, meta))
-
-            if len(batch) >= batch_size:
-                flush_batch(batch)
-                batch = []
-
-                # Commit her 10K ekleme
-                if added % 10_000 < batch_size:
-                    mem.batch_commit()
-
-                # İlerleme log
-                now = time.time()
-                if now - t_last_log >= 10:
-                    rate = (total_seen - resume_from) / (now - t_start)
-                    print(
-                        f"  [{source_name}] {total_seen:>12,} görüldü | "
-                        f"{added:>10,} eklendi | {skipped:>8,} duplikat | "
-                        f"{rate:>8,.0f}/s"
-                    )
-                    # Checkpoint kaydet
-                    if progress_path:
-                        progress_path.write_text(json.dumps({
-                            "source": source_name,
-                            "total_seen": total_seen,
-                            "added": added,
-                        }))
-                    t_last_log = now
-
-            if limit and (total_seen - resume_from) >= limit:
-                break
-
-        # Son batch
-        flush_batch(batch)
-        mem.batch_commit()
-
+    mem.batch_commit()
     elapsed = time.time() - t_start
     return {
         "added": added,
@@ -347,6 +367,12 @@ def process_source(
         "total_seen": total_seen,
         "elapsed_s": round(elapsed, 1),
     }
+
+
+def _worker_fn_with_ts(args: tuple) -> tuple[list[dict], int]:
+    """imap_unordered için wrapper — (batch, total_seen) alır, (results, total_seen) döndürür."""
+    batch, ts = args
+    return _worker_fn(batch), ts
 
 
 # ─── Checkpoint yönetimi ──────────────────────────────────────────────────────
