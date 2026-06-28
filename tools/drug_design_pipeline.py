@@ -31,46 +31,47 @@ W = 70
 OUT_DIR = "/tmp/tantrium_molecules"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# İlaç scaffold'ları — 32 çeşit: basit halkalar, biheteroaromati kler, onaylı ilaç çekirdekleri
+# Temel yapısal halkalar — şekil şablonu (ilaç kimliği değil, eigenvalue'lardan geliyor)
 # Atom tipi + topoloji + bağ tipi → 91-dim uzayda farklı noktalar
 _SCAFFOLDS = [
-    # ── Basit halkalar ─────────────────────────────────────────────────────────
-    ("benzene",          "c1ccccc1"),
-    ("piperidine",       "C1CCNCC1"),
-    ("morpholine",       "C1CCOCC1"),
-    ("piperazine",       "C1CNCCN1"),
-    ("pyrrolidine",      "C1CCNC1"),
-    ("tetrahydrofuran",  "C1CCOC1"),
-    # ── 5/6 heteroaromatik ──────────────────────────────────────────────────────
-    ("imidazole",        "c1cn[nH]c1"),
-    ("pyrimidine",       "c1ccncn1"),
-    ("pyridine",         "c1ccncc1"),
+    # ── Doymuş halkalar (alçak β, Poisson karakteri) ─────────────────────────
+    ("pyrrolidine",      "C1CCNC1"),        # 5'li N-halka
+    ("piperidine",       "C1CCNCC1"),       # 6'lı N-halka
+    ("piperazine",       "C1CNCCN1"),       # 6'lı NN-halka
+    ("morpholine",       "C1CNOCC1"),       # 6'lı NO-halka
+    ("tetrahydrofuran",  "C1CCOC1"),        # 5'li O-halka
+    ("oxetane",          "C1COC1"),         # 4'lü O-halka (küçük gerilim)
+    ("azetidine",        "C1CNC1"),         # 4'lü N-halka
+    ("azepane",          "C1CCNCCC1"),      # 7'li N-halka
+    # ── 5'li heteroaromatikler ────────────────────────────────────────────────
+    ("pyrrole",          "c1cc[nH]c1"),
+    ("furan",            "c1ccoc1"),
     ("thiophene",        "c1ccsc1"),
+    ("imidazole",        "c1cn[nH]c1"),
+    ("pyrazole",         "c1cc[nH]n1"),
     ("oxazole",          "c1cnoc1"),
+    ("thiazole",         "c1cnsc1"),
     ("triazole",         "c1cn[nH]n1"),
-    # ── Bisiküller ──────────────────────────────────────────────────────────────
+    ("tetrazole",        "c1nn[nH]n1"),
+    # ── 6'lı heteroaromatikler ────────────────────────────────────────────────
+    ("benzene",          "c1ccccc1"),
+    ("pyridine",         "c1ccncc1"),
+    ("pyrimidine",       "c1ccncn1"),
+    ("pyrazine",         "c1cnccn1"),
+    ("pyridazine",       "c1ccnnc1"),
+    ("triazine",         "c1ncncn1"),
+    # ── Bisiklik ─────────────────────────────────────────────────────────────
+    ("naphthalene",      "c1ccc2ccccc2c1"),
     ("indole",           "c1ccc2[nH]ccc2c1"),
     ("benzimidazole",    "c1ccc2[nH]cnc2c1"),
-    ("quinoline",        "c1ccc2ncccc2c1"),
-    ("quinazoline",      "c1cnc2ccccc2n1"),
-    ("quinoxaline",      "c1cnc2ccccc2n1"),     # N-N bisisiklik
     ("benzothiazole",    "c1ccc2scnc2c1"),
     ("benzoxazole",      "c1ccc2ocnc2c1"),
-    ("naphthalene",      "c1ccc2ccccc2c1"),
-    # ── Pürin / ksantin ─────────────────────────────────────────────────────────
-    ("adenine",          "Nc1ncnc2[nH]cnc12"),
+    ("quinoline",        "c1ccc2ncccc2c1"),
+    ("quinazoline",      "c1cnc2ccccc2n1"),
+    # ── Pürin sistemi (nükleotid çekirdeği) ──────────────────────────────────
     ("purine",           "c1ncc2[nH]cnc2n1"),
-    ("caffeine",         "Cn1cnc2c1c(=O)n(c(=O)n2C)C"),
+    ("adenine",          "Nc1ncnc2[nH]cnc12"),
     ("xanthine",         "O=c1[nH]c(=O)c2[nH]cnc2[nH]1"),
-    # ── Büyük ilaç çekirdekleri (atomca zengin, 3D çeşitlilik) ──────────────────
-    ("imatinib_core",    "Cc1ccc(cc1Nc2nccc(n2)c3cccnc3)NC(=O)c4ccc(cc4)CN5CCN(CC5)C"),
-    ("erlotinib_core",   "C#Cc1cccc(Nc2ncnc3cc(OCCO)c(OCC)cc23)c1"),
-    ("gefitinib_core",   "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN4CCOCC4"),
-    ("lapatinib_core",   "CS(=O)(=O)CCNCc1ccc(-c2ccc3ncnc(Nc4ccc(OCc5cccc(F)c5)c(Cl)c4)c3c2)o1"),
-    ("nilotinib_core",   "Cc1ccc(C(=O)Nc2ccc(CN3CCN(C)CC3)cc2Nc4nc5ccc(F)cc5s4)cc1C"),
-    ("osimertinib_core", "COc1cc2c(Nc3ccc(F)c(Cl)c3)ncnc2cc1NC(=O)C=C"),
-    ("palbociclib_core", "Cc1cnc2n(C)c(=O)cc2n1-c1ccc(N2CCNCC2)cc1"),
-    ("venetoclax_core",  "Cc1ccc(-n2cc(C(=O)NS(=O)(=O)c3ccc(NCC4CCOCC4)cc3)cn2)cc1"),
 ]
 
 
