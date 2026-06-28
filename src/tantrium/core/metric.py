@@ -263,38 +263,42 @@ def _safe_float(m) -> float:
 
 
 def universe_point(raw_input) -> list[float]:
-    """Girdinin birleşik evren uzayındaki koordinatı (71 boyut, kayıpsız).
+    """Girdinin birleşik evren uzayındaki koordinatı (90 boyut, kayıpsız).
 
     MİMARİ: G=AᵀA geçmiyor. Ham veri → MiniSpace → koordinat.
       giriş sayıları DOĞRUDAN özdeğer (sıkıştırma yok)
       momentler μₖ = Σλᵢᵏ/n  (veri uzunluğuna göre derinlik, maks 16)
       RH kriterleri bu momentlerden
+      pozitiflik kriterleri RH nesnesinden (explicit flag'ler)
       GOE/GUE bu özdeğerlerden (level spacing, tam çözünürlük)
       paradigma bu özdeğer + momentlerden
 
     Depolamak için: build_mini_space(x).compress(8) → 8 moment hatırası.
 
     Boyutlar:
-      [0:8]   8 spectral moment  (tanh-normalize)
-      [8:22]  14 RH kriterleri   (τ pivot/cross-ratio/κ/Λ/rank/grade)
-      [22:26] 4 GOE/GUE konum    (⟨r⟩, goe_dist, gue_dist, β/2)
-      [26:71] 45 paradigma imzası
+      [0:16]  16 spectral moment (tanh-normalize, veri uzunluğuna bağlı derinlik)
+      [16:30] 14 RH nicel        (τ pivot/cross-ratio/κ/Λ/rank/grade)
+      [30:37]  7 pozitiflik      (tau_all_nonneg, stieltjes_psd, pivots+, cr+, ff+,
+                                  hamburger_certified, stieltjes_certified) → 0.0/1.0
+      [37:41]  4 Li katsayısı    (tanh-normalize)
+      [41:45]  4 GOE/GUE konum   (⟨r⟩, goe_dist, gue_dist, β/2)
+      [45:90] 45 paradigma imzası
     """
     from tantrium.core.mini_space import build_mini_space
     return build_mini_space(raw_input).universe_coordinate()
 
 
 def universe_distance(a, b) -> float:
-    """İki girdi arası birleşik evren uzayı mesafesi (71-boyut, bölüm-ağırlıklı).
+    """İki girdi arası birleşik evren uzayı mesafesi (90-boyut, bölüm-ağırlıklı).
 
-    8 moment + 14 RH + 4 GOE/GUE + 45 paradigma — tek metrik, hiçbir şeye çökmez.
+    16 moment + 14 RH + 7 pozitiflik + 4 Li + 4 GOE/GUE + 45 paradigma.
     Her bölüm kendi boyutuna normalize edilir → eşit ağırlık katkısı.
     """
     import math as _m
     va = universe_point(a)
     vb = universe_point(b)
-    # Bölüm sınırları: [0,8) moment | [8,22) RH | [22,26) GOE/GUE | [26,71) paradigma
-    groups = [(0, 8), (8, 22), (22, 26), (26, 71)]
+    # [0,16) moment | [16,30) RH | [30,37) pozitiflik | [37,41) Li | [41,45) GOE/GUE | [45,90) paradigma
+    groups = [(0, 16), (16, 30), (30, 37), (37, 41), (41, 45), (45, 90)]
     total = 0.0
     for start, end in groups:
         k = min(end, len(va), len(vb)) - start

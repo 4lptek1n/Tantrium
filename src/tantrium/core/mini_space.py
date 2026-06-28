@@ -259,7 +259,18 @@ class MiniSpace:
         return out
 
     def universe_coordinate(self) -> list[float]:
-        """71-dim birleşik evren uzayı koordinatı — tam çözünürlükten."""
+        """90-dim birleşik evren uzayı koordinatı — tam çözünürlükten.
+
+        Grup 1 [0:16]   — 16 moment (tanh-normalize, veri uzunluğuna bağlı derinlik)
+        Grup 2 [16:30]  — 14 RH nicel: pivot×4, cross_ratio×3, kümülant×4, Λ, rank, grade
+        Grup 3 [30:37]  — 7 pozitiflik kriteri (0.0/1.0):
+                          tau_all_nonneg(=hankel_psd), stieltjes_psd, pivots_positive,
+                          cross_ratio_positive, first_five_positive,
+                          hamburger_certified, stieltjes_certified
+        Grup 4 [37:41]  — 4 Li katsayısı (tanh-normalize)
+        Grup 5 [41:45]  — 4 GOE/GUE zaman ekseni
+        Grup 6 [45:90]  — 45 paradigma imzası
+        """
         from tantrium.core.metric import paradigm_signature
 
         def _mf(m) -> float:
@@ -271,13 +282,14 @@ class MiniSpace:
                 except Exception:
                     return 0.0
 
-        # Bölüm 1: 8 moment (tanh-normalize)
-        mu_f = [_mf(m) for m in self.moments[:8]]
-        while len(mu_f) < 8:
+        # ── Grup 1: 16 moment (tanh-normalize) ──────────────────────────
+        # Tüm mevcut momentleri kullan (8'de kesme), 16'ya kadar, eksik = 0
+        mu_f = [_mf(m) for m in self.moments[:16]]
+        while len(mu_f) < 16:
             mu_f.append(0.0)
-        mu_vec = [math.tanh(mu_f[i] / 10.0) for i in range(8)]
+        mu_vec = [math.tanh(mu_f[i] / 10.0) for i in range(16)]
 
-        # Bölüm 2: 14 RH kriterleri
+        # ── Grup 2: 14 RH nicel ─────────────────────────────────────────
         rh = self.rh
         piv = [math.tanh(_mf(p)) for p in rh.pivots[:4]]
         piv += [0.0] * (4 - len(piv))
@@ -285,16 +297,41 @@ class MiniSpace:
         cr += [0.0] * (3 - len(cr))
         ka = [math.tanh(_mf(k)) for k in rh.cumulants[:4]]
         ka += [0.0] * (4 - len(ka))
-        rh_vec = piv + cr + ka + [math.tanh(_mf(rh.lambda_dbn)), rh.rank / 8.0, rh.grade()]
+        rh_vec = piv + cr + ka + [
+            math.tanh(_mf(rh.lambda_dbn)),
+            rh.rank / 16.0,
+            rh.grade(),
+        ]
 
-        # Bölüm 3: 4 GOE/GUE zaman ekseni
+        # ── Grup 3: 7 pozitiflik kriteri (0.0/1.0) ───────────────────────
+        # Sıra: tau_all_nonneg(hankel_psd) | stieltjes_psd | pivots_positive |
+        #       cross_ratio_positive | first_five_positive |
+        #       hamburger_certified | stieltjes_certified
+        pos_vec = [
+            1.0 if rh.hankel_psd else 0.0,
+            1.0 if rh.stieltjes_psd else 0.0,
+            1.0 if rh.pivots_positive else 0.0,
+            1.0 if rh.cross_ratio_positive else 0.0,
+            1.0 if rh.first_five_positive else 0.0,
+            1.0 if rh.hamburger_certified else 0.0,
+            1.0 if rh.stieltjes_certified else 0.0,
+        ]
+
+        # ── Grup 4: 4 Li katsayısı (tanh-normalize) ─────────────────────
+        li_raw = self._structure.get("li_coefficients", [])
+        li_f = [_mf(x) for x in li_raw[:4]]
+        while len(li_f) < 4:
+            li_f.append(0.0)
+        li_vec = [math.tanh(x / 10.0) for x in li_f]
+
+        # ── Grup 5: 4 GOE/GUE zaman ekseni ──────────────────────────────
         r_f = float(self.r_ratio) if self.r_ratio is not None else 0.5307
         goe_gue_vec = [r_f, self.goe_dist, self.gue_dist, self.beta / 2.0]
 
-        # Bölüm 4: 45 paradigma imzası (özdeğerlerden doğrudan)
+        # ── Grup 6: 45 paradigma imzası ──────────────────────────────────
         paradigm_vec = paradigm_signature(self._structure)
 
-        return mu_vec + rh_vec + goe_gue_vec + paradigm_vec  # 71 dim
+        return mu_vec + rh_vec + pos_vec + li_vec + goe_gue_vec + paradigm_vec  # 90 dim
 
     def summary(self) -> str:
         return (
