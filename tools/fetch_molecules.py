@@ -220,27 +220,25 @@ def get_stream(source_name: str, path_or_url: str) -> Iterator[tuple[str, dict]]
 def _worker_fn(batch: list[tuple[str, dict]]) -> list[dict]:
     """
     Worker process: (smiles, metadata) batch → pre-hesaplanmış kayıtlar.
-    Her kayıt: eigenvalues, moments_8, coord_91, smiles, metadata.
+    Hızlı yol: _smiles_to_fast_record (build_mini_space YOK, ~0.5ms/mol).
     max_atoms=100 filtresi: büyük peptidler/polimerler atlanır.
     """
     import sys
     sys.path.insert(0, "src")
-    from tantrium.core.molecule_memory import smiles_to_numbers
-    from tantrium.core.mini_space import build_mini_space
+    from tantrium.core.molecule_memory import _smiles_to_fast_record
 
     results = []
     for smiles, meta in batch:
         try:
-            numbers = smiles_to_numbers(smiles, max_atoms=100)
-            if not numbers:
+            rec = _smiles_to_fast_record(smiles, max_atoms=100, metadata=meta)
+            if rec is None:
                 continue
-            ms = build_mini_space(numbers)
             results.append({
-                "smiles": smiles,
-                "eigenvalues": ms.eigenvalues,
-                "moments_8": [float(m) for m in ms.compress(8)],
-                "coord_91": ms.universe_coordinate(),
-                "metadata": meta,
+                "smiles": rec.smiles,
+                "eigenvalues": rec.eigenvalues,
+                "moments_8": rec.moments_8,
+                "coord_91": rec.coord_91,
+                "metadata": rec.metadata,
             })
         except Exception:
             pass
