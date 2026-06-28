@@ -12,6 +12,7 @@ from typing import Any
 
 from tantrium.core.paradigms import CertifiableObject
 
+from ._compute import _compute_all
 from ._linalg import _gram, _sequence_to_hankel_matrix, _spectral_moments
 from ._text import (
     _dict_to_adjacency_matrix,
@@ -108,15 +109,12 @@ class UniversalEncoder:
         G: list[list[Fraction]],
         moments: list[Fraction],
     ) -> dict:
-        """Auto-extract structural metadata for all 22 paradigms.
+        """Tüm 23 paradigma ölçümlerini tek geçişte hesapla.
 
-        Delegates to the L0–L7 pipeline in tantrium.core.pipeline.
-        Each stage does exactly its own mathematical transformation and
-        consumes the previous stage's output. Encoder only provides raw
-        matrix A and moments — the pipeline does the rest.
+        _compute_all: eigenvalue'lar bir kez hesaplanır, geri kalan her şey
+        doğrudan G'den türetilir — ayrı pipeline aşamaları ve state zinciri yok.
         """
-        from tantrium.core.pipeline import run_pipeline
-        state = run_pipeline(input, A, G, moments)
+        state = _compute_all(input, A, G, moments)
         try:
             from tantrium.core.quantum_moments import FreeCumulants
             state["free_cumulants"] = FreeCumulants.from_moments(
@@ -124,10 +122,6 @@ class UniversalEncoder:
             ).k
         except Exception:
             pass
-        # RH sertifika bundle: tce-collapse'in TÜM moment-RH matematiği tek bütünde
-        # (τ/pivot/cross-ratio/Stieltjes/kümülant/Λ/rank + Hausdorff + Turán + yarı-daire
-        # + mühür). 8 kanonik moment bozulmaz; 16-derinlik genişletilmiş momentten. Yola
-        # uygun: numeric→power, matris→spektral. heavy=False (free_entropy hot-path'te atlanır).
         try:
             from tantrium.core.rh_certificate import certify_rh
             ext = _try_power_moments(input, 16)
@@ -135,7 +129,7 @@ class UniversalEncoder:
                 ext = _spectral_moments(A, 16)
             cert = certify_rh(ext, name=str(getattr(self, "_last_name", "rh")), heavy=False)
             state["rh"] = cert.as_dict()
-            state["rh_criteria"] = cert.criteria.as_dict()  # geriye uyum
+            state["rh_criteria"] = cert.criteria.as_dict()
         except Exception:
             pass
         return state
