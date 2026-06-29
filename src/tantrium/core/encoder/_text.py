@@ -343,60 +343,86 @@ def _try_power_moments(input: Any, num_moments: int) -> "list[Fraction] | None":
 
 # ─── SMILES Morgan fingerprint encoding ─────────────────────────────────────
 
-def _smiles_to_graph_moments(smiles: str, num_moments: int = 8) -> list[Fraction] | None:
-    """SMILES → atom-bağ adjacency matrisi → graf spektrumu → Hausdorff momentler.
-
-    Molekül bir graftur — bunu DOĞRUDAN encode ediyoruz:
-      A[i][j] = bağ derecesi (single=1, double=2, triple=3, aromatic=1.5)
-      A[i][i] = atom elektronegatifliği (C=1.0, N=1.3, O=1.6, F=2.0, ...)
-      G = A^T * A → her zaman PSD, eigenvalues = grafın spektral izleri
-      Normalized eigenvalues ∈ [0,1] → geçerli Hausdorff moment dizisi
-
-    HARF benzerliği değil, MOLEKÜLER YAPI topolojisi:
-      - Farklı bağ yapısı → farklı graf spektrumu → farklı momentler
-      - Benzer topoloji → benzer spektrum → transport sertifikası
-    """
-    try:
-        import numpy as np
-        from rdkit import Chem
-
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return None
-        n = mol.GetNumAtoms()
-        if n < 2:
-            return None
-
-        BOND_ORDER = {
-            Chem.rdchem.BondType.SINGLE:   1.0,
-            Chem.rdchem.BondType.DOUBLE:   2.0,
-            Chem.rdchem.BondType.TRIPLE:   3.0,
-            Chem.rdchem.BondType.AROMATIC: 1.5,
-        }
-        ATOM_EN = {6: 1.0, 7: 1.3, 8: 1.6, 9: 2.0,
+_SMILES_BOND_ORDER_KEYS = ("SINGLE", "DOUBLE", "TRIPLE", "AROMATIC")
+_SMILES_BOND_ORDER_VALS = (1.0, 2.0, 3.0, 1.5)
+# Atom elektronegatifliği (köşegen): C=1.0, N=1.3, O=1.6, F=2.0, ...
+_SMILES_ATOM_EN = {6: 1.0, 7: 1.3, 8: 1.6, 9: 2.0,
                    16: 1.1, 17: 1.4, 35: 1.3, 15: 1.1, 53: 1.2}
 
-        A = np.zeros((n, n))
-        for bond in mol.GetBonds():
-            i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-            w = BOND_ORDER.get(bond.GetBondType(), 1.0)
-            A[i, j] = w
-            A[j, i] = w
-        for i in range(n):
-            A[i, i] = ATOM_EN.get(mol.GetAtomWithIdx(i).GetAtomicNum(), 1.0)
 
-        G = A.T @ A
-        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
-        max_eig = eigs.max() or 1.0
-        atoms = sorted(eigs / max_eig)
+def _smiles_weighted_gram(smiles: str, max_atoms: int | None = None):
+    """SMILES → ağırlıklı adjacency A → G = AᵀA (TEK operatör, daima PSD).
 
-        moments: list[Fraction] = [Fraction(1)]
-        for k in range(1, num_moments):
-            mk = sum(d ** k for d in atoms) / len(atoms)
-            moments.append(Fraction(mk).limit_denominator(10 ** 9))
-        return moments
-    except Exception:
+    Molekülün spektral kaynağı — tek-cins ilkesi: tek iyi-tanımlı operatör.
+      A[i][j] = bağ derecesi (single=1, double=2, triple=3, aromatic=1.5)
+      A[i][i] = atom elektronegatifliği
+      G = AᵀA → her zaman PSD (kurucu aksiyom korunur)
+
+    Dönüş: G (np.ndarray) ya da geçersiz / n<2 / max_atoms aşımında None.
+    RDKit yoksa sessiz None DEĞİL — RuntimeError (uzayın sessizce çökmesini önler;
+    çağıran dürüst hata görür). Bu, `_smiles_to_graph_moments` ve
+    `_smiles_full_eigenvalues`'in paylaştığı tek matris-inşa birimidir.
+    """
+    try:
+        from rdkit import Chem
+    except ImportError as e:  # pragma: no cover — RDKit'siz ortam
+        raise RuntimeError(
+            "RDKit gerekli: molekül G=AᵀA spektrumu için 'pip install tantrium[chem]'"
+        ) from e
+    import numpy as np
+
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
         return None
+    n = mol.GetNumAtoms()
+    if n < 2 or (max_atoms is not None and n > max_atoms):
+        return None
+
+    bond_order = {getattr(Chem.rdchem.BondType, k): v
+                  for k, v in zip(_SMILES_BOND_ORDER_KEYS, _SMILES_BOND_ORDER_VALS)}
+    A = np.zeros((n, n))
+    for bond in mol.GetBonds():
+        i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+        w = bond_order.get(bond.GetBondType(), 1.0)
+        A[i, j] = w
+        A[j, i] = w
+    for i in range(n):
+        A[i, i] = _SMILES_ATOM_EN.get(mol.GetAtomWithIdx(i).GetAtomicNum(), 1.0)
+    return A.T @ A
+
+
+def _smiles_normalized_spectrum(smiles: str, max_atoms: int | None = None) -> list[float] | None:
+    """G=AᵀA → [0,1]'e normalize edilmiş azalan özdeğer spektrumu.
+
+    Dönüş: list[float] (azalan) ya da geçersiz SMILES için None.
+    RDKit yoksa RuntimeError (bkz. `_smiles_weighted_gram`)."""
+    import numpy as np
+
+    G = _smiles_weighted_gram(smiles, max_atoms=max_atoms)
+    if G is None:
+        return None
+    eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
+    max_eig = eigs.max() or 1.0
+    return sorted((eigs / max_eig).tolist(), reverse=True)
+
+
+def _smiles_to_graph_moments(smiles: str, num_moments: int = 8) -> list[Fraction] | None:
+    """SMILES → G=AᵀA graf spektrumu → Hausdorff momentler (HARF değil, YAPI topolojisi).
+
+    Tek operatör spektrumundan moment dizisi. RDKit yoksa graceful None
+    (encoder metin-yoluna düşer)."""
+    try:
+        atoms = _smiles_normalized_spectrum(smiles)
+    except RuntimeError:  # pragma: no cover — encoder fallback için graceful
+        return None
+    if atoms is None:
+        return None
+    n = len(atoms)
+    moments: list[Fraction] = [Fraction(1)]
+    for k in range(1, num_moments):
+        mk = sum(d ** k for d in atoms) / n
+        moments.append(Fraction(mk).limit_denominator(10 ** 9))
+    return moments
 
 
 # Backward-compat alias
@@ -411,45 +437,14 @@ _CODE_MARKERS = ("def ", "return", "import ", "class ", "lambda ", "for ", "whil
 
 
 def _smiles_full_eigenvalues(smiles: str) -> list[float] | None:
-    """Full n×n molecular adjacency+diagonal eigenvalues, normalized to [0,1].
+    """Full n×n molecular G=AᵀA eigenvalues, normalized to [0,1], descending.
 
     Returns the actual graph spectrum — aspirin (27 atoms) and salicylic acid
     (15 atoms) produce genuinely different cell lists for dyadic transport.
-    """
+    RDKit yoksa graceful None (encoder fallback'i korunur)."""
     try:
-        import numpy as np
-        from rdkit import Chem
-
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return None
-        n = mol.GetNumAtoms()
-        if n < 2:
-            return None
-
-        BOND_ORDER = {
-            Chem.rdchem.BondType.SINGLE:   1.0,
-            Chem.rdchem.BondType.DOUBLE:   2.0,
-            Chem.rdchem.BondType.TRIPLE:   3.0,
-            Chem.rdchem.BondType.AROMATIC: 1.5,
-        }
-        ATOM_EN = {6: 1.0, 7: 1.3, 8: 1.6, 9: 2.0,
-                   16: 1.1, 17: 1.4, 35: 1.3, 15: 1.1, 53: 1.2}
-
-        A = np.zeros((n, n))
-        for bond in mol.GetBonds():
-            i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-            w = BOND_ORDER.get(bond.GetBondType(), 1.0)
-            A[i, j] = w
-            A[j, i] = w
-        for i in range(n):
-            A[i, i] = ATOM_EN.get(mol.GetAtomWithIdx(i).GetAtomicNum(), 1.0)
-
-        G = A.T @ A
-        eigs = np.maximum(np.linalg.eigvalsh(G), 0.0)
-        max_eig = eigs.max() or 1.0
-        return sorted((eigs / max_eig).tolist(), reverse=True)
-    except Exception:
+        return _smiles_normalized_spectrum(smiles)
+    except RuntimeError:  # pragma: no cover — encoder fallback için graceful
         return None
 
 

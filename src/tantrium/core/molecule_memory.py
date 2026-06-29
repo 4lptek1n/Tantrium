@@ -5,9 +5,10 @@ LLM embedding değil. Token yok. Öğrenme yok.
 
 Tek makine — dört katman, bir bütün:
 
-  KATMAN 0 — GİRİŞ
-    SMILES / sayılar → ağırlıklı Laplacian + adjacency eigs + atom vec + sayım
+  KATMAN 0 — GİRİŞ (tek-cins: TEK operatör spektrumu)
+    SMILES → ağırlıklı adjacency G=AᵀA → normalize özdeğer spektrumu (tek operatör)
     → build_mini_space → eigenvalues + 91-dim koordinat + 8-moment sıkıştırma
+    → fit_genome → var-eden-yasa + σ (HAFIZA = yasa, cansız snapshot değil)
 
   KATMAN 1 — DEPOLAMA
     SQLite: molecules (tam kayıt) + eig_index (e0-e7, B-tree, e0 indexed)
@@ -35,10 +36,8 @@ import math
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import numpy as np
-
 
 # ─── Sabitler ────────────────────────────────────────────────────────────────
 
@@ -51,13 +50,19 @@ EIG_MIN_CANDIDATES = 500  # Pre-filter sonucu en az bu kadar kandidat bırak
 
 @dataclass
 class MoleculeRecord:
-    """Tek bir molekülün hafıza kaydı."""
+    """Tek bir molekülün hafıza kaydı.
+
+    KAYNAK GERÇEK = eigenvalues + law + sigma (genotip; KATMAN 5 yasa-sakla).
+    coord_91 / moments_8 = bunlardan TÜRETİLEN, açıkça-cache (kanonik değil; hot
+    k-NN için yazarken üretilir, droppable)."""
     mol_id: str                    # SHA-256 özeti (eigenvalue'lardan)
     smiles: str                    # SMILES (varsa, yoksa "")
-    eigenvalues: list[float]       # ham özdeğerler (indeks + pre-filter)
-    moments_8: list[float]         # 8-moment sıkıştırma (hafıza imzası)
-    coord_91: list[float]          # 91-dim koordinat (mesafe hesabı)
+    eigenvalues: list[float]       # ham özdeğerler — kaynak tohum (indeks + pre-filter)
+    moments_8: list[float]         # 8-moment cache (eigenvalues'tan türev)
+    coord_91: list[float]          # 91-dim koordinat cache (eigenvalues'tan türev)
     metadata: dict = field(default_factory=dict)
+    law: dict = field(default_factory=dict)   # var-eden-yasa (GenomeRecord.as_dict)
+    sigma: float = 0.0             # yasalılık/residual — birinci sınıf ölçü
 
 
 @dataclass
@@ -66,6 +71,7 @@ class QueryResult:
     record: MoleculeRecord
     distance: float                # Öklid mesafesi (91-dim koordinat uzayında)
     eigenvalue_dist: float         # Öklid mesafesi (eigenvalue uzayında)
+    sigma: float = 0.0             # kaydın yasalılık ölçüsü (lawfulness ile sıralama/filtre)
 
 
 # ─── Yardımcı ─────────────────────────────────────────────────────────────────
@@ -83,71 +89,24 @@ def _eig_dist(a: list[float], b: list[float]) -> float:
 
 
 def smiles_to_numbers(smiles: str, max_atoms: int = 100) -> list[float]:
-    """
-    SMILES → zengin sayı vektörü.
+    """SMILES → TEK operatör G=AᵀA spektrumu (normalize özdeğerler, azalan).
 
-    Üç bileşen:
-      1. Ağırlıklı Laplacian özdeğerleri  (topoloji + atom tipi)
-      2. Adjacency matris özdeğerleri      (bağ yapısı)
-      3. Normalize atomik sayılar          (atom kimliği)
-      4. Moleküler sayım vektörü           (küresel özellikler)
+    KATMAN 0 — tek-cins ilkesi: molekül = ağırlıklı adjacency'nin (bağ-derecesi
+    off-diagonal + elektronegatiflik köşegen) G=AᵀA spektrumu. Tek iyi-tanımlı
+    operatör; kurucu aksiyom korunur, daima PSD.
 
-    max_atoms: bu sınırı aşan moleküller atlanır (büyük peptidler/polimerler).
-    """
-    try:
-        from rdkit import Chem
-        from rdkit.Chem import rdMolDescriptors
+    Eski yol (lap_eigs + adj_eigs + atom_vec + descriptor counts yapıştırması) bir
+    KATEGORİ HATASIYDI: iki operatörün spektrumu + atom kimliği + RDKit descriptor'ları
+    tek "spektrum" sanılıp üstünde spektrum-matematiği (moment, GOE/GUE, RH) koşturuluyordu.
+    Kaldırıldı — artık tek operatörün gerçek spektrumu.
 
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return []
+    max_atoms: bu sınırı aşan moleküller atlanır (→ []).
+    Geçersiz SMILES → []. RDKit yoksa RuntimeError yükselir (sessiz [] DEĞİL —
+    molekül-uzayının sessizce çökmesini önler; çağıran dürüst hata görür)."""
+    from tantrium.core.encoder._text import _smiles_normalized_spectrum
 
-        if mol.GetNumAtoms() > max_atoms:
-            return []
-
-        n = mol.GetNumAtoms()
-        atom_nums = [a.GetAtomicNum() for a in mol.GetAtoms()]
-        max_z = max(atom_nums) if atom_nums else 1
-
-        L = np.zeros((n, n))
-        A = np.zeros((n, n))
-        for b in mol.GetBonds():
-            i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
-            w = b.GetBondTypeAsDouble()
-            L[i, j] = L[j, i] = -w
-            A[i, j] = A[j, i] = w
-        for i in range(n):
-            L[i, i] = -L[i].sum() - L[i, i]
-            L[i, i] += atom_nums[i] / (max_z * n + 1e-9)
-
-        lap_eigs = sorted(
-            [float(e) for e in np.linalg.eigvalsh(L) if abs(e) > 1e-10],
-            reverse=True
-        )
-        adj_eigs = sorted(
-            [abs(float(e)) for e in np.linalg.eigvalsh(A) if abs(e) > 1e-10],
-            reverse=True
-        )
-        atom_vec = sorted([z / 100.0 for z in atom_nums], reverse=True)
-
-        n_arom  = sum(1 for a in mol.GetAtoms() if a.GetIsAromatic())
-        n_N     = atom_nums.count(7)
-        n_O     = atom_nums.count(8)
-        n_S     = atom_nums.count(16)
-        n_hal   = sum(1 for z in atom_nums if z in (9, 17, 35, 53))
-        n_rings = rdMolDescriptors.CalcNumRings(mol)
-        n_hbd   = rdMolDescriptors.CalcNumHBD(mol)
-        n_hba   = rdMolDescriptors.CalcNumHBA(mol)
-        n_rot   = rdMolDescriptors.CalcNumRotatableBonds(mol)
-
-        counts = [
-            n / 50.0, n_arom / max(n, 1), n_N / max(n, 1),
-            n_O / max(n, 1), n_S / max(n, 1), n_hal / max(n, 1),
-            n_rings / 10.0, n_hbd / 10.0, n_hba / 10.0, n_rot / 20.0,
-        ]
-        return lap_eigs + adj_eigs + atom_vec + counts
-    except Exception:
-        return []
+    spectrum = _smiles_normalized_spectrum(smiles, max_atoms=max_atoms)
+    return spectrum if spectrum is not None else []
 
 
 # ─── MoleculeMemory ───────────────────────────────────────────────────────────
@@ -189,6 +148,8 @@ class MoleculeMemory:
     # ── Başlangıç ─────────────────────────────────────────────────────────────
 
     def _init_db(self) -> None:
+        # KAYNAK GERÇEK = eigenvalues + law + sigma (genotip). coord_91/moments_8
+        # = türetilmiş cache kolonları (kanonik değil; hot k-NN için).
         self._conn.execute("""
             CREATE TABLE IF NOT EXISTS molecules (
                 mol_id      TEXT PRIMARY KEY,
@@ -196,9 +157,18 @@ class MoleculeMemory:
                 eigenvalues TEXT NOT NULL,
                 moments_8   TEXT NOT NULL,
                 coord_91    TEXT NOT NULL,
-                metadata    TEXT NOT NULL DEFAULT '{}'
+                metadata    TEXT NOT NULL DEFAULT '{}',
+                law         TEXT NOT NULL DEFAULT '{}',
+                sigma       REAL NOT NULL DEFAULT 0.0
             )
         """)
+        # Eski şemalı stray DB için guarded migration (checked-in DB yok → genelde no-op)
+        for col, decl in (("law", "TEXT NOT NULL DEFAULT '{}'"),
+                          ("sigma", "REAL NOT NULL DEFAULT 0.0")):
+            try:
+                self._conn.execute(f"ALTER TABLE molecules ADD COLUMN {col} {decl}")
+            except sqlite3.OperationalError:
+                pass  # kolon zaten var
         self._conn.execute("""
             CREATE TABLE IF NOT EXISTS eig_index (
                 mol_id  TEXT PRIMARY KEY,
@@ -216,7 +186,7 @@ class MoleculeMemory:
         """Disk → RAM: kayıtları yükle, matris dirty işaretle."""
         self._records = []
         cur = self._conn.execute(
-            "SELECT mol_id, smiles, eigenvalues, moments_8, coord_91, metadata "
+            "SELECT mol_id, smiles, eigenvalues, moments_8, coord_91, metadata, law, sigma "
             "FROM molecules"
         )
         for row in cur:
@@ -227,6 +197,8 @@ class MoleculeMemory:
                 moments_8=json.loads(row[3]),
                 coord_91=json.loads(row[4]),
                 metadata=json.loads(row[5]),
+                law=json.loads(row[6]) if row[6] else {},
+                sigma=float(row[7]) if row[7] is not None else 0.0,
             ))
         self._matrix_dirty = True
 
@@ -249,12 +221,14 @@ class MoleculeMemory:
     def _compute_record(self, numbers: list[float], smiles: str = "",
                         metadata: dict | None = None) -> MoleculeRecord | None:
         """Sayılar → MoleculeRecord."""
+        from tantrium.core.genome import fit_genome
         from tantrium.core.mini_space import build_mini_space
         try:
             ms = build_mini_space(numbers)
             eigenvalues = ms.eigenvalues
             moments_8 = [float(m) for m in ms.compress(8)]
-            coord_91 = ms.universe_coordinate()
+            coord_91 = ms.universe_coordinate()          # türetilmiş cache
+            genome = fit_genome(eigenvalues)              # KATMAN 5: var-eden-yasa + σ
             mol_id = _mol_id(eigenvalues)
             return MoleculeRecord(
                 mol_id=mol_id,
@@ -263,6 +237,8 @@ class MoleculeMemory:
                 moments_8=moments_8,
                 coord_91=coord_91,
                 metadata=metadata or {},
+                law=genome.as_dict(),
+                sigma=genome.sigma,
             )
         except Exception:
             return None
@@ -277,8 +253,8 @@ class MoleculeMemory:
         try:
             cur = self._conn.execute(
                 "INSERT OR IGNORE INTO molecules "
-                "(mol_id, smiles, eigenvalues, moments_8, coord_91, metadata) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
+                "(mol_id, smiles, eigenvalues, moments_8, coord_91, metadata, law, sigma) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     rec.mol_id,
                     rec.smiles,
@@ -286,6 +262,8 @@ class MoleculeMemory:
                     json.dumps([round(m, 8) for m in rec.moments_8]),
                     json.dumps([round(c, 8) for c in rec.coord_91]),
                     json.dumps(rec.metadata),
+                    json.dumps(rec.law),
+                    float(rec.sigma),
                 )
             )
             if cur.rowcount == 0:
@@ -318,6 +296,8 @@ class MoleculeMemory:
                 json.dumps([round(m, 8) for m in rec.moments_8]),
                 json.dumps([round(c, 8) for c in rec.coord_91]),
                 json.dumps(rec.metadata),
+                json.dumps(rec.law),
+                float(rec.sigma),
             ))
             e8 = (rec.eigenvalues + [0.0] * 8)[:8]
             eig_rows.append((rec.mol_id, *e8))
@@ -325,8 +305,8 @@ class MoleculeMemory:
         try:
             cur = self._conn.executemany(
                 "INSERT OR IGNORE INTO molecules "
-                "(mol_id, smiles, eigenvalues, moments_8, coord_91, metadata) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
+                "(mol_id, smiles, eigenvalues, moments_8, coord_91, metadata, law, sigma) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 mol_rows,
             )
             added = cur.rowcount
@@ -458,7 +438,7 @@ class MoleculeMemory:
             rec = self._records[idx]
             d91 = float(dists_91[idx])
             deig = _eig_dist(query_eigs, rec.eigenvalues)
-            results.append(QueryResult(record=rec, distance=d91, eigenvalue_dist=deig))
+            results.append(QueryResult(record=rec, distance=d91, eigenvalue_dist=deig, sigma=rec.sigma))
         return results
 
     def _query_large_scale(self, query_vec: np.ndarray,
@@ -538,7 +518,7 @@ class MoleculeMemory:
             rec = candidates[idx]
             d91 = float(dists_91[idx])
             deig = _eig_dist(query_eigs, rec.eigenvalues)
-            results.append(QueryResult(record=rec, distance=d91, eigenvalue_dist=deig))
+            results.append(QueryResult(record=rec, distance=d91, eigenvalue_dist=deig, sigma=rec.sigma))
         return results
 
     def query_numbers(self, numbers: list[float], k: int = 10) -> list[QueryResult]:
@@ -575,6 +555,10 @@ class MoleculeMemory:
     def stats(self) -> dict:
         cur = self._conn.execute("SELECT COUNT(*) FROM molecules")
         n_db = cur.fetchone()[0]
+        # σ = yasalılık ölçüsü (düşük = yasalı/deterministik, yüksek = yapısız)
+        srow = self._conn.execute(
+            "SELECT AVG(sigma), MIN(sigma), MAX(sigma) FROM molecules"
+        ).fetchone()
         return {
             "n_db": n_db,
             "n_memory": len(self._records),
@@ -582,6 +566,9 @@ class MoleculeMemory:
             "db_path": str(self.db_path),
             "db_size_mb": round(self.db_path.stat().st_size / 1e6, 3)
             if self.db_path.exists() else 0,
+            "sigma_mean": round(srow[0], 6) if srow and srow[0] is not None else None,
+            "sigma_min": round(srow[1], 6) if srow and srow[1] is not None else None,
+            "sigma_max": round(srow[2], 6) if srow and srow[2] is not None else None,
         }
 
     def close(self) -> None:
@@ -599,6 +586,7 @@ def _smiles_to_fast_record(smiles: str, max_atoms: int = 100,
       16 moment + 14 RH + 7 flag + 4 Li + 4 GOE/GUE + 46 paradigma
     ~2ms/mol (Fraction yoluna göre 900× daha hızlı).
     """
+    from tantrium.core.genome import fit_genome
     from tantrium.core.mini_space import compute_coord_91
     nums = smiles_to_numbers(smiles, max_atoms=max_atoms)
     if not nums:
@@ -607,6 +595,7 @@ def _smiles_to_fast_record(smiles: str, max_atoms: int = 100,
         coord, eigs, moments = compute_coord_91(nums)
     except Exception:
         return None
+    genome = fit_genome(nums)               # KATMAN 5: yasayı TAM spektrumdan fit et
     mol_id = _mol_id(eigs)
     return MoleculeRecord(
         mol_id=mol_id,
@@ -615,6 +604,8 @@ def _smiles_to_fast_record(smiles: str, max_atoms: int = 100,
         moments_8=moments,
         coord_91=coord,
         metadata=metadata or {},
+        law=genome.as_dict(),
+        sigma=genome.sigma,
     )
 
 
@@ -680,7 +671,8 @@ class ShardedMoleculeMemory:
 
     def add_computed(self, eigenvalues: list[float], moments_8: list[float],
                      coord_91: list[float], smiles: str = "",
-                     metadata: dict | None = None) -> bool:
+                     metadata: dict | None = None,
+                     law: dict | None = None, sigma: float = 0.0) -> bool:
         """Worker çıktısından doğrudan kayıt oluştur ve ekle."""
         mol_id = _mol_id(eigenvalues)
         rec = MoleculeRecord(
@@ -690,6 +682,8 @@ class ShardedMoleculeMemory:
             moments_8=moments_8,
             coord_91=coord_91,
             metadata=metadata or {},
+            law=law or {},
+            sigma=sigma,
         )
         return self.add_record(rec)
 
@@ -709,6 +703,8 @@ class ShardedMoleculeMemory:
                 moments_8=r.get("moments_8", []),
                 coord_91=r.get("coord_91", []),
                 metadata=r.get("metadata", {}),
+                law=r.get("law", {}),
+                sigma=r.get("sigma", 0.0),
             )
             e0 = eigs[0] if eigs else 0.0
             sid = _shard_for_e0(e0)
