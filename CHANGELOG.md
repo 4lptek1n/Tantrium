@@ -3,6 +3,17 @@
 Bu dosya, `claude/asi-pure-math` branch'inin (durumsuz saf-matematik makinesi)
 önemli değişikliklerini kaydeder.
 
+## [Unreleased] — CI / CLI / CD
+
+- **CLI** (`src/tantrium/cli.py`): `tantrium` konsol komutu — SDK'nın saf-matematik
+  yüzeyini terminalden açar (`fingerprint`, `compare`, `transport`, `discover-law`,
+  `reconstruct`, `certify`, `rh`, `rh-distance`, `ask`, `status`). Her komut `--json`
+  ile makine-okunur çıktı verir. Entry-point: `[project.scripts] tantrium`.
+- `__version__` — paket metadata'sından okunur (`importlib.metadata`), `tantrium --version`.
+- **CI**: `smoke` job'ına CLI smoke testi eklendi; `tests/test_cli.py` (6 test).
+- **CD** (`.github/workflows/release.yml`): `v*` etiketinde build (sdist+wheel) →
+  twine check → wheel üzerinde CLI smoke → GitHub Release → PyPI (Trusted Publishing/OIDC).
+
 ## [0.5.0] — RH-GENESIS: pozitifliğin sonlu-form var-oluşu (tek bütün)
 
 Tek organ, beş yüz, tek mühür — RH pozitifliğinin kaynağını sonlu formda var eder. Parça

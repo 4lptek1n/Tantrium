@@ -47,6 +47,12 @@ jobs:
         run: |
           python -c "import tantrium; ai = tantrium.AI(); c = ai.certify_all('EGFR'); print(c); assert c.sealed_hash"
           python -c "import tantrium; print(tantrium.AI().rh_certificate('aspirin').summary())"
+      - name: CLI smoke (tantrium konsol komutu)
+        run: |
+          tantrium --version
+          tantrium compare CCO CCCO --json
+          tantrium discover-law 1 1 2 3 5 8 13 21
+          tantrium status
       - name: Type-check (mypy, non-blocking — rdkit'siz ortam)
         continue-on-error: true
         run: mypy src || true

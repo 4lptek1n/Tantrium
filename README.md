@@ -241,6 +241,30 @@ pip install -e ".[dev]"      # pytest
 
 ---
 
+## CLI (terminal yüzeyi)
+
+Kurulumla birlikte `tantrium` konsol komutu gelir — SDK ile aynı saf-matematik
+yüzeyi, terminalden. Her komut `--json` ile makine-okunur çıktı verebilir.
+
+```bash
+tantrium fingerprint EGFR                 # 46-boyutlu sertifika parmak izi
+tantrium compare CCO CCCO                 # iki girdi arası 46-dim mesafe
+tantrium transport CCO "CC(=O)O"          # sertifikalı dyadic+Sturm+Zeta geçiş
+tantrium discover-law 1 1 2 3 5 8 13 21   # ham veriden yönetici yasa (→ φ)
+tantrium reconstruct EGFR                 # momentlerden ölçü geri-çıkarımı
+tantrium certify EGFR                     # tam 4-eksenli birleşik sertifika + mühür
+tantrium rh aspirin                       # tam RH sertifikası (özet)
+tantrium rh-distance CCO CCCO             # RH-sertifika mesafesi
+tantrium ask "EGFR nedir?"                # paradigma sertifikası + cevap
+tantrium status                           # makine durumu
+
+tantrium compare CCO CCCO --json          # {"a": ..., "b": ..., "distance": ...}
+```
+
+REST API için ayrıca `tantrium-serve` (FastAPI) komutu vardır.
+
+---
+
 ## Matematiksel Temel
 
 Detay için `MATHEMATICS.md` (moment problemi, Hilbert-Pólya bağlantısı, RH ispat yapısı)

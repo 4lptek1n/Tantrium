@@ -101,7 +101,16 @@ from tantrium.proof.certificate import Cell, Certificate, TransportEdge
 from tantrium.proof.dyadic_flow import FlowPolicy, solve_greedy
 from tantrium.universe import Universe, universe
 
+try:  # paket metadata'sından sürüm (kurulu değilse pyproject ile uyumlu fallback)
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as _pkg_version
+
+    __version__ = _pkg_version("tantrium")
+except (ImportError, PackageNotFoundError):  # pragma: no cover
+    __version__ = "0.5.0"
+
 __all__ = [
+    "__version__",
     # SDK
     "AI",
     "AskResult",
