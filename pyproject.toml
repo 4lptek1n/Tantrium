@@ -24,6 +24,7 @@ server = ["fastapi>=0.110", "uvicorn>=0.27", "pydantic>=2.0"]
 dev = ["pytest>=8.0", "ruff>=0.6", "mypy>=1.8"]
 
 [project.scripts]
+tantrium = "tantrium.cli:main"
 tantrium-serve = "tantrium.serve:main"
 
 [tool.setuptools.packages.find]
