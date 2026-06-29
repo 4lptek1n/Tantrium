@@ -220,28 +220,32 @@ class MoleculeMemory:
 
     def _compute_record(self, numbers: list[float], smiles: str = "",
                         metadata: dict | None = None) -> MoleculeRecord | None:
-        """Sayılar → MoleculeRecord."""
+        """Sayılar → MoleculeRecord.
+
+        TEK koordinat tanımı: compute_coord_91 — _smiles_to_fast_record ve query
+        yolu da aynısını kullanır → tüm DB depolama/sorgu tutarlı (numbers-yolu ile
+        smiles-yolu birebir aynı yapı). Eski universe_coordinate (exact Fraction)
+        public metric.universe_point'te kalır."""
         from tantrium.core.genome import fit_genome
-        from tantrium.core.mini_space import build_mini_space
+        from tantrium.core.mini_space import compute_coord_91
+        if not numbers:
+            return None
         try:
-            ms = build_mini_space(numbers)
-            eigenvalues = ms.eigenvalues
-            moments_8 = [float(m) for m in ms.compress(8)]
-            coord_91 = ms.universe_coordinate()          # türetilmiş cache
-            genome = fit_genome(eigenvalues)              # KATMAN 5: var-eden-yasa + σ
-            mol_id = _mol_id(eigenvalues)
-            return MoleculeRecord(
-                mol_id=mol_id,
-                smiles=smiles,
-                eigenvalues=eigenvalues,
-                moments_8=moments_8,
-                coord_91=coord_91,
-                metadata=metadata or {},
-                law=genome.as_dict(),
-                sigma=genome.sigma,
-            )
+            coord_91, eigs, moments_8 = compute_coord_91(numbers)   # türetilmiş cache
         except Exception:
             return None
+        genome = fit_genome(numbers)                  # KATMAN 5: yasa TAM spektrumdan
+        mol_id = _mol_id(eigs)
+        return MoleculeRecord(
+            mol_id=mol_id,
+            smiles=smiles,
+            eigenvalues=eigs,
+            moments_8=moments_8,
+            coord_91=coord_91,
+            metadata=metadata or {},
+            law=genome.as_dict(),
+            sigma=genome.sigma,
+        )
 
     # ── Ekleme ────────────────────────────────────────────────────────────────
 

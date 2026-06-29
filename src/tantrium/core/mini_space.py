@@ -317,10 +317,10 @@ class MiniSpace:
         r_f = float(self.r_ratio) if self.r_ratio is not None else 0.5307
         goe_gue_vec = [r_f, self.goe_dist, self.gue_dist, self.beta / 2.0]
 
-        # ── Grup 6: 45 paradigma imzası ──────────────────────────────────
+        # ── Grup 6: 46 paradigma imzası ──────────────────────────────────
         paradigm_vec = paradigm_signature(self._structure)
 
-        return mu_vec + rh_vec + pos_vec + li_vec + goe_gue_vec + paradigm_vec  # 90 dim
+        return mu_vec + rh_vec + pos_vec + li_vec + goe_gue_vec + paradigm_vec  # 91 dim
 
     def summary(self) -> str:
         return (
@@ -370,11 +370,15 @@ def compute_coord_91(numbers: list[float]) -> tuple[list[float], list[float], li
     pow_mat = lam_arr[_np.newaxis, :] ** ks[:, _np.newaxis]  # (order-1, n)
     mu_arr = pow_mat.sum(axis=1) / n                          # (order-1,)
     mu: list[float] = [1.0] + mu_arr.tolist()
+    real_len = len(mu)            # GERÇEK moment sayısı (= order); pad'den ÖNCE
     while len(mu) < 16:
         mu.append(0.0)
 
-    # Hankel determinantları — numpy advanced indexing (list comprehension yok)
-    N = len(mu)
+    # Hankel determinantları — GERÇEK moment sayısı üzerinden (sıfır-pad'i değil).
+    # 16'ya sıfır-pad'lenmiş momentlerden τ_j hesaplamak, sahte sıfır-momentler
+    # üzerinden near-zero float gürültüsü üretip pozitifliği YANLIŞ False yapıyordu
+    # (exact rh_criteria yalnız gerçek momentleri kullanır). N=real_len ile eşitlenir.
+    N = real_len
     J  = (N - 1) // 2
     Js = (N - 2) // 2 if N >= 2 else -1
     mu_full = _np.array(mu, dtype=float)
