@@ -1,0 +1,793 @@
+"""
+Moleküler Kalıcı Hafıza — Özdeğer Ağacı
+=========================================
+LLM embedding değil. Token yok. Öğrenme yok.
+
+Tek makine — dört katman, bir bütün:
+
+  KATMAN 0 — GİRİŞ (tek-cins: TEK operatör spektrumu)
+    SMILES → ağırlıklı adjacency G=AᵀA → normalize özdeğer spektrumu (tek operatör)
+    → build_mini_space → eigenvalues + 91-dim koordinat + 8-moment sıkıştırma
+    → fit_genome → var-eden-yasa + σ (HAFIZA = yasa, cansız snapshot değil)
+
+  KATMAN 1 — DEPOLAMA
+    SQLite: molecules (tam kayıt) + eig_index (e0-e7, B-tree, e0 indexed)
+    Duplikat: rowcount ile tespit, hem DB hem RAM tutarlı
+    Lazy mod: büyük ölçekte RAM cache yok, tüm sorgular SQL üzerinden
+
+  KATMAN 2 — SORGULAMA
+    Küçük ölçek (< RAM_THRESHOLD): numpy matris RAM cache → vectorized O(n)
+    Büyük ölçek (>= RAM_THRESHOLD): eig_index SQL multi-eig pre-filter
+                                     → LIMIT 50K kandidat → numpy top-k
+
+  KATMAN 3 — PARÇALANMA (ShardedMoleculeMemory, 500M ölçek)
+    e0 aralığına göre N shard → her biri ayrı SQLite (lazy)
+    Sorgu: e0 ± radius → ilgili shardlar → merge → global top-k
+    Paralel ekleme: worker'dan gelen pre-hesaplanmış kayıtlar doğrudan yazar
+
+  İki molekülün eigenvalue'ları yakınsa → koordinatları yakın → fiziksel olarak yakın.
+  İnsan etiketi yok. Öğrenilmiş embedding yok. G=AᵀA aksiyomu var.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+import sqlite3
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import numpy as np
+
+# ─── Sabitler ────────────────────────────────────────────────────────────────
+
+RAM_THRESHOLD = 200_000   # Bu kadar mol'a kadar coord_91 numpy matris RAM'de
+EIG_SEARCH_RADIUS = 3.0   # eig_index range query: ±bu kadar e0 etrafında ara
+EIG_MIN_CANDIDATES = 500  # Pre-filter sonucu en az bu kadar kandidat bırak
+
+
+# ─── Veri yapıları ────────────────────────────────────────────────────────────
+
+@dataclass
+class MoleculeRecord:
+    """Tek bir molekülün hafıza kaydı.
+
+    KAYNAK GERÇEK = eigenvalues + law + sigma (genotip; KATMAN 5 yasa-sakla).
+    coord_91 / moments_8 = bunlardan TÜRETİLEN, açıkça-cache (kanonik değil; hot
+    k-NN için yazarken üretilir, droppable)."""
+    mol_id: str                    # SHA-256 özeti (eigenvalue'lardan)
+    smiles: str                    # SMILES (varsa, yoksa "")
+    eigenvalues: list[float]       # ham özdeğerler — kaynak tohum (indeks + pre-filter)
+    moments_8: list[float]         # 8-moment cache (eigenvalues'tan türev)
+    coord_91: list[float]          # 91-dim koordinat cache (eigenvalues'tan türev)
+    metadata: dict = field(default_factory=dict)
+    law: dict = field(default_factory=dict)   # var-eden-yasa (GenomeRecord.as_dict)
+    sigma: float = 0.0             # yasalılık/residual — birinci sınıf ölçü
+
+
+@dataclass
+class QueryResult:
+    """Sorgu sonucu — en yakın k molekül."""
+    record: MoleculeRecord
+    distance: float                # Öklid mesafesi (91-dim koordinat uzayında)
+    eigenvalue_dist: float         # Öklid mesafesi (eigenvalue uzayında)
+    sigma: float = 0.0             # kaydın yasalılık ölçüsü (lawfulness ile sıralama/filtre)
+
+
+# ─── Yardımcı ─────────────────────────────────────────────────────────────────
+
+def _mol_id(eigenvalues: list[float]) -> str:
+    s = ",".join(f"{e:.8f}" for e in eigenvalues[:16])
+    return hashlib.sha256(s.encode()).hexdigest()[:24]
+
+
+def _eig_dist(a: list[float], b: list[float]) -> float:
+    n = max(len(a), len(b))
+    return math.sqrt(sum((
+        (a[i] if i < len(a) else 0.0) - (b[i] if i < len(b) else 0.0)
+    ) ** 2 for i in range(n)))
+
+
+def smiles_to_numbers(smiles: str, max_atoms: int = 100) -> list[float]:
+    """SMILES → TEK operatör G=AᵀA spektrumu (normalize özdeğerler, azalan).
+
+    KATMAN 0 — tek-cins ilkesi: molekül = ağırlıklı adjacency'nin (bağ-derecesi
+    off-diagonal + elektronegatiflik köşegen) G=AᵀA spektrumu. Tek iyi-tanımlı
+    operatör; kurucu aksiyom korunur, daima PSD.
+
+    Eski yol (lap_eigs + adj_eigs + atom_vec + descriptor counts yapıştırması) bir
+    KATEGORİ HATASIYDI: iki operatörün spektrumu + atom kimliği + RDKit descriptor'ları
+    tek "spektrum" sanılıp üstünde spektrum-matematiği (moment, GOE/GUE, RH) koşturuluyordu.
+    Kaldırıldı — artık tek operatörün gerçek spektrumu.
+
+    max_atoms: bu sınırı aşan moleküller atlanır (→ []).
+    Geçersiz SMILES → []. RDKit yoksa RuntimeError yükselir (sessiz [] DEĞİL —
+    molekül-uzayının sessizce çökmesini önler; çağıran dürüst hata görür)."""
+    from tantrium.core.encoder._text import _smiles_normalized_spectrum
+
+    spectrum = _smiles_normalized_spectrum(smiles, max_atoms=max_atoms)
+    return spectrum if spectrum is not None else []
+
+
+# ─── MoleculeMemory ───────────────────────────────────────────────────────────
+
+class MoleculeMemory:
+    """
+    Özdeğer ağacı üzerinde kalıcı moleküler hafıza — tek makine.
+
+    Kullanım:
+        mem = MoleculeMemory("molecules.db")
+        mem.add_smiles("c1ccccc1", metadata={"name": "benzene"})
+        mem.batch_add_smiles([("c1ccccc1", {"name": "benzene"}), ...])
+        results = mem.query_smiles("Nc1ncnc2[nH]cnc12", k=5)
+        results = mem.query_numbers([3.2, 1.8, 0.9], k=10)
+    """
+
+    def __init__(self, db_path: str = "molecule_memory.db", lazy: bool = False):
+        """
+        lazy=True: Büyük ölçek modu.
+          - DB kayıtları RAM'e yüklenmiyor (_records boş kalır).
+          - Tüm sorgular SQL + eig_index üzerinden yürütülür.
+          - ShardedMoleculeMemory tarafından otomatik kullanılır.
+        """
+        self.db_path = Path(db_path)
+        self._lazy = lazy
+        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._conn.execute("PRAGMA cache_size=-65536")   # 64 MB page cache
+        self._init_db()
+
+        # ── RAM cache (KATMAN 2) ──
+        self._records: list[MoleculeRecord] = []
+        self._coord_matrix: np.ndarray | None = None
+        self._matrix_dirty = True
+        if not lazy:
+            self._load_from_db()
+
+    # ── Başlangıç ─────────────────────────────────────────────────────────────
+
+    def _init_db(self) -> None:
+        # KAYNAK GERÇEK = eigenvalues + law + sigma (genotip). coord_91/moments_8
+        # = türetilmiş cache kolonları (kanonik değil; hot k-NN için).
+        self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS molecules (
+                mol_id      TEXT PRIMARY KEY,
+                smiles      TEXT NOT NULL DEFAULT '',
+                eigenvalues TEXT NOT NULL,
+                moments_8   TEXT NOT NULL,
+                coord_91    TEXT NOT NULL,
+                metadata    TEXT NOT NULL DEFAULT '{}',
+                law         TEXT NOT NULL DEFAULT '{}',
+                sigma       REAL NOT NULL DEFAULT 0.0
+            )
+        """)
+        # Eski şemalı stray DB için guarded migration (checked-in DB yok → genelde no-op)
+        for col, decl in (("law", "TEXT NOT NULL DEFAULT '{}'"),
+                          ("sigma", "REAL NOT NULL DEFAULT 0.0")):
+            try:
+                self._conn.execute(f"ALTER TABLE molecules ADD COLUMN {col} {decl}")
+            except sqlite3.OperationalError:
+                pass  # kolon zaten var
+        self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS eig_index (
+                mol_id  TEXT PRIMARY KEY,
+                e0 REAL, e1 REAL, e2 REAL, e3 REAL,
+                e4 REAL, e5 REAL, e6 REAL, e7 REAL
+            )
+        """)
+        # e0 üzerinde B-tree index (range query hızı için)
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_eig_e0 ON eig_index(e0)"
+        )
+        self._conn.commit()
+
+    def _load_from_db(self) -> None:
+        """Disk → RAM: kayıtları yükle, matris dirty işaretle."""
+        self._records = []
+        cur = self._conn.execute(
+            "SELECT mol_id, smiles, eigenvalues, moments_8, coord_91, metadata, law, sigma "
+            "FROM molecules"
+        )
+        for row in cur:
+            self._records.append(MoleculeRecord(
+                mol_id=row[0],
+                smiles=row[1],
+                eigenvalues=json.loads(row[2]),
+                moments_8=json.loads(row[3]),
+                coord_91=json.loads(row[4]),
+                metadata=json.loads(row[5]),
+                law=json.loads(row[6]) if row[6] else {},
+                sigma=float(row[7]) if row[7] is not None else 0.0,
+            ))
+        self._matrix_dirty = True
+
+    def _rebuild_matrix(self) -> None:
+        """coord_91 → numpy matris (RAM_THRESHOLD altında)."""
+        if not self._records or len(self._records) > RAM_THRESHOLD:
+            self._coord_matrix = None
+        else:
+            coords = [r.coord_91 for r in self._records]
+            # Uzunlukları eşitle (pad=0)
+            max_len = max(len(c) for c in coords)
+            padded = np.zeros((len(coords), max_len))
+            for i, c in enumerate(coords):
+                padded[i, :len(c)] = c
+            self._coord_matrix = padded
+        self._matrix_dirty = False
+
+    # ── Hesaplama ──────────────────────────────────────────────────────────────
+
+    def _compute_record(self, numbers: list[float], smiles: str = "",
+                        metadata: dict | None = None) -> MoleculeRecord | None:
+        """Sayılar → MoleculeRecord.
+
+        TEK koordinat tanımı: compute_coord_91 — _smiles_to_fast_record ve query
+        yolu da aynısını kullanır → tüm DB depolama/sorgu tutarlı (numbers-yolu ile
+        smiles-yolu birebir aynı yapı). Eski universe_coordinate (exact Fraction)
+        public metric.universe_point'te kalır."""
+        from tantrium.core.genome import fit_genome
+        from tantrium.core.mini_space import compute_coord_91
+        if not numbers:
+            return None
+        try:
+            coord_91, eigs, moments_8 = compute_coord_91(numbers)   # türetilmiş cache
+        except Exception:
+            return None
+        genome = fit_genome(numbers)                  # KATMAN 5: yasa TAM spektrumdan
+        mol_id = _mol_id(eigs)
+        return MoleculeRecord(
+            mol_id=mol_id,
+            smiles=smiles,
+            eigenvalues=eigs,
+            moments_8=moments_8,
+            coord_91=coord_91,
+            metadata=metadata or {},
+            law=genome.as_dict(),
+            sigma=genome.sigma,
+        )
+
+    # ── Ekleme ────────────────────────────────────────────────────────────────
+
+    def _insert_record(self, rec: MoleculeRecord) -> bool:
+        """
+        Tek kaydı DB'ye yaz. Duplikat kontrolü rowcount ile.
+        Dönüş: True = gerçekten eklendi, False = zaten vardı / hata.
+        """
+        try:
+            cur = self._conn.execute(
+                "INSERT OR IGNORE INTO molecules "
+                "(mol_id, smiles, eigenvalues, moments_8, coord_91, metadata, law, sigma) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    rec.mol_id,
+                    rec.smiles,
+                    json.dumps([round(e, 8) for e in rec.eigenvalues]),
+                    json.dumps([round(m, 8) for m in rec.moments_8]),
+                    json.dumps([round(c, 8) for c in rec.coord_91]),
+                    json.dumps(rec.metadata),
+                    json.dumps(rec.law),
+                    float(rec.sigma),
+                )
+            )
+            if cur.rowcount == 0:
+                return False  # Duplikat — eklenmedi
+
+            e = (rec.eigenvalues + [0.0] * 8)[:8]
+            self._conn.execute(
+                "INSERT OR IGNORE INTO eig_index "
+                "(mol_id, e0, e1, e2, e3, e4, e5, e6, e7) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (rec.mol_id, *e)
+            )
+            return True
+        except Exception:
+            return False
+
+    def bulk_insert_records(self, recs: list[MoleculeRecord]) -> tuple[int, int]:
+        """Çok sayıda kaydı tek executemany ile yaz — toplu yükleme için.
+        Dönüş: (added, skipped) sayıları.
+        """
+        if not recs:
+            return 0, 0
+        mol_rows = []
+        eig_rows = []
+        for rec in recs:
+            mol_rows.append((
+                rec.mol_id,
+                rec.smiles,
+                json.dumps([round(e, 8) for e in rec.eigenvalues]),
+                json.dumps([round(m, 8) for m in rec.moments_8]),
+                json.dumps([round(c, 8) for c in rec.coord_91]),
+                json.dumps(rec.metadata),
+                json.dumps(rec.law),
+                float(rec.sigma),
+            ))
+            e8 = (rec.eigenvalues + [0.0] * 8)[:8]
+            eig_rows.append((rec.mol_id, *e8))
+
+        try:
+            cur = self._conn.executemany(
+                "INSERT OR IGNORE INTO molecules "
+                "(mol_id, smiles, eigenvalues, moments_8, coord_91, metadata, law, sigma) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                mol_rows,
+            )
+            added = cur.rowcount
+            self._conn.executemany(
+                "INSERT OR IGNORE INTO eig_index "
+                "(mol_id, e0, e1, e2, e3, e4, e5, e6, e7) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                eig_rows,
+            )
+            return added, len(recs) - added
+        except Exception:
+            # Fallback to one-by-one
+            a = s = 0
+            for rec in recs:
+                if self._insert_record(rec):
+                    a += 1
+                else:
+                    s += 1
+            return a, s
+
+    def add_numbers(self, numbers: list[float], smiles: str = "",
+                    metadata: dict | None = None) -> MoleculeRecord | None:
+        """Sayı listesinden hafızaya ekle."""
+        rec = self._compute_record(numbers, smiles, metadata)
+        if rec is None:
+            return None
+        if self._insert_record(rec):
+            self._conn.commit()
+            self._records.append(rec)
+            self._matrix_dirty = True
+        return rec  # Duplikat olsa da kaydı döndür (caller için yararlı)
+
+    def add_smiles(self, smiles: str,
+                   metadata: dict | None = None) -> MoleculeRecord | None:
+        """SMILES'dan hafızaya ekle."""
+        numbers = smiles_to_numbers(smiles)
+        if not numbers:
+            return None
+        return self.add_numbers(numbers, smiles=smiles, metadata=metadata)
+
+    def batch_add_smiles(self, molecules: list[tuple[str, dict]],
+                         batch_size: int = 500,
+                         verbose: bool = True) -> int:
+        """Toplu SMILES ekleme. Dönüş: yeni eklenen sayı (duplikatlar hariç)."""
+        added = 0
+        errors = 0
+        skipped = 0
+        total = len(molecules)
+
+        for i, (smi, meta) in enumerate(molecules):
+            numbers = smiles_to_numbers(smi)
+            if not numbers:
+                errors += 1
+                continue
+
+            rec = self._compute_record(numbers, smi, meta)
+            if rec is None:
+                errors += 1
+                continue
+
+            if self._insert_record(rec):
+                self._records.append(rec)
+                added += 1
+            else:
+                skipped += 1
+
+            if (i + 1) % batch_size == 0:
+                self._conn.commit()
+                if verbose:
+                    print(f"  [{i+1}/{total}] eklendi={added} atlandı={skipped} hata={errors}")
+
+        self._conn.commit()
+        self._matrix_dirty = True
+        if verbose:
+            print(f"  Tamamlandı: {added}/{total} eklendi, {skipped} duplikat, {errors} hata")
+        return added
+
+    def batch_add_numbers(self, molecules: list[tuple[list[float], str, dict]],
+                          batch_size: int = 500,
+                          verbose: bool = True) -> int:
+        """Toplu sayı listesi ekleme. Dönüş: yeni eklenen sayı."""
+        added = 0
+        errors = 0
+        skipped = 0
+        total = len(molecules)
+
+        for i, (numbers, smi, meta) in enumerate(molecules):
+            rec = self._compute_record(numbers, smi, meta)
+            if rec is None:
+                errors += 1
+                continue
+            if self._insert_record(rec):
+                self._records.append(rec)
+                added += 1
+            else:
+                skipped += 1
+
+            if (i + 1) % batch_size == 0:
+                self._conn.commit()
+                if verbose:
+                    print(f"  [{i+1}/{total}] eklendi={added} atlandı={skipped} hata={errors}")
+
+        self._conn.commit()
+        self._matrix_dirty = True
+        if verbose:
+            print(f"  Tamamlandı: {added}/{total} eklendi, {skipped} duplikat, {errors} hata")
+        return added
+
+    # ── Sorgulama (KATMAN 2) ──────────────────────────────────────────────────
+
+    def _query_small_scale(self, query_vec: np.ndarray,
+                           query_eigs: list[float],
+                           k: int) -> list[QueryResult]:
+        """RAM numpy matris üzerinde vectorized k-NN."""
+        if self._matrix_dirty:
+            self._rebuild_matrix()
+        if self._coord_matrix is None or len(self._coord_matrix) == 0:
+            return []
+
+        n_dim = min(query_vec.shape[0], self._coord_matrix.shape[1])
+        q = query_vec[:n_dim]
+        M = self._coord_matrix[:, :n_dim]
+
+        dists_91 = np.sqrt(((M - q) ** 2).sum(axis=1))
+        top_idx = np.argsort(dists_91)[:k]
+
+        results = []
+        for idx in top_idx:
+            rec = self._records[idx]
+            d91 = float(dists_91[idx])
+            deig = _eig_dist(query_eigs, rec.eigenvalues)
+            results.append(QueryResult(record=rec, distance=d91, eigenvalue_dist=deig, sigma=rec.sigma))
+        return results
+
+    def _query_large_scale(self, query_vec: np.ndarray,
+                           query_eigs: list[float],
+                           k: int) -> list[QueryResult]:
+        """
+        Büyük ölçek (lazy veya >= RAM_THRESHOLD):
+          1. eig_index: e0 + e1 + e2 çok-eigenvalue SQL range filter
+             → LIMIT 50K kandidat (ORDER BY yaklaşık eigenvalue toplamı)
+          2. numpy vectorized 91-dim distance
+          3. top-k döndür
+        """
+        # Sorgu eigenvalues → range sınırları
+        qe = (query_eigs + [0.0] * 8)[:8]
+        r = EIG_SEARCH_RADIUS
+
+        # Üç eigenvalue üzerinde box filter: e0, e1, e2 (en ayırt edici)
+        # ORDER BY: e0+e1+e2 toplamına yakınlık → daha iyi kandidatlar öne
+        cur = self._conn.execute(
+            "SELECT m.mol_id, m.smiles, m.eigenvalues, m.moments_8, m.coord_91, m.metadata "
+            "FROM eig_index ei "
+            "JOIN molecules m ON ei.mol_id = m.mol_id "
+            "WHERE ei.e0 BETWEEN ? AND ? "
+            "  AND ei.e1 BETWEEN ? AND ? "
+            "  AND ei.e2 BETWEEN ? AND ? "
+            "ORDER BY ABS(ei.e0-?) + ABS(ei.e1-?) + ABS(ei.e2-?) "
+            "LIMIT 50000",
+            (qe[0]-r, qe[0]+r,
+             qe[1]-r, qe[1]+r,
+             qe[2]-r, qe[2]+r,
+             qe[0], qe[1], qe[2])
+        )
+        candidates: list[MoleculeRecord] = []
+        for row in cur:
+            candidates.append(MoleculeRecord(
+                mol_id=row[0], smiles=row[1],
+                eigenvalues=json.loads(row[2]),
+                moments_8=json.loads(row[3]),
+                coord_91=json.loads(row[4]),
+                metadata=json.loads(row[5]),
+            ))
+
+        # Çok az kandidat: sadece e0 filtresi ile genişlet
+        if len(candidates) < EIG_MIN_CANDIDATES:
+            cur2 = self._conn.execute(
+                "SELECT m.mol_id, m.smiles, m.eigenvalues, m.moments_8, m.coord_91, m.metadata "
+                "FROM eig_index ei "
+                "JOIN molecules m ON ei.mol_id = m.mol_id "
+                "WHERE ei.e0 BETWEEN ? AND ? "
+                "ORDER BY ABS(ei.e0 - ?) "
+                "LIMIT ?",
+                (qe[0] - r*3, qe[0] + r*3, qe[0], EIG_MIN_CANDIDATES)
+            )
+            candidates = []
+            for row in cur2:
+                candidates.append(MoleculeRecord(
+                    mol_id=row[0], smiles=row[1],
+                    eigenvalues=json.loads(row[2]),
+                    moments_8=json.loads(row[3]),
+                    coord_91=json.loads(row[4]),
+                    metadata=json.loads(row[5]),
+                ))
+
+        if not candidates:
+            return []
+
+        coords = np.array([c.coord_91 for c in candidates])
+        n_dim = min(query_vec.shape[0], coords.shape[1])
+        q = query_vec[:n_dim]
+        M = coords[:, :n_dim]
+
+        dists_91 = np.sqrt(((M - q) ** 2).sum(axis=1))
+        top_idx = np.argsort(dists_91)[:k]
+
+        results = []
+        for idx in top_idx:
+            rec = candidates[idx]
+            d91 = float(dists_91[idx])
+            deig = _eig_dist(query_eigs, rec.eigenvalues)
+            results.append(QueryResult(record=rec, distance=d91, eigenvalue_dist=deig, sigma=rec.sigma))
+        return results
+
+    def query_numbers(self, numbers: list[float], k: int = 10) -> list[QueryResult]:
+        """Sayı listesinden en yakın k molekülü bul."""
+        from tantrium.core.mini_space import compute_coord_91
+        try:
+            query_coord, query_eigs, _ = compute_coord_91(numbers)
+        except Exception:
+            return []
+
+        query_vec = np.array(query_coord)
+
+        # Lazy mod veya büyük ölçek: SQL pre-filter
+        if self._lazy or len(self._records) >= RAM_THRESHOLD:
+            return self._query_large_scale(query_vec, query_eigs, k)
+
+        if not self._records:
+            return []
+
+        return self._query_small_scale(query_vec, query_eigs, k)
+
+    def query_smiles(self, smiles: str, k: int = 10) -> list[QueryResult]:
+        """SMILES'dan en yakın k molekülü bul."""
+        numbers = smiles_to_numbers(smiles)
+        if not numbers:
+            return []
+        return self.query_numbers(numbers, k=k)
+
+    # ── İstatistik + Yönetim ──────────────────────────────────────────────────
+
+    def __len__(self) -> int:
+        return len(self._records)
+
+    def stats(self) -> dict:
+        cur = self._conn.execute("SELECT COUNT(*) FROM molecules")
+        n_db = cur.fetchone()[0]
+        # σ = yasalılık ölçüsü (düşük = yasalı/deterministik, yüksek = yapısız)
+        srow = self._conn.execute(
+            "SELECT AVG(sigma), MIN(sigma), MAX(sigma) FROM molecules"
+        ).fetchone()
+        return {
+            "n_db": n_db,
+            "n_memory": len(self._records),
+            "matrix_cached": self._coord_matrix is not None,
+            "db_path": str(self.db_path),
+            "db_size_mb": round(self.db_path.stat().st_size / 1e6, 3)
+            if self.db_path.exists() else 0,
+            "sigma_mean": round(srow[0], 6) if srow and srow[0] is not None else None,
+            "sigma_min": round(srow[1], 6) if srow and srow[1] is not None else None,
+            "sigma_max": round(srow[2], 6) if srow and srow[2] is not None else None,
+        }
+
+    def close(self) -> None:
+        self._conn.close()
+
+
+# ─── Hızlı hesaplama yolu (ShardedMoleculeMemory için) ───────────────────────
+
+def _smiles_to_fast_record(smiles: str, max_atoms: int = 100,
+                            metadata: dict | None = None) -> MoleculeRecord | None:
+    """
+    SMILES → MoleculeRecord — tam 91-dim coord (float64, Fraction YOK).
+
+    smiles_to_numbers → compute_coord_91 → tam 91-dim:
+      16 moment + 14 RH + 7 flag + 4 Li + 4 GOE/GUE + 46 paradigma
+    ~2ms/mol (Fraction yoluna göre 900× daha hızlı).
+    """
+    from tantrium.core.genome import fit_genome
+    from tantrium.core.mini_space import compute_coord_91
+    nums = smiles_to_numbers(smiles, max_atoms=max_atoms)
+    if not nums:
+        return None
+    try:
+        coord, eigs, moments = compute_coord_91(nums)
+    except Exception:
+        return None
+    genome = fit_genome(nums)               # KATMAN 5: yasayı TAM spektrumdan fit et
+    mol_id = _mol_id(eigs)
+    return MoleculeRecord(
+        mol_id=mol_id,
+        smiles=smiles,
+        eigenvalues=eigs,
+        moments_8=moments,
+        coord_91=coord,
+        metadata=metadata or {},
+        law=genome.as_dict(),
+        sigma=genome.sigma,
+    )
+
+
+# ─── ShardedMoleculeMemory — 500M ölçek ──────────────────────────────────────
+
+# e0 (ilk eigenvalue) sınırları — 7 shard
+# Organik ilaç benzeri moleküller: e0 ∈ 2-13 aralığında yoğunlaşır
+_SHARD_EDGES = [0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 13.0, float("inf")]
+_N_SHARDS = len(_SHARD_EDGES) - 1
+
+
+def _shard_for_e0(e0: float) -> int:
+    """e0 değerine göre shard indeksi."""
+    for i, edge in enumerate(_SHARD_EDGES[1:]):
+        if e0 < edge:
+            return i
+    return _N_SHARDS - 1
+
+
+def _shards_for_range(lo: float, hi: float) -> list[int]:
+    """[lo, hi] e0 aralığına kesişen shard indeksleri."""
+    result = []
+    for i in range(_N_SHARDS):
+        s_lo = _SHARD_EDGES[i]
+        s_hi = _SHARD_EDGES[i + 1]
+        if lo < s_hi and hi >= s_lo:
+            result.append(i)
+    return result
+
+
+class ShardedMoleculeMemory:
+    """
+    500M ölçek için bölünmüş kalıcı hafıza.
+
+    Her shard ayrı SQLite dosyası, e0 aralığına göre yönlendirilir.
+    Tüm shardlar lazy=True ile açılır — RAM'e yüklenmiyor.
+    Worker'dan gelen pre-hesaplanmış kayıtlar doğrudan yazılır.
+
+    Kullanım:
+        mem = ShardedMoleculeMemory("mol_db/")
+        mem.add_record(rec)                    # pre-hesaplanmış
+        mem.add_smiles("c1ccccc1", meta)       # SMILES üzerinden
+        results = mem.query_smiles("CCO", k=5)
+        print(mem.stats())
+    """
+
+    def __init__(self, base_dir: str):
+        self.base_dir = Path(base_dir)
+        self.base_dir.mkdir(parents=True, exist_ok=True)
+        self._shards: list[MoleculeMemory] = [
+            MoleculeMemory(str(self.base_dir / f"shard_{i:02d}.db"), lazy=True)
+            for i in range(_N_SHARDS)
+        ]
+
+    # ── Ekleme ────────────────────────────────────────────────────────────────
+
+    def add_record(self, rec: MoleculeRecord) -> bool:
+        """Pre-hesaplanmış MoleculeRecord → doğru shard'a yaz.
+        Commit batch_commit() ile yapılır — her kayıtta değil."""
+        e0 = rec.eigenvalues[0] if rec.eigenvalues else 0.0
+        shard = self._shards[_shard_for_e0(e0)]
+        return shard._insert_record(rec)
+
+    def add_computed(self, eigenvalues: list[float], moments_8: list[float],
+                     coord_91: list[float], smiles: str = "",
+                     metadata: dict | None = None,
+                     law: dict | None = None, sigma: float = 0.0) -> bool:
+        """Worker çıktısından doğrudan kayıt oluştur ve ekle."""
+        mol_id = _mol_id(eigenvalues)
+        rec = MoleculeRecord(
+            mol_id=mol_id,
+            smiles=smiles,
+            eigenvalues=eigenvalues,
+            moments_8=moments_8,
+            coord_91=coord_91,
+            metadata=metadata or {},
+            law=law or {},
+            sigma=sigma,
+        )
+        return self.add_record(rec)
+
+    def bulk_add_computed(self, results: list[dict]) -> tuple[int, int]:
+        """Worker batch çıktısını shard'lara göre grupla, executemany ile yaz.
+        Dönüş: (added, skipped).
+        """
+        from collections import defaultdict
+        shard_recs: dict[int, list[MoleculeRecord]] = defaultdict(list)
+        for r in results:
+            eigs = r["eigenvalues"]
+            mol_id = _mol_id(eigs)
+            rec = MoleculeRecord(
+                mol_id=mol_id,
+                smiles=r.get("smiles", ""),
+                eigenvalues=eigs,
+                moments_8=r.get("moments_8", []),
+                coord_91=r.get("coord_91", []),
+                metadata=r.get("metadata", {}),
+                law=r.get("law", {}),
+                sigma=r.get("sigma", 0.0),
+            )
+            e0 = eigs[0] if eigs else 0.0
+            sid = _shard_for_e0(e0)
+            shard_recs[sid].append(rec)
+
+        total_added = total_skipped = 0
+        for sid, recs in shard_recs.items():
+            a, s = self._shards[sid].bulk_insert_records(recs)
+            total_added += a
+            total_skipped += s
+        return total_added, total_skipped
+
+    def add_smiles(self, smiles: str,
+                   metadata: dict | None = None) -> MoleculeRecord | None:
+        """SMILES'dan ekle — hızlı yol (_smiles_to_fast_record, build_mini_space YOK)."""
+        rec = _smiles_to_fast_record(smiles, metadata=metadata)
+        if rec is None:
+            return None
+        self.add_record(rec)
+        return rec
+
+    def batch_commit(self) -> None:
+        """Tüm shardları commit et (toplu yükleme sonrası çağır)."""
+        for shard in self._shards:
+            shard._conn.commit()
+
+    # ── Sorgulama ─────────────────────────────────────────────────────────────
+
+    def query_smiles(self, smiles: str, k: int = 10) -> list[QueryResult]:
+        numbers = smiles_to_numbers(smiles)
+        if not numbers:
+            return []
+        return self.query_numbers(numbers, k=k)
+
+    def query_numbers(self, numbers: list[float], k: int = 10) -> list[QueryResult]:
+        """En yakın k molekülü tüm ilgili shardlarda ara, merge et."""
+        from tantrium.core.mini_space import compute_coord_91
+        try:
+            query_coord, query_eigs, _ = compute_coord_91(numbers)
+        except Exception:
+            return []
+
+        e0 = query_eigs[0] if query_eigs else 0.0
+        shard_ids = _shards_for_range(e0 - EIG_SEARCH_RADIUS, e0 + EIG_SEARCH_RADIUS)
+
+        query_vec = np.array(query_coord)
+        all_results: list[QueryResult] = []
+
+        for sid in shard_ids:
+            shard = self._shards[sid]
+            results = shard._query_large_scale(query_vec, query_eigs, k * 2)
+            all_results.extend(results)
+
+        all_results.sort(key=lambda r: r.distance)
+        return all_results[:k]
+
+    # ── İstatistik ────────────────────────────────────────────────────────────
+
+    def stats(self) -> dict:
+        shard_stats = []
+        total_db = 0
+        total_mb = 0.0
+        for i, shard in enumerate(self._shards):
+            cur = shard._conn.execute("SELECT COUNT(*) FROM molecules")
+            n = cur.fetchone()[0]
+            mb = round(shard.db_path.stat().st_size / 1e6, 2) if shard.db_path.exists() else 0
+            e_lo = _SHARD_EDGES[i]
+            e_hi = _SHARD_EDGES[i + 1]
+            label = f"e0∈[{e_lo},{e_hi if e_hi != float('inf') else '∞'})"
+            shard_stats.append({"shard": i, "range": label, "n": n, "mb": mb})
+            total_db += n
+            total_mb += mb
+        return {
+            "n_total": total_db,
+            "total_mb": round(total_mb, 2),
+            "n_shards": _N_SHARDS,
+            "shards": shard_stats,
+        }
+
+    def close(self) -> None:
+        for shard in self._shards:
+            shard.close()
