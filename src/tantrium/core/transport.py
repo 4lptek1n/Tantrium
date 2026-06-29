@@ -32,29 +32,35 @@ if TYPE_CHECKING:
 class TransportCertificate:
     """Full proof chain: source → target via certified dyadic transport.
 
+    CERTIFIED VERDICT = dyadic_verified AND sturm_verified — yalnız bu iki eksen.
+
     L4  dyadic_verified: solve_greedy → "verified_exact" (exact rational mass coverage)
     L4  sturm_verified:  H(t)=(1-t)H_src+t*H_tgt stays PSD throughout [0,1]
-    L3  li_coefficient:  λ_1 = Σ_ρ Re(1/ρ) over first 20 Riemann zeros (Li criterion)
-                         λ_1 > 0 ↔ all zeros on critical line Re(ρ)=1/2
-    L0.5 zeta_distance: L1 distance from target moments to ζ-zeros spectral family
+
+    ADVISORY (sertifika kararına GİRMEZ, kimlik/sıralama anahtarı DEĞİL):
+    li_coefficient: hardcoded 20 Riemann sıfırından — girdiden bağımsız sabit (manifold
+                    yokken). zeta_distance: ζ-anchor manifold yoksa inf (durumsuz makine).
+                    İkisi de yalnız manifold/math-kernel yolunda anlamlı; orada dolarlar.
     """
     certified: bool
     dyadic_verified: bool
     sturm_verified: bool
-    zeta_distance: float
+    zeta_distance: float         # ADVISORY — manifold yoksa inf (kararı etkilemez)
     transport_cost: float
     path_length: int
-    li_coefficient: float = 0.0  # L3: λ_1 > 0 ↔ Li criterion holds
+    li_coefficient: float = 0.0  # ADVISORY — manifold yoksa sabit (kararı etkilemez)
     blocker: str = ""
 
     def summary(self) -> str:
+        import math
         status = "CERTIFIED" if self.certified else f"BLOCKED({self.blocker})"
+        zeta = "N/A" if math.isinf(self.zeta_distance) else f"{self.zeta_distance:.4f}"
         return (
             f"{status} | "
             f"dyadic={'✓' if self.dyadic_verified else '✗'} | "
             f"sturm={'✓' if self.sturm_verified else '✗'} | "
             f"λ₁={self.li_coefficient:.4f} | "
-            f"ζ-dist={self.zeta_distance:.4f} | "
+            f"ζ-dist={zeta} | "
             f"cost={self.transport_cost:.6f}"
         )
 
@@ -72,7 +78,9 @@ class TransportRanking:
         certified = self.certified_only()
         if not certified:
             return None
-        return min(certified, key=lambda x: x[1].zeta_distance)
+        # Tiebreaker = gerçek, girdi-bağımlı transport_cost (ölü ζ-dist değil; inf'te
+        # min() rastgele sıralardı).
+        return min(certified, key=lambda x: x[1].transport_cost)
 
     def summary(self) -> str:
         lines = [f"Target: {self.target_name} | {len(self.candidates)} candidates"]
@@ -203,8 +211,9 @@ class CertifiedTransport:
                 rhd = float("inf")
             scored.append((str(cand)[:40], tc, rhd))
 
-        # CERTIFIED önce → RH-mesafe (ayırt edici) → zeta-mesafe
-        scored.sort(key=lambda x: (not x[1].certified, x[2], x[1].zeta_distance))
+        # CERTIFIED önce → RH-mesafe (ayırt edici, birincil) → transport_cost (gerçek
+        # tiebreaker; ölü ζ-dist değil — durumsuz makinede inf olup sıralamayı bozardı).
+        scored.sort(key=lambda x: (not x[1].certified, x[2], x[1].transport_cost))
 
         return TransportRanking(
             target_name=str(target)[:40],

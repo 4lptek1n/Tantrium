@@ -205,10 +205,11 @@ class MolecularGenesis(_GenesisHelpers):
                     _tw_cache[s.smiles] = tw
             if profile_kappa:
                 # KAPALI DÖNGÜ: 1) κ-profile yakınlık (biyolojik yön — birincil)
-                #   2) sertifikalı transport adımı (gerçeklik)  3) ζ derinliği
-                return (_kappa_to_profile(s.smiles), 0 if s.certified else 1, s.zeta, tw)
-            # Açık keşif: 1) sertifikalı  2) düşük-ζ  3) toward-W2
-            return (0 if s.certified else 1, s.zeta, tw)
+                #   2) sertifikalı transport adımı (gerçeklik)  3) toward-W2
+                # (ζ kaldırıldı — durumsuz makinede inf, sıralamaya katkısı yok = ölü eksen)
+                return (_kappa_to_profile(s.smiles), 0 if s.certified else 1, tw)
+            # Açık keşif: 1) sertifikalı  2) toward-W2  (ölü ζ tiebreaker kaldırıldı)
+            return (0 if s.certified else 1, tw)
 
         # Tohum(lar): tek atom-zinciri VEYA kimyasal primitif kümesi (halkalar).
         # Çoklu tohum makinenin ilaç uzayına ulaşmasını sağlar — primitif atom kadar
@@ -270,9 +271,11 @@ class MolecularGenesis(_GenesisHelpers):
             if best_step.certified:
                 certified_steps += 1
 
-        # En derin sertifikalı uç (yoksa en düşük-ζ sturm uç)
+        # En DERİN sertifikalı uç (en çok büyümüş = en çok atom). Eskiden min(ζ) ile
+        # seçiliyordu; durumsuz makinede ζ=inf olup tohumu (ζ=0) gerçek moleküllere
+        # tercih ediyordu (ölü-eksen bug'ı). Artık gerçek derinlik (n_atoms) ile.
         cert_ends = [s for s in beam if s.certified] or beam
-        best = min(cert_ends, key=lambda s: s.zeta) if cert_ends else None
+        best = max(cert_ends, key=lambda s: s.n_atoms) if cert_ends else None
 
         return SimulationReport(
             seed=seed,
