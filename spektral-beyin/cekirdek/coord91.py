@@ -122,3 +122,41 @@ def coord_91(lam):
     for k in range(1,6): v[i]=_t(kf[k]); i+=1                            # Voiculescu (5)
     assert i==91, f"dim={i}"
     return v, q
+
+# ─── Dinamik kat: bos devre indeksleri ───────────────────────────────────────
+# coord_91(lam) bu dim'leri 0 birakir (statik spektrum cevaplayamaz);
+# coord_91_full ilgili girdi verildiginde gercek olcumle doldurur.
+DIM_NEWTON = 50            # yasa<->spektrum tutarliligi (ouroboros artigi)
+DIM_Q      = 59            # kalite faktoru (birim cember = kritik cizgi)
+DIM_AKIS   = (69, 70, 71)  # spektral akis: suruklenme, enerji, faz kaymasi
+DIM_RESH   = (80, 81, 82)  # S_tot, S_alt, S_cev (bipartisyon entropileri)
+
+def coord_91_full(lam, seq=None, law=None, roots=None, win=10):
+    """coord_91 + dinamik kat.
+
+    seq   verilirse -> AKIS (69-71) ve RESH (80-82) dolar
+    law   verilirse (seq ile) -> NEWTON (50) dolar
+    roots verilirse -> Q (59) dolar
+    Verilmeyen girdinin dim'i statik degerinde (0) kalir — durustluk:
+    olcemedigimiz seye deger uydurmayiz.
+    """
+    try:
+        from .dinamik import newton_residual, q_factor, spectral_flow, resh_entropies
+    except ImportError:
+        from dinamik import newton_residual, q_factor, spectral_flow, resh_entropies
+    v, q = coord_91(lam)
+    if seq is not None:
+        if law is not None and len(law):
+            v[DIM_NEWTON] = _t(10 * newton_residual(seq, law, win=win))
+        drift, eflow, rot = spectral_flow(seq, win=min(win, 8))
+        v[DIM_AKIS[0]] = _t(10 * drift)   # tipik olcek ~1e-2, gorunur yap
+        v[DIM_AKIS[1]] = _t(eflow)
+        v[DIM_AKIS[2]] = _t(10 * rot)
+        S_tot, S_alt, S_cev = resh_entropies(seq, win=win)
+        v[DIM_RESH[0]] = _s(S_tot)        # zaten [0,1] — tanh doygunlugu yok
+        v[DIM_RESH[1]] = _s(S_alt)
+        v[DIM_RESH[2]] = _s(S_cev)
+    if roots is not None and len(np.atleast_1d(roots)):
+        Q_max, _crit = q_factor(roots)
+        v[DIM_Q] = _t(Q_max)
+    return v, q
