@@ -80,6 +80,30 @@ edemez. `ayni_yasa` artık açılardan sadece biri (İSKELET). `kopru(hedef, ada
 facet='kaos')` bir açıdan sorar; farklı açı farklı komşu döndürebilir.
 API: `facet_mesafe`, `benzerlik` (tam profil), `ham_mesafe` (kıyas), `FACET`.
 
+### MANİPÜLE organı (`cekirdek/manipule.py`) — evren kurmak VE bükmek
+
+Mimarinin asıl amacı netleşti: arka beyin **evren kurar** (yasa+seed) ve o evreni
+**amaca göre manipüle eder**. 91 dim evrenin kendisi değil — **kokpit**: köprü
+dim'leri durumu dile çevirir (Gemma'ya gösterge), manipülasyon dim'leri uzayı
+bükmek için tutamak/ölçümdür. Gemma'ya karışılmaz; o sadece konuşur.
+
+Evren mod uzayında tutulur: s[k] = Re(Σ aⱼ·zⱼᵏ) — bizim evrenimizin izin
+verdiği işlemler doğal operatör olur (test_manipule.py, 18/18):
+
+| İşlem | Operatör | Kanıt |
+|---|---|---|
+| **Zaman (iki yön)** | zⱼᵏ her tamsayı k | Fibonacci'nin GEÇMİŞİ: −1,1,0,1 (rekürans geriye sağlar) |
+| **Süperpozisyon** | mod birleşimi = yasa çarpımı | fib⊕2ⁿ: dizi toplamı, order 3, kökler {φ,−1/φ,2} |
+| **Mod cerrahisi** | aⱼ söndür / |zⱼ| bük | 3-modu söndür → evren fib'e döner |
+| **Kritikleştir** | kökleri çembere taşı | Q: 0.51 → 10⁹, crit → 0 (kayıpsız rejim) |
+| **Hedefe bük** | amaç = hedef panel değeri | dim59(Q)=1.0 iste → kökler çembere *yürür* (crit 0.51→0.002) |
+
+En önemli test sonuncusu: **amaç kokpitten verildi** ("Q göstergesini tavana taşı"),
+arama kök uzayında koştu, fizik doğrulandı (kökler gerçekten çembere yürüdü).
+Kokpit → evren yönü çalışıyor: göstergeler tutamak olarak da iş görüyor.
+Sınıf kapalı: manipüle edilen evren yine yasa+seed olarak saklanır (σ≈1e-16).
+DÜRÜSTLÜK: organ C-finite evren sınıfında; doğrusal-olmayan evrenler Faz 2.
+
 ## Organlar (durum)
 
 | # | Organ | Durum | Not |
