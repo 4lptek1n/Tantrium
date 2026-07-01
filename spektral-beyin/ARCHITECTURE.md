@@ -13,17 +13,35 @@ operatör spektruma, spektrum 91 ölçüm operatörlü bir **teorem paneline**
 Ouroboros: sıkıştır (nesne→yasa+seed) ve aç (yasa+seed→nesne ve ötesi);
 NEWTON dim'i bu döngünün tutarlılık sertifikasıdır.
 
-## Organlar (hedef durum)
+## Omurga (OTURDU — `cekirdek/beyin.py`)
 
-| # | Organ | Bugünkü durum | Hedef |
-|---|-------|----------------|-------|
-| 1 | **Yasa avcısı** | Prony (yalnız C-finite) | Hiyerarşi: C-finite → holonomik/P-recursive → rasyonel ÜF → dürüst "yasasız" damgası |
-| 2 | **Kanonik kimlik** | (yasa, seed, σ) | + faz izi (özvektör izi) — izospektral çakışmaları ayırır |
-| 3 | **coord_91 paneli** | Statik kat dolu; dinamik kat DOLDU (bu commit) | Popülasyon kalibrasyonlu (doygunluk yok) |
-| 4 | **Büyük beyin** | 40k–100k nesne, pickle | Kanonik genotip indeksli, domain-aşan sorgu |
-| 5 | **Köprü** | `neural_brain.py` yazılı, eğitilmemiş | coord→düşünce-token, LoRA ile eğitilmiş |
-| 6 | **Kapı** | `nn.Linear` ölü kod; fiili kapı regex | Hidden-state'ten eğitilmiş; regex silinir |
-| 7 | **Ağız (LLM)** | Prompt-injection ile besleniyor | Yalnız köprü üzerinden beslenir |
+Dört fiil tek `Kimlik` tipinde, tek çağrı yüzeyinde birleşti. Uçtan uca
+kanıt: `test_beyin.py` (24/24). Dağıtık organlar artık tek döngü:
+
+```
+kodla(veri, domain)   her domain -> operator -> özdeğer(+özvektör) -> yasa+seed -> coord_91
+kopru / ayni_yasa     ortak grounding uzayında domainler arası eş-kimlik
+coz(cep)              istenen kimlik/cep -> geçerli yeni nesne (de novo)
+ouroboros(kimlik)     nesne -> kimlik -> nesne, kimliği koruyarak kapat (kayıpsız)
+```
+
+Ölçülen gerçekler (test çıktısı): Fibonacci σ=3e-16; DNA→RNA transkripsiyon
+d=0.0 (kimlik tam korunur); periyot-3 dna~rna~protein~math **aynı kanonik
+yasaya** iner; de novo cep→geçerli molekül; ouroboros dizi recon_err=4e-13,
+molekül RMSD=2e-15; **yasasız gürültü sahte başarı vermez** (döngü kapanmaz).
+
+## Organlar (durum)
+
+| # | Organ | Durum | Not |
+|---|-------|-------|-----|
+| 1 | **Yasa avcısı** | Prony (C-finite) ✅ | Hiyerarşi (holonomik/rasyonel) → Faz 2 |
+| 2 | **Kanonik kimlik** | (yasa, seed, σ) + özvektör ✅ | Faz izi `de_novo.py`+omurgada çözülü (izospektral ayrışıyor) |
+| 3 | **coord_91 paneli** | Statik + dinamik kat DOLU ✅ | Popülasyon kalibrasyonu → Faz 1 |
+| 4 | **Omurga (kodla/köprü/çöz/ouroboros)** | OTURDU ✅ | `beyin.py`, 24/24 test |
+| 5 | **Büyük beyin** | 40k–100k nesne, pickle | Kanonik genotip indeksli sorgu → Faz 1 |
+| 6 | **Köprü (nöral)** | `neural_brain.py` yazılı, eğitilmemiş | coord→düşünce-token, LoRA → Faz 4 |
+| 7 | **Kapı** | `nn.Linear` ölü kod; fiili kapı regex | Hidden-state'ten eğitilmiş → Faz 4 |
+| 8 | **Ağız (LLM)** | Prompt-injection ile besleniyor | Yalnız köprü üzerinden → Faz 4 |
 
 ## Dinamik kat (bu commit ile dolan boş devreler)
 
@@ -40,11 +58,17 @@ doğru imzadır. Kod: `cekirdek/dinamik.py`, testler: `test_dinamik.py` (19 test
 
 ## Fazlar ve kabul kriterleri
 
-### Faz 0 — Dinamik kat + dürüstlük (BU COMMIT)
+### Faz 0 — Dinamik kat + dürüstlük ✅
 - [x] NEWTON, Q, AKIŞ, RESH gerçek matematikle doldu
 - [x] 19 yanlışlanabilir test yeşil (`python3 test_dinamik.py`)
 - [x] README fiili durumu anlatıyor (regex kapı, C-finite kapsam)
-- Kabul: test_dinamik.py çıkış kodu 0. ✅
+
+### Faz 0.5 — Omurga oturtma ✅
+- [x] `cekirdek/beyin.py`: kodla/köprü/çöz/ouroboros tek `Kimlik` tipinde
+- [x] Dört fiil uçtan uca kapalı döngü — `test_beyin.py` 24/24
+- [x] Cross-space yasa düzeyinde kanıtlı; d=0.00000'ın anatomisi çıktı:
+      transkripsiyonda gerçek 0, domain-aşan köprüde yasa özdeş / coord ölçek-bağımlı
+- Kabul: test_beyin.py + test_dinamik.py çıkış kodu 0 (43 test). ✅
 
 ### Faz 1 — Kalibrasyon
 - Her dim'in popülasyon dağılımına göre quantile/whitening normalizasyonu
