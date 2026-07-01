@@ -133,14 +133,31 @@ DIM = [
     (90, "κf5", "serbestlik", "serbest kumulant κ^free₅ (κ^free_{n>2}=0 ⟺ yarimdaire)", ""),
 ]
 
+# ── Onarim: bosa calisan 32 dim gercek benzersiz islere baglandi (onarim.py) ──
+# YAMA_META tek kaynak; DIM buradan guncellenir ki harita hep koda es kalsin.
+try:
+    from onarim import YAMA_META
+except ImportError:
+    from .onarim import YAMA_META
+
+_DIM = []
+for i, kod, rol, ne, bayrak in DIM:
+    if i in YAMA_META:
+        ykod, yrol, yne = YAMA_META[i]
+        _DIM.append((i, ykod, yrol, yne, "onarildi"))   # eski tekrar/olu -> gercek is
+    else:
+        _DIM.append((i, kod, rol, ne, bayrak))
+DIM = _DIM
+
 # ── Rol -> indeks listesi (kablolamadan turetilir, elle YAZILMAZ) ────────────
 ROL = {}
 for i, kod, rol, ne, bayrak in DIM:
     ROL.setdefault(rol, []).append(i)
 
-# ── Tespit edilen defektler ──────────────────────────────────────────────────
-TEKRAR = [(i, bayrak) for i, kod, rol, ne, bayrak in DIM if bayrak.startswith("tekrar")]
+# ── Isaretler ────────────────────────────────────────────────────────────────
+ONARILDI = [i for i, kod, rol, ne, bayrak in DIM if bayrak == "onarildi"]
 DINAMIK = [i for i, kod, rol, ne, bayrak in DIM if bayrak == "dinamik"]
+TEKRAR = []   # yapisal tekrarlar onarildi (bkz. ONARILDI + onarim.py)
 
 
 def dogrula():
@@ -159,7 +176,7 @@ def ozet():
     for rol, idxs in sorted(ROL.items(), key=lambda x: -len(x[1])):
         print(f"  {rol:14s} {len(idxs):2d} dim  {idxs}")
     print(f"\ndinamik (coord_91_full dolduruyor): {DINAMIK}")
-    print(f"tekrar defekti: {[i for i,_ in TEKRAR]} (ρ, dim 20-22'nin kopyasi)")
+    print(f"onarildi (bosa->gercek is, {len(ONARILDI)} dim): {ONARILDI}")
 
 
 if __name__ == "__main__":

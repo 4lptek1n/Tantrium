@@ -71,18 +71,32 @@ check("rna periyot-3 sorgusu -> periyot-3 komsu buluyor",
       ayni_yasa(en_yakin, p3["rna"]), f"bulunan={en_yakin.name}")
 
 print("— 6b) KABLOLAMA: 91 dim tek tek dogru role, tam bolusum —")
-from kablolama import dogrula, ROL, DIM, TEKRAR, DINAMIK
+from kablolama import dogrula, ROL, DIM, DINAMIK, ONARILDI
+from coord91 import coord_91_temiz
 check("kablolama tam bolusum (91 dim, her biri TAM BIR rol)", dogrula())
 check("her dim 0..90 tam bir kez kabloli",
       sorted(i for idxs in ROL.values() for i in idxs) == list(range(91)))
 check("dinamik dim'ler dogru isaretli (50,59,69-71,80-82)",
       sorted(DINAMIK) == [50,59,69,70,71,80,81,82])
-check("tekrar defekti tespit edildi (74-76 = 20-22 kopyasi)",
-      sorted(i for i,_ in TEKRAR) == [74,75,76])
-# tekrar defekti gercekten ayni deger mi (kablolama iddiasi kodla dogrulaniyor)
+check("32 bosa dim onarildi (tekrar+olu -> gercek is)", len(ONARILDI) == 32,
+      f"onarildi={len(ONARILDI)}")
+# ONARIM KANITI: eski tekrar (74-76 ≡ 20-22) artik AYRISIYOR
 _vd = p3["dna"].coord
-check("defekt dogrulandi: coord[74:77] == coord[20:23]",
-      np.allclose(_vd[74:77], _vd[20:23]), "TET, RH-cross-ratio'nun kopyasi")
+check("onarim dogrulandi: coord[74:77] ARTIK != coord[20:23]",
+      not np.allclose(_vd[74:77], _vd[20:23]), "TET tekrari cozuldu")
+# 500 spektrumda ne olu ne tekrar (statik uzay, dinamik disi)
+_rng = np.random.default_rng(11); _dyn = set(DINAMIK)
+_V = np.array([coord_91_temiz(np.sort(_rng.uniform(0.05,8,_rng.integers(5,14)))[::-1])[0]
+               for _ in range(500)])
+_dead = [i for i in range(91) if i not in _dyn and np.std(_V[:,i])<1e-9]
+_dup = [(i,j) for i in range(91) if i not in _dyn and np.std(_V[:,i])>1e-9
+        for j in range(i+1,91) if j not in _dyn and np.std(_V[:,j])>1e-9
+        and np.allclose(_V[:,i],_V[:,j],atol=1e-8)]
+check("500 spektrumda OLU dim yok (statik)", _dead == [], f"olu={_dead}")
+check("500 spektrumda TEKRAR dim yok", _dup == [], f"tekrar={_dup}")
+# Li bug'i duzeldi: eski Li hep 0'di; simdi atesLENIyor
+check("Li katsayilari artik atesLENIyor (eski bug: λ̂≤1 -> hep 0)",
+      np.std(_V[:,37]) > 1e-6, f"std(L1)={np.std(_V[:,37]):.3f}")
 
 print("— 6c) KOPRU cok-acili: 91 dim yasadan FAZLASINI, rol-bazli —")
 prof = benzerlik(p3["dna"], p3["protein"])

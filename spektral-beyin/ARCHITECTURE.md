@@ -51,10 +51,22 @@ bir role kablolandı — tam bölüşüm (91 dim / 9 rol), `dogrula()` ile kanı
 entropi 53+80-82). Kablolama bunları doğru yere topladı. `FACET` artık `range`
 değil, bu kayıt defterinden (`ROL`) geliyor.
 
-**Tespit edilen defekt:** dim 74-76 (TET), dim 20-22'nin (ρ cross-ratio) birebir
-kopyası — 3 dim boşa tekrar. `TEKRAR` ile işaretli, `coord[74:77]==coord[20:23]`
-testiyle kanıtlı. (coord_91 hesabı pickle uyumu için değiştirilmedi; Faz 1'de
-bu 3 dim gerçek boş rollere yeniden atanacak.)
+**Onarım (`cekirdek/onarim.py`) — 32 boşa dim gerçek işe bağlandı:** 200+
+spektrumla kanıtlanan israf: **18 dim yapısal tekrar** (varyans 4 dim'de:
+d₁=τ₁/τ₀=κ₂=Hankel-oran=serbest-κ₂; ortalama 2 dim'de; klasik=serbest kümülant
+1-2-3. mertebede özdeş), **14 dim ölü** — içinde gerçek bir bug: **Li katsayıları
+(37-40, 65-68) hiç ateşlenmiyordu** çünkü kod `x>1` arıyor ama λ̂≤1 (max'a
+normalize). Sylvester (52) de ölü: Gram hep PSD → n₊/r=1.
+
+Çözüm: her boşa dim değişken+benzersiz bir niceliğe bağlandı (çarpıklık, basıklık,
+spektral boşluklar, IPR, etkin rank, düzeltilmiş Li, Stieltjes pivotları, serbestlik
+defekti κ₄-κf₄, Gini, çeyrekler...). Kanıt: 500 spektrumda **sıfır ölü, sıfır
+tekrar** (`test_beyin.py`). Dürüstlük notu: ~10 özdeğerlik nesnenin ~10 bağımsız
+serbestliği var — 91 dim zorunlu **fazla-tam**; amaç dim'leri bağımsız yapmak değil
+(imkânsız), her birinin **ayrı formülü** olması. Efektif statik rank 72/91: farklı
+mercekler aynı ışığa bakar, ama iki mercek artık aynı değil.
+
+**Büyük beyin (*.pkl) yeniden üretilmeli** (`hazirla.py`) — C91 sütunları değişti.
 
 ### Köprü = çok-açılı panel (yasa yalnızca bir açı)
 

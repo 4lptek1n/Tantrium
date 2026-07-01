@@ -160,3 +160,16 @@ def coord_91_full(lam, seq=None, law=None, roots=None, win=10):
         Q_max, _crit = q_factor(roots)
         v[DIM_Q] = _t(Q_max)
     return v, q
+
+
+def coord_91_temiz(lam, seq=None, law=None, roots=None, win=10):
+    """coord_91_full + onarim: 32 bosa dim gercek benzersiz islere baglanmis.
+    Her dim kendi gorevini yapar — ne olu ne tekrar (500 spektrumla kanitli)."""
+    try:
+        from .onarim import onarim_yamalari
+    except ImportError:
+        from onarim import onarim_yamalari
+    v, q = coord_91_full(lam, seq=seq, law=law, roots=roots, win=win)
+    for i, deger in onarim_yamalari(q).items():
+        v[i] = deger
+    return v, q

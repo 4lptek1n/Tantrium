@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))          # cekird
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # spektral-beyin/ (de_novo)
 
 from engine import gram_spectrum, prony_law
-from coord91 import coord_91_full
+from coord91 import coord_91_temiz as _coord_full
 from domains import seq_to_A, extract_law, A_molecule
 import de_novo as dn
 
@@ -84,7 +84,7 @@ def kodla(veri, domain="math", name="x", **kw):
         A = seq_to_A(seq)
         _, lam, _ = gram_spectrum(A)
         law, seed, sigma, order = extract_law(seq)
-        coord, _ = coord_91_full(lam, seq=seq, law=law, roots=seed)
+        coord, _ = _coord_full(lam, seq=seq, law=law, roots=seed)
         return Kimlik(name, domain, A, lam, coord, law=law, seed=seed,
                       sigma=sigma, order=order, seq=seq)
 
@@ -100,7 +100,7 @@ def kodla(veri, domain="math", name="x", **kw):
             coords3d = None
         lam, V = dn.operator_identity(A)
         lam = np.sort(np.clip(lam, 0, None))[::-1]    # coord_91 azalan >=0 bekler
-        coord, _ = coord_91_full(lam)                 # operator domaininde dizi yok: statik+
+        coord, _ = _coord_full(lam)                 # operator domaininde dizi yok: statik+
         return Kimlik(name, domain, A, lam, coord, V=V, types=list(atoms),
                       coords3d=coords3d)
 
