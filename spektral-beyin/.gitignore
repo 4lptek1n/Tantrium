@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.DS_Store
+veri/stripped.gz
+beyin/buyuk_beyin.pkl
+beyin/scale100k.npz
+beyin/canon20k.npz
+beyin/uctan_uca.pkl
