@@ -70,26 +70,39 @@ en_yakin = kopru(p3["rna"], havuz, k=1)[0]
 check("rna periyot-3 sorgusu -> periyot-3 komsu buluyor",
       ayni_yasa(en_yakin, p3["rna"]), f"bulunan={en_yakin.name}")
 
-print("— 6b) KOPRU cok-acili: 91 dim yasadan FAZLASINI yapiyor —")
+print("— 6b) KABLOLAMA: 91 dim tek tek dogru role, tam bolusum —")
+from kablolama import dogrula, ROL, DIM, TEKRAR, DINAMIK
+check("kablolama tam bolusum (91 dim, her biri TAM BIR rol)", dogrula())
+check("her dim 0..90 tam bir kez kabloli",
+      sorted(i for idxs in ROL.values() for i in idxs) == list(range(91)))
+check("dinamik dim'ler dogru isaretli (50,59,69-71,80-82)",
+      sorted(DINAMIK) == [50,59,69,70,71,80,81,82])
+check("tekrar defekti tespit edildi (74-76 = 20-22 kopyasi)",
+      sorted(i for i,_ in TEKRAR) == [74,75,76])
+# tekrar defekti gercekten ayni deger mi (kablolama iddiasi kodla dogrulaniyor)
+_vd = p3["dna"].coord
+check("defekt dogrulandi: coord[74:77] == coord[20:23]",
+      np.allclose(_vd[74:77], _vd[20:23]), "TET, RH-cross-ratio'nun kopyasi")
+
+print("— 6c) KOPRU cok-acili: 91 dim yasadan FAZLASINI, rol-bazli —")
 prof = benzerlik(p3["dna"], p3["protein"])
 aper = kodla("MKWVTFISLLFLFSSAYS","protein","aper")
-# dna~protein periyot-3: yapisal acilar ozdes, sadece paradigma ayriliyor
-check("dna~protein: yapisal acilarda es (varolabilirlik+kaos+Li ~ 0)",
-      prof["varolabilirlik"]<1e-6 and prof["kaos"]<0.05 and prof["Li"]<1e-6,
-      f"var={prof['varolabilirlik']:.2f} kaos={prof['kaos']:.2f}")
-check("dna~protein: ayrilik paradigma blogunda toplaniyor",
-      prof["paradigma"] > 5*prof["icerik"], f"paradigma={prof['paradigma']:.2f}")
-# paradigma blogu ham mesafeyi eziyor; facet-ortalamasi bunu duzeltiyor
-check("kalibre mesafe < ham mesafe (blok domine etmiyor)",
+# dna~protein periyot-3: cogu rol ozdes; ayrilik icerik-tasiyan rollerde toplaniyor
+es_roller = sum(1 for r in ("varolabilirlik","kaos","dinamik","kritiklik","yapi") if prof[r] < 0.06)
+check("dna~protein: yapisal roller es (>=4/5 rol < 0.06)", es_roller >= 4,
+      f"es_rol={es_roller}/5")
+check("dna~protein: ayrilik icerik rollerinde (karmasiklik+baskinlik en buyuk)",
+      max(prof, key=lambda k: prof[k] if k!='iskelet(yasa)' else -1) in ("karmasiklik","baskinlik"),
+      f"karmasiklik={prof['karmasiklik']:.2f} baskinlik={prof['baskinlik']:.2f}")
+check("kalibre mesafe < ham mesafe (tek rol domine etmiyor)",
       mesafe(p3["dna"],p3["protein"]) < ham_mesafe(p3["dna"],p3["protein"]),
       f"kalibre={mesafe(p3['dna'],p3['protein']):.2f} ham={ham_mesafe(p3['dna'],p3['protein']):.2f}")
-# facet sorgusu: 'kaos' acisindan periyot-3'ler bir arada, aperiyodik uzak
-check("'kaos' acisi: periyot-3 protein, aperiyodikten periyot-3 dna'ya daha yakin",
+check("'kaos' rolu: periyot-3 protein, aperiyodikten periyot-3 dna'ya daha yakin",
       facet_mesafe(p3["protein"],p3["dna"],"kaos") < facet_mesafe(p3["protein"],aper,"kaos"),
       f"p3={facet_mesafe(p3['protein'],p3['dna'],'kaos'):.3f} aper={facet_mesafe(p3['protein'],aper,'kaos'):.3f}")
-# farkli facet, farkli komsu secebilir (panel gercekten cok-acili)
-check("facet secimi komsuyu degistirebiliyor (panel cok-acili)",
-      True, "kritiklik/kaos/paradigma ayri siralamalar veriyor")
+check("'varolabilirlik' rolu aperiyodigi ayiriyor (yasa+varolus farkli)",
+      facet_mesafe(p3["protein"],aper,"varolabilirlik") > 0.5,
+      f"d={facet_mesafe(p3['protein'],aper,'varolabilirlik'):.2f}")
 
 print("— 7) COZ: cep -> gecerli yeni molekul (de novo) —")
 r = coz(CEP, adim=3000)

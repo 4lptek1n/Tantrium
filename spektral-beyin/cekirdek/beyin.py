@@ -110,19 +110,11 @@ def kodla(veri, domain="math", name="x", **kw):
 # ── 2) KOPRU (ortak uzay) ───────────────────────────────────────────────────────
 # coord_91 tek bir mesafe DEGIL — cok-acili bir panel. Her acidan (facet) ayri
 # es-kimlik sorulabilir. "Ayni yasa" bunlardan yalnizca biridir (ISKELET aci).
-# Ham 91-mesafe yaniltir: paradigma blogu (46 dim, yari-doygun) toplami ezer;
-# bu yuzden 'benzerlik' facet-ortalamasidir — hicbir blok boyut sayisiyla domine edemez.
-
-FACET = {                                   # coord_91 semantik bloklari (+ dinamik dim'ler)
-    "icerik":         list(range(0, 16)),   # momentler — nesnenin ic sekli
-    "kritiklik":      list(range(16, 30)) + [59],  # RH nicel (Λ) + Q (birim cember)
-    "varolabilirlik": list(range(30, 37)),  # moment-problem sertifikalari
-    "Li":             list(range(37, 41)),  # Li kriteri
-    "kaos":           list(range(41, 45)),  # Dyson β / GOE-GUE sinifi
-    "entropi":        [53, 80, 81, 82],     # BET + RESH (bipartisyon)
-    "akis":           [69, 70, 71],         # spektral akis (dinamik)
-    "paradigma":      list(range(45, 91)),  # tam paradigma imzasi
-}
+# Ham 91-mesafe yaniltir (bir blok boyut sayisiyla ezer); 'benzerlik' facet-ortalamasi.
+#
+# Facet'ler kaba blok-araligindan DEGIL, kablolama.py'den gelir: her dim TEK TEK
+# gercek matematiksel rolune kablolanmistir (tam bolusum, 91 dim / 9 rol).
+from kablolama import ROL as FACET, DIM as DIM_HARITA, TEKRAR, DINAMIK
 
 def facet_mesafe(k1: Kimlik, k2: Kimlik, facet: str) -> float:
     """Tek bir acidan (facet) coord_91 mesafesi — 'hangi anlamda benzer?'"""

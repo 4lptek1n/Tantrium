@@ -30,6 +30,32 @@ d=0.0 (kimlik tam korunur); periyot-3 dna~rna~protein~math **aynı kanonik
 yasaya** iner; de novo cep→geçerli molekül; ouroboros dizi recon_err=4e-13,
 molekül RMSD=2e-15; **yasasız gürültü sahte başarı vermez** (döngü kapanmaz).
 
+### coord_91 kablolaması (dim-dim, `cekirdek/kablolama.py`)
+
+91 dim'in her biri **pozisyonuna göre değil, gerçekte ne hesapladığına göre** tek
+bir role kablolandı — tam bölüşüm (91 dim / 9 rol), `dogrula()` ile kanıtlı:
+
+| Rol | # | Ne ölçer |
+|-----|---|----------|
+| sekil | 20 | momentler μ₀₋₁₅ + klasik kümülantlar κ₁₋₄ (dağılım şekli) |
+| yapi | 18 | Hankel/moment-problemi geometrisi (pivot d, τ, cross-ratio) |
+| kritiklik | 12 | Λ, Li, HET-Li, Q, GIMEL (RH / kritik çizgi) |
+| baskinlik | 12 | DALET p, HE, Schur, Sylvester, Perron (dominant mod) |
+| karmasiklik | 8 | rank, Euler, BET, RESH, YOD-MDL, VAV (entropi/etkin boyut) |
+| varolabilirlik | 8 | Hamburger/Stieltjes moment-problemi sertifikaları |
+| serbestlik | 5 | Voiculescu serbest kümülantları (yarımdaire testi) |
+| kaos | 4 | Wigner–Dyson ⟨r⟩, β (GOE/GUE/Poisson sınıfı) |
+| dinamik | 4 | Newton artığı + spektral akış (zaman/tutarlılık) |
+
+**Kaba blok yanlıştı:** aynı rol farklı bloklara dağılmıştı (kritiklik 27+59+72+84;
+entropi 53+80-82). Kablolama bunları doğru yere topladı. `FACET` artık `range`
+değil, bu kayıt defterinden (`ROL`) geliyor.
+
+**Tespit edilen defekt:** dim 74-76 (TET), dim 20-22'nin (ρ cross-ratio) birebir
+kopyası — 3 dim boşa tekrar. `TEKRAR` ile işaretli, `coord[74:77]==coord[20:23]`
+testiyle kanıtlı. (coord_91 hesabı pickle uyumu için değiştirilmedi; Faz 1'de
+bu 3 dim gerçek boş rollere yeniden atanacak.)
+
 ### Köprü = çok-açılı panel (yasa yalnızca bir açı)
 
 Köprü tek öklit mesafesi değil; coord_91 semantik bloklara (facet) ayrılır ve
