@@ -108,21 +108,58 @@ def kodla(veri, domain="math", name="x", **kw):
 
 
 # ── 2) KOPRU (ortak uzay) ───────────────────────────────────────────────────────
-def mesafe(k1: Kimlik, k2: Kimlik) -> float:
-    """coord_91 grounding uzayinda iki kimlik arasi mesafe."""
+# coord_91 tek bir mesafe DEGIL — cok-acili bir panel. Her acidan (facet) ayri
+# es-kimlik sorulabilir. "Ayni yasa" bunlardan yalnizca biridir (ISKELET aci).
+# Ham 91-mesafe yaniltir: paradigma blogu (46 dim, yari-doygun) toplami ezer;
+# bu yuzden 'benzerlik' facet-ortalamasidir — hicbir blok boyut sayisiyla domine edemez.
+
+FACET = {                                   # coord_91 semantik bloklari (+ dinamik dim'ler)
+    "icerik":         list(range(0, 16)),   # momentler — nesnenin ic sekli
+    "kritiklik":      list(range(16, 30)) + [59],  # RH nicel (Λ) + Q (birim cember)
+    "varolabilirlik": list(range(30, 37)),  # moment-problem sertifikalari
+    "Li":             list(range(37, 41)),  # Li kriteri
+    "kaos":           list(range(41, 45)),  # Dyson β / GOE-GUE sinifi
+    "entropi":        [53, 80, 81, 82],     # BET + RESH (bipartisyon)
+    "akis":           [69, 70, 71],         # spektral akis (dinamik)
+    "paradigma":      list(range(45, 91)),  # tam paradigma imzasi
+}
+
+def facet_mesafe(k1: Kimlik, k2: Kimlik, facet: str) -> float:
+    """Tek bir acidan (facet) coord_91 mesafesi — 'hangi anlamda benzer?'"""
+    idx = FACET[facet]
+    return float(np.linalg.norm(k1.coord[idx] - k2.coord[idx]))
+
+def benzerlik(k1: Kimlik, k2: Kimlik) -> dict:
+    """Tam panel dokumu: her acidan mesafe + iskelet (yasa) bayragi.
+    Kopru'nun asil urunu — tek skalar degil, cok-acili es-kimlik profili."""
+    prof = {f: facet_mesafe(k1, k2, f) for f in FACET}
+    prof["iskelet(yasa)"] = 0.0 if ayni_yasa(k1, k2) else 1.0
+    return prof
+
+def mesafe(k1: Kimlik, k2: Kimlik, facet=None) -> float:
+    """Kalibre panel mesafesi: facet-ortalamasi (blok domine edemez).
+    facet verilirse yalniz o aciyi olcer; None ise tum acilarin ortalamasi.
+    Ham 91-oklit icin 32. dim... degil — kasitli olarak facet-ortalamasi."""
+    if facet is not None:
+        return facet_mesafe(k1, k2, facet)
+    return float(np.mean([facet_mesafe(k1, k2, f) for f in FACET]))
+
+def ham_mesafe(k1: Kimlik, k2: Kimlik) -> float:
+    """Ham 91-oklit (paradigma blogu domine eder — kiyas/teshis icin)."""
     return float(np.linalg.norm(k1.coord - k2.coord))
 
 def ayni_yasa(k1: Kimlik, k2: Kimlik, tol=1e-6) -> bool:
-    """Iki nesne ayni kanonik yasaya mi iniyor? (cross-space bag testi)"""
+    """ISKELET acisi: iki nesne ayni kanonik yasaya mi iniyor? (facet'lerden biri)"""
     a, b = np.asarray(k1.law, float), np.asarray(k2.law, float)
     if a.size == 0 or b.size == 0 or a.size != b.size:
         return False
     return bool(np.max(np.abs(a - b)) < tol)
 
-def kopru(hedef: Kimlik, aday_kimlikler, k=1):
+def kopru(hedef: Kimlik, aday_kimlikler, k=1, facet=None):
     """Ortak uzayda hedefe en yakin adaylar — domain fark etmez.
-    Domain-asan sorgu: bir molekul cebine en yakin math/dna kimligini bul."""
-    sirali = sorted(aday_kimlikler, key=lambda a: mesafe(hedef, a))
+    facet=None: kalibre panel-ortalamasi. facet='kaos'/'kritiklik'/...: o acidan.
+    Cok-acili sorgu: 'kritiklikte ayni' ile 'kaosta ayni' farkli komsu dondurebilir."""
+    sirali = sorted(aday_kimlikler, key=lambda a: mesafe(hedef, a, facet=facet))
     return sirali[:k]
 
 

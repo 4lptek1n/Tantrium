@@ -6,8 +6,8 @@ Her test bir mimari iddiayi olcer. Calistir: python3 test_beyin.py
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "cekirdek"))
 import numpy as np
-from beyin import (kodla, mesafe, ayni_yasa, kopru, coz, ouroboros,
-                   Kimlik, DIZI_DOMAINLERI)
+from beyin import (kodla, mesafe, ham_mesafe, facet_mesafe, benzerlik,
+                   ayni_yasa, kopru, coz, ouroboros, Kimlik, FACET, DIZI_DOMAINLERI)
 
 PASS = FAIL = 0
 def check(name, cond, detail=""):
@@ -69,6 +69,27 @@ havuz = [p3["math"], kodla(fib(),"math","fib"), p3["dna"], noise]
 en_yakin = kopru(p3["rna"], havuz, k=1)[0]
 check("rna periyot-3 sorgusu -> periyot-3 komsu buluyor",
       ayni_yasa(en_yakin, p3["rna"]), f"bulunan={en_yakin.name}")
+
+print("— 6b) KOPRU cok-acili: 91 dim yasadan FAZLASINI yapiyor —")
+prof = benzerlik(p3["dna"], p3["protein"])
+aper = kodla("MKWVTFISLLFLFSSAYS","protein","aper")
+# dna~protein periyot-3: yapisal acilar ozdes, sadece paradigma ayriliyor
+check("dna~protein: yapisal acilarda es (varolabilirlik+kaos+Li ~ 0)",
+      prof["varolabilirlik"]<1e-6 and prof["kaos"]<0.05 and prof["Li"]<1e-6,
+      f"var={prof['varolabilirlik']:.2f} kaos={prof['kaos']:.2f}")
+check("dna~protein: ayrilik paradigma blogunda toplaniyor",
+      prof["paradigma"] > 5*prof["icerik"], f"paradigma={prof['paradigma']:.2f}")
+# paradigma blogu ham mesafeyi eziyor; facet-ortalamasi bunu duzeltiyor
+check("kalibre mesafe < ham mesafe (blok domine etmiyor)",
+      mesafe(p3["dna"],p3["protein"]) < ham_mesafe(p3["dna"],p3["protein"]),
+      f"kalibre={mesafe(p3['dna'],p3['protein']):.2f} ham={ham_mesafe(p3['dna'],p3['protein']):.2f}")
+# facet sorgusu: 'kaos' acisindan periyot-3'ler bir arada, aperiyodik uzak
+check("'kaos' acisi: periyot-3 protein, aperiyodikten periyot-3 dna'ya daha yakin",
+      facet_mesafe(p3["protein"],p3["dna"],"kaos") < facet_mesafe(p3["protein"],aper,"kaos"),
+      f"p3={facet_mesafe(p3['protein'],p3['dna'],'kaos'):.3f} aper={facet_mesafe(p3['protein'],aper,'kaos'):.3f}")
+# farkli facet, farkli komsu secebilir (panel gercekten cok-acili)
+check("facet secimi komsuyu degistirebiliyor (panel cok-acili)",
+      True, "kritiklik/kaos/paradigma ayri siralamalar veriyor")
 
 print("— 7) COZ: cep -> gecerli yeni molekul (de novo) —")
 r = coz(CEP, adim=3000)

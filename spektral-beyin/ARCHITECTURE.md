@@ -30,6 +30,18 @@ d=0.0 (kimlik tam korunur); periyot-3 dna~rna~protein~math **aynı kanonik
 yasaya** iner; de novo cep→geçerli molekül; ouroboros dizi recon_err=4e-13,
 molekül RMSD=2e-15; **yasasız gürültü sahte başarı vermez** (döngü kapanmaz).
 
+### Köprü = çok-açılı panel (yasa yalnızca bir açı)
+
+Köprü tek öklit mesafesi değil; coord_91 semantik bloklara (facet) ayrılır ve
+"hangi açıdan aynı?" sorulur. Ölçülen: periyot-3 dna~protein **6 açının 5'inde
+özdeş** (varolabilirlik=0.000, kaos=0.006, Li=0.000, içerik=0.007, kritiklik=0.09);
+tüm 0.95 ayrılık **tek blokta** (paradigma=0.947) toplanıyor. Ham 91-öklit bu yüzden
+yanıltır — 46-boyutlu yarı-doygun paradigma bloğu toplamı ezer. Çözüm: `mesafe`
+**facet-ortalaması** (kalibre=0.21 vs ham=0.95); hiçbir blok boyut sayısıyla domine
+edemez. `ayni_yasa` artık açılardan sadece biri (İSKELET). `kopru(hedef, adaylar,
+facet='kaos')` bir açıdan sorar; farklı açı farklı komşu döndürebilir.
+API: `facet_mesafe`, `benzerlik` (tam profil), `ham_mesafe` (kıyas), `FACET`.
+
 ## Organlar (durum)
 
 | # | Organ | Durum | Not |
