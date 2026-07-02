@@ -27,6 +27,26 @@ aritmetik merdivenler, asal↔zeta), **toplamsal** (Fourier — zaman serileri),
 `beyin.dualite(kimlik)`: her Kimlik'in dual yüzü — 'ham' raftaki nesneler için
 özellikle değerli (rekürans yasası olmayanın spektral kimliği olabilir).
 
+## coord_91 tersine çevrilebilir — panel = spektral depolama (`cekirdek/panel_ters.py`)
+
+91 dim matematiğinin **içinden** çıkan potansiyel (dış kaynak değil): coord_91'in
+G1 bloğu momentlerdir (μ_k = mean(λ̂ᵏ)). Ayrık spektrum 2n momentle **tam belirlenir**
+(klasik moment problemi) → spektrum, panelin kendi momentlerinden Hankel-kalemle
+**birebir geri kurulur** (n≤6 hata 10⁻¹¹). Üç şeyi aynı anda söyler:
+
+- **VERİ SAKLAMA:** spektrum = 2n moment (kayıpsız kod). Panel süs değil, depolama.
+  Tekrarlı özdeğerlerde momentler *ölçüyü* (atom+ağırlık) saklar — dejenere durum doğru.
+- **UZAY:** geçerli momentler bir **koni** (Hankel-PSD). coord_91'in varolabilirlik
+  dim'leri (30-36) tam bu koninin sertifikası — boolean hali; `moment_gecerli` sürekli marj.
+- **UZAY MANİPÜLE:** hedef moment ver → en yakın **geçerli** spektrumu kur (koni dışıysa
+  PSD'ye izdüşür). manipüle.py mod-uzayında (kök+genlik) bükerdi; bu **panel-uzayında**
+  (moment) kurar — ikisi aynı evrenin iki koordinatı.
+
+DÜRÜSTLÜK: moment reconstruction n büyüdükçe **üstel kötü-koşullu** (klasik gerçek):
+n≤6 birebir, n=8 kullanılabilir (10⁻³), n≥10 koşullanma duvarı. Test bunu gizlemez,
+ölçer. `test_panel_ters.py` 13/13; omurga üzerinde Fibonacci+molekül paneli → spektrum
+kayıpsız (domain fark etmez).
+
 ## Körlük yok — hiçbir nesne kaybedilmez (MDL / Kolmogorov)
 
 İlke: **"yasasız" diye bir seviye yoktur.** Kimlik = veriyi üreten en kısa
