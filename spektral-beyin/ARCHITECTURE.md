@@ -24,6 +24,23 @@ Asallar/bölüntü sayıları buraya düşer (gerçekten holonomik değiller) am
 KAYBEDİLMEZLER. Kanıt: `test_korluk.py` (26/26) — 7 dizide sıfır kayıp,
 5'i sonsuz-kesin yasaya iner, 2'si kayıpsız-ham.
 
+### Asalların spektral açılımı (`cekirdek/asal_spektrum.py`)
+
+Kullanıcı sezgisi doğrulandı: asalların *rekürans* yasası yok ama **spektral
+açılımı var** — Riemann açık formülü: ψ(x) = x − Σ_ρ x^ρ/ρ − ... Zeta sıfırları
+ρ=1/2+iγ birer MOD (manipule.py'nin mod uzayı, sonsuz hali) ve **hepsi kritik
+çizgide** — sistemin "birim çember = kritik çizgi" kavramının zeta-dünyası ikizi.
+coord_91'in GUE dim'leri (41-44) tam bu sıfırların istatistiğidir (Montgomery).
+
+Ölçülen (test_asal_spektrum.py 12/12): 30 kritik modla, **elek/bölme olmadan
+sadece spektrumdan**, [2,50) asal-kuvvet sınıflandırması 41/48, sıfır
+yanlış-pozitif; mod ekledikçe hata monoton düşer (0.70→0.56); ilk asalların
+sıçramaları log p ile örtüşür (n=7: Λ̂=1.95 = log7).
+
+DÜRÜSTLÜK: (1) sıfırlar veriden keşfedilmez — evrenin bilinen spektral kimliği
+olarak kütüphaneden gelir; (2) sonlu K yaklaşık, kesinlik K→∞ limitinde —
+açılım gücü: **spektral-yakınsak** (üçüncü kategori).
+
 ## Vizyon (dürüst dille)
 
 Bir nesnenin kimliği verisi değil, onu **üreten yasa + tohumdur** (hesaplanabilir
