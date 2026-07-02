@@ -76,3 +76,36 @@ def morf_kimlik(kimlik_A, kimlik_B, adim=11):
         s = spek[spek > 1e-12]
         siniflar.append(evrensellik(s)[0] if len(s) >= 4 else "AZ-MOD")
     return dict(yol=r["yol"], gecerli_hepsi=r["gecerli_hepsi"], sinif_yolu=siniflar)
+
+
+def morf_merdiven(spek_A, spek_B, adim=11):
+    """MERDIVEN-UZAYI morphing: (α,β) Jacobi merdivenini interpole et.
+
+    morf_panel moment uzayinda interpole eder — konveks ama moment problemi
+    n>=10'da ustel kotu-kosullu (panel_ters'te olculdu). Merdiven uzayi ayni
+    konveksligi tasir (β>0 pozitif koni konveks: her ara (α,β) gecerli Jacobi
+    matrisi -> gercek spektrum) VE mukemmel kosulludur (jacobi_depo: n=32'de
+    1e-15). Buyuk evrenlerde de kayipsiz morphing. 91 dim bagi: d_k = Πβ_i²
+    (pivot dim'leri 16-19) — yol, pivot-uzayinda da duz bir yoldur.
+
+    Doner: dict(yol=[spektrum...], gecerli_hepsi, n).
+    """
+    from jacobi_depo import depola, ac
+    A = np.sort(np.clip(np.asarray(spek_A, float), 0, None))[::-1]
+    B = np.sort(np.clip(np.asarray(spek_B, float), 0, None))[::-1]
+    n = min(len(A), len(B))
+    A, B = A[:n], B[:n]
+    aA, bA, lA = depola(A)
+    aB, bB, lB = depola(B)
+    m = min(len(aA), len(aB))                    # dejenere durumda kisa merdiven
+    aA, aB = aA[:m], aB[:m]
+    bA, bB = bA[:m-1], bB[:m-1]
+    yol, gecerli = [], True
+    for t in np.linspace(0.0, 1.0, adim):
+        al = (1 - t) * aA + t * aB
+        be = (1 - t) * bA + t * bB               # β>0 koni konveks: hep gecerli
+        lm = (1 - t) * lA + t * lB
+        s = ac(al, be, lm, n=n)
+        gecerli = gecerli and bool(np.all(np.isfinite(s)) and np.all(s >= -1e-12))
+        yol.append(s)
+    return dict(yol=yol, gecerli_hepsi=gecerli, n=n)

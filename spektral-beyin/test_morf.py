@@ -6,7 +6,7 @@ Calistir: python3 test_morf.py
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "cekirdek"))
 import numpy as np
-from morf import morf_panel, morf_mod, morf_kimlik
+from morf import morf_panel, morf_mod, morf_kimlik, morf_merdiven
 from panel_ters import spektrum_momentleri, moment_gecerli
 from manipule import evren_kur
 from beyin import kodla
@@ -69,6 +69,23 @@ print("— 6) DUPLIKASYON DEGIL: hedefe_buk TEK hedef, morf YORUNGE —")
 # morf A→B tum ara nesneleri verir; hedefe_buk sadece hedefe yaklasir
 check("morf sürekli yol dondururken (>2 ara nokta) farkli bir yetenek",
       len(morf_panel(A, B, adim=11)["yol"]) == 11)
+
+print("— 7) MERDIVEN MORPHING: buyuk n'de duvarsiz (moment yolu n>=10'da cokerdi) —")
+rng2 = np.random.default_rng(3)
+for n in (16, 24, 32):
+    A = np.sort(rng2.uniform(0.5, 8, n))[::-1]
+    B = np.sort(rng2.uniform(0.5, 8, n))[::-1]
+    r = morf_merdiven(A, B, adim=7)
+    ucA = np.max(np.abs(np.sort(r["yol"][0])[::-1] - A))
+    ucB = np.max(np.abs(np.sort(r["yol"][-1])[::-1] - B))
+    check(f"n={n}: uclar tam (1e-12) + tum ara adimlar gecerli",
+          ucA < 1e-12 and ucB < 1e-12 and r["gecerli_hepsi"],
+          f"ucA={ucA:.1e} ucB={ucB:.1e}")
+# beta>0 koni konveksligi: 15 rastgele cift, hep gecerli
+hep = all(morf_merdiven(np.sort(rng2.uniform(0.3,9,20))[::-1],
+                        np.sort(rng2.uniform(0.3,9,20))[::-1], adim=5)["gecerli_hepsi"]
+          for _ in range(15))
+check("15 rastgele cift (n=20): HER ara adim gecerli (beta-koni konveks)", hep)
 
 print(f"\nSONUC: {PASS} gecti, {FAIL} kaldi")
 sys.exit(1 if FAIL else 0)
