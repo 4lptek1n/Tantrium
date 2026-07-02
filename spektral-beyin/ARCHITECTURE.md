@@ -39,7 +39,21 @@ Occam sırasıyla iner ve **açılım gücünü** dürüstçe etiketler:
 | **polinom** | sonlu farklar (Newton) — kare, küp, üçgensel | sonsuz-kesin |
 | **c-finite** | sabit katsayı + kökler — Fibonacci, 2ⁿ | sonsuz-kesin |
 | **holonomik** | n'e bağlı katsayı — n!, Catalan, Motzkin | sonsuz-kesin |
+| **spektral-kesin** | sonsuz mod, yakınsak EXACT açılım — asal (Riemann), bölüntü (Rademacher) | sonsuz-kesin (yakınsak) |
 | **ham** | sıkıştırılamadı → veri kendi kimliği | gözlem-içi-kesin (ötesi *bilinmiyor*) |
+
+**spektral-kesin kategorisi** (`cekirdek/rademacher.py`, `asal_spektrum.py`):
+Sonlu yasası (c-finite/holonomik) olmayan ama EXACT spektral açılımı olan diziler.
+İkisi de Riemann açık formülüyle **aynı yapıda** — sonsuz modlu, her modu aritmetik
+bir toplam taşıyan, yuvarlanınca tam-tamsayı veren yakınsak seriler:
+- **asallar** → zeta sıfırları (mod = ρ), Connes dualitesi
+- **bölüntüler** → Rademacher: p(n) = (2π/(24n−1)^{3/4}) Σ_k (A_k(n)/k)·I_{3/2}(…),
+  mod = k, genlik = Kloosterman/Dedekind toplamı. Ölçülen: p(150)=40853235313
+  yalnız ~√n modla EXACT; K=1 Hardy-Ramanujan asimptotiği (`test_rademacher.py` 15/15).
+
+Bu **"ham" rafını daraltır**: modüler/aritmetik yapısı olan diziler ham'dan
+spektral-kesine terfi eder. (Holonomik avcı yine "ham" der — doğru, çünkü *sonlu*
+yasa yok; ama spektral açılım EXACT.) Körlükten kurtuluşun matematiksel derinliği.
 
 `ham` **körlük değil**: nesne kayıpsız saklanır, gözlem aralığı birebir açılır
 (ouroboros recon_err=0), ötesi ise dürüstçe "bilinmiyor" — sahte tahmin yok.
