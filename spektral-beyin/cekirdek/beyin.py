@@ -244,6 +244,28 @@ def ouroboros(k: Kimlik):
     return dict(kapali=False, sebep="bilinmeyen domain")
 
 
+# ── 5) DUALITE (evrensel): nesnenin gizli spektrumu — iki yonun kapisi ─────────
+def dualite(k: Kimlik, tur="auto", kac=10):
+    """Her Kimlik'in dual yuzu: gizli modlar + spektrum turu + evrensellik sinifi.
+
+    'ham' raftaki nesneler icin ozellikle degerli: rekurans yasasi olmayan
+    nesnenin SPEKTRAL kimligi olabilir (asallar -> zeta sifirlari ornegi).
+    Surekli spektrum da kimliktir — kusur degil (kaotik/rastgele nesnelerin
+    durust imzasi). Doner: dict(tur, modlar, spektrum_turu, duzluk, sinif, r_ort).
+    """
+    try:
+        from dualite import dualite_motoru
+    except ImportError:
+        from .dualite import dualite_motoru
+    if k.seq is None:
+        # operator domaini: dual = ozdeger seviyeleri, evrensellik dogrudan
+        from dualite import evrensellik
+        sinif, r_ort, guven = evrensellik(k.lam)
+        return dict(tur="operator", modlar=k.lam, spektrum_turu="nokta",
+                    duzluk=float("nan"), sinif=sinif, r_ort=r_ort, guven=guven)
+    return dualite_motoru(k.seq, tur=tur, kac=kac)
+
+
 # ── DEMO: dort fiil tek akista ───────────────────────────────────────────────────
 if __name__ == "__main__":
     print("="*70); print(" TEK OMURGA — kodla / kopru / coz / ouroboros"); print("="*70)

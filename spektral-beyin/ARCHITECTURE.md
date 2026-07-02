@@ -4,6 +4,29 @@
 > Metafor isim koyabilir; kanıt sayılmaz. Başarısızlık da rapordur:
 > σ'sı patlayan nesneye "yasasız" demek sistemin zaafı değil, çıktısıdır.
 
+## Evrensel dualite motoru (`cekirdek/dualite.py`)
+
+Connes/iz-formülü fikri **tüm veri türlerine**: her nesnenin doğrudan yüzü (veri)
+ve dual yüzü (gizli spektrum) var; motor iki yönde çalışır (keşif + kurulum).
+Doğru dönüşüm veri türüne göre seçilir: **çarpımsal** (log-Fourier/Mellin —
+aritmetik merdivenler, asal↔zeta), **toplamsal** (Fourier — zaman serileri),
+**operatör** (özdeğer — matrisler). Çıktı: gizli modlar + spektrum türü
+(nokta/sürekli) + evrensellik sınıfı (Poisson/GOE/GUE, coord_91 dim 41-44 dili).
+
+5 paralel deney ailesiyle **kalibre + düşman-test edildi** (`test_dualite.py` 21/21):
+- **zeta**: asal merdiveninden 10/10 sıfır, max sapma 0.015, sınıf GUE ✅
+- **evrensellik**: n=400'de GOE/GUE/POISSON 12/12; ampirik sınırlar 0.455/0.560;
+  n≤50'de `guven='zayıf'` (kesin etiket yalanı yok)
+- **düşman/sahte-pozitif avı** (kalibrasyonun kalbi): rastgele yürüyüş, 1/f, beyaz
+  gürültü, kaos → hepsi dürüstçe **"sürekli"**. Ham spektral düzlük bunları
+  "nokta" sanıyordu (0.002-0.19!); **beyazlatma** (güç-yasası zarfını kır) +
+  **lowfrac** + **seyreklik kapısı** ile düzeldi. Sürekli spektrum kimliktir,
+  kusur değil — kaotik/rastgele nesnenin dürüst imzası.
+- **çökme koruması**: n=1, sabit dizi, tek-değer → çökmüyor.
+
+`beyin.dualite(kimlik)`: her Kimlik'in dual yüzü — 'ham' raftaki nesneler için
+özellikle değerli (rekürans yasası olmayanın spektral kimliği olabilir).
+
 ## Körlük yok — hiçbir nesne kaybedilmez (MDL / Kolmogorov)
 
 İlke: **"yasasız" diye bir seviye yoktur.** Kimlik = veriyi üreten en kısa
