@@ -52,20 +52,23 @@ def extract_law(seq, max_order=8):
     Eli bol: yüksek order serbest, tüm kökler döner, seed kırpılmaz."""
     seq=np.asarray(seq,float)
     N=len(seq)
-    best=None
+    fitler=[]
     hi=min(max_order, N//2)
     for order in range(1, hi+1):
         try:
             c,roots,sigma=prony_law(seq,order)
         except Exception:
             continue
-        # en düşük σ + en düşük order tercih (Occam: gereksiz order'a girme)
-        score=sigma + 1e-4*order
-        if best is None or score<best[0]:
-            best=(score,c,roots,sigma,order)
-    if best is None:
+        fitler.append((order,c,roots,sigma))
+    if not fitler:
         return np.array([]),np.array([]),float('nan'),0
-    _,c,roots,sigma,order=best
+    # Occam DOGRU hali: once TAM cozumler (σ<1e-9) arasindan en dusuk order;
+    # ceza (1e-4·order) tam cozumu inexact-dusuk-order'a EZDIRMESIN. Tam yoksa σ.
+    tam=[f for f in fitler if f[3] < 1e-9]
+    if tam:
+        order,c,roots,sigma=min(tam, key=lambda f: f[0])
+    else:
+        order,c,roots,sigma=min(fitler, key=lambda f: f[3] + 1e-4*f[0])
     return c,roots,sigma,order
 
 # ---- TEK GEÇİŞ: ham -> genotip + coord ----
