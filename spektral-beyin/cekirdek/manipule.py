@@ -158,3 +158,47 @@ def hedefe_buk(e: Evren, hedef: dict, adim=250, n=24, rng=None):
             en = (d, aday)
         iz.append(en[0])
     return en[1], en[0], iz
+
+
+# ── HEDEFE BUK, MERDIVEN UZAYINDA: yasasiz/buyuk spektrumlar icin ────────────
+def hedefe_buk_merdiven(spek, hedef, adim=400, rng=None):
+    """Amaca gore SPEKTRUMU buk — (α,β) Jacobi merdiveni uzayinda arama.
+
+    hedefe_buk mod-uzayinda calisir (Evren ister: yasali dizi). Bu surum
+    HERHANGI bir spektrumu buker (yasa gerekmez) ve buyuk n'de kararlidir:
+    - merdiven uc-kosegen OPERATOR olarak gorulur; ozdegerleri = spektrum
+      -> her aday OTOMATIK gecerli (beta>0 yeter), nicemleme yok
+    - 91 dim bagi: d_k = Πβ_i² (pivot dim 16-19) — arama pivot-uzayinda yuruyus
+
+    hedef: {coord_dim_index: istenen_deger} (statik panel dim'leri).
+    Doner: (yeni_spektrum, son_uzaklik, iz).
+    """
+    from scipy.linalg import eigh_tridiagonal
+    try:
+        from jacobi_depo import depola
+        from coord91 import coord_91_temiz
+    except ImportError:
+        from .jacobi_depo import depola
+        from .coord91 import coord_91_temiz
+    rng = rng or np.random.default_rng(0)
+    s0 = np.sort(np.clip(np.asarray(spek, float), 0, None))[::-1]
+    al, be, lm = depola(s0)
+
+    def olc(a_, b_):
+        s = np.clip(np.sort(eigh_tridiagonal(a_, b_, eigvals_only=True))[::-1], 0, None) * lm
+        v, _ = coord_91_temiz(s)
+        return float(np.sqrt(sum((v[i] - t) ** 2 for i, t in hedef.items()))), s
+
+    en_d, en_s = olc(al, be)
+    iz = [en_d]
+    for _ in range(adim):
+        ca, cb = al.copy(), be.copy()
+        if rng.random() < 0.5:
+            i = int(rng.integers(len(ca))); ca[i] += float(rng.normal(0, 0.08))
+        else:
+            i = int(rng.integers(len(cb))); cb[i] *= float(np.exp(rng.normal(0, 0.3)))
+        d, s = olc(ca, cb)
+        if d < en_d:
+            en_d, al, be, en_s = d, ca, cb, s
+        iz.append(en_d)
+    return en_s, en_d, iz

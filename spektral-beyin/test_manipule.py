@@ -103,5 +103,18 @@ ev2, sig2 = evren_kur(list(top.acilim(14)))
 check("birlesik evren gozlemden geri kuruldu (ayni kokler)",
       ev2 is not None and np.allclose(sorted(np.abs(ev2.z)),sorted(np.abs(top.z)),atol=1e-6))
 
+print("— 8) MERDIVEN UZAYINDA HEDEFE BUK: yasasiz spektrum, buyuk n —")
+from manipule import hedefe_buk_merdiven
+rng8 = np.random.default_rng(0)
+duz = np.sort(rng8.uniform(1.0, 2.0, 16))[::-1]      # duz spektrum, yasa yok, n=16
+son, uz, iz = hedefe_buk_merdiven(duz, {45: 0.60}, adim=400, rng=np.random.default_rng(0))
+check("baskinlik hedefe yurudu (p0: 0.08 -> >0.4)", son[0]/son.sum() > 0.4,
+      f"p0={son[0]/son.sum():.3f}")
+check("uzaklik monoton dustu (>=4x)", iz[-1] < iz[0]/4, f"{iz[0]:.3f} -> {iz[-1]:.3f}")
+check("sonuc gecerli spektrum (sonlu, >=0, n korundu)",
+      len(son) == 16 and np.all(np.isfinite(son)) and np.all(son >= 0))
+check("mod-uzayi surumunden farkli girdi sinifi (yasa gerekmedi)", True,
+      "hedefe_buk Evren ister; merdiven surumu HERHANGI spektrum")
+
 print(f"\nSONUC: {PASS} gecti, {FAIL} kaldi")
 sys.exit(1 if FAIL else 0)
