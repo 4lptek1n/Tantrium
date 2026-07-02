@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 from engine import gram_spectrum, prony_law
 from coord91 import coord_91_temiz as _coord_full
 from domains import seq_to_A, extract_law, A_molecule
+from hiyerarsi import yasa_avcisi, holonomik_ac
 import de_novo as dn
 
 # ── Domain sozlukleri: alfabe -> sayi (her uzayin cekirdege inis kurali) ──────
@@ -55,10 +56,17 @@ class Kimlik:
     seq: Optional[np.ndarray] = None   # dizi domainlerinde ham sayisal dizi
     coords3d: Optional[np.ndarray] = None  # operator domainlerinde 3D konum
     types: Optional[list] = None       # operator domainlerinde atom tipleri
+    seviye: str = "yasasiz"            # 'c-finite' | 'holonomik' | 'yasasiz'
+    holo: Optional[np.ndarray] = None  # holonomik yasa: p_k(n) katsayi matrisi
+    derece: int = 0                    # holonomik polinom derecesi
 
     def kisa(self):
-        yl = "yasasiz" if (self.order == 0 or not np.isfinite(self.sigma)) else \
-             f"yasa(order={self.order}, σ={self.sigma:.1e})"
+        if self.seviye == "yasasiz":
+            yl = "yasasiz"
+        else:
+            yl = f"{self.seviye}(order={self.order}" + \
+                 (f", derece={self.derece}" if self.seviye == "holonomik" else "") + \
+                 f", σ={self.sigma:.1e})"
         return f"<{self.domain}:{self.name} | {yl} | rank={int(np.sum(self.lam>1e-9))} | coord91>"
 
 
@@ -83,10 +91,14 @@ def kodla(veri, domain="math", name="x", **kw):
         seq = _sayisallastir(veri, domain)
         A = seq_to_A(seq)
         _, lam, _ = gram_spectrum(A)
-        law, seed, sigma, order = extract_law(seq)
-        coord, _ = _coord_full(lam, seq=seq, law=law, roots=seed)
+        av = yasa_avcisi(seq)                       # hiyerarsik av: c-finite -> holonomik -> yasasiz
+        law, seed = av["law"], av["seed"]
+        coord, _ = _coord_full(lam, seq=seq,
+                               law=law if len(law) else None,
+                               roots=seed if len(seed) else None)
         return Kimlik(name, domain, A, lam, coord, law=law, seed=seed,
-                      sigma=sigma, order=order, seq=seq)
+                      sigma=av["sigma"], order=av["order"], seq=seq,
+                      seviye=av["seviye"], holo=av["holo"], derece=av["derece"])
 
     if domain in OPERATOR_DOMAINLERI:
         # veri = (atoms, X)  ya da  (atoms, bonds, EN) — molekul
@@ -173,6 +185,17 @@ def ouroboros(k: Kimlik):
     Operator dom.: tam operator (Gram=ozdeger+ozvektor) -> MDS -> 3D. Metrik: RMSD.
     """
     if k.domain in DIZI_DOMAINLERI:
+        if k.seviye == "holonomik":
+            # n'e bagli yasa: ilk r terimden diziyi + bir adim otesini kur
+            uz = holonomik_ac(k.holo, k.seq[:k.order], len(k.seq) + 1)
+            if uz is None:
+                return dict(kapali=False, sebep="yasa tekil", recon_err=float("inf"))
+            rebuilt, otesi = uz[:len(k.seq)], float(uz[-1])
+            rel = float(np.max(np.abs(rebuilt - k.seq) / (np.abs(k.seq) + 1e-12)))
+            k2 = kodla(rebuilt, domain="math", name=k.name + "'")
+            return dict(kapali=rel < 1e-6, recon_err=rel,
+                        yasa_korundu=(k2.seviye == "holonomik" and k2.order == k.order),
+                        bir_adim_otesi=otesi)
         if k.order == 0 or k.law.size == 0:
             return dict(kapali=False, sebep="yasasiz", recon_err=float("inf"))
         o = k.order

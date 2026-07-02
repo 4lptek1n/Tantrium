@@ -151,11 +151,19 @@ doğru imzadır. Kod: `cekirdek/dinamik.py`, testler: `test_dinamik.py` (19 test
 - Kabul: 40k popülasyonda hiçbir dim std<0.05'te yapışık değil;
   domain-aşan mesafeler doygunluk artefaktı değilse rapor, artefaktsa geri çekilir.
 
-### Faz 2 — Yasa hiyerarşisi
-- Prony üstüne P-recursive/holonomik uydurucu (katsayılar n'e bağlı:
-  faktöriyel, Catalan, çoğu OEIS buraya düşer), üstüne rasyonel üreteç fonksiyonu
-- Kabul: Catalan ve n! holonomik katta σ<1e-8; asallar tüm katlarda
-  "yasasız" damgası yer — ve bu benchmark'ta **başarı** olarak raporlanır.
+### Faz 2 — Yasa hiyerarşisi ✅ (`cekirdek/hiyerarsi.py`)
+Körlüğün sebebi: Prony yalnız **sabit** katsayılı rekürans (C-finite) görüyordu.
+Evrendeki kuralların çoğu **pozisyona bağlı** katsayılı (holonomik): n!→ s[n]=n·s[n-1],
+Catalan→ (n+1)s[n]=(4n-2)s[n-1]. Merdiven: C-finite → holonomik (r,d taraması,
+katsayılar lineer → SVD ile kesin) → dürüst "yasasız".
+- [x] n!, Catalan holonomik order-1; Motzkin order-2; hepsi σ<1e-16
+- [x] **Dürüstlük mekanizması:** son terimler saklanır (holdout); yasa onları
+      GÖRMEDEN tahmin etmeli. n! → 18!'i görmeden doğru tahmin etti.
+- [x] Occam: Fibonacci/2ⁿ hâlâ C-finite (basit kat kazanır)
+- [x] Asallar, bölüntü sayıları, gürültü → "yasasız" (holdout reddi) — sahte yasa yok
+- [x] Omurga: `kodla` seviye/holo taşıyor, `ouroboros` holonomik evreni kapatıyor
+- Kapsama (9 dizi): eski avcı 3/9 → hiyerarşi 7/9. `test_hiyerarsi.py` 17/17.
+- Kalan: cebirsel üreteç fonksiyonu katı + holonomik evrenlerde manipülasyon.
 
 ### Faz 3 — Faz izi (kimliğe özvektörü geri ver)
 - Genotip = (yasa, seed, σ) + ilk k özvektörün kompakt izi

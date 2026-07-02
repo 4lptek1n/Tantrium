@@ -43,7 +43,8 @@ check("molecule: tam operator (ozvektor V dolu)", mol.V is not None and mol.V.sh
 print("— 2) KODLA: yasali/yasasiz dogru ayriliyor —")
 check("Fibonacci C-finite: σ ~ 0", kinds["math"].sigma < 1e-8, f"σ={kinds['math'].sigma:.1e}")
 noise = kodla(list(np.random.default_rng(1).normal(50,10,20)), "math", "noise")
-check("Gurultu: σ buyuk (yasasiz)", noise.sigma > 0.05, f"σ={noise.sigma:.3f}")
+check("Gurultu: yasasiz (hiyerarsi holdout'ta reddetti)", noise.seviye == "yasasiz",
+      f"seviye={noise.seviye}")
 
 print("— 3) KOPRU: periyot-3 domainler ARASI ayni yasa (cross-space cekirdek) —")
 p3 = {u: kodla(seq, u, f"p3-{u}") for u,seq in {
@@ -56,7 +57,8 @@ print("— 4) KOPRU: transkripsiyon DNA->RNA kimligi TAM korur (d~0) —")
 dna = "ATGCGTACGTTGCACGATCG"; rna = dna.replace("T","U")
 kd, kr = kodla(dna,"dna","d"), kodla(rna,"rna","r")
 check("DNA->RNA coord mesafe ~ 0", mesafe(kd,kr) < 1e-9, f"d={mesafe(kd,kr):.1e}")
-check("DNA->RNA ayni yasa", ayni_yasa(kd,kr))
+check("DNA->RNA kimlik korundu (ayni seviye + birebir coord)",
+      kd.seviye == kr.seviye and ham_mesafe(kd,kr) < 1e-9, f"seviye={kd.seviye}")
 
 print("— 5) KOPRU: aperiyodik UZAK, periyodik YAKIN (ayirt ediyor) —")
 d_in  = mesafe(p3["protein"], p3["dna"])
