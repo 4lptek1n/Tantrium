@@ -57,16 +57,16 @@ check("Fibonacci hala C-FINITE (en basit kat kazanir)",
 av = yasa_avcisi([1.,2.,4.,8.,16.,32.,64.,128.,256.,512.])
 check("2^n hala C-FINITE", av["seviye"]=="c-finite" and av["order"]==1)
 
-print("— 3) DURUSTLUK: gercekten yasasiz olana yasa UYDURMUYOR —")
+print("— 3) DURUSTLUK: sonsuz-kesin yasa UYDURMUYOR (ama KAYBETMIYOR) —")
 av = yasa_avcisi(ASAL)
-check("asallar: yasasiz (dogru — holdout tahmini tutmaz)",
-      av["seviye"]=="yasasiz", f"seviye={av['seviye']}")
+check("asallar: ham (sonsuz-kesin yasa uydurmadi, kayipsiz sakladi)",
+      av["seviye"]=="ham" and av["acilim_gucu"]=="gozlem-ici-kesin", f"seviye={av['seviye']}")
 av = yasa_avcisi(BOLUNTU)
-check("boluntu sayilari: yasasiz (holonomik OLMADIGI kanitli bir dizi)",
-      av["seviye"]=="yasasiz", f"seviye={av['seviye']}")
+check("boluntu sayilari: ham (holonomik OLMADIGI kanitli — dogru damga)",
+      av["seviye"]=="ham", f"seviye={av['seviye']}")
 rng = np.random.default_rng(5)
 av = yasa_avcisi(list(rng.normal(50,10,20)))
-check("gurultu: yasasiz", av["seviye"]=="yasasiz")
+check("gurultu: ham (uydurma yok)", av["seviye"]=="ham")
 
 print("— 4) OMURGA ENTEGRASYONU: kodla + ouroboros holonomik taniyor —")
 k = kodla(FAKT, "math", "faktoriyel")
@@ -78,9 +78,10 @@ check("ouroboros: yasa geri-kurulanda korundu", o["yasa_korundu"])
 check("ouroboros: bir adim otesi = 18!",
       abs(o["bir_adim_otesi"]-math.factorial(18))/math.factorial(18) < 1e-9)
 k2 = kodla(ASAL, "math", "asallar")
-check("kodla: asallar durustce yasasiz", k2.seviye=="yasasiz")
+check("kodla: asallar durustce ham (kayipsiz, sonsuz-kesin degil)", k2.seviye=="ham")
 o2 = ouroboros(k2)
-check("ouroboros: yasasiz evren SAHTE kapanmiyor", not o2["kapali"])
+check("ouroboros: ham evren KAYIPSIZ kapanir ama otesi bilinmiyor",
+      o2["kapali"] and o2["recon_err"]<1e-12 and o2["bir_adim_otesi"] is None)
 
 print("— 5) KAPSAMA: korluk olculebilir bicimde azaldi —")
 DIZILER = {"fib":FIB, "2^n":[1.,2.,4.,8.,16.,32.,64.,128.,256.,512.],

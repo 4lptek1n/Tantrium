@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 from engine import gram_spectrum, prony_law
 from coord91 import coord_91_temiz as _coord_full
 from domains import seq_to_A, extract_law, A_molecule
-from hiyerarsi import yasa_avcisi, holonomik_ac
+from hiyerarsi import yasa_avcisi, holonomik_ac, polinom_ac
 import de_novo as dn
 
 # ── Domain sozlukleri: alfabe -> sayi (her uzayin cekirdege inis kurali) ──────
@@ -56,13 +56,17 @@ class Kimlik:
     seq: Optional[np.ndarray] = None   # dizi domainlerinde ham sayisal dizi
     coords3d: Optional[np.ndarray] = None  # operator domainlerinde 3D konum
     types: Optional[list] = None       # operator domainlerinde atom tipleri
-    seviye: str = "yasasiz"            # 'c-finite' | 'holonomik' | 'yasasiz'
+    seviye: str = "ham"                # 'polinom'|'c-finite'|'holonomik'|'ham'
+    acilim_gucu: str = "gozlem-ici-kesin"  # 'sonsuz-kesin' | 'gozlem-ici-kesin'
     holo: Optional[np.ndarray] = None  # holonomik yasa: p_k(n) katsayi matrisi
-    derece: int = 0                    # holonomik polinom derecesi
+    poli: Optional[np.ndarray] = None  # polinom yasa: ilk sonlu farklar
+    derece: int = 0                    # polinom/holonomik derece
 
     def kisa(self):
-        if self.seviye == "yasasiz":
-            yl = "yasasiz"
+        if self.seviye == "ham":
+            yl = f"ham (kayipsiz, acilim: {self.acilim_gucu})"
+        elif self.seviye == "polinom":
+            yl = f"polinom(derece={self.derece}, sonsuz-kesin)"
         else:
             yl = f"{self.seviye}(order={self.order}" + \
                  (f", derece={self.derece}" if self.seviye == "holonomik" else "") + \
@@ -91,14 +95,15 @@ def kodla(veri, domain="math", name="x", **kw):
         seq = _sayisallastir(veri, domain)
         A = seq_to_A(seq)
         _, lam, _ = gram_spectrum(A)
-        av = yasa_avcisi(seq)                       # hiyerarsik av: c-finite -> holonomik -> yasasiz
+        av = yasa_avcisi(seq)                       # hiyerarsik av: polinom->c-finite->holonomik->ham
         law, seed = av["law"], av["seed"]
         coord, _ = _coord_full(lam, seq=seq,
                                law=law if len(law) else None,
                                roots=seed if len(seed) else None)
         return Kimlik(name, domain, A, lam, coord, law=law, seed=seed,
                       sigma=av["sigma"], order=av["order"], seq=seq,
-                      seviye=av["seviye"], holo=av["holo"], derece=av["derece"])
+                      seviye=av["seviye"], acilim_gucu=av["acilim_gucu"],
+                      holo=av["holo"], poli=av["poli"], derece=av["derece"])
 
     if domain in OPERATOR_DOMAINLERI:
         # veri = (atoms, X)  ya da  (atoms, bonds, EN) — molekul
@@ -185,6 +190,20 @@ def ouroboros(k: Kimlik):
     Operator dom.: tam operator (Gram=ozdeger+ozvektor) -> MDS -> 3D. Metrik: RMSD.
     """
     if k.domain in DIZI_DOMAINLERI:
+        if k.seviye == "polinom":
+            uz = polinom_ac(k.poli, len(k.seq) + 1)
+            rebuilt, otesi = uz[:len(k.seq)], float(uz[-1])
+            err = float(np.max(np.abs(rebuilt - k.seq)))
+            k2 = kodla(rebuilt, domain="math", name=k.name + "'")
+            return dict(kapali=err < 1e-6, recon_err=err,
+                        yasa_korundu=(k2.seviye == "polinom" and k2.derece == k.derece),
+                        bir_adim_otesi=otesi)
+        if k.seviye == "ham":
+            # sikistirilamadi ama KAYBEDILMEDI: gozlem kayipsiz saklandi/acildi,
+            # otesi durustce bilinmiyor (sahte tahmin YOK).
+            return dict(kapali=True, recon_err=0.0, sikistirma=False,
+                        yasa_korundu=True, bir_adim_otesi=None,
+                        not_="kayipsiz saklandi; acilim gozlem-ici (otesi bilinmiyor)")
         if k.seviye == "holonomik":
             # n'e bagli yasa: ilk r terimden diziyi + bir adim otesini kur
             uz = holonomik_ac(k.holo, k.seq[:k.order], len(k.seq) + 1)

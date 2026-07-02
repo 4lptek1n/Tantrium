@@ -21,7 +21,33 @@ DURUSTLUK MEKANIZMASI: uydurma egitim kismindadir; son terimler SAKLANIR
 kat reddedilir. SVD kucuk artik bulur ama gelecegi bilemezse yasa degildir.
 """
 import numpy as np
+from math import comb
 from domains import extract_law
+
+
+# ── Kat 0: POLINOM (sonlu farklar) — en basit, en yorumlanabilir ─────────────
+def polinom_uydur(s, tol=1e-9):
+    """Sonlu fark tablosu: Δ^k s sabitse s, n'in k. derece polinomu.
+    Doner: (derece, ilk_farklar) ya da None. Newton ileri-fark ile kesin acilir."""
+    s = np.asarray(s, float)
+    N = len(s)
+    olcek = np.max(np.abs(s)) + 1.0
+    cur = s.copy()
+    firsts = [float(cur[0])]
+    for k in range(1, N):
+        cur = np.diff(cur)
+        firsts.append(float(cur[0]))
+        if len(cur) >= 2 and np.max(np.abs(cur - cur[0])) < tol * olcek:
+            return k, np.array(firsts)      # Δ^k sabit -> derece k
+        if len(cur) < 2:
+            break
+    return None
+
+
+def polinom_ac(firsts, n):
+    """Newton ileri-fark: s[m] = Σ_k C(m,k)·Δ^k s0. Polinom kesin acilir/genisler."""
+    K = len(firsts)
+    return np.array([sum(comb(m, k) * firsts[k] for k in range(K)) for m in range(n)])
 
 
 def _cfinite_ac(law, ilk, n):
@@ -68,29 +94,50 @@ def holonomik_ac(coef, ilk, n_top):
 HOLONOMIK_KATLAR = [(1, 1), (1, 2), (2, 1), (2, 2), (3, 1), (3, 2)]
 
 
-def yasa_avcisi(seq, tol_sigma=1e-9, tol_tahmin=1e-6):
-    """Hiyerarsik yasa avi. Doner: dict(seviye, sigma, order, derece, ...).
+def _sonuc(seviye, gucu, **kw):
+    taban = dict(seviye=seviye, acilim_gucu=gucu, sigma=float("nan"), order=0,
+                 derece=0, law=np.array([]), seed=np.array([]), holo=None,
+                 poli=np.array([]))
+    taban.update(kw)
+    return taban
 
-    seviye 'c-finite'  : law (katsayilar) + seed (kokler)  — mod uzayi acik
-    seviye 'holonomik' : holo (coef matrisi)                — n'e bagli yasa
-    seviye 'yasasiz'   : hicbir kat holdout'u tahmin edemedi (DURUST damga)
+
+def yasa_avcisi(seq, tol_sigma=1e-9, tol_tahmin=1e-6):
+    """Hiyerarsik yasa avi — KORLUK YOK: her nesne kayipsiz bir kimlige iner.
+
+    'yasasiz' diye bir sey yoktur (Kolmogorov/Solomonoff): kimlik = veriyi
+    ureten en kisa ACILABILIR programdir; en kotu ihtimalle verinin kendisidir.
+    Merdiven (Occam, en basit kat kazanir); acilim_gucu = ne kadar ileri kesin:
+
+      seviye 'polinom'   : sonlu farklar (poli)          -> acilim: sonsuz-kesin
+      seviye 'c-finite'  : sabit katsayi (law+seed)       -> acilim: sonsuz-kesin
+      seviye 'holonomik' : n'e bagli katsayi (holo)       -> acilim: sonsuz-kesin
+      seviye 'ham'       : sikistirilamadi ama KAYIPSIZ   -> acilim: gozlem-ici-kesin
+                           (veri kendi kimligidir; otesi durustce 'bilinmiyor')
     """
     s = np.asarray(seq, float)
     N = len(s)
     if N < 6:
-        return dict(seviye="yasasiz", sigma=1.0, order=0, derece=0,
-                    law=np.array([]), seed=np.array([]), holo=None)
+        return _sonuc("ham", "gozlem-ici-kesin", order=N)
     hold = min(3, max(1, N // 6))
     egit, test = s[: N - hold], s[N - hold:]
 
-    # ── Kat 1: C-finite (Occam — en basit aciklama once) ──
+    def holdout_tut(full):
+        return np.max(np.abs(full[N - hold:] - test) / (np.abs(test) + 1e-12)) < tol_tahmin
+
+    # ── Kat 0: polinom (en basit, sonlu farklar) ──
+    pol = polinom_uydur(egit)
+    if pol is not None:
+        derece, firsts = pol
+        if holdout_tut(polinom_ac(firsts, N)):
+            return _sonuc("polinom", "sonsuz-kesin", order=derece, derece=derece,
+                          poli=polinom_uydur(s)[1] if polinom_uydur(s) else firsts)
+
+    # ── Kat 1: C-finite ──
     c, roots, sig, order = extract_law(egit)
-    if order and np.isfinite(sig) and sig < tol_sigma:
-        full = _cfinite_ac(c, egit[:order], N)
-        err = np.max(np.abs(full[N - hold:] - test) / (np.abs(test) + 1e-12))
-        if err < tol_tahmin:
-            return dict(seviye="c-finite", sigma=float(sig), order=int(order),
-                        derece=0, law=np.asarray(c), seed=np.asarray(roots), holo=None)
+    if order and np.isfinite(sig) and sig < tol_sigma and holdout_tut(_cfinite_ac(c, egit[:order], N)):
+        return _sonuc("c-finite", "sonsuz-kesin", sigma=float(sig), order=int(order),
+                      law=np.asarray(c), seed=np.asarray(roots))
 
     # ── Kat 2: holonomik (katsayilar n'e bagli) ──
     for r, d in HOLONOMIK_KATLAR:
@@ -99,14 +146,12 @@ def yasa_avcisi(seq, tol_sigma=1e-9, tol_tahmin=1e-6):
         coef, sig = holonomik_uydur(egit, r, d)
         if sig > 1e-8:
             continue
-        full = holonomik_ac(coef, s[:r], N)      # ilk r terimden TUM diziyi kur
-        if full is None:
-            continue
-        err = np.max(np.abs(full - s) / (np.abs(s) + 1e-12))
-        if err < tol_tahmin:                     # holdout dahil hepsi tutmali
-            return dict(seviye="holonomik", sigma=float(sig), order=int(r),
-                        derece=int(d), law=np.array([]), seed=np.array([]), holo=coef)
+        full = holonomik_ac(coef, s[:r], N)
+        if full is not None and np.max(np.abs(full - s) / (np.abs(s) + 1e-12)) < tol_tahmin:
+            return _sonuc("holonomik", "sonsuz-kesin", sigma=float(sig),
+                          order=int(r), derece=int(d), holo=coef)
 
-    # ── Kat 3: durust damga ──
-    return dict(seviye="yasasiz", sigma=float(sig) if np.isfinite(sig) else 1.0,
-                order=0, derece=0, law=np.array([]), seed=np.array([]), holo=None)
+    # ── Kat 3: HAM — sikistirilamadi ama KAYBEDILMEDI ──
+    # veri kendi kimligidir: kayipsiz saklanir, gozlem araligi kesin acilir,
+    # otesi durustce 'bilinmiyor'. Bu korluk DEGIL — bilginin sinirinin durust ilani.
+    return _sonuc("ham", "gozlem-ici-kesin", order=N)

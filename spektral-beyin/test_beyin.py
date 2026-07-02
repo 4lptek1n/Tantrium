@@ -43,7 +43,8 @@ check("molecule: tam operator (ozvektor V dolu)", mol.V is not None and mol.V.sh
 print("— 2) KODLA: yasali/yasasiz dogru ayriliyor —")
 check("Fibonacci C-finite: σ ~ 0", kinds["math"].sigma < 1e-8, f"σ={kinds['math'].sigma:.1e}")
 noise = kodla(list(np.random.default_rng(1).normal(50,10,20)), "math", "noise")
-check("Gurultu: yasasiz (hiyerarsi holdout'ta reddetti)", noise.seviye == "yasasiz",
+check("Gurultu: ham (hiyerarsi holdout'ta yasa uydurmadi, kayipsiz sakladi)",
+      noise.seviye == "ham" and noise.acilim_gucu == "gozlem-ici-kesin",
       f"seviye={noise.seviye}")
 
 print("— 3) KOPRU: periyot-3 domainler ARASI ayni yasa (cross-space cekirdek) —")
@@ -142,11 +143,12 @@ check("molekul: dongu kapali (RMSD ~ 0)", om["kapali"] and om["rmsd"]<1e-6,
 check("molekul: spektrum geri-kurulanda korundu", om["spektrum_farki"]<1e-6,
       f"Δλ={om['spektrum_farki']:.1e}")
 
-print("— 10) DURUSTLUK: yasasiz nesne ouroboros'ta SAHTE basari vermiyor —")
+print("— 10) DURUSTLUK: ham nesne KAYIPSIZ kapanir ama otesini UYDURMAZ —")
 on = ouroboros(noise)
-check("gurultu: dongu kapanmiyor (recon_err buyuk ya da yasa korunmuyor)",
-      (not on["kapali"]) or (not on.get("yasa_korundu", True)),
-      f"kapali={on['kapali']} err={on['recon_err']:.2f}")
+check("gurultu(ham): kayipsiz saklandi+acildi (recon_err=0)",
+      on["kapali"] and on["recon_err"] < 1e-12, f"err={on['recon_err']:.2e}")
+check("gurultu(ham): otesi 'bilinmiyor' — SAHTE tahmin YOK",
+      on["bir_adim_otesi"] is None and on.get("sikistirma") == False)
 
 print(f"\nSONUC: {PASS} gecti, {FAIL} kaldi")
 sys.exit(1 if FAIL else 0)

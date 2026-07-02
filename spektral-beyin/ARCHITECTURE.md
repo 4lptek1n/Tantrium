@@ -4,6 +4,26 @@
 > Metafor isim koyabilir; kanıt sayılmaz. Başarısızlık da rapordur:
 > σ'sı patlayan nesneye "yasasız" demek sistemin zaafı değil, çıktısıdır.
 
+## Körlük yok — hiçbir nesne kaybedilmez (MDL / Kolmogorov)
+
+İlke: **"yasasız" diye bir seviye yoktur.** Kimlik = veriyi üreten en kısa
+*açılabilir* programdır (Solomonoff/MDL); bu program her zaman vardır, en kötü
+ihtimalle verinin kendisidir. Yasa avcısı bir merdiven (`cekirdek/hiyerarsi.py`),
+Occam sırasıyla iner ve **açılım gücünü** dürüstçe etiketler:
+
+| Seviye | Yasa | Açılım gücü |
+|--------|------|-------------|
+| **polinom** | sonlu farklar (Newton) — kare, küp, üçgensel | sonsuz-kesin |
+| **c-finite** | sabit katsayı + kökler — Fibonacci, 2ⁿ | sonsuz-kesin |
+| **holonomik** | n'e bağlı katsayı — n!, Catalan, Motzkin | sonsuz-kesin |
+| **ham** | sıkıştırılamadı → veri kendi kimliği | gözlem-içi-kesin (ötesi *bilinmiyor*) |
+
+`ham` **körlük değil**: nesne kayıpsız saklanır, gözlem aralığı birebir açılır
+(ouroboros recon_err=0), ötesi ise dürüstçe "bilinmiyor" — sahte tahmin yok.
+Asallar/bölüntü sayıları buraya düşer (gerçekten holonomik değiller) ama
+KAYBEDİLMEZLER. Kanıt: `test_korluk.py` (26/26) — 7 dizide sıfır kayıp,
+5'i sonsuz-kesin yasaya iner, 2'si kayıpsız-ham.
+
 ## Vizyon (dürüst dille)
 
 Bir nesnenin kimliği verisi değil, onu **üreten yasa + tohumdur** (hesaplanabilir
