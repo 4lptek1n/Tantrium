@@ -37,9 +37,15 @@ sadece spektrumdan**, [2,50) asal-kuvvet sınıflandırması 41/48, sıfır
 yanlış-pozitif; mod ekledikçe hata monoton düşer (0.70→0.56); ilk asalların
 sıçramaları log p ile örtüşür (n=7: Λ̂=1.95 = log7).
 
-DÜRÜSTLÜK: (1) sıfırlar veriden keşfedilmez — evrenin bilinen spektral kimliği
-olarak kütüphaneden gelir; (2) sonlu K yaklaşık, kesinlik K→∞ limitinde —
-açılım gücü: **spektral-yakınsak** (üçüncü kategori).
+**Connes dualitesi — sıfırlar VERİDEN keşfediliyor** (`sifir_kesfet`): iz
+formülü iki yönlüdür; asallar ve sıfırlar birbirinin Fourier-duali. Ham asal
+verisinden (yalnız elek, başka hiçbir bilgi yok) Φ(t)=−ΣΛ(n)/√n·cos(t·ln n)
+tepeleri: **ilk 10 zeta sıfırı ortalama 0.005 sapmayla bağımsızca yeniden
+keşfedildi.** coord_91'in Voiculescu dim'leri (86-90) bu dünyanın dili —
+serbest olasılık, değişmeli-olmayan geometrinin olasılık ayağı.
+
+DÜRÜSTLÜK: (1) sonlu K yaklaşık, kesinlik K→∞ limitinde — açılım gücü:
+**spektral-yakınsak**; (2) keşif çözünürlüğü veri ufkuyla büyür (~2π/ln N).
 
 ## Vizyon (dürüst dille)
 

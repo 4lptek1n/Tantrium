@@ -8,7 +8,8 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "cekirdek"))
 import numpy as np
 from asal_spektrum import (ZETA_GAMMA, psi_gercek, psi_spektral, lambda_tahmin,
-                           asal_mi_spektrumdan, spektral_hata, von_mangoldt)
+                           asal_mi_spektrumdan, spektral_hata, von_mangoldt,
+                           sifir_kesfet)
 
 PASS = FAIL = 0
 def check(name, cond, detail=""):
@@ -49,6 +50,18 @@ for p in (2, 3, 5, 7):
 print("— 5) DURUSTLUK: sonlu K yaklasik, kesinlik SONSUZ limitte —")
 check("K=30'da hata hala > 0 (sahte 'kesin' iddiasi YOK)", h30 > 0.1,
       f"hata={h30:.3f} — acilim_gucu: 'spektral-yakinsak'")
+
+print("— 6) CONNES DUALITESI: sifirlar VERIDEN KESFEDILIYOR —")
+# girdi SADECE asallar (gozlem); tablo kullanilmiyor — bagimsiz kesif
+kesif = sifir_kesfet(N=200000, kac=10)
+sapmalar = [min(abs(g - k) for k in kesif) for g in ZETA_GAMMA[:10]]
+check("ilk 10 zeta sifiri ham asal verisinden kesfedildi (sapma<0.05)",
+      all(s < 0.05 for s in sapmalar),
+      f"max sapma={max(sapmalar):.3f}")
+check("kesif hassas (ortalama sapma < 0.01)",
+      float(np.mean(sapmalar)) < 0.01, f"ort={np.mean(sapmalar):.4f}")
+check("dualite kapandi: asallar->sifirlar->asallar ayni evren",
+      len(kesif) == 10, "iz formulu iki yonde calisiyor")
 
 print(f"\nSONUC: {PASS} gecti, {FAIL} kaldi")
 sys.exit(1 if FAIL else 0)

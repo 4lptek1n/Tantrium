@@ -13,11 +13,21 @@ KRITIK CIZGIDE (Re=1/2) — sistemin 'birim cember = kritik cizgi' kavraminin
 zeta-dunyasindaki ikizi. coord_91'in GUE dim'leri (41-44) bu sifirlarin
 istatistigidir (Montgomery–Odlyzko).
 
+CONNES DUALITESI (iz formulu): asallar ve sifirlar birbirinin Fourier-DUALI.
+Iki yon de calisir:
+  sifirlar -> asallar : psi_spektral (acik formul)
+  asallar  -> sifirlar: sifir_kesfet — Φ(t) = -Σ Λ(n)/√n·cos(t·ln n) tepeleri
+                        tam zeta sifirlarinda. VERIDEN KESIF mumkun (olculdu:
+                        ilk 10 sifir, sapma < 0.01). coord_91'in Voiculescu
+                        dim'leri (86-90) bu dunyanin dili: serbest olasilik =
+                        degismeli-olmayan geometri'nin olasilik ayagi.
+
 DURUSTLUK:
-- Sifirlar VERIDEN kesfedilmez; evrenin bilinen spektral kimligi olarak
-  KUTUPHANEDEN gelir (ilk 30 sifir, bilinen sabitler).
+- ZETA_GAMMA tablosu bilinen sabitlerdir AMA ayni degerler sifir_kesfet ile
+  ham asal verisinden bagimsizca yeniden kesfedilebilir (test ediliyor).
 - Sonlu K modla acilim YAKLASIKTIR; K→∞ limitinde kesin. acilim_gucu:
   'spektral-yakinsak' — mod ekledikce hata duser (testte olculur).
+- Kesif cozunurlugu veri ufkuyla buyur: ~2π/ln(N).
 """
 import numpy as np
 
@@ -83,3 +93,32 @@ def spektral_hata(x_max=50, K=30):
     """Acilimin ortalama mutlak hatasi [2, x_max] araliginda."""
     xs = np.arange(2, x_max + 1)
     return float(np.mean([abs(psi_spektral(x, K) - psi_gercek(x)) for x in xs]))
+
+
+# ── CONNES DUALITESI: sifirlari VERIDEN kesfet ────────────────────────────────
+def sifir_kesfet(N=200000, t_min=10.0, t_max=60.0, dt=0.02, kac=10):
+    """Ham asal verisinden zeta sifirlarini KESFET (dualite: iz formulu).
+
+    Girdi SADECE asallar (elek = gozlem). Φ(t) = -Σ_{n≤N} Λ(n)/√n·cos(t·ln n)
+    fonksiyonunun tepeleri zeta sifirlarinda cikar. Bartlett penceresi
+    kenar sizintisini bastirir. Doner: kesfedilen ilk 'kac' sifir (artan).
+    """
+    e = np.ones(N + 1, bool); e[:2] = False
+    for i in range(2, int(N ** 0.5) + 1):
+        if e[i]:
+            e[i * i:: i] = False
+    ns, L = [], []
+    for p in np.where(e)[0]:
+        m = p
+        while m <= N:
+            ns.append(m); L.append(np.log(p)); m *= p
+    ns = np.array(ns, float); L = np.array(L)
+    lnn = np.log(ns)
+    w = L / np.sqrt(ns) * (1.0 - lnn / np.log(N))       # Bartlett taper
+    t = np.arange(t_min, t_max, dt)
+    S = -(w[None, :] * np.cos(t[:, None] * lnn[None, :])).sum(1)
+    # yerel maksimumlar -> en guclu 'kac' tepe
+    ic = (S[1:-1] > S[:-2]) & (S[1:-1] > S[2:])
+    ix = np.where(ic)[0] + 1
+    ix = ix[np.argsort(S[ix])[::-1][:kac]]
+    return np.sort(t[ix])
