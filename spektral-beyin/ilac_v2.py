@@ -21,7 +21,16 @@ VAL={'C':4,'N':3,'O':2,'F':1,'S':2}; RCOV={'C':0.76,'N':0.71,'O':0.66,'F':0.57,'
 EL ={'C':2.55,'N':3.04,'O':3.44,'F':3.98,'S':2.58}     # elektronegatiflik -> kismi yuk
 AGIR=['C','C','C','N','O','F']                          # karbon-agirlikli secim (gercekci)
 
-def kismi_yuk(types):  return np.array([ (EL[t]-2.55) for t in types ])  # C=0 referans
+def kismi_yuk(types):
+    # DUZELTME (testle yakalandi): sabit 2.55 referansi bu element setinde (EN>=2.55)
+    # TUM yukleri ayni isaret yapiyordu -> elektrostatik terim sadece CEZA verebiliyor,
+    # H-bag/tuz-koprusu ODULU asla uretemiyordu. Molekulun KENDI ortalama EN'ine
+    # referans (yerel polarizasyon = elektronegatiflik esitlenmesi): hem δ+ hem δ-.
+    # DURUST SINIR: kaba model (molekul-ortalamasi); buyuk molekulde bag-bazli daha
+    # dogru. Yon dogru; buyukluk model-birimi (kcal/mol degil).
+    en = np.array([EL[t] for t in types], float)
+    # elektronegatif atom elektron ceker -> δ- (negatif): q = ort_EN - EN
+    return en.mean() - en if len(en) else en
 
 def baglar_orders(types,X): return kimya.bag_dereceleri(types,X)
 def deg(types,B):
