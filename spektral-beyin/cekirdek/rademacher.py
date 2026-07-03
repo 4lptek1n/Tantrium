@@ -53,13 +53,45 @@ def p_spektral(n, K):
     return float(onek * sum(A_k(k, n) / k * iv(1.5, arg / k) for k in range(1, K + 1)))
 
 
+def _p_int(n):
+    """Kesin p(n) — Euler pentagonal rekursu, SAF PYTHON INT (float YOK, dis
+    bagimlilik YOK) -> her n icin TAM. p(n)=Σ_k (−1)^{k−1}[p(n−g_k)+p(n−g'_k)],
+    g_k=k(3k−1)/2 (genellenmis besgen sayilar). Bu, p_kesin'in 'kesin' vaadinin
+    dis-bagimliliksiz GARANTISIDIR: float64 Rademacher (p_spektral) 2^53 tavani
+    ustunde tamsayi tutamaz (p(250)+ bozulur); tamsayi rekursu her n'de tutar."""
+    p = [0] * (n + 1)
+    p[0] = 1
+    for m in range(1, n + 1):
+        toplam = 0
+        k = 1
+        while True:
+            g = k * (3 * k - 1) // 2
+            if g > m:
+                break
+            isaret = 1 if (k % 2) else -1
+            toplam += isaret * p[m - g]
+            g2 = k * (3 * k + 1) // 2
+            if g2 <= m:
+                toplam += isaret * p[m - g2]
+            k += 1
+        p[m] = toplam
+    return p[n]
+
+
 def p_kesin(n, K=None):
-    """EXACT p(n): yeterli mod yuvarlaninca tamsayi. K yoksa ~√n+2 (Rademacher siniri)."""
-    if n == 0:
+    """EXACT p(n) — her n icin TAM tamsayi, DIS BAGIMLILIK YOK.
+
+    Kesinlik saf-Python tamsayi rekursuyle (Euler besgen, _p_int) GARANTI edilir:
+    float YOK, dolayisiyla p(250), p(1000)... hepsi kesin (float64 Rademacher
+    2^53 ustunde tamsayi kesinligini kaybederdi — 'kesin' vaadini cignerdi).
+
+    MODULUN SPEKTRAL TEZI KORUNUR: p_spektral (Rademacher) partition'in EXACT
+    spektral acilimidir; yakinsaklik() ~√n mod yuvarlaninca ayni kesin degere
+    ulasildigini gosterir (spektral↔kesin koprusu, float64'un yettigi n'de).
+    K parametresi API uyumu icin durur (tamsayi yol K'ye ihtiyac duymaz)."""
+    if n <= 0:
         return 1
-    if K is None:
-        K = int(np.sqrt(n)) + 3
-    return int(round(p_spektral(n, K)))
+    return _p_int(n)
 
 
 def yakinsaklik(n):

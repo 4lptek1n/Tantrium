@@ -119,7 +119,16 @@ def evrensellik(seviyeler, kenar_kirp=0.2):
     sinif = "POISSON" if r_ort < SINIR_PG else ("GOE" if r_ort < SINIR_GG else "GUE")
     sigma = 0.275 / np.sqrt(len(r))           # tek-r std ~0.275 (olculdu)
     sinira_uzaklik = min(abs(r_ort - SINIR_PG), abs(r_ort - SINIR_GG))
-    guven = "kesin" if (len(r) >= 10 and sinira_uzaklik > 2 * sigma) else "zayif"
+    # UYUM KAPISI (goodness-of-fit): sadece karar-sinirina uzaklik yetmez.
+    # GUE'nin UST siniri yok; r>0.560 olan HER sey 'GUE' etiketlenir. Bu yuzden
+    # bilinmeyen bir sinif (or. GSE, hedef ⟨r⟩=0.6744) 'kesin GUE' diye
+    # yanlis-guvenli etiketlenirdi. Cozum: r_ort atanan sinifin HEDEF ⟨r⟩'sine de
+    # yeterince yakin olmali; degilse (taksonomi disi) guven 'zayif'.
+    # tol: sonlu-N sapmasi icin ~2.5σ ya da 0.05 tabani (hangisi buyukse).
+    uyum_uzaklik = abs(r_ort - HEDEF_R[sinif])
+    uyum_tol = max(2.5 * sigma, 0.05)
+    guven = "kesin" if (len(r) >= 10 and sinira_uzaklik > 2 * sigma
+                        and uyum_uzaklik < uyum_tol) else "zayif"
     return sinif, r_ort, guven
 
 

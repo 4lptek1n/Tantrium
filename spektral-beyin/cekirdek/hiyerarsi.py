@@ -34,6 +34,10 @@ def polinom_uydur(s, tol=1e-9):
     olcek = np.max(np.abs(s)) + 1.0
     cur = s.copy()
     firsts = [float(cur[0])]
+    # Δ^0 (dizinin kendisi) zaten sabit mi? -> derece 0 (sabit polinom).
+    # Yoksa sabit diziler k=1'de yakalanip yanlislikla 'derece 1' etiketlenir.
+    if N >= 2 and np.max(np.abs(cur - cur[0])) < tol * olcek:
+        return 0, np.array(firsts)
     for k in range(1, N):
         cur = np.diff(cur)
         firsts.append(float(cur[0]))

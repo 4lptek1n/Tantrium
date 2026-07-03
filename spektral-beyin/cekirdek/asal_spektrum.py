@@ -121,4 +121,11 @@ def sifir_kesfet(N=200000, t_min=10.0, t_max=60.0, dt=0.02, kac=10):
     ic = (S[1:-1] > S[:-2]) & (S[1:-1] > S[2:])
     ix = np.where(ic)[0] + 1
     ix = ix[np.argsort(S[ix])[::-1][:kac]]
+    # KENAR/SIZINTI GARDI: t_min sinirindaki yukselen-kenar (Bartlett) artifakti
+    # gercek sifir olmadigi halde top-listeye girebilir (or. t_min=10 -> ~13.38).
+    # Gercek zeta tepeleri genlikce baskin (~5+); kenar tepesi ~0.1. Atanan
+    # tepe kumesinin medyaninin altindaki cuce tepeleri (sizinti) ele.
+    if len(ix):
+        esik = 0.25 * np.median(S[ix])
+        ix = ix[S[ix] >= esik]
     return np.sort(t[ix])
