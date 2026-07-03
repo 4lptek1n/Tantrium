@@ -118,10 +118,15 @@ def amac_kur(tip, hedef_veri=None, domain=None, hedef_dict=None, cep=None,
     return Amac(tip=tip, hedef_kimlik=hk, hedef_dict=hedef_dict, cep=cep, facet=facet)
 
 
-# ── 3) URET (dispatch: BIRINCIL amac.tip, IKINCIL kimlik.seviye) ─────────────
+# ── 3) URET (dispatch: molekul-vs-dizi kolu; dizi ICI seviye + hedef_dict) ───
 def uret(g: Gerceklik, amac: Amac, adim=250, rng=None) -> Gerceklik:
-    """Amaca dogru BUYUT/AC. Cikti g.yapi + g.iz (monoton uzaklik). Hicbir mod-uzayi
-    / olusum cebri yeniden yazilmaz — sadece dispatch if/else."""
+    """Amaca dogru BUYUT/AC. Cikti g.yapi + g.iz (best-so-far uzaklik izi). Hicbir
+    mod-uzayi / olusum cebri yeniden yazilmaz — sadece dispatch if/else.
+
+    DURUST DISPATCH: amac.tip yalniz MOLEKUL-vs-DIZI kolunu secer ('molekul' ya da
+    kimlik.seq is None -> molekul kolu). DIZI kolunda tip ('yasa'/'spektrum'/'buyume')
+    OKUNMAZ; kararı kimlik.seviye (polinom/c-finite/holonomik/ham) + hedef_dict varligi
+    verir. Yani tip 'birincil dispatch' DEGIL — kol secici."""
     k = g.kimlik
     iz = list(g.iz)
     yapi = None
@@ -167,7 +172,12 @@ def uret(g: Gerceklik, amac: Amac, adim=250, rng=None) -> Gerceklik:
 def canlilik_kapisi(g: Gerceklik, amac: Amac = None) -> Gerceklik:
     """Kritik cizgi |z|=1 kapisi. Dizi kolu: extract_law kokleri -> |z| siniflandirma.
     Molekul kolu: butunlesik.yasam_kapisi 5-kosul cercevesi (kimya IR). Olusum kolu:
-    VALANS DOYUMU analogu (acik valans=buyur, doymus=dur/sonlu)."""
+    VALANS DOYUMU analogu (acik valans=buyur, doymus=dur/sonlu).
+
+    DURUST: |z|=1 kritik-cizgi TANIMI YALNIZ DIZI/DINAMIK kolunun degismezidir; orada
+    z_max/kritiklik_uzakligi doldurulur. Molekul ve olusum dallari FARKLI semantik
+    kullanir (5-kosul kapisi / valans doyumu) ve z_max=nan doner. Birlesim ortak bir
+    invariant degil, amac-kosullu DOMAIN-DISPATCH'tir — sinif etiketi kola gore degisir."""
     amac = amac or g.amac
     k = g.kimlik
 

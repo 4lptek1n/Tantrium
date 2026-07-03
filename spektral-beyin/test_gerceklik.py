@@ -115,24 +115,28 @@ check("recon_err < 1e-6", gt.tohum.get("recon_err", 1.0) < 1e-6,
       f"recon_err={gt.tohum.get('recon_err'):.1e}")
 
 
-print("— 9) hedefe_buk MONOTON: uret dizi kolunda g.iz azalan (iz[-1]<=iz[0]) —")
+print("— 9) hedefe_buk iz YAPISAL: best-so-far, TUM trace boyunca azalmaz —")
 amac_b = amac_kur("buyume", hedef_dict={59: 1.0})   # Q gostergesini (dim 59) tavana
 gu = uret(kodla(fib, "math", "fib"), amac_b, adim=150)
 check("g.iz uretildi (hedefe_buk kostu)", len(gu.iz) >= 2, f"iz uzunlugu={len(gu.iz)}")
-check("iz monoton azalan (en iyi aday baslangictan kotu olamaz)", gu.iz[-1] <= gu.iz[0],
-      f"iz[0]={gu.iz[0]:.4f} -> iz[-1]={gu.iz[-1]:.4f}")
+# DURUST: bu best-so-far'in YAPISAL ozelligi (hicbir adim onceki en-iyiyi asmaz);
+# optimizerin ise yaradigini KANITLAMAZ — onu Test 10 strict esikle kanitliyor.
+check("iz best-so-far: hicbir adim onceki en-iyiyi asmaz (tum trace, yapisal)",
+      all(gu.iz[i + 1] <= gu.iz[i] + 1e-12 for i in range(len(gu.iz) - 1)))
 
 
-print("— 10) AMAC-BUYUME/cekici: hedefe_buk panel uzakligini minimize eder —")
-# hedef panel degeri dim 45 (baskinlik); sonumlu evrenden buk, uzaklik dusmeli
+print("— 10) AMAC-BUYUME/cekici GERCEK ISI: anlamli bosluk -> STRICT anlamli dusum —")
+# sonumlu evren (|z|=0.6, |z|=1 kritik cizgiden UZAK) -> dim-59 (Q, kritiklik) hedefi 1.0
 z0 = 0.6 * np.exp(1j * np.pi / 6 * np.array([1, -1]))
 a0 = np.array([0.5 - 0.2j, 0.5 + 0.2j])
 sonumlu_seq = list(np.real((a0[None, :] * z0[None, :] ** np.arange(24)[:, None]).sum(1)))
 gs = kodla(sonumlu_seq, "math", "sonumlu")
 amac_c = amac_kur("buyume", hedef_dict={59: 1.0})
 gs = uret(gs, amac_c, adim=200)
-check("son panel uzakligi <= ilk (cekici mesafeyi dusurdu)", gs.iz[-1] <= gs.iz[0],
-      f"{gs.iz[0]:.4f} -> {gs.iz[-1]:.4f}")
+check("baslangicta ANLAMLI bosluk vardi (iz[0] > 0.05)", gs.iz[0] > 0.05, f"iz[0]={gs.iz[0]:.4f}")
+# STRICT + anlamli: no-op optimizer GECEMEZ (yapisal degil, gercek iyilesme sart)
+check("cekici mesafeyi ANLAMLI dusurdu (iz[-1] < 0.5*iz[0], strict)",
+      gs.iz[-1] < 0.5 * gs.iz[0], f"{gs.iz[0]:.4f} -> {gs.iz[-1]:.4f}")
 
 
 print("— 11) holonomik_ac None ELE ALMA: tekil p0 -> yapi=None, 'canlilik-kesildi' —")
