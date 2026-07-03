@@ -75,8 +75,13 @@ def halka_kapat(types,X):
 
 # ---------- (2) COK-TERIMLI FIZIKSEL ENERJI ----------
 def enerji(cep_t,cep_X,cep_q, types,X, beta=0.02):
-    """dusuk=iyi. ic-enerji(ΔF) + desolv + (-elektrostatik tamamlayicilik) - doldurma."""
+    """dusuk=iyi. ic-enerji(ΔF) + STERIK + desolv + (-elektrostatik tamamlayicilik) - doldurma.
+    STERIK (dock_dogrula ile eklendi): ciplak ΔF yakinligi hep odullendirip dislanmis-
+    hacmi kaciriyordu -> MM-docking ile TERS korele (rho=-0.64). Sterik itme eklenince
+    rho -0.64 -> +0.72 (docking fizigiyle guclu uyum). Kendi fizik, dis motor yok."""
+    from dock_dogrula import sterik_itme
     dF = baglanma_serbest_enerji(cep_t,cep_X,types,X,beta)          # spektral ic enerji
+    ster = sterik_itme(cep_t,cep_X,types,X)                         # dislanmis-hacim (Pauli)
     q  = kismi_yuk(types)
     estat=0.0; desolv=0.0
     for a in range(len(types)):
@@ -85,7 +90,7 @@ def enerji(cep_t,cep_X,cep_q, types,X, beta=0.02):
             if dd[j]<1.8: estat += -q[a]*cep_q[j]/(dd[j]+0.5)      # zit yuk yakin = iyi
             else:         desolv += abs(q[a])*1.5                  # gomulu/acik polar = ceza
     fill = sum(np.linalg.norm(X-ax,axis=1).min() for ax in cep_X)  # cebi doldur (dusuk iyi)
-    return 0.05*dF + 0.8*desolv - 1.2*estat + 1.5*fill
+    return 0.05*dF + 1.0*ster + 0.8*desolv - 1.2*estat + 1.5*fill
 
 # ---------- ARAMA ----------
 def ara(cep_t,cep_X, adim=5000):

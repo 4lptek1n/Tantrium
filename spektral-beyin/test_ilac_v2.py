@@ -40,16 +40,18 @@ print("— 3) ELEKTROSTATIK YON: cep-δ-'ye ligand δ+ (tamamlayici) vs δ- (ben
 # atom cep-O'ya yakin: δ+ karbon (tamamlayici, iyi) mi, δ- oksijen (benzer, kotu) mu.
 cep_t = ['O','C','C']; cep_X = np.array([[0.,0,0],[1.5,0,0],[-1.5,0,0]]); cep_q = kismi_yuk(cep_t)
 lig_t = ['C','O']                                   # C: δ+, O: δ-
-# A) ligand δ+ karbonu cep-O'ya yakin (tamamlayici)
-eA = enerji(cep_t, cep_X, cep_q, lig_t, np.array([[0.4,1.0,0],[0.4,2.4,0]]))
-# B) ligand δ- oksijeni cep-O'ya yakin (benzer yuk, itme)
-eB = enerji(cep_t, cep_X, cep_q, lig_t, np.array([[0.4,2.4,0],[0.4,1.0,0]]))
+# CAKISMASIZ mesafe: ~1.6A (estat<1.8 tetikler ama clash 1.28'in ustunde)
+# A) ligand δ+ karbonu cep-O'ya yakin (tamamlayici); O uzakta
+eA = enerji(cep_t, cep_X, cep_q, lig_t, np.array([[0.,1.6,0],[0.,3.2,0]]))
+# B) ligand δ- oksijeni cep-O'ya yakin (benzer yuk); C uzakta
+eB = enerji(cep_t, cep_X, cep_q, lig_t, np.array([[0.,3.2,0],[0.,1.6,0]]))
 check("tamamlayici (δ+ cep-δ-'ye yakin) benzer'den (δ- yakin) daha iyi",
       eA < eB, f"tamamlayici={eA:.2f} benzer={eB:.2f}")
 
 print("— 4) DOLDURMA YON: ligand cebe yakin = dusuk enerji (fill terimi) —")
 cep_t = ['C','C']; cep_X = np.array([[0.,0,0],[2.0,0,0]]); cep_q = kismi_yuk(cep_t)
-yakin = enerji(cep_t, cep_X, cep_q, ['C','C'], np.array([[0.3,0.3,0],[1.7,0.3,0]]))
+# CAKISMASIZ yakin: ~1.8A cep atomlarindan (clash 1.37'nin ustunde, cebi dolduruyor)
+yakin = enerji(cep_t, cep_X, cep_q, ['C','C'], np.array([[0.,1.8,0],[2.0,1.8,0]]))
 uzak  = enerji(cep_t, cep_X, cep_q, ['C','C'], np.array([[8.,8,0],[9.,8,0]]))
 check("cebe yakin ligand uzaktan daha iyi (fill dogru yon)", yakin < uzak,
       f"yakin={yakin:.2f} uzak={uzak:.2f}")
