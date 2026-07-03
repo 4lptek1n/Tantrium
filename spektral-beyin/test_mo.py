@@ -57,6 +57,17 @@ hl8 = homo_lumo(dongu_komsu(8), 8)              # siklooktatetraen: yumusak (rea
 check("benzen daha sert (gap buyuk) — kararli/az reaktif",
       hl6["sertlik"] > hl8["sertlik"], f"η(benzen)={hl6['sertlik']:.2f} > η(COT)={hl8['sertlik']:.2f}")
 
+print("— 5b) KIMYASAL REAKTIFLIK: HSAB indeksi (kucuk gap = reaktif = metabolit oncusu) —")
+from mo import kimyasal_reaktiflik
+rx_benzen = kimyasal_reaktiflik(2.0)                # benzen gap=2β -> referans
+rx_dar    = kimyasal_reaktiflik(1.0)               # dar gap -> daha reaktif
+check("benzen reaktiflik_indeksi = 1.0 (referans)", abs(rx_benzen["reaktiflik_indeksi"] - 1.0) < 1e-9,
+      f"idx={rx_benzen['reaktiflik_indeksi']:.2f}")
+check("dar gap daha reaktif (indeks>1) ve daha yumusak", rx_dar["reaktiflik_indeksi"] > 1.0
+      and rx_dar["yumusaklik"] > rx_benzen["yumusaklik"], f"idx={rx_dar['reaktiflik_indeksi']:.2f}")
+check("gecersiz/sifir gap -> nan (tanimsiz, uydurma yok)",
+      not np.isfinite(kimyasal_reaktiflik(0.0)["reaktiflik_indeksi"]))
+
 print("— 6) DURUSTLUK: Hückel tek-elektron π; nitel dogru, tam DFT degil —")
 check("analitik-kalibre, dis veri yok, ilk prensip", True,
       "σ-cerceve+korelasyon yok; ILKE kanitli, descriptor sayimindan ustun")

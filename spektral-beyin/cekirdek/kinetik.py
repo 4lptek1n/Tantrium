@@ -70,6 +70,28 @@ def admet_okumalari(K, C0, bolme=0, t_max=None, n=400):
                 klerens=float(C0.sum() / AUC) if AUC > 0 else float("inf"))
 
 
+def bioaktivasyon_hizi(gap, olcek=0.1, ref_gap=2.0):
+    """Elektronik yumusaklik -> reaktif-metabolit olusum hizi (mo.py -> kinetik).
+    HSAB (ilk-prensip YON): kucuk HOMO-LUMO = yumusak = elektrofilik = daha hizli
+    bioaktivasyon. k_bioakt = olcek·(ref_gap/gap); benzen(gap=ref)->olcek, yumusakla artar.
+    DURUST SINIR: YON ilk-prensip; mutlak hiz (olcek) deneysel kalibrasyon ister."""
+    if gap is None or not np.isfinite(gap) or gap <= 0:
+        return 0.0
+    return float(olcek * (ref_gap / gap))
+
+
+def reaktif_metabolit_yuku(K, C0, gap, bolme=0, olcek=0.1, ref_gap=2.0):
+    """Toksisitenin FIZIKSEL ONCULU: reaktif-metabolit yuku = bioaktivasyon_hizi ×
+    ana-ilac maruziyeti (AUC). Elektronik reaktiflik (HOMO-LUMO, mo.py) kinetik
+    maruziyet (AUC) ile carpilir -> bioaktive olan doz payi. Yumusak+yuksek-maruziyet
+    molekul en cok reaktif metabolite doner (klasik bioaktivasyon toksisitesi ilkesi).
+    Doner: dict(yuk, bioaktivasyon_hizi, parent_AUC). YON ilk-prensip; mutlak esik veri."""
+    k_b = bioaktivasyon_hizi(gap, olcek, ref_gap)
+    C0 = np.atleast_1d(np.asarray(C0, float))
+    AUC = float((-np.linalg.inv(K) @ C0)[bolme])
+    return dict(yuk=k_b * AUC, bioaktivasyon_hizi=k_b, parent_AUC=AUC)
+
+
 def toksisite_zaman(K, C0, esik, bolme=0, t_max=None, n=600):
     """Zamani ILERLET, hedef bolmede konsantrasyon esigi asiyor mu GOR.
     Doner: dict(toksik, ilk_asma_zamani, esik_ustu_sure, tepe)."""

@@ -8,7 +8,8 @@ Calistir: python3 test_kinetik.py
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "cekirdek"))
 import numpy as np
-from kinetik import pk_operator, dispozisyon, profil, admet_okumalari, toksisite_zaman, LN2
+from kinetik import (pk_operator, dispozisyon, profil, admet_okumalari, toksisite_zaman,
+                     bioaktivasyon_hizi, reaktif_metabolit_yuku, LN2)
 
 PASS = FAIL = 0
 def check(name, cond, detail=""):
@@ -58,6 +59,20 @@ lam = np.abs(np.linalg.eigvals(K))                 # dispozisyon spektrumu -> pa
 v, _ = coord_91_temiz(np.sort(lam)[::-1])
 check("PK spektrumu coord_91'e iniyor (kinetik = mod-uzayi)",
       v.shape == (91,) and np.all(np.isfinite(v)))
+
+print("— 5b) REAKTIF METABOLIT: HOMO-LUMO (mo) -> bioaktivasyon -> toksisite oncusu —")
+K = pk_operator(0.2, n_bolme=1)
+# HSAB: kucuk gap = yumusak = daha hizli bioaktivasyon
+kb_sert = bioaktivasyon_hizi(2.0); kb_yumusak = bioaktivasyon_hizi(0.5)
+check("kucuk gap -> daha yuksek bioaktivasyon hizi (HSAB yonu)", kb_yumusak > kb_sert,
+      f"k(0.5)={kb_yumusak:.3f} > k(2.0)={kb_sert:.3f}")
+# ayni maruziyette (ayni K,C0) yumusak molekul daha cok reaktif metabolite doner
+rm_sert = reaktif_metabolit_yuku(K, [100.], 2.0)
+rm_yumusak = reaktif_metabolit_yuku(K, [100.], 0.5)
+check("ayni AUC'de yumusak molekul daha yuksek reaktif-metabolit yuku",
+      rm_yumusak["yuk"] > rm_sert["yuk"] and abs(rm_yumusak["parent_AUC"] - rm_sert["parent_AUC"]) < 1e-9,
+      f"yuk {rm_sert['yuk']:.0f} -> {rm_yumusak['yuk']:.0f}")
+check("gap gecersiz -> bioaktivasyon 0 (uydurma yok)", bioaktivasyon_hizi(float('nan')) == 0.0)
 
 print("— 6) DURUSTLUK: dinamik+spektrum BIZIM; hiz sabitleri fizyoloji —")
 check("ilk prensip dinamik, analitik-kalibre; hiz sabitleri kismen fizik/kismen veri",

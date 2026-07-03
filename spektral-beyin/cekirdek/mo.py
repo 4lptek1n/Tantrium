@@ -46,6 +46,21 @@ def homo_lumo(komsu, pi_elektron):
                 sertlik=(homo - lumo) / 2)          # η = kimyasal sertlik
 
 
+def kimyasal_reaktiflik(gap, ref_gap=2.0):
+    """HOMO-LUMO araligindan kimyasal reaktiflik (HSAB, ilk-prensip YON).
+    η = gap/2 = kimyasal sertlik; σ = 1/η = yumusaklik. Yumusak (kucuk gap)
+    molekul daha elektrofilik/reaktif -> reaktif metabolit egilimi yuksek.
+    reaktiflik_indeksi: benzen (gap=ref_gap) referansli, >1 = benzenden reaktif.
+    DURUST SINIR: YON ilk-prensip (sertlik-yumusaklik teorisi); mutlak bioaktivasyon
+    hizi/toksik esik deneysel kalibrasyon ister — burada goreli/nitel dogru."""
+    if gap is None or not np.isfinite(gap) or gap <= 0:
+        return dict(sertlik=float("nan"), yumusaklik=float("nan"),
+                    reaktiflik_indeksi=float("nan"))
+    eta = gap / 2.0
+    return dict(sertlik=eta, yumusaklik=1.0 / eta,
+                reaktiflik_indeksi=(ref_gap / 2.0) / eta)   # benzen=1.0
+
+
 def pi_enerji(komsu, pi_elektron):
     """Toplam π-elektron enerjisi (α+xβ, dolu orbitaller, cift dolum). Σ = a·α + b·β."""
     x, _ = huckel_spektrum(komsu)

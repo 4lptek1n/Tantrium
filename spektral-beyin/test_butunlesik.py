@@ -86,7 +86,42 @@ check("HOMO-LUMO gercek (benzen 2β)", abs(r["olcumler"]["HOMO_LUMO"] - 2.0) < 1
 r_tox = ilac_yasar_mi(t, X, b, k_elim=0.05, C0=300., tox_esik=100.)
 check("toksik doz: tek cagri toksisiteyi raporluyor", r_tox["olcumler"]["toksik"])
 
-print("— 7) DURUSTLUK: birlesik KAPI ilkesi ilk-prensip; organ sinirlari tasinir —")
+print("— 8) SATURE MOLEKUL (π yok): elektronik kararlilik vacuously OK (yanlis eleme yok) —")
+# CF4: tek konjuge atom (C), F'ler π-disi -> π-sistem yok -> homo_lumo nan;
+# mo_kararli yanlislikla False olmamali (doymus kapali-kabuk kararlidir)
+t2 = ['C','F','F','F','F']
+d = 1.33 / np.sqrt(3)
+X2 = np.array([[0.,0,0],[d,d,d],[d,-d,-d],[-d,d,-d],[-d,-d,d]])
+b2 = [(0,1),(0,2),(0,3),(0,4)]
+akis2 = fizik_akisi(t2, X2, b2, k_elim=0.3)
+kapi2 = yasam_kapisi(akis2)
+check("π-sistem yok (pi_var False), gap tanimsiz", (not akis2["pi_var"]) and not np.isfinite(akis2["homo_lumo"]),
+      f"pi_var={akis2['pi_var']}, gap={akis2['homo_lumo']}")
+check("π yok -> mo_kararli True (doymus kapali-kabuk kararli sayilir)", kapi2["kosullar"]["mo_kararli"])
+
+print("— 9) OLCUM: elektronik reaktiflik + reaktif-metabolit yuku raporlaniyor (tek cagri) —")
+t, X, b = benzen_halka()
+r9 = ilac_yasar_mi(t, X, b, k_elim=0.3, C0=100., tox_esik=500.)
+check("reaktiflik_indeksi raporlandi (benzen ~1.0 referans)",
+      abs(r9["olcumler"]["reaktiflik_indeksi"] - 1.0) < 1e-6, f"idx={r9['olcumler']['reaktiflik_indeksi']:.2f}")
+check("reaktif_metabolit_yuku raporlandi (HOMO-LUMO -> kinetik bagi)",
+      "reaktif_metabolit_yuku" in r9["olcumler"] and np.isfinite(r9["olcumler"]["reaktif_metabolit_yuku"]),
+      f"yuk={r9['olcumler']['reaktif_metabolit_yuku']:.1f}")
+
+print("— 10) DE NOVO PIPELINE: uret -> gercek geometriye gevset -> BIRLESIK KAPI ile suz —")
+from butunlesik import de_novo_yasayabilir
+cep_t = ['O','N','C','N','O']
+cep_X = np.array([[0,0,0],[2.9,0,0],[1.5,2.3,0],[-1.4,1.6,.4],[1.5,-2.3,0]],float)
+res = de_novo_yasayabilir(cep_t, cep_X, n_aday=4, adim=300, C0=100., tox_esik=200., max_atom=8)
+check("pipeline uctan uca calisti (aday uretildi)", res["uretilen"] >= 1,
+      f"uretilen={res['uretilen']} yasayabilir={res['yasayabilir_sayi']} buyuk_atlanan={res['buyuk_atlanan']}")
+check("FILTRE BUTUNLUGU: donen her 'yasayan' gercekten TUM kosuldan geciyor",
+      all(a["yasayabilir"] and all(a["kosullar"].values()) for a in res["yasayanlar"]))
+check("uretici fizige bagli: yasayan sayisi <= uretilen (kapi gercekten suzuyor)",
+      res["yasayabilir_sayi"] <= res["uretilen"])
+check("buyuk adaylar sessizce atilmadi (durust: sayildi)", res["buyuk_atlanan"] >= 0)
+
+print("— 11) DURUSTLUK: birlesik KAPI ilkesi ilk-prensip; organ sinirlari tasinir —")
 check("kararlilik = spektral pozitiflik (tum organlar tek kritik-cizgi karari)", True,
       "her organ kendi sinirini tasir; birlesim ilkesi tam ve ilk-prensip")
 
