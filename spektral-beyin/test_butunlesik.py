@@ -73,7 +73,20 @@ hess = _hessian_ozd(t, Xf, b)
 check("gevsemis yapi: anlamli negatif Hessian modu YOK (gercek minimum)",
       int(np.sum(hess < -0.5)) == 0, f"neg_mod={int(np.sum(hess<-0.5))}")
 
-print("— 6) DURUSTLUK: birlesik KAPI ilkesi ilk-prensip; organ sinirlari tasinir —")
+print("— 6) TEK CAGRI: ilac_yasar_mi (uctan uca, tum organlar tek karar) —")
+from butunlesik import ilac_yasar_mi
+t, X, b = benzen_halka()
+r = ilac_yasar_mi(t, X, b, k_elim=0.3, C0=100., tox_esik=200.,
+                  cep=(['O','N','C'], np.array([[3.,0,0],[3,1.4,0],[4,0.7,0]])))
+check("uctan uca calisti, YASAYABILIR (5/5)", r["yasayabilir"], r["ozet"])
+check("olcumler dolu (geometri+mo+kinetik+baglanma+toksisite)",
+      all(k in r["olcumler"] for k in ("E_geometri","HOMO_LUMO","yari_omur","baglanma_dF","toksik")))
+check("HOMO-LUMO gercek (benzen 2β)", abs(r["olcumler"]["HOMO_LUMO"] - 2.0) < 1e-6)
+# toksik doz -> tek cagri toksik yakalar
+r_tox = ilac_yasar_mi(t, X, b, k_elim=0.05, C0=300., tox_esik=100.)
+check("toksik doz: tek cagri toksisiteyi raporluyor", r_tox["olcumler"]["toksik"])
+
+print("— 7) DURUSTLUK: birlesik KAPI ilkesi ilk-prensip; organ sinirlari tasinir —")
 check("kararlilik = spektral pozitiflik (tum organlar tek kritik-cizgi karari)", True,
       "her organ kendi sinirini tasir; birlesim ilkesi tam ve ilk-prensip")
 

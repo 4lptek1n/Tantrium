@@ -101,3 +101,45 @@ def yasam_kapisi(akis):
     kos["kritik_cizgi_ici"] = bool(np.all(np.abs(np.exp(akis["pk_lambda"])) < 1.0))  # |z|<1
     yasayabilir = all(kos.values())
     return dict(yasayabilir=yasayabilir, kosullar=kos)
+
+
+# ── TEK CAGRI: molekul -> uctan uca fizik raporu + tek karar ─────────────────
+def ilac_yasar_mi(types, X, baglar, k_elim=0.2, gecisler=None, n_bolme=1,
+                  C0=None, tox_esik=None, cep=None):
+    """UCTAN UCA: bir molekulu tum fizik organlarindan gecir, tek KARAR + rapor ver.
+
+    Organlar: geometri (3D gevseme) -> mo (HOMO-LUMO) -> serbest_enerji (baglanma,
+    cep verilirse) -> kinetik (PK/toksisite) -> BIRLESIK SPEKTRAL KAPI.
+    Doner: dict(yasayabilir, kosullar, olcumler, ozet).
+    """
+    akis = fizik_akisi(types, X, baglar, k_elim=k_elim, gecisler=gecisler,
+                       n_bolme=n_bolme, C0=C0, tox_esik=tox_esik)
+    kapi = yasam_kapisi(akis)
+
+    olcum = dict(
+        E_geometri=akis["E_geo"],
+        HOMO_LUMO=akis["homo_lumo"],
+        yari_omur=akis["yari_omur"],
+        dispozisyon_hizlari=[complex(z) for z in akis["pk_lambda"]],
+    )
+    # baglanma (cep verilirse) — serbest enerji + sterik
+    if cep is not None:
+        from serbest_enerji import baglanma_serbest_enerji
+        from dock_dogrula import sterik_itme
+        cep_t, cep_X = cep
+        dF = baglanma_serbest_enerji(cep_t, cep_X, types, akis["X"], beta=0.1)
+        olcum["baglanma_dF"] = float(dF + sterik_itme(cep_t, cep_X, types, akis["X"]))
+    # toksisite (doz+esik verilirse)
+    if C0 is not None and tox_esik is not None:
+        from kinetik import toksisite_zaman
+        tox = toksisite_zaman(akis["K"], np.atleast_1d(C0), tox_esik)
+        olcum["toksik"] = tox["toksik"]
+        olcum["tox_ilk_asma"] = tox["ilk_asma_zamani"]
+
+    gecti = [k for k, v in kapi["kosullar"].items() if v]
+    kaldi = [k for k, v in kapi["kosullar"].items() if not v]
+    ozet = (f"{'YASAYABILIR' if kapi['yasayabilir'] else 'YASAYAMAZ'} | "
+            f"gecen: {len(gecti)}/{len(kapi['kosullar'])}"
+            + (f" | kalan: {kaldi}" if kaldi else ""))
+    return dict(yasayabilir=kapi["yasayabilir"], kosullar=kapi["kosullar"],
+                olcumler=olcum, ozet=ozet)
