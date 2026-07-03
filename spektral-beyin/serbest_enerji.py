@@ -13,9 +13,12 @@ from de_novo import coulomb, Z as ZNUM
 np.set_printoptions(suppress=True, precision=4)
 
 def spektrum(types, X):
+    # DUZELTME (testle yakalandi): per-sistem w.min() sifirlamasi baglanma
+    # bilgisini SILIYORDU -> dF geometriye tepkisiz, hatta ters. Ortak referans
+    # (mean) baglanma enerjisini korur; dF artik fiziksel yonde (yaklastikca bagli).
     M = coulomb(types, X)
     w = np.linalg.eigvalsh(M)
-    return np.clip(w - w.min(), 0, None)        # taban=0 (goreli enerji)
+    return w - w.mean()                          # ortak referans; min-sifirlama DEGIL
 
 def termodinamik(w, beta=1.0):
     """spektrumdan U, Z, S, F (bolusum fonksiyonu termodinamigi)."""
