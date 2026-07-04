@@ -21,7 +21,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))          # cekirdek/
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # spektral-beyin/ (de_novo)
 
-from engine import gram_spectrum, prony_law
+from engine import gram_spectrum, prony_law, matrix_prony
 from coord91 import coord_91_temiz as _coord_full
 from domains import seq_to_A, extract_law, A_molecule
 from hiyerarsi import yasa_avcisi, holonomik_ac, polinom_ac
@@ -93,6 +93,8 @@ def kodla(veri, domain="math", name="x", **kw):
     dogrudan operator ozdeger+ozvektorden gecer."""
     if domain in DIZI_DOMAINLERI:
         seq = _sayisallastir(veri, domain)
+        if np.ndim(seq) == 2 and np.asarray(seq).shape[1] > 1:
+            return _kodla_vektor(np.asarray(seq, float), domain, name)
         A = seq_to_A(seq)
         _, lam, _ = gram_spectrum(A)
         av = yasa_avcisi(seq)                       # hiyerarsik av: polinom->c-finite->holonomik->ham
@@ -122,6 +124,31 @@ def kodla(veri, domain="math", name="x", **kw):
                       coords3d=coords3d)
 
     raise ValueError(f"bilinmeyen domain: {domain}")
+
+
+def _kodla_vektor(X, domain, name):
+    """Coupled ODE / vektor-degerli trajektori X (T,d) -> tek Kimlik.
+    Skaler yol 1-B'dir (seq_to_A/yasa_avcisi skaler); coupled sistem CRASH ederdi.
+    Burada engine.matrix_prony ile kuplaj operatoru M_k + companion spektrumu
+    cikarilir. Kimlik.A=companion, lam=|eig| (mod, azalan), V=modlar, seed=eig,
+    law=blok M'ler. YENI TIP GEREKMEZ — mevcut alanlar dolar."""
+    mp = matrix_prony(X)
+    if mp is None:
+        # yeterli veri yok: kayipsiz sakla, durustce 'ham'
+        lam = np.sort(np.clip(np.linalg.eigvalsh(X.T @ X), 0, None))[::-1]
+        coord, _ = _coord_full(lam)
+        return Kimlik(name, domain, X.T @ X, lam, coord, seq=X,
+                      seviye="ham", acilim_gucu="gozlem-ici-kesin")
+    C = mp["companion"]
+    lam = np.asarray(mp["mod"], float)                 # |eig| azalan, reel >=0
+    coord, _ = _coord_full(lam)
+    law = np.hstack(mp["M"]) if mp["M"] else np.array([])
+    kesin = mp["sigma"] < 1e-6
+    return Kimlik(name, domain, C, lam, coord, V=mp["V"],
+                  law=law, seed=mp["eig"], sigma=float(mp["sigma"]),
+                  order=int(mp["order"]), seq=X,
+                  seviye="vektor" if kesin else "ham",
+                  acilim_gucu="sonsuz-kesin" if kesin else "gozlem-ici-kesin")
 
 
 # ── 2) KOPRU (ortak uzay) ───────────────────────────────────────────────────────

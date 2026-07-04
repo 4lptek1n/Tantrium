@@ -55,6 +55,65 @@ def prony_law(seq, order):
     return c, roots, sigma
 
 # ----------------------------------------------------------------------
+# 2b. Vektor/blok Prony — skaler prony_law'in DOGRUDAN blok genellemesi.
+#     Coupled sistem / vektor-degerli trajektori X (T,d):
+#         X[n] = M_1 X[n-1] + ... + M_p X[n-p]   (ayrik VAR(p) / Ho-Kalman)
+#     Skaler Hankel-lstsq'in blok hali; M_k (d×d) kuplaj matrisleri +
+#     companion ozdegerleri (mod buyuklukleri) doner. Dis-veri YOK.
+# ----------------------------------------------------------------------
+def matrix_prony(X, max_order=None, tol=1e-6):
+    """Vektor-degerli diziye (T,d) blok-Hankel lstsq ile order-p matris rekuransi.
+
+    Doner: dict(order, M[list of d×d], companion, eig, mod (|eig| azalan),
+                V (companion ozvektorleri), sigma (holdout goreli-yeniden-kurma),
+                cond (blok-Hankel kosul sayisi), guven).
+    Occam: sigma<tol saglayan EN KUCUK p. DURUST: gurultuluyse sigma buyuk kalir,
+    'kesin' taklidi yok — guven bayragi + mod buyukluklerine belirsizlik.
+
+    DURUST-SINIR: ayrik map M ve BOYUTSUZ mod oranlari saf-matematikle TAM.
+    Surekli-zaman uretec A=logm(M)/dt MUTLAK fiziksel oranlar icin dt ornekleme
+    araligi kalibrasyonu ister -> bu organ onu URETMEZ (sahte cozmez)."""
+    X = np.asarray(X, float)
+    if X.ndim != 2:
+        raise ValueError("matrix_prony (T,d) 2-B trajektori bekler")
+    T, d = X.shape
+    if max_order is None:
+        max_order = max(1, min(5, (T - 2) // (d + 1)))
+    hold = min(3, max(1, T // 6))
+    Ttr = T - hold
+    best = None
+    for p in range(1, max_order + 1):
+        if Ttr - p < d * p:                       # satir >= bilinmeyen blok
+            continue
+        satir = range(p, Ttr)
+        Phi = np.array([np.concatenate([X[n - 1 - k] for k in range(p)]) for n in satir])
+        Y = np.array([X[n] for n in satir])       # Y = Phi @ Coef
+        Coef, *_ = np.linalg.lstsq(Phi, Y, rcond=None)
+        Mk = [Coef[k * d:(k + 1) * d, :].T for k in range(p)]   # M_{k+1}
+        # holdout: GERCEK gecmisle bir-adim yeniden kurma (durustluk)
+        errs = []
+        for n in range(Ttr, T):
+            xhat = sum(Mk[k] @ X[n - 1 - k] for k in range(p))
+            errs.append(np.linalg.norm(xhat - X[n]) / (np.linalg.norm(X[n]) + 1e-12))
+        sigma = float(np.max(errs)) if errs else float("inf")
+        # companion (dp×dp): ust blok-satir M_k, alt: kaydirma birimi
+        C = np.zeros((d * p, d * p))
+        for k in range(p):
+            C[:d, k * d:(k + 1) * d] = Mk[k]
+        if p > 1:
+            C[d:, :d * (p - 1)] = np.eye(d * (p - 1))
+        eig, V = np.linalg.eig(C)
+        mod = np.sort(np.abs(eig))[::-1]
+        cand = dict(order=p, M=Mk, companion=C, eig=eig, mod=mod, V=V,
+                    sigma=sigma, cond=float(np.linalg.cond(Phi)),
+                    guven="kesin" if sigma < tol else "zayif")
+        if best is None or sigma < best["sigma"]:
+            best = cand
+        if sigma < tol:
+            break
+    return best
+
+# ----------------------------------------------------------------------
 # 3. coord — ELDEKİ 47 boyut (modüler bloklar)
 # ----------------------------------------------------------------------
 def _safe(x):
